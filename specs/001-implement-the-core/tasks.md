@@ -28,11 +28,11 @@ Single project structure (per plan.md):
 
 **Purpose**: Project initialization and basic Go structure
 
-- [ ] T001 [SETUP] Create project directory structure: `internal/{value,eval,stack,frame,native,error}`, `cmd/viro/`, `test/{contract,integration,fixtures}`
-- [ ] T002 [SETUP] Initialize Go module with `go mod init` and add `github.com/chzyer/readline` dependency
+- [X] T001 [SETUP] Create project directory structure: `internal/{value,eval,stack,frame,native,verror}`, `cmd/viro/`, `test/{contract,integration,fixtures}`
+- [X] T002 [SETUP] Initialize Go module with `go mod init` and add `github.com/chzyer/readline` dependency
 - [ ] T003 [P] [SETUP] Configure Go linting (golangci-lint) and formatting (gofmt)
-- [ ] T004 [P] [SETUP] Create `.gitignore` for Go artifacts (vendor/, *.test, build/)
-- [ ] T005 [P] [SETUP] Create `README.md` with project overview and quickstart link
+- [X] T004 [P] [SETUP] Create `.gitignore` for Go artifacts (vendor/, *.test, build/)
+- [X] T005 [P] [SETUP] Create `README.md` with project overview and quickstart link
 
 ---
 
@@ -44,49 +44,49 @@ Single project structure (per plan.md):
 
 ### Value System (Foundation)
 
-- [ ] T006 [P] [FOUND] Define `ValueType` constants (TypeNone through TypeFunction) in `internal/value/types.go`
-- [ ] T007 [P] [FOUND] Define core `Value` struct with Type and Payload in `internal/value/value.go`
-- [ ] T008 [P] [FOUND] Implement value constructor functions (NoneVal, LogicVal, IntVal, StrVal, WordVal, BlockVal, ParenVal, FuncVal) in `internal/value/value.go`
-- [ ] T009 [P] [FOUND] Implement type assertion helpers (AsInteger, AsBlock, AsString, etc.) in `internal/value/value.go`
+- [X] T006 [P] [FOUND] Define `ValueType` constants (TypeNone through TypeFunction) in `internal/value/types.go`
+- [X] T007 [P] [FOUND] Define core `Value` struct with Type and Payload in `internal/value/value.go`
+- [X] T008 [P] [FOUND] Implement value constructor functions (NoneVal, LogicVal, IntVal, StrVal, WordVal, BlockVal, ParenVal, FuncVal) in `internal/value/value.go`
+- [X] T009 [P] [FOUND] Implement type assertion helpers (AsInteger, AsBlock, AsString, etc.) in `internal/value/value.go`
 
 ### Error System (Foundation)
 
-- [ ] T010 [P] [FOUND] Define `ErrorCategory` constants (0, 100, 200, 300, 400, 500, 900) in `internal/error/categories.go`
-- [ ] T011 [P] [FOUND] Define `Error` struct with Category, Code, ID, Args, Near, Where, Message in `internal/error/error.go`
-- [ ] T012 [P] [FOUND] Implement error factory functions (NewSyntaxError, NewScriptError, NewMathError, NewAccessError, NewInternalError) in `internal/error/error.go`
-- [ ] T013 [P] [FOUND] Implement error message formatting with interpolation (%1, %2, %3) in `internal/error/error.go`
-- [ ] T014 [P] [FOUND] Implement `Error.Error()` method for Go error interface in `internal/error/error.go`
+- [X] T010 [P] [FOUND] Define `ErrorCategory` constants (0, 100, 200, 300, 400, 500, 900) in `internal/verror/categories.go`
+- [X] T011 [P] [FOUND] Define `Error` struct with Category, Code, ID, Args, Near, Where, Message in `internal/verror/error.go`
+- [X] T012 [P] [FOUND] Implement error factory functions (NewSyntaxError, NewScriptError, NewMathError, NewAccessError, NewInternalError) in `internal/verror/error.go`
+- [X] T013 [P] [FOUND] Implement error message formatting with interpolation (%1, %2, %3) in `internal/verror/error.go`
+- [X] T014 [P] [FOUND] Implement `Error.Error()` method for Go error interface in `internal/verror/error.go`
 
 ### Stack System (Foundation)
 
-- [ ] T015 [P] [FOUND] Define `Stack` struct with Data slice, Top, CurrentFrame in `internal/stack/stack.go`
-- [ ] T016 [P] [FOUND] Implement stack operations: Push, Pop, Get, Set with index-based access in `internal/stack/stack.go`
-- [ ] T017 [P] [FOUND] Implement automatic stack expansion using Go slice growth in `internal/stack/expand.go`
-- [ ] T018 [P] [FOUND] Implement stack frame layout helpers (NewFrame, DestroyFrame, GetFrame) in `internal/stack/stack.go`
+- [X] T015 [P] [FOUND] Define `Stack` struct with Data slice, Top, CurrentFrame in `internal/stack/stack.go`
+- [X] T016 [P] [FOUND] Implement stack operations: Push, Pop, Get, Set with index-based access in `internal/stack/stack.go`
+- [X] T017 [P] [FOUND] Implement automatic stack expansion using Go slice growth in `internal/stack/stack.go`
+- [X] T018 [P] [FOUND] Implement stack frame layout helpers (NewFrame, DestroyFrame, GetFrame) in `internal/stack/frame.go`
 
 ### Frame System (Foundation)
 
-- [ ] T019 [P] [FOUND] Define `FrameType` constants (FrameFunctionArgs, FrameClosure) in `internal/frame/types.go`
-- [ ] T020 [P] [FOUND] Define `Frame` struct with Type, Words, Values, Parent in `internal/frame/frame.go`
-- [ ] T021 [P] [FOUND] Implement frame operations: Bind, Get, Set, HasWord in `internal/frame/binding.go`
+- [X] T019 [P] [FOUND] Define `FrameType` constants (FrameFunctionArgs, FrameClosure) in `internal/frame/frame.go`
+- [X] T020 [P] [FOUND] Define `Frame` struct with Type, Words, Values, Parent in `internal/frame/frame.go`
+- [X] T021 [P] [FOUND] Implement frame operations: Bind, Get, Set, HasWord in `internal/frame/frame.go`
 
 ### Series Types (Foundation)
 
-- [ ] T022 [P] [FOUND] Define `BlockValue` struct with Elements slice and Index in `internal/value/block.go`
-- [ ] T023 [P] [FOUND] Implement block operations: First, Last, At, Length, Append, Insert in `internal/value/block.go`
-- [ ] T024 [P] [FOUND] Define `StringValue` struct (wrapping []rune) in `internal/value/string.go`
-- [ ] T025 [P] [FOUND] Implement string series operations (First, Last, Append, Insert, Length) in `internal/value/string.go`
+- [X] T022 [P] [FOUND] Define `BlockValue` struct with Elements slice and Index in `internal/value/block.go`
+- [X] T023 [P] [FOUND] Implement block operations: First, Last, At, Length, Append, Insert in `internal/value/block.go`
+- [X] T024 [P] [FOUND] Define `StringValue` struct (wrapping []rune) in `internal/value/string.go`
+- [X] T025 [P] [FOUND] Implement string series operations (First, Last, Append, Insert, Length) in `internal/value/string.go`
 
 ### Word System (Foundation)
 
-- [ ] T026 [P] [FOUND] Define word type payloads (symbol string) for Word, SetWord, GetWord, LitWord in `internal/value/word.go`
-- [ ] T027 [P] [FOUND] Implement word constructor functions (WordVal, SetWordVal, GetWordVal, LitWordVal) in `internal/value/word.go`
+- [X] T026 [P] [FOUND] Define word type payloads (symbol string) for Word, SetWord, GetWord, LitWord in `internal/value/word.go`
+- [X] T027 [P] [FOUND] Implement word constructor functions (WordVal, SetWordVal, GetWordVal, LitWordVal) in `internal/value/value.go`
 
 ### Function System (Foundation)
 
-- [ ] T028 [P] [FOUND] Define `FunctionType` constants (FuncNative, FuncUser) in `internal/value/function.go`
-- [ ] T029 [P] [FOUND] Define `ParamSpec` struct with Name, Type, Optional, Refinement, TakesValue in `internal/value/function.go`
-- [ ] T030 [P] [FOUND] Define `FunctionValue` struct with Type, Name, Params, Body, Native in `internal/value/function.go`
+- [X] T028 [P] [FOUND] Define `FunctionType` constants (FuncNative, FuncUser) in `internal/value/function.go`
+- [X] T029 [P] [FOUND] Define `ParamSpec` struct with Name, Type, Optional, Refinement, TakesValue in `internal/value/function.go`
+- [X] T030 [P] [FOUND] Define `FunctionValue` struct with Type, Name, Params, Body, Native in `internal/value/function.go`
 
 **Checkpoint**: Foundation complete - Core types, error system, stack, frames, series, and function structures ready. User story implementation can now begin.
 
