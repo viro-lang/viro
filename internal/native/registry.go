@@ -9,23 +9,68 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// NativeFunc is the signature for native function implementations.
+// Evaluator interface for natives that need to evaluate code.
+type Evaluator interface {
+	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
+	Do_Next(val value.Value) (value.Value, *verror.Error)
+}
+
+// NativeFunc is the signature for simple native functions (like math operations).
 type NativeFunc func([]value.Value) (value.Value, *verror.Error)
 
+// NativeFuncWithEval is the signature for natives that need evaluator access (like control flow).
+type NativeFuncWithEval func([]value.Value, Evaluator) (value.Value, *verror.Error)
+
+// NativeInfo wraps a native function with metadata.
+type NativeInfo struct {
+	Func      NativeFunc         // Simple native (if NeedsEval is false)
+	FuncEval  NativeFuncWithEval // Native needing evaluator (if NeedsEval is true)
+	NeedsEval bool               // True if this native needs evaluator access
+	Arity     int                // Number of arguments expected
+}
+
 // Registry holds all registered native functions.
-var Registry = make(map[string]NativeFunc)
+var Registry = make(map[string]*NativeInfo)
 
 func init() {
-	// Register math natives
-	Registry["+"] = Add
-	Registry["-"] = Subtract
-	Registry["*"] = Multiply
-	Registry["/"] = Divide
+	// Register math natives (simple - don't need evaluator)
+	Registry["+"] = &NativeInfo{Func: Add, NeedsEval: false, Arity: 2}
+	Registry["-"] = &NativeInfo{Func: Subtract, NeedsEval: false, Arity: 2}
+	Registry["*"] = &NativeInfo{Func: Multiply, NeedsEval: false, Arity: 2}
+	Registry["/"] = &NativeInfo{Func: Divide, NeedsEval: false, Arity: 2}
+
+	// Register comparison operators
+	Registry["<"] = &NativeInfo{Func: LessThan, NeedsEval: false, Arity: 2}
+	Registry[">"] = &NativeInfo{Func: GreaterThan, NeedsEval: false, Arity: 2}
+	Registry["<="] = &NativeInfo{Func: LessOrEqual, NeedsEval: false, Arity: 2}
+	Registry[">="] = &NativeInfo{Func: GreaterOrEqual, NeedsEval: false, Arity: 2}
+	Registry["="] = &NativeInfo{Func: Equal, NeedsEval: false, Arity: 2}
+	Registry["<>"] = &NativeInfo{Func: NotEqual, NeedsEval: false, Arity: 2}
+
+	// Register logic operators
+	Registry["and"] = &NativeInfo{Func: And, NeedsEval: false, Arity: 2}
+	Registry["or"] = &NativeInfo{Func: Or, NeedsEval: false, Arity: 2}
+	Registry["not"] = &NativeInfo{Func: Not, NeedsEval: false, Arity: 1}
+
+	// Register control flow natives (need evaluator)
+	Registry["when"] = &NativeInfo{FuncEval: When, NeedsEval: true, Arity: 2}
+	Registry["if"] = &NativeInfo{FuncEval: If, NeedsEval: true, Arity: 3}
+	Registry["loop"] = &NativeInfo{FuncEval: Loop, NeedsEval: true, Arity: 2}
+	Registry["while"] = &NativeInfo{FuncEval: While, NeedsEval: true, Arity: 2}
 }
 
 // Lookup finds a native function by name.
-// Returns the function and true if found, nil and false otherwise.
-func Lookup(name string) (NativeFunc, bool) {
-	fn, ok := Registry[name]
-	return fn, ok
+// Returns the function info and true if found, nil and false otherwise.
+func Lookup(name string) (*NativeInfo, bool) {
+	info, ok := Registry[name]
+	return info, ok
+}
+
+// Call invokes a native function with the given arguments and evaluator.
+// Handles both simple natives and natives that need evaluator access.
+func Call(info *NativeInfo, args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+	if info.NeedsEval {
+		return info.FuncEval(args, eval)
+	}
+	return info.Func(args)
 }

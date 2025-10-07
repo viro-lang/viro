@@ -128,9 +128,42 @@ func tokenize(input string) ([]token, *verror.Error) {
 			continue
 		}
 
-		// Single-character operators
+		// Single-character operators and multi-character operator starts
 		if runes[pos] == '+' || runes[pos] == '*' || runes[pos] == '/' {
 			tokens = append(tokens, token{tokOperator, string(runes[pos]), pos})
+			pos++
+			continue
+		}
+
+		// Handle <, >, =, and their multi-character variants (<=, >=, <>)
+		if runes[pos] == '<' {
+			start := pos
+			pos++
+			// Check for <= or <>
+			if pos < len(runes) && (runes[pos] == '=' || runes[pos] == '>') {
+				pos++
+				tokens = append(tokens, token{tokOperator, string(runes[start:pos]), start})
+			} else {
+				tokens = append(tokens, token{tokOperator, "<", start})
+			}
+			continue
+		}
+
+		if runes[pos] == '>' {
+			start := pos
+			pos++
+			// Check for >=
+			if pos < len(runes) && runes[pos] == '=' {
+				pos++
+				tokens = append(tokens, token{tokOperator, ">=", start})
+			} else {
+				tokens = append(tokens, token{tokOperator, ">", start})
+			}
+			continue
+		}
+
+		if runes[pos] == '=' {
+			tokens = append(tokens, token{tokOperator, "=", pos})
 			pos++
 			continue
 		}

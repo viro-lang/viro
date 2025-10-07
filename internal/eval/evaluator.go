@@ -116,6 +116,39 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 			continue
 		}
 
+		// Special case: word that might be a native function call
+		if val.Type == value.TypeWord {
+			wordStr, ok := val.AsWord()
+			if ok {
+				if nativeInfo, found := native.Lookup(wordStr); found {
+					// This is a native function call - collect arguments
+					args := make([]value.Value, 0, nativeInfo.Arity)
+					for j := 0; j < nativeInfo.Arity; j++ {
+						if i+1+j >= len(vals) {
+							return value.NoneVal(), verror.NewScriptError(
+								verror.ErrIDArgCount,
+								[3]string{wordStr, "", ""},
+							)
+						}
+						arg, argErr := e.Do_Next(vals[i+1+j])
+						if argErr != nil {
+							return value.NoneVal(), argErr
+						}
+						args = append(args, arg)
+					}
+					// Advance index past consumed arguments
+					i += nativeInfo.Arity
+
+					// Call the native
+					result, err = native.Call(nativeInfo, args, e)
+					if err != nil {
+						return value.NoneVal(), err
+					}
+					continue
+				}
+			}
+		}
+
 		result, err = e.Do_Next(val)
 		if err != nil {
 			return value.NoneVal(), err
@@ -137,7 +170,7 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 	if len(block.Elements) >= 3 && block.Elements[0].Type == value.TypeWord {
 		wordStr, ok := block.Elements[0].AsWord()
 		if ok {
-			if nativeFn, found := native.Lookup(wordStr); found {
+			if nativeInfo, found := native.Lookup(wordStr); found {
 				// This is a native function call - evaluate arguments first
 				var args []value.Value
 				for i := 1; i < len(block.Elements); i++ {
@@ -148,8 +181,8 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 					args = append(args, arg)
 				}
 
-				// Call the native function
-				return nativeFn(args)
+				// Call the native function (handles both simple and eval-needing natives)
+				return native.Call(nativeInfo, args, e)
 			}
 		}
 	}

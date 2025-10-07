@@ -156,3 +156,192 @@ func Divide(args []value.Value) (value.Value, *verror.Error) {
 
 	return value.IntVal(a / b), nil
 }
+
+// LessThan implements the < native function.
+//
+// Contract: < value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 < value2, false otherwise
+func LessThan(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"< expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"< expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"< expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a < b), nil
+}
+
+// GreaterThan implements the > native function.
+//
+// Contract: > value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 > value2, false otherwise
+func GreaterThan(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"> expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"> expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"> expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a > b), nil
+}
+
+// LessOrEqual implements the <= native function.
+//
+// Contract: <= value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 <= value2, false otherwise
+func LessOrEqual(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"<= expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<= expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<= expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a <= b), nil
+}
+
+// GreaterOrEqual implements the >= native function.
+//
+// Contract: >= value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 >= value2, false otherwise
+func GreaterOrEqual(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{">= expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{">= expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{">= expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a >= b), nil
+}
+
+// Equal implements the = native function.
+//
+// Contract: = value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 == value2, false otherwise
+func Equal(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"= expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"= expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"= expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a == b), nil
+}
+
+// NotEqual implements the <> native function.
+//
+// Contract: <> value1 value2 → logic
+// - Both arguments must be integers
+// - Returns true if value1 != value2, false otherwise
+func NotEqual(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"<> expects 2 arguments", "", ""})
+	}
+
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<> expects integer arguments", "", ""})
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<> expects integer arguments", "", ""})
+	}
+
+	return value.LogicVal(a != b), nil
+}
+
+// And implements the and native function.
+//
+// Contract: and value1 value2 → logic
+// - Both arguments evaluated to logic (truthy conversion)
+// - Returns true if both are truthy, false otherwise
+// - Truthy: none/false → false, all others → true
+func And(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"and expects 2 arguments", "", ""})
+	}
+
+	// Convert both to truthy (using ToTruthy from control.go)
+	a := ToTruthy(args[0])
+	b := ToTruthy(args[1])
+
+	return value.LogicVal(a && b), nil
+}
+
+// Or implements the or native function.
+//
+// Contract: or value1 value2 → logic
+// - Both arguments evaluated to logic (truthy conversion)
+// - Returns true if either is truthy, false if both falsy
+// - Truthy: none/false → false, all others → true
+func Or(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"or expects 2 arguments", "", ""})
+	}
+
+	// Convert both to truthy (using ToTruthy from control.go)
+	a := ToTruthy(args[0])
+	b := ToTruthy(args[1])
+
+	return value.LogicVal(a || b), nil
+}
+
+// Not implements the not native function.
+//
+// Contract: not value → logic
+// - Argument evaluated to logic (truthy conversion)
+// - Returns negation: true if falsy, false if truthy
+// - Truthy: none/false → false, all others → true
+func Not(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"not expects 1 argument", "", ""})
+	}
+
+	// Convert to truthy and negate (using ToTruthy from control.go)
+	return value.LogicVal(!ToTruthy(args[0])), nil
+}

@@ -30,7 +30,7 @@ Single project structure (per plan.md):
 
 - [X] T001 [SETUP] Create project directory structure: `internal/{value,eval,stack,frame,native,verror}`, `cmd/viro/`, `test/{contract,integration,fixtures}`
 - [X] T002 [SETUP] Initialize Go module with `go mod init` and add `github.com/chzyer/readline` dependency
-- [ ] T003 [P] [SETUP] Configure Go linting (golangci-lint) and formatting (gofmt)
+- [X] T003 [P] [SETUP] Configure Go linting (golangci-lint) and formatting (gofmt)
 - [X] T004 [P] [SETUP] Create `.gitignore` for Go artifacts (vendor/, *.test, build/)
 - [X] T005 [P] [SETUP] Create `README.md` with project overview and quickstart link
 
@@ -150,8 +150,8 @@ Single project structure (per plan.md):
 
 #### Error Context Capture
 
-- [ ] T059 [P] [US1] Implement Near context capture (expression window) in `internal/error/context.go`
-- [ ] T060 [P] [US1] Implement Where context capture (call stack from frames) in `internal/error/context.go`
+- [X] T059 [P] [US1] Implement Near context capture (expression window) in `internal/verror/context.go`
+- [X] T060 [P] [US1] Implement Where context capture (call stack from frames) in `internal/verror/context.go`
 
 #### Basic REPL
 
