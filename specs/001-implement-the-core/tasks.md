@@ -155,15 +155,15 @@ Single project structure (per plan.md):
 
 #### Basic REPL
 
-- [ ] T061 [US1] Implement REPL struct with evaluator, history in `cmd/viro/repl.go`
-- [ ] T062 [US1] Implement Read phase (read line from stdin) in `cmd/viro/repl.go`
-- [ ] T063 [US1] Implement Eval phase (parse and evaluate) in `cmd/viro/repl.go`
-- [ ] T064 [US1] Implement Print phase (display result or error) in `cmd/viro/repl.go`
-- [ ] T065 [US1] Implement Loop (repeat until exit command) in `cmd/viro/repl.go`
-- [ ] T066 [US1] Implement prompt display (`>>` for ready, `...` for continuation) in `cmd/viro/repl.go`
-- [ ] T067 [US1] Implement none result suppression (FR-044) in `cmd/viro/repl.go`
-- [ ] T068 [US1] Implement welcome message with version in `cmd/viro/repl.go`
-- [ ] T069 [US1] Create main entry point in `cmd/viro/main.go`
+- [X] T061 [US1] Implement REPL struct with evaluator, history in `cmd/viro/repl.go`
+- [X] T062 [US1] Implement Read phase (read line from stdin) in `cmd/viro/repl.go`
+- [X] T063 [US1] Implement Eval phase (parse and evaluate) in `cmd/viro/repl.go`
+- [X] T064 [US1] Implement Print phase (display result or error) in `cmd/viro/repl.go`
+- [X] T065 [US1] Implement Loop (repeat until exit command) in `cmd/viro/repl.go`
+- [X] T066 [US1] Implement prompt display (`>>` for ready, `...` for continuation) in `cmd/viro/repl.go`
+- [X] T067 [US1] Implement none result suppression (FR-044) in `cmd/viro/repl.go`
+- [X] T068 [US1] Implement welcome message with version in `cmd/viro/repl.go`
+- [X] T069 [US1] Create main entry point in `cmd/viro/main.go`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can evaluate literals, arithmetic with precedence, words, blocks/parens in REPL
 

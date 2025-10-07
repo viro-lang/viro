@@ -17,13 +17,34 @@ See [specs/001-implement-the-core/quickstart.md](specs/001-implement-the-core/qu
 ### Build
 
 ```bash
-go build -o viro cmd/viro/main.go
+go build -o viro ./cmd/viro
 ```
 
 ### Run REPL
 
 ```bash
 ./viro
+```
+
+### Example Session
+
+```rebol
+>> 42
+42
+>> "hello"
+"hello"
+>> x: 10
+10
+>> x
+10
+>> 3 + 4 * 2
+11
+>> (3 + 4) * 2
+14
+>> [1 2 3]
+[1 2 3]
+>> exit
+Goodbye!
 ```
 
 ### Run Tests
@@ -47,14 +68,24 @@ go test ./...
 
 ## Features
 
-### Phase 1: Core Interpreter ✅ (In Progress)
+### Phase 1: Core Interpreter ✅ COMPLETED
 
-- Basic expression evaluation (literals, arithmetic, words)
-- Control flow (when, if, loop, while)
-- Series operations (first, last, append, insert, length?)
-- User-defined functions with refinements
-- Structured error handling with context
-- Interactive REPL with command history
+**User Story 1: Basic Expression Evaluation** ✅
+- ✅ Literal evaluation (integers, strings, true/false/none)
+- ✅ Variable binding and retrieval (set-word, word)
+- ✅ Arithmetic operations (+, -, *, /) with overflow detection
+- ✅ Traditional operator precedence (* and / before + and -)
+- ✅ Block and paren evaluation
+- ✅ Interactive REPL with readline support
+- ✅ Parser with 7 levels of operator precedence
+- ✅ 45 contract tests passing
+
+**Remaining for Phase 1:**
+- User Story 2: Control flow (when, if, loop, while)
+- User Story 3: Series operations (first, last, append, insert, length?)
+- User Story 4: User-defined functions with refinements
+- User Story 5: I/O operations (print, input, read, write)
+- User Story 6: Error handling (try/catch, throw)
 
 ### Future Phases (Planned)
 

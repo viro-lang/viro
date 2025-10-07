@@ -327,7 +327,17 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 		return value.StrVal(tok.val), nil
 
 	case tokWord:
-		return value.WordVal(tok.val), nil
+		// Handle special keyword literals
+		switch tok.val {
+		case "true":
+			return value.LogicVal(true), nil
+		case "false":
+			return value.LogicVal(false), nil
+		case "none":
+			return value.NoneVal(), nil
+		default:
+			return value.WordVal(tok.val), nil
+		}
 
 	case tokOperator:
 		// When an operator appears in primary position (like in `(+ 3 4)`),
