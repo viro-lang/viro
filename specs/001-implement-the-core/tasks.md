@@ -188,27 +188,27 @@ Single project structure (per plan.md):
 
 #### Comparison & Logic Natives
 
-- [ ] T076 [P] [US2] Implement native `<` (less than) in `internal/native/math.go`
-- [ ] T077 [P] [US2] Implement native `>` (greater than) in `internal/native/math.go`
-- [ ] T078 [P] [US2] Implement native `<=` (less than or equal) in `internal/native/math.go`
-- [ ] T079 [P] [US2] Implement native `>=` (greater than or equal) in `internal/native/math.go`
-- [ ] T080 [P] [US2] Implement native `=` (equality with deep comparison) in `internal/native/math.go`
-- [ ] T081 [P] [US2] Implement native `<>` (not equal) in `internal/native/math.go`
-- [ ] T082 [P] [US2] Implement native `and` (logical AND with truthy conversion) in `internal/native/math.go`
-- [ ] T083 [P] [US2] Implement native `or` (logical OR with truthy conversion) in `internal/native/math.go`
-- [ ] T084 [P] [US2] Implement native `not` (logical negation) in `internal/native/math.go`
+- [X] T076 [P] [US2] Implement native `<` (less than) in `internal/native/math.go`
+- [X] T077 [P] [US2] Implement native `>` (greater than) in `internal/native/math.go`
+- [X] T078 [P] [US2] Implement native `<=` (less than or equal) in `internal/native/math.go`
+- [X] T079 [P] [US2] Implement native `>=` (greater than or equal) in `internal/native/math.go`
+- [X] T080 [P] [US2] Implement native `=` (equality with deep comparison) in `internal/native/math.go`
+- [X] T081 [P] [US2] Implement native `<>` (not equal) in `internal/native/math.go`
+- [X] T082 [P] [US2] Implement native `and` (logical AND with truthy conversion) in `internal/native/math.go`
+- [X] T083 [P] [US2] Implement native `or` (logical OR with truthy conversion) in `internal/native/math.go`
+- [X] T084 [P] [US2] Implement native `not` (logical negation) in `internal/native/math.go`
 
 #### Control Flow Natives
 
-- [ ] T085 [P] [US2] Implement native `when` (condition + single block) in `internal/native/control.go`
-- [ ] T086 [P] [US2] Implement native `if` (condition + true-block + false-block) in `internal/native/control.go`
-- [ ] T087 [P] [US2] Implement native `loop` (count + body block with validation) in `internal/native/control.go`
-- [ ] T088 [P] [US2] Implement native `while` (condition block + body block, re-evaluate condition) in `internal/native/control.go`
-- [ ] T089 [US2] Register control flow natives in native dispatcher in `internal/native/registry.go`
+- [X] T085 [P] [US2] Implement native `when` (condition + single block) in `internal/native/control.go`
+- [X] T086 [P] [US2] Implement native `if` (condition + true-block + false-block) in `internal/native/control.go`
+- [X] T087 [P] [US2] Implement native `loop` (count + body block with validation) in `internal/native/control.go`
+- [X] T088 [P] [US2] Implement native `while` (condition block + body block, re-evaluate condition) in `internal/native/control.go`
+- [X] T089 [US2] Register control flow natives in native dispatcher in `internal/native/registry.go`
 
 #### Truthy Conversion
 
-- [ ] T090 [US2] Implement truthy conversion helper (none/false→false, all others→true) in `internal/eval/eval.go`
+- [X] T090 [US2] Implement truthy conversion helper (none/false→false, all others→true) in `internal/eval/eval.go`
 
 **Checkpoint**: User Stories 1 AND 2 complete - users can now evaluate expressions AND use control flow for logic
 
