@@ -153,7 +153,7 @@ Users can interact with the REPL using standard features: command history (up/do
 #### Core Evaluation Engine
 
 - **FR-001**: System MUST implement type-based dispatch that classifies values (words, functions, paths, literals) and routes them to appropriate evaluation handlers
-- **FR-002**: System MUST support recursive evaluation for nested blocks and parenthesized expressions
+- **FR-002**: System MUST support recursive evaluation for nested blocks and paren expressions
 - **FR-003**: System MUST evaluate expressions following REBOL semantics: literals evaluate to themselves, words evaluate to bound values, functions execute with arguments, **blocks evaluate to themselves (deferred), parens evaluate their contents (immediate)**
 - **FR-004**: System MUST maintain evaluation index through block sequences, advancing after each expression evaluation
 
