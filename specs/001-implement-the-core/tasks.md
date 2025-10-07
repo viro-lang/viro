@@ -102,43 +102,43 @@ Single project structure (per plan.md):
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T031 [P] [US1] Contract test for literal evaluation (integers, strings, none, logic) in `test/contract/eval_test.go`
-- [ ] T032 [P] [US1] Contract test for word evaluation (undefined word errors) in `test/contract/eval_test.go`
-- [ ] T033 [P] [US1] Contract test for set-word assignment (`x: 10`) in `test/contract/eval_test.go`
-- [ ] T034 [P] [US1] Contract test for block evaluation (deferred - returns self) in `test/contract/eval_test.go`
-- [ ] T035 [P] [US1] Contract test for paren evaluation (immediate - evaluates contents) in `test/contract/eval_test.go`
-- [ ] T036 [P] [US1] Contract test for arithmetic natives (+, -, *, /) in `test/contract/math_test.go`
-- [ ] T037 [P] [US1] Contract test for operator precedence (3 + 4 * 2 → 11) in `test/contract/math_test.go`
+- [X] T031 [P] [US1] Contract test for literal evaluation (integers, strings, none, logic) in `test/contract/eval_test.go`
+- [X] T032 [P] [US1] Contract test for word evaluation (undefined word errors) in `test/contract/eval_test.go`
+- [X] T033 [P] [US1] Contract test for set-word assignment (`x: 10`) in `test/contract/eval_test.go`
+- [X] T034 [P] [US1] Contract test for block evaluation (deferred - returns self) in `test/contract/eval_test.go`
+- [X] T035 [P] [US1] Contract test for paren evaluation (immediate - evaluates contents) in `test/contract/eval_test.go`
+- [X] T036 [P] [US1] Contract test for arithmetic natives (+, -, *, /) in `test/contract/math_test.go`
+- [X] T037 [P] [US1] Contract test for operator precedence (3 + 4 * 2 → 11) in `test/contract/math_test.go`
 
 ### Implementation for User Story 1
 
 #### Evaluator Core
 
-- [ ] T038 [US1] Implement `Evaluator` struct with stack, current frame, context in `internal/eval/eval.go`
-- [ ] T039 [US1] Implement `Do_Next` function (single value evaluation with type dispatch) in `internal/eval/eval.go`
-- [ ] T040 [US1] Implement `Do_Blk` function (block sequence evaluation) in `internal/eval/eval.go`
-- [ ] T041 [US1] Implement type-based dispatch router (switch on ValueType) in `internal/eval/dispatch.go`
-- [ ] T042 [US1] Implement literal evaluation (integers, strings, none, logic return self) in `internal/eval/eval.go`
+- [X] T038 [US1] Implement `Evaluator` struct with stack, current frame, context in `internal/eval/evaluator.go`
+- [X] T039 [US1] Implement `Do_Next` function (single value evaluation with type dispatch) in `internal/eval/evaluator.go`
+- [X] T040 [US1] Implement `Do_Blk` function (block sequence evaluation) in `internal/eval/evaluator.go`
+- [X] T041 [US1] Implement type-based dispatch router (switch on ValueType) in `internal/eval/evaluator.go`
+- [X] T042 [US1] Implement literal evaluation (integers, strings, none, logic return self) in `internal/eval/evaluator.go`
 
 #### Word Evaluation
 
-- [ ] T043 [US1] Implement word evaluation (lookup in frame, return bound value) in `internal/eval/eval.go`
-- [ ] T044 [US1] Implement set-word evaluation (evaluate next, store in frame) in `internal/eval/eval.go`
-- [ ] T045 [US1] Implement get-word evaluation (fetch without evaluation) in `internal/eval/eval.go`
-- [ ] T046 [US1] Implement lit-word evaluation (return word itself) in `internal/eval/eval.go`
+- [X] T043 [US1] Implement word evaluation (lookup in frame, return bound value) in `internal/eval/evaluator.go`
+- [X] T044 [US1] Implement set-word evaluation (evaluate next, store in frame) in `internal/eval/evaluator.go`
+- [X] T045 [US1] Implement get-word evaluation (fetch without evaluation) in `internal/eval/evaluator.go`
+- [X] T046 [US1] Implement lit-word evaluation (return word itself) in `internal/eval/evaluator.go`
 
 #### Block & Paren Evaluation
 
-- [ ] T047 [US1] Implement block evaluation (returns self - deferred evaluation) in `internal/eval/eval.go`
-- [ ] T048 [US1] Implement paren evaluation (evaluates contents, returns result) in `internal/eval/eval.go`
+- [X] T047 [US1] Implement block evaluation (returns self - deferred evaluation) in `internal/eval/evaluator.go`
+- [X] T048 [US1] Implement paren evaluation (evaluates contents, returns result) in `internal/eval/evaluator.go`
 
 #### Math Natives (Basic Arithmetic)
 
-- [ ] T049 [P] [US1] Implement native `+` (add two integers) in `internal/native/math.go`
-- [ ] T050 [P] [US1] Implement native `-` (subtract two integers) in `internal/native/math.go`
-- [ ] T051 [P] [US1] Implement native `*` (multiply two integers) in `internal/native/math.go`
-- [ ] T052 [P] [US1] Implement native `/` (divide two integers with overflow check) in `internal/native/math.go`
-- [ ] T053 [US1] Implement division by zero error handling (Math error 400) in `internal/native/math.go`
+- [X] T049 [P] [US1] Implement native `+` (add two integers with overflow detection) in `internal/native/math.go`
+- [X] T050 [P] [US1] Implement native `-` (subtract two integers with overflow detection) in `internal/native/math.go`
+- [X] T051 [P] [US1] Implement native `*` (multiply two integers with overflow detection) in `internal/native/math.go`
+- [X] T052 [P] [US1] Implement native `/` (divide two integers with overflow check) in `internal/native/math.go`
+- [X] T053 [US1] Implement division by zero error handling (Math error 400) in `internal/native/math.go`
 - [ ] T054 [US1] Register math natives in native dispatcher in `internal/native/registry.go`
 
 #### Parser (Traditional Precedence)

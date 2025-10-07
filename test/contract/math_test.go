@@ -3,7 +3,9 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestArithmeticNatives tests basic arithmetic operations.
@@ -115,19 +117,31 @@ func TestArithmeticNatives(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: Call native function
-			// result, err := native.CallNative(tt.op, tt.args)
-			
-			t.Skip("Native functions not implemented yet - TDD: Test written FIRST")
-			
-			// When implemented:
-			// if (err != nil) != tt.wantErr {
-			// 	t.Errorf("CallNative(%s, %v) error = %v, wantErr %v", tt.op, tt.args, err, tt.wantErr)
-			// 	return
-			// }
-			// if !tt.wantErr && !result.Equals(tt.expected) {
-			// 	t.Errorf("CallNative(%s, %v) = %v, want %v", tt.op, tt.args, result, tt.expected)
-			// }
+			// Call the appropriate native function
+			var result value.Value
+			var err *verror.Error
+
+			switch tt.op {
+			case "+":
+				result, err = native.Add(tt.args)
+			case "-":
+				result, err = native.Subtract(tt.args)
+			case "*":
+				result, err = native.Multiply(tt.args)
+			case "/":
+				result, err = native.Divide(tt.args)
+			default:
+				t.Fatalf("Unknown operator: %s", tt.op)
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%s(%v) error = %v, wantErr %v", tt.op, tt.args, err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !result.Equals(tt.expected) {
+				t.Errorf("%s(%v) = %v, want %v", tt.op, tt.args, result, tt.expected)
+			}
 		})
 	}
 }
@@ -139,7 +153,7 @@ func TestArithmeticNatives(t *testing.T) {
 func TestOperatorPrecedence(t *testing.T) {
 	tests := []struct {
 		name     string
-		expr     string       // Expression as string (will be parsed)
+		expr     string // Expression as string (will be parsed)
 		expected value.Value
 	}{
 		{
@@ -174,9 +188,9 @@ func TestOperatorPrecedence(t *testing.T) {
 			// TODO: Parse and evaluate expression
 			// values := parse.Parse(tt.expr)
 			// result := eval.Eval(values)
-			
+
 			t.Skip("Parser not implemented yet - TDD: Test written FIRST")
-			
+
 			// When implemented:
 			// if !result.Equals(tt.expected) {
 			// 	t.Errorf("Eval(%s) = %v, want %v", tt.expr, result, tt.expected)
@@ -216,7 +230,29 @@ func TestArithmeticOverflow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Overflow detection not implemented yet - TDD: Test written FIRST")
+			// Call the appropriate native function
+			var result value.Value
+			var err *verror.Error
+
+			switch tt.op {
+			case "+":
+				result, err = native.Add(tt.args)
+			case "-":
+				result, err = native.Subtract(tt.args)
+			case "*":
+				result, err = native.Multiply(tt.args)
+			default:
+				t.Fatalf("Unknown operator: %s", tt.op)
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%s(%v) error = %v, wantErr %v", tt.op, tt.args, err, tt.wantErr)
+			}
+
+			// Verify result is none on error
+			if tt.wantErr && !result.Equals(value.NoneVal()) {
+				t.Errorf("%s(%v) on error should return none, got %v", tt.op, tt.args, result)
+			}
 		})
 	}
 }

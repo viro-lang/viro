@@ -235,28 +235,63 @@ func TestWordEvaluation(t *testing.T) {
 // Contract: Set-word evaluates next expression and binds result to word.
 func TestSetWordEvaluation(t *testing.T) {
 	tests := []struct {
-		name     string
-		setWord  string      // Word to bind
-		value    value.Value // Value to bind
-		expected value.Value // Result of evaluation (the value)
+		name      string
+		sequence  []value.Value // Sequence containing set-word and value
+		checkWord string        // Word to check after evaluation
+		expected  value.Value   // Expected value bound to word
 	}{
 		{
-			name:     "set integer",
-			setWord:  "x",
-			value:    value.IntVal(42),
-			expected: value.IntVal(42),
+			name: "set integer",
+			sequence: []value.Value{
+				value.SetWordVal("x"),
+				value.IntVal(42),
+			},
+			checkWord: "x",
+			expected:  value.IntVal(42),
 		},
 		{
-			name:     "set string",
-			setWord:  "name",
-			value:    value.StrVal("Alice"),
-			expected: value.StrVal("Alice"),
+			name: "set string",
+			sequence: []value.Value{
+				value.SetWordVal("name"),
+				value.StrVal("Alice"),
+			},
+			checkWord: "name",
+			expected:  value.StrVal("Alice"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Evaluator not implemented yet - TDD: Test written FIRST")
+			e := eval.NewEvaluator()
+
+			// Evaluate sequence (set-word will bind the next value)
+			result, err := e.Do_Blk(tt.sequence)
+
+			if err != nil {
+				t.Errorf("Do_Blk(%v) unexpected error: %v", tt.sequence, err)
+				return
+			}
+
+			// Result should be the bound value
+			if !result.Equals(tt.expected) {
+				t.Errorf("Do_Blk(%v) = %v, want %v", tt.sequence, result, tt.expected)
+			}
+
+			// Verify word was bound in frame
+			if len(e.Frames) == 0 {
+				t.Errorf("No frame created after set-word evaluation")
+				return
+			}
+
+			boundValue, ok := e.Frames[0].Get(tt.checkWord)
+			if !ok {
+				t.Errorf("Word %s not bound after set-word evaluation", tt.checkWord)
+				return
+			}
+
+			if !boundValue.Equals(tt.expected) {
+				t.Errorf("Bound value for %s = %v, want %v", tt.checkWord, boundValue, tt.expected)
+			}
 		})
 	}
 }
