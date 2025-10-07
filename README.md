@@ -1,6 +1,6 @@
 # Viro - REBOL-Inspired Interpreter
 
-Viro is a REBOL R3-inspired interpreter implemented in Go, featuring a type-based dispatch system and an interactive REPL.
+Viro is a REBOL interpreter implemented in Go, featuring a type-based dispatch system and an interactive REPL.
 
 ## Overview
 
