@@ -139,14 +139,14 @@ Single project structure (per plan.md):
 - [X] T051 [P] [US1] Implement native `*` (multiply two integers with overflow detection) in `internal/native/math.go`
 - [X] T052 [P] [US1] Implement native `/` (divide two integers with overflow check) in `internal/native/math.go`
 - [X] T053 [US1] Implement division by zero error handling (Math error 400) in `internal/native/math.go`
-- [ ] T054 [US1] Register math natives in native dispatcher in `internal/native/registry.go`
+- [X] T054 [US1] Register math natives in native dispatcher in `internal/native/registry.go`
 
 #### Parser (Traditional Precedence)
 
-- [ ] T055 [US1] Implement tokenizer (scan input into tokens: numbers, words, operators, blocks, parens) in `internal/parse/tokenize.go`
-- [ ] T056 [US1] Implement parser with operator precedence (7 levels per contracts/math.md) in `internal/parse/parse.go`
-- [ ] T057 [US1] Implement AST construction respecting precedence (*, / before +, -) in `internal/parse/parse.go`
-- [ ] T058 [US1] Implement parentheses override for precedence in `internal/parse/parse.go`
+- [X] T055 [US1] Implement tokenizer (scan input into tokens: numbers, words, operators, blocks, parens) in `internal/parse/tokenize.go`
+- [X] T056 [US1] Implement parser with operator precedence (7 levels per contracts/math.md) in `internal/parse/parse.go`
+- [X] T057 [US1] Implement AST construction respecting precedence (*, / before +, -) in `internal/parse/parse.go`
+- [X] T058 [US1] Implement parentheses override for precedence in `internal/parse/parse.go`
 
 #### Error Context Capture
 

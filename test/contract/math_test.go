@@ -3,7 +3,9 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
+	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -185,16 +187,22 @@ func TestOperatorPrecedence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO: Parse and evaluate expression
-			// values := parse.Parse(tt.expr)
-			// result := eval.Eval(values)
+			// Parse expression
+			values, err := parse.Parse(tt.expr)
+			if err != nil {
+				t.Fatalf("Parse(%s) error: %v", tt.expr, err)
+			}
 
-			t.Skip("Parser not implemented yet - TDD: Test written FIRST")
+			// Evaluate parsed values
+			e := eval.NewEvaluator()
+			result, err := e.Do_Blk(values)
+			if err != nil {
+				t.Fatalf("Eval(%s) error: %v", tt.expr, err)
+			}
 
-			// When implemented:
-			// if !result.Equals(tt.expected) {
-			// 	t.Errorf("Eval(%s) = %v, want %v", tt.expr, result, tt.expected)
-			// }
+			if !result.Equals(tt.expected) {
+				t.Errorf("Eval(%s) = %v, want %v", tt.expr, result, tt.expected)
+			}
 		})
 	}
 }

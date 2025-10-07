@@ -11,6 +11,7 @@ package eval
 
 import (
 	"github.com/marcin-radoszewski/viro/internal/frame"
+	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/stack"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -125,13 +126,35 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 }
 
 // evalParen evaluates the contents of a paren and returns the result.
+// Special handling: if paren starts with a word that's a native, treat it as a function call.
 func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 	block, ok := val.AsBlock()
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
 	}
 
-	// Evaluate contents in sequence
+	// Check if this is a native function call pattern: (operator arg1 arg2)
+	if len(block.Elements) >= 3 && block.Elements[0].Type == value.TypeWord {
+		wordStr, ok := block.Elements[0].AsWord()
+		if ok {
+			if nativeFn, found := native.Lookup(wordStr); found {
+				// This is a native function call - evaluate arguments first
+				var args []value.Value
+				for i := 1; i < len(block.Elements); i++ {
+					arg, err := e.Do_Next(block.Elements[i])
+					if err != nil {
+						return value.NoneVal(), err
+					}
+					args = append(args, arg)
+				}
+
+				// Call the native function
+				return nativeFn(args)
+			}
+		}
+	}
+
+	// Otherwise, evaluate contents in sequence
 	return e.Do_Blk(block.Elements)
 }
 
@@ -140,6 +163,12 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 	wordStr, ok := val.AsWord()
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
+	}
+
+	// Check if it's a native function - if so, return the word itself
+	// (it will be called when it appears in function position)
+	if _, ok := native.Lookup(wordStr); ok {
+		return val, nil // Return the word itself, not evaluated yet
 	}
 
 	// Get current frame
