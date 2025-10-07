@@ -177,12 +177,12 @@ Single project structure (per plan.md):
 
 ### Contract Tests for User Story 2 (TDD - Write FIRST)
 
-- [ ] T070 [P] [US2] Contract test for `when` (single branch conditional) in `test/contract/control_test.go`
-- [ ] T071 [P] [US2] Contract test for `if` (both branches required) in `test/contract/control_test.go`
-- [ ] T072 [P] [US2] Contract test for `loop` (repeat N times) in `test/contract/control_test.go`
-- [ ] T073 [P] [US2] Contract test for `while` (condition-based loop) in `test/contract/control_test.go`
-- [ ] T074 [P] [US2] Contract test for truthy conversion (none/false→false, others→true) in `test/contract/control_test.go`
-- [ ] T075 [P] [US2] Contract test for comparison operators (<, >, <=, >=, =, <>) in `test/contract/math_test.go`
+- [X] T070 [P] [US2] Contract test for `when` (single branch conditional) in `test/contract/control_test.go`
+- [X] T071 [P] [US2] Contract test for `if` (both branches required) in `test/contract/control_test.go`
+- [X] T072 [P] [US2] Contract test for `loop` (repeat N times) in `test/contract/control_test.go`
+- [X] T073 [P] [US2] Contract test for `while` (condition-based loop) in `test/contract/control_test.go`
+- [X] T074 [P] [US2] Contract test for truthy conversion (none/false→false, others→true) in `test/contract/control_test.go`
+- [X] T075 [P] [US2] Contract test for comparison operators (<, >, <=, >=, =, <>) in `test/contract/math_test.go`
 
 ### Implementation for User Story 2
 
