@@ -30,27 +30,31 @@ Users can evaluate simple REBOL-style expressions in the REPL, including literal
 1. **Given** REPL is started, **When** user enters a literal value `42`, **Then** system evaluates and displays `42`
 2. **Given** REPL is started, **When** user enters a string `"hello"`, **Then** system evaluates and displays `"hello"`
 3. **Given** REPL is started, **When** user enters arithmetic expression `3 + 4`, **Then** system evaluates and displays `7`
-4. **Given** REPL is started, **When** user assigns `x: 10`, **Then** system stores the value and displays `10`
+4. **Given** REPL is started, **When** user enters `x: 10`, **Then** system stores the value and displays `10`
 5. **Given** variable `x` is bound to `10`, **When** user enters `x`, **Then** system retrieves and displays `10`
-6. **Given** user enters an undefined word, **When** evaluation occurs, **Then** system reports "no value" error with word name
+6. **Given** REPL is started, **When** user enters block `[1 + 2]`, **Then** system returns the block itself (deferred evaluation), displays `[1 + 2]`
+7. **Given** REPL is started, **When** user enters paren `(1 + 2)`, **Then** system evaluates contents immediately, displays `3`
+8. **Given** REPL is started, **When** user enters `3 + 4 * 2`, **Then** system evaluates with correct precedence (multiplication first) and displays `11` (not 14)
+9. **Given** user enters an undefined word, **When** evaluation occurs, **Then** system reports "no value" error with word name
 
 ---
 
 ### User Story 2 - Control Flow with Native Functions (Priority: P2)
 
-Users can use control flow constructs (`if`, `either`, `loop`) to make decisions and repeat operations. This enables basic programming logic and demonstrates the native function dispatch system is working.
+Users can use control flow constructs (`if`, `when`, `loop`) to make decisions and repeat operations. This enables basic programming logic and demonstrates the native function dispatch system is working.
 
 **Why this priority**: Control flow is essential for any useful program. It builds on P1's evaluator and adds native function evaluation, which is the next critical architecture layer. Users can now write simple programs, not just evaluate expressions.
 
-**Independent Test**: Can be fully tested by entering control flow expressions like `if true [print "yes"]`, `either 1 < 2 ["less"] ["greater"]`, and `loop 3 [print "hi"]`, verifying each executes correctly.
+**Independent Test**: Can be fully tested by entering control flow expressions like `when true [print "yes"]`, `if 1 < 2 ["less"] ["greater"]`, and `loop 3 [print "hi"]`, verifying each executes correctly.
 
 **Acceptance Scenarios**:
 
-1. **Given** REPL is running, **When** user enters `if true [print "yes"]`, **Then** system prints `yes`
-2. **Given** REPL is running, **When** user enters `if false [print "yes"]`, **Then** system prints nothing
-3. **Given** REPL is running, **When** user enters `either 1 < 2 ["less"] ["greater"]`, **Then** system evaluates and displays `"less"`
-4. **Given** REPL is running, **When** user enters `loop 3 [print "hi"]`, **Then** system prints `hi` three times
-5. **Given** control flow evaluates blocks, **When** nested expressions exist, **Then** system evaluates inner blocks recursively
+1. **Given** REPL is running, **When** user enters `when true [print "yes"]`, **Then** system prints `yes`
+2. **Given** REPL is running, **When** user enters `when false [print "yes"]`, **Then** system prints nothing (returns none)
+3. **Given** REPL is running, **When** user enters `if 1 < 2 ["less"] ["greater"]`, **Then** system evaluates and displays `"less"`
+4. **Given** REPL is running, **When** user enters `if false ["yes"] ["no"]`, **Then** system evaluates and displays `"no"`
+5. **Given** REPL is running, **When** user enters `loop 3 [print "hi"]`, **Then** system prints `hi` three times
+6. **Given** control flow evaluates blocks, **When** nested expressions exist, **Then** system evaluates inner blocks recursively
 
 ---
 
@@ -75,19 +79,22 @@ Users can create and manipulate series (blocks, strings) using native functions 
 
 ### User Story 4 - Function Definition and Calls (Priority: P4)
 
-Users can define custom functions and call them with arguments. This demonstrates the frame and context system is working, including argument binding and closure support.
+Users can define custom functions and call them with arguments, including bash-style refinements (--flag, --option). This demonstrates the frame and context system is working, including argument binding, refinement handling, and closure support. Functions use local-by-default scoping, preventing accidental modification of global state.
 
 **Why this priority**: User-defined functions require the frame system (variable scoping, argument binding) to be operational. This is a major architecture milestone that enables code reuse and abstraction.
 
-**Independent Test**: Can be fully tested by defining `square: func [n] [n * n]`, calling `square 5`, and verifying it returns `25`. Test with multiple arguments and nested calls.
+**Independent Test**: Can be fully tested by defining `square: fn [n] [n * n]`, calling `square 5`, and verifying it returns `25`. Test with multiple arguments, nested calls, local variable isolation, and refinements.
 
 **Acceptance Scenarios**:
 
-1. **Given** REPL is running, **When** user enters `square: func [n] [n * n]`, **Then** system creates function and binds it to `square`
+1. **Given** REPL is running, **When** user enters `square: fn [n] [n * n]`, **Then** system creates function and binds it to `square`
 2. **Given** function `square` is defined, **When** user enters `square 5`, **Then** system evaluates function body with `n` bound to `5` and displays `25`
-3. **Given** REPL is running, **When** user defines `add: func [a b] [a + b]` and calls `add 3 7`, **Then** system displays `10`
-4. **Given** functions can call other functions, **When** user defines nested function calls, **Then** system maintains proper stack frames and returns correct results
-5. **Given** function evaluation, **When** error occurs in function body, **Then** system reports error with function context
+3. **Given** REPL is running, **When** user defines `add: fn [a b] [a + b]` and calls `add 3 7`, **Then** system displays `10`
+4. **Given** functions use local variables, **When** user defines `counter: fn [] [x: 5  x]` and calls it, **Then** local variable `x` does not affect global context
+5. **Given** functions support refinements, **When** user defines `greet: fn [name --formal] [...]` and calls `greet "Alice" --formal`, **Then** `formal` is bound to `true` in function body
+6. **Given** functions support value refinements, **When** user defines `greet: fn [name --title []] [...]` and calls `greet "Bob" --title "Dr."`, **Then** `title` is bound to `"Dr."` in function body
+7. **Given** functions can call other functions, **When** user defines nested function calls, **Then** system maintains proper stack frames and returns correct results
+8. **Given** function evaluation, **When** error occurs in function body, **Then** system reports error with function context
 
 ---
 
@@ -147,12 +154,13 @@ Users can interact with the REPL using standard features: command history (up/do
 
 - **FR-001**: System MUST implement type-based dispatch that classifies values (words, functions, paths, literals) and routes them to appropriate evaluation handlers
 - **FR-002**: System MUST support recursive evaluation for nested blocks and parenthesized expressions
-- **FR-003**: System MUST evaluate expressions following REBOL semantics: literals evaluate to themselves, words evaluate to bound values, functions execute with arguments
+- **FR-003**: System MUST evaluate expressions following REBOL semantics: literals evaluate to themselves, words evaluate to bound values, functions execute with arguments, **blocks evaluate to themselves (deferred), parens evaluate their contents (immediate)**
 - **FR-004**: System MUST maintain evaluation index through block sequences, advancing after each expression evaluation
 
 #### Type System
 
-- **FR-005**: System MUST support primitive value types: integer, string, word, block, none, logic (true/false)
+- **FR-005**: System MUST support primitive value types: integer, string, word, block, paren, none, logic (true/false)
+- **FR-005a**: System MUST distinguish between block `[...]` (deferred evaluation - returns self) and paren `(...)` (immediate evaluation - evaluates contents and returns result)
 - **FR-006**: System MUST support function types: native functions (built-in) and user-defined functions
 - **FR-007**: System MUST distinguish between word types: word (evaluate), lit-word (quote), get-word (fetch), set-word (assign). Word identifiers are case-sensitive.
 - **FR-008**: System MUST implement type checking for function arguments according to type specifications
@@ -174,8 +182,8 @@ Users can interact with the REPL using standard features: command history (up/do
 #### Native Functions (Minimal Set ~50 functions)
 
 **Control Flow:**
-- **FR-017**: System MUST provide `if` function: `if condition [block]` - executes block if condition is true
-- **FR-018**: System MUST provide `either` function: `either condition [true-block] [false-block]` - conditional execution
+- **FR-017**: System MUST provide `when` function: `when condition [block]` - executes block if condition is true, returns none if false
+- **FR-018**: System MUST provide `if` function: `if condition [true-block] [false-block]` - conditional execution with both branches required
 - **FR-019**: System MUST provide `loop` function: `loop count [block]` - repeat block N times
 - **FR-020**: System MUST provide `while` function: `while [condition] [block]` - repeat while condition is true
 
@@ -185,12 +193,13 @@ Users can interact with the REPL using standard features: command history (up/do
 - **FR-023**: System MUST provide `type?` function: `type? value` - returns datatype of value
 
 **I/O Operations:**
-- **FR-024**: System MUST provide `print` function: `print value` - outputs value to standard output
+- **FR-024**: System MUST provide `print` function: `print value` - outputs value to standard output. If value is a block, print MUST reduce it (evaluate each element) and join results with spaces, enabling string interpolation (e.g., `print ["Hello" name]` with name="Alice" outputs "Hello Alice")
 - **FR-025**: System MUST provide `input` function: `input` - reads line from standard input
 
 **Math Operations:**
-- **FR-026**: System MUST provide arithmetic operators: `+`, `-`, `*`, `/` for integer and decimal arithmetic
-- **FR-027**: System MUST provide comparison operators: `<`, `>`, `<=`, `>=`, `=`, `<>` (not equal)
+- **FR-026**: System MUST provide arithmetic operators: `+`, `-`, `*`, `/` for **integer arithmetic only** (Phase 1 scope - decimal/floating-point arithmetic deferred to Phase 2)
+- **FR-026a**: System MUST implement **traditional operator precedence** (not REBOL's left-to-right): multiplication/division before addition/subtraction, comparisons before equality, logical AND before OR. Example: `3 + 4 * 2` must evaluate to `11` (not 14). See contracts/math.md for complete precedence table.
+- **FR-027**: System MUST provide comparison operators: `<`, `>`, `<=`, `>=`, `=`, `<>` (not equal) - **integer operands only in Phase 1**
 - **FR-028**: System MUST provide logic operators: `and`, `or`, `not`
 
 **Series Operations:**
@@ -201,7 +210,12 @@ Users can interact with the REPL using standard features: command history (up/do
 - **FR-033**: System MUST provide `length?` function: returns number of elements in series
 
 **Function Definition:**
-- **FR-034**: System MUST provide `func` function: `func [args] [body]` - creates user-defined function with argument list and body block
+- **FR-034**: System MUST provide `fn` function: `fn [args] [body]` - creates user-defined function with argument list and body block
+- **FR-034a**: Function parameters MUST be local to function scope (automatically bound in function frame)
+- **FR-034b**: All words used in function body MUST be local by default (bound in function frame). Words are NOT globally scoped unless explicitly set via global context before function definition.
+- **FR-034c**: Functions MUST NOT modify global variables unless the global word was explicitly captured at function definition time
+- **FR-034d**: System MUST support bash-style refinements: `--flag` for boolean flags, `--option []` for options accepting values
+- **FR-034e**: Refinements MUST be distinguishable at definition: empty block `[]` means accepts value, no block means boolean flag. Refinements can be mixed with positional arguments during function call.
 
 #### Error Handling
 
@@ -217,7 +231,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 - **FR-042**: System MUST provide interactive Read-Eval-Print Loop that accepts user input, evaluates expressions, and displays results
 - **FR-043**: REPL MUST display prompt indicating ready state (e.g., `>>`)
-- **FR-044**: REPL MUST display results of expression evaluation on separate line
+- **FR-044**: REPL MUST display results of expression evaluation on separate line prefixed with `=>`, **except when result is none** (none results are suppressed to reduce visual clutter)
 - **FR-045**: REPL MUST support multi-line input for incomplete expressions, showing continuation prompt (e.g., `...`)
 - **FR-046**: REPL MUST maintain command history accessible via up/down arrow keys
 - **FR-047**: REPL MUST support exit commands (`quit`, `exit`) to terminate session
@@ -233,7 +247,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 - **Word**: Symbolic identifier that references a value in a context. Four forms: word (evaluate), lit-word (quote), get-word (fetch), set-word (assign). Bound to frame during evaluation. Case-sensitive: `x` and `X` are distinct identifiers.
 
-- **Function**: Executable entity with argument specification and body block. Native functions are built-in, user functions are created via `func`. Contains formal parameter list, body block, and optional type constraints.
+- **Function**: Executable entity with argument specification and body block. Native functions are built-in, user functions are created via `fn`. Contains formal parameter list, body block, and optional type constraints.
 
 - **Frame**: Variable storage container. Maps word symbols to values. Created for function calls (local variables + arguments), objects (deferred), and modules (deferred). Includes word list and value list.
 
