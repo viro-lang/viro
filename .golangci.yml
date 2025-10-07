@@ -1,0 +1,28 @@
+# golangci-lint configuration for Viro Core Interpreter
+# Go 1.21+ project with strict quality requirements
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    # Code quality
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Go vet
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Static analysis
+    - unused        # Check for unused code
+    
+    # Style and formatting
+    - gofmt         # Enforce gofmt formatting
+    - goimports     # Enforce import ordering
+    
+    # Best practices
+    - gocritic      # Comprehensive Go linter
+    - misspell      # Check spelling
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
