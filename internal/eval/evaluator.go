@@ -1,0 +1,144 @@
+// Package eval provides the core evaluation engine for Viro.
+//
+// Architecture:
+// - Evaluator struct holds the stack and execution state
+// - Do_Next evaluates a single value
+// - Do_Blk evaluates a block of values in sequence
+// - Type-based dispatch routes evaluation by value type
+//
+// Per Constitution Principle III: Explicit type dispatch, no polymorphism.
+package eval
+
+import (
+	"github.com/marcin-radoszewski/viro/internal/frame"
+	"github.com/marcin-radoszewski/viro/internal/stack"
+	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
+)
+
+// Evaluator is the core evaluation engine.
+//
+// Design per Constitution Principle IV: Index-based access to stack/frames.
+// Stack holds both data and frames in a unified structure.
+type Evaluator struct {
+	Stack  *stack.Stack
+	Frames []*frame.Frame
+}
+
+// NewEvaluator creates a new evaluation engine with an empty stack.
+func NewEvaluator() *Evaluator {
+	return &Evaluator{
+		Stack:  &stack.Stack{Data: make([]value.Value, 0, 1024)},
+		Frames: make([]*frame.Frame, 0, 64),
+	}
+}
+
+// Do_Next evaluates a single value and returns the result.
+//
+// Contract per data-model.md §3:
+// - Integers, strings, logic, none: Return self (literals)
+// - Blocks [...]: Return self (deferred evaluation)
+// - Parens (...): Evaluate contents and return result
+// - Words: Look up in frame and evaluate result
+// - Set-words (word:): Bind next value
+// - Get-words (:word): Fetch value without evaluation
+// - Lit-words ('word): Return word as-is
+//
+// Returns the evaluated value and any error encountered.
+func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
+	// Type-based dispatch per Constitution Principle III
+	switch val.Type {
+	case value.TypeInteger, value.TypeString, value.TypeLogic, value.TypeNone:
+		// Literals evaluate to themselves
+		return val, nil
+
+	case value.TypeBlock:
+		// Blocks return self (deferred evaluation)
+		return val, nil
+
+	case value.TypeParen:
+		// Parens evaluate contents
+		return e.evalParen(val)
+
+	case value.TypeWord:
+		// Words look up in frame
+		return e.evalWord(val)
+
+	case value.TypeSetWord:
+		// Set-words bind next value (not implemented yet)
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word evaluation not implemented", "", ""})
+
+	case value.TypeGetWord:
+		// Get-words fetch without evaluation (not implemented yet)
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"get-word evaluation not implemented", "", ""})
+
+	case value.TypeLitWord:
+		// Lit-words return as word
+		// Extract the word symbol and return as a word
+		return value.WordVal(val.Payload.(string)), nil
+
+	case value.TypeFunction:
+		// Functions return self (they're values)
+		return val, nil
+
+	default:
+		return value.NoneVal(), verror.NewInternalError("unknown value type in Do_Next", [3]string{})
+	}
+}
+
+// Do_Blk evaluates a block of values in sequence.
+//
+// Contract per data-model.md §3: Evaluates each value left-to-right.
+// Returns the last result, or none if block is empty.
+func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
+	if len(vals) == 0 {
+		return value.NoneVal(), nil
+	}
+
+	var result value.Value
+	var err *verror.Error
+
+	for _, val := range vals {
+		result, err = e.Do_Next(val)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+	}
+
+	return result, nil
+}
+
+// evalParen evaluates the contents of a paren and returns the result.
+func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
+	block, ok := val.AsBlock()
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
+	}
+
+	// Evaluate contents in sequence
+	return e.Do_Blk(block.Elements)
+}
+
+// evalWord looks up a word in the current frame and evaluates the result.
+func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
+	wordStr, ok := val.AsWord()
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
+	}
+
+	// Get current frame
+	if len(e.Frames) == 0 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+	}
+
+	currentFrame := e.Frames[len(e.Frames)-1]
+
+	// Look up word in frame
+	result, ok := currentFrame.Get(wordStr)
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+	}
+
+	// Evaluate the result (words evaluate to their values, then re-evaluate)
+	return e.Do_Next(result)
+}
