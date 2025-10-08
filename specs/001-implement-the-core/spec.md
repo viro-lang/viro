@@ -310,8 +310,8 @@ The following features are explicitly **not** included in this phase and will be
 - **Advanced math**: Trigonometric functions, logarithms, advanced numerical operations
 - **Decimal numbers**: Floating-point arithmetic (integers only in this phase)
 - **Date/time**: Date and time datatypes and operations
-- **Path expressions**: Path navigation through nested structures (`object/field`)
-- **Refinements**: Function refinements for optional parameters (`func/refine`)
+- **Path expressions**: Path navigation through nested structures (`object.field`)
+- **Refinements**: Function refinements for optional parameters (`func --refine`)
 - **Advanced series**: Skip, take, copy, find, and other complex series operations beyond basic first/last/append/insert
 - **Port system**: Asynchronous I/O and port abstraction
 - **Reflection**: Runtime introspection of function signatures, stack inspection
