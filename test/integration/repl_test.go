@@ -39,3 +39,38 @@ func TestREPL_ErrorRecovery(t *testing.T) {
 		t.Fatalf("expected successful evaluation after error, got %q", output)
 	}
 }
+
+func TestREPL_StatePreservedAfterError(t *testing.T) {
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	loop.EvalLineForTest("x: 10")
+	if output := out.String(); !strings.Contains(output, "10") {
+		t.Fatalf("expected assignment result to include 10, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("1 / 0")
+	if output := out.String(); !strings.Contains(output, "** Math Error") {
+		t.Fatalf("expected math error header, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("x")
+	if output := out.String(); !strings.Contains(output, "10") {
+		t.Fatalf("expected x to retain value 10 after error, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("x: x + 5")
+	if output := out.String(); !strings.Contains(output, "15") {
+		t.Fatalf("expected reassignment result to include 15, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("x")
+	if output := out.String(); !strings.Contains(output, "15") {
+		t.Fatalf("expected x to reflect updated value 15, got %q", output)
+	}
+}

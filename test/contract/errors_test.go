@@ -109,6 +109,36 @@ func TestErrors_TypeMismatch(t *testing.T) {
 	}
 }
 
+func TestErrors_MathTypeMismatch(t *testing.T) {
+	e := eval.NewEvaluator()
+	_, err := evaluateString(t, e, "10 + \"oops\"")
+
+	if err == nil {
+		t.Fatalf("expected error but got none")
+	}
+
+	if err.Category != verror.ErrScript {
+		t.Fatalf("expected script error, got %v", err.Category)
+	}
+
+	if err.ID != verror.ErrIDTypeMismatch {
+		t.Fatalf("expected type-mismatch error, got %s", err.ID)
+	}
+
+	expectedMessage := "Type mismatch for '+': expected integer, got string"
+	if err.Message != expectedMessage {
+		t.Fatalf("unexpected message: %s", err.Message)
+	}
+
+	if !strings.Contains(err.Near, "10") || !strings.Contains(err.Near, "+") || !strings.Contains(err.Near, "oops") {
+		t.Fatalf("near context should include expression tokens, got %q", err.Near)
+	}
+
+	if len(err.Where) == 0 || err.Where[len(err.Where)-1] != "(top level)" {
+		t.Fatalf("expected call stack to include (top level), got %v", err.Where)
+	}
+}
+
 func TestErrors_ArgumentCount(t *testing.T) {
 	e := eval.NewEvaluator()
 

@@ -324,13 +324,13 @@ Single project structure (per plan.md):
 
 - [X] T135 [US5] Implement error display in REPL (format with category, message, Near, Where) in `cmd/viro/repl.go`
 - [X] T136 [US5] Implement REPL error recovery (catch error, display, continue loop) in `cmd/viro/repl.go`
-- [ ] T137 [US5] Implement state preservation after errors (maintain global context) in `cmd/viro/repl.go`
+- [X] T137 [US5] Implement state preservation after errors (maintain global context) in `cmd/viro/repl.go`
 
 #### Error Validation
 
-- [ ] T138 [P] [US5] Implement undefined word error generation in word evaluation in `internal/eval/eval.go`
-- [ ] T139 [P] [US5] Implement type mismatch error generation in natives in `internal/native/*.go`
-- [ ] T140 [P] [US5] Implement syntax error generation in parser in `internal/parse/parse.go`
+- [X] T138 [P] [US5] Implement undefined word error generation in word evaluation in `internal/eval/eval.go`
+- [X] T139 [P] [US5] Implement type mismatch error generation in natives in `internal/native/*.go`
+- [X] T140 [P] [US5] Implement syntax error generation in parser in `internal/parse/parse.go`
 
 **Checkpoint**: User Stories 1-5 complete - robust error handling with clear messages and REPL stability
 
