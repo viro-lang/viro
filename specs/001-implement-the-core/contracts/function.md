@@ -75,10 +75,9 @@ counter         → 0 (global unchanged)
 
 ; Refinements - flag only
 verbose-print: fn [msg --verbose] [
-    when verbose [
+    if verbose [
         print ["[INFO]" msg]
-    ]
-    when not verbose [
+    ] [
         print msg
     ]
 ]
