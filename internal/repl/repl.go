@@ -1,3 +1,26 @@
+// Package repl implements the Read-Eval-Print Loop for Viro.
+//
+// The REPL provides an interactive interface for evaluating Viro expressions.
+// It uses the github.com/chzyer/readline library for command history, line
+// editing, and multi-line input support.
+//
+// Features:
+//   - Command history: Persistent across sessions (~/.viro_history)
+//   - Multi-line input: Automatic detection of incomplete expressions
+//   - Error recovery: Displays error and continues accepting input
+//   - Interrupts: Ctrl+C cancels evaluation without exiting
+//   - Exit commands: 'quit', 'exit', or Ctrl+D
+//
+// The REPL loop:
+//   1. Read: Get input line (with history/editing)
+//   2. Parse: Convert text to values
+//   3. Eval: Execute via evaluator
+//   4. Print: Display result (suppress 'none')
+//   5. Loop: Repeat until exit
+//
+// Prompt modes:
+//   - `>> `: Ready for new input
+//   - `.. `: Continuation line (incomplete expression)
 package repl
 
 import (

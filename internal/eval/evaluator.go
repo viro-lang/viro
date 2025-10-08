@@ -7,6 +7,18 @@
 // - Type-based dispatch routes evaluation by value type
 //
 // Per Constitution Principle III: Explicit type dispatch, no polymorphism.
+// Package eval implements the core evaluation engine for the Viro interpreter.
+//
+// The evaluator uses type-based dispatch to evaluate REBOL-style expressions.
+// It supports literals, words, functions, blocks, and parens with proper
+// operator precedence and scoping rules.
+//
+// Key functions:
+//   - Do_Next: Evaluate a single value based on its type
+//   - Do_Blk: Evaluate a sequence of values (block)
+//
+// The evaluator maintains a stack for data and frames, providing lexical
+// scoping for variables and functions.
 package eval
 
 import (

@@ -1,3 +1,20 @@
+// Package verror provides structured error handling for the Viro interpreter.
+//
+// Errors are categorized into ranges (0, 100, 200, 300, 400, 500, 900) to
+// distinguish between syntax errors, script errors, math errors, access errors,
+// user errors, and internal errors.
+//
+// Each error includes:
+//   - Category: Error type (syntax, script, math, access, user, internal)
+//   - Code: Specific error code within category
+//   - ID: String identifier for the error
+//   - Args: Up to 3 arguments for message interpolation
+//   - Near: Expression context showing where the error occurred
+//   - Where: Call stack location
+//   - Message: Formatted error message
+//
+// Error factory functions (NewSyntaxError, NewScriptError, etc.) provide
+// convenient error creation with proper categorization.
 package verror
 
 import (

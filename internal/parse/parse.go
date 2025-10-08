@@ -13,6 +13,26 @@
 // 5. = <> (left associative)
 // 6. and (left associative)
 // 7. or (left associative)
+// Package parse converts text input into Value structures for evaluation.
+//
+// The parser implements a two-stage process:
+//   1. Tokenization: Text → Tokens (lexical analysis)
+//   2. Parsing: Tokens → Values with operator precedence
+//
+// Operator precedence (7 levels, highest to lowest):
+//   1. Function calls
+//   2. Unary negation (-)
+//   3. Multiplication and division (*, /)
+//   4. Addition and subtraction (+, -)
+//   5. Comparisons (<, >, <=, >=)
+//   6. Equality (=, <>)
+//   7. Logic (and, or)
+//
+// The parser transforms infix notation (3 + 4) into prefix notation ((+ 3 4))
+// for evaluation. Parentheses override precedence by forcing immediate evaluation.
+//
+// Key difference from REBOL: Viro uses mathematical operator precedence,
+// while REBOL uses strict left-to-right evaluation with no precedence.
 package parse
 
 import (

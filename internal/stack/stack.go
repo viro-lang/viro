@@ -1,5 +1,21 @@
 // Package stack implements the unified stack for data and frames.
 // All stack access uses integer indices (not pointers) per Constitution Principle IV.
+// Package stack provides unified stack management for the Viro interpreter.
+//
+// The stack stores both data values and frame markers. It uses index-based
+// access (not pointers) to ensure safety during stack growth/reallocation.
+//
+// Features:
+//   - Automatic expansion using Go slice growth
+//   - Push/Pop operations for values
+//   - Get/Set operations for index-based access
+//   - Frame markers to track activation records
+//
+// The stack grows automatically when capacity is exceeded, with expansion
+// being transparent to callers (under 1ms per operation).
+//
+// Constitution Principle IV compliance: All access is index-based, never
+// pointer-based, to avoid invalidation on reallocation.
 package stack
 
 import (

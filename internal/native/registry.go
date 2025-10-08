@@ -1,7 +1,22 @@
-// Package native provides a registry of all native functions.
+// Package native provides built-in native functions for the Viro interpreter.
 //
-// Natives are built-in functions implemented in Go.
-// The registry maps word symbols to native implementations.
+// Native functions are implemented in Go and registered in the global Registry.
+// They are invoked by the evaluator when a function value with native type
+// is called.
+//
+// Categories:
+//   - Math: +, -, *, /, <, >, <=, >=, =, <>, and, or, not
+//   - Control: when, if, loop, while
+//   - Series: first, last, append, insert, length?
+//   - Data: set, get, type?
+//   - Function: fn (function definition)
+//   - I/O: print, input
+//
+// Native types:
+//   - Simple natives (NativeFunc): Don't need evaluator access
+//   - Eval natives (NativeFuncWithEval): Need evaluator for code evaluation
+//
+// All natives are registered in the Registry map with metadata (arity, eval requirement).
 package native
 
 import (

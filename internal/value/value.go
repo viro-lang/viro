@@ -1,3 +1,21 @@
+// Package value defines the core value types for the Viro interpreter.
+//
+// All data in Viro is represented using the Value type, which is a type-tagged
+// union. The Type field discriminates between different value types, and the
+// Payload field holds the type-specific data.
+//
+// Value types:
+//   - None: Represents absence of value
+//   - Logic: Boolean true/false
+//   - Integer: 64-bit signed integers
+//   - String: Character sequences (runes)
+//   - Word types: word, set-word, get-word, lit-word
+//   - Block: Series of values (deferred evaluation)
+//   - Paren: Series of values (immediate evaluation)
+//   - Function: Native or user-defined functions
+//
+// Constructor functions (IntVal, StrVal, etc.) provide type-safe value creation.
+// Type assertion helpers (AsInteger, AsString, etc.) enable safe payload access.
 package value
 
 import "fmt"

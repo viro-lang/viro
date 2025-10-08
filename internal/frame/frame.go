@@ -1,5 +1,22 @@
 // Package frame implements the variable binding system for Viro.
 // Frames map word symbols to values, supporting local-by-default scoping.
+// Package frame implements variable binding contexts for the Viro interpreter.
+//
+// Frames provide lexical scoping by maintaining word-to-value bindings.
+// Each function call creates a new frame with its own bindings, and frames
+// are linked via parent pointers to support closure semantics.
+//
+// Frame types:
+//   - FrameFunctionArgs: Function parameter bindings
+//   - FrameClosure: Closure variable capture
+//
+// Operations:
+//   - Bind: Create new word-to-value binding
+//   - Get: Lookup value, traversing parent chain
+//   - Set: Update existing binding
+//   - HasWord: Check if word is bound
+//
+// Viro uses local-by-default scoping (differs from REBOL's global-by-default).
 package frame
 
 import (

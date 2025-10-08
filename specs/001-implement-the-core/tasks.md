@@ -422,17 +422,17 @@ Single project structure (per plan.md):
 
 ### Documentation & Build
 
-- [ ] T182 [P] [POLISH] Update `docs/interpreter.md` with architecture overview
-- [ ] T183 [P] [POLISH] Create build instructions in `specs/001-implement-the-core/quickstart.md`
-- [ ] T184 [P] [POLISH] Create REPL usage examples with all features
-- [ ] T185 [P] [POLISH] Document operator precedence table for users
-- [ ] T186 [P] [POLISH] Document local-by-default scoping vs REBOL differences
+- [X] T182 [P] [POLISH] Update `docs/interpreter.md` with architecture overview
+- [X] T183 [P] [POLISH] Create build instructions in `specs/001-implement-the-core/quickstart.md`
+- [X] T184 [P] [POLISH] Create REPL usage examples with all features
+- [X] T185 [P] [POLISH] Document operator precedence table for users
+- [X] T186 [P] [POLISH] Document local-by-default scoping vs REBOL differences
 
 ### Code Quality
 
 - [ ] T187 [POLISH] Run golangci-lint and fix issues across all packages
 - [X] T188 [POLISH] Run gofmt across all Go files
-- [ ] T189 [POLISH] Add package-level documentation comments
+- [X] T189 [POLISH] Add package-level documentation comments
 - [ ] T190 [POLISH] Review and refactor for code duplication
 - [ ] T191 [POLISH] Optimize hot paths identified by profiling
 
@@ -441,9 +441,9 @@ Single project structure (per plan.md):
 - [X] T192 [POLISH] Run all contract tests (verify 100% pass)
 - [X] T193 [POLISH] Run all integration tests (verify 100% pass)
 - [ ] T194 [POLISH] Run quickstart.md validation (manual REPL testing)
-- [ ] T195 [POLISH] Verify constitution compliance (all 7 principles)
+- [X] T195 [POLISH] Verify constitution compliance (all 7 principles)
 - [ ] T196 [POLISH] Code review and architectural validation
-- [ ] T197 [POLISH] Create release notes for v1.0.0
+- [X] T197 [POLISH] Create release notes for v1.0.0
 
 ---
 
