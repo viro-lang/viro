@@ -79,7 +79,7 @@ viro/
 │   │   ├── binding.go      # Bind/get/set operations
 │   │   └── types.go        # Frame types: function args, closures
 │   ├── native/             # Native function implementations
-│   │   ├── control.go      # if, either, loop, while
+│   │   ├── control.go      # if, when, loop, while
 │   │   ├── data.go         # set, get, type?
 │   │   ├── io.go           # print, input
 │   │   ├── math.go         # +, -, *, /, <, >, =, and, or, not
@@ -157,7 +157,7 @@ No violations detected. All constitutional principles are satisfied by the curre
 **Design Artifacts**:
 - `data-model.md`: Complete entity definitions for 9 core entities (Value, Block, Paren, Word, Function, Frame, Stack, Error, Series) with fields, validation rules, state transitions, relationships, and data flow examples
 - `contracts/README.md`: Overview of 28 native functions organized by category
-- `contracts/control-flow.md`: Contracts for if, either, loop, while
+- `contracts/control-flow.md`: Contracts for if, when, loop, while
 - `contracts/data.md`: Contracts for set, get, type?
 - `contracts/io.md`: Contracts for print, input
 - `contracts/math.md`: Contracts for +, -, *, /, <, >, <=, >=, =, <>, and, or, not
@@ -213,7 +213,7 @@ specs/001-implement-the-core/
 ├── quickstart.md        ✅ Build, run, test guide
 └── contracts/           ✅ Native function specifications
     ├── README.md        ✅ Overview (28 natives)
-    ├── control-flow.md  ✅ if, either, loop, while
+    ├── control-flow.md  ✅ if, when, loop, while
     ├── data.md          ✅ set, get, type?
     ├── io.md            ✅ print, input
     ├── math.md          ✅ 13 math/logic operations

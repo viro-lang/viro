@@ -153,7 +153,7 @@ type? none       → none!
 ```viro
 ; Type checking in code
 value: 42
-either (type? value) = 'integer! [
+if type? value = 'integer! [
     print "It's an integer"
 ] [
     print "It's something else"
@@ -226,7 +226,7 @@ square 5  → 25
 
 ; Type checking in control flow
 check-type: fn [val] [
-    either (type? val) = 'integer! [
+    if type? val = 'integer! [
         print "integer"
     ] [
         print "not integer"
