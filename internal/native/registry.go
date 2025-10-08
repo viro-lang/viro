@@ -64,6 +64,10 @@ func init() {
 	Registry["get"] = &NativeInfo{FuncEval: Get, NeedsEval: true, Arity: 1}
 	Registry["type?"] = &NativeInfo{Func: TypeQ, NeedsEval: false, Arity: 1}
 
+	// Register IO natives
+	Registry["print"] = &NativeInfo{FuncEval: Print, NeedsEval: true, Arity: 1}
+	Registry["input"] = &NativeInfo{Func: Input, NeedsEval: false, Arity: 0}
+
 	// Register function native
 	Registry["fn"] = &NativeInfo{FuncEval: Fn, NeedsEval: true, Arity: 2}
 

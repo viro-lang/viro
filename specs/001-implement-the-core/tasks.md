@@ -379,9 +379,9 @@ Single project structure (per plan.md):
 
 #### I/O Natives
 
-- [ ] T159 [P] [US6] Implement native `print` (output value, reduce blocks, join with spaces) in `internal/native/io.go`
-- [ ] T160 [P] [US6] Implement native `input` (read line from stdin) in `internal/native/io.go`
-- [ ] T161 [US6] Register I/O natives in native dispatcher in `internal/native/registry.go`
+- [X] T159 [P] [US6] Implement native `print` (output value, reduce blocks, join with spaces) in `internal/native/io.go`
+- [X] T160 [P] [US6] Implement native `input` (read line from stdin) in `internal/native/io.go`
+- [X] T161 [US6] Register I/O natives in native dispatcher in `internal/native/registry.go`
 
 **Checkpoint**: All user stories 1-6 complete - Viro Core Interpreter fully functional with interactive REPL
 
