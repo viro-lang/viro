@@ -74,3 +74,73 @@ func TestREPL_StatePreservedAfterError(t *testing.T) {
 		t.Fatalf("expected x to reflect updated value 15, got %q", output)
 	}
 }
+
+func TestREPL_CommandHistory(t *testing.T) {
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	commands := []string{
+		"alpha: 1",
+		"beta: alpha + 2",
+		"beta",
+	}
+
+	for _, cmd := range commands {
+		loop.EvalLineForTest(cmd)
+		out.Reset()
+	}
+
+	history := loop.HistoryEntries()
+	if len(history) != len(commands) {
+		t.Fatalf("expected %d history entries, got %d", len(commands), len(history))
+	}
+
+	for i, cmd := range commands {
+		if history[i] != cmd {
+			t.Fatalf("history entry %d mismatch: expected %q got %q", i, cmd, history[i])
+		}
+	}
+
+	entry, ok := loop.HistoryUp()
+	if !ok || entry != commands[2] {
+		t.Fatalf("first history up should return %q, got %q (ok=%v)", commands[2], entry, ok)
+	}
+
+	entry, ok = loop.HistoryUp()
+	if !ok || entry != commands[1] {
+		t.Fatalf("second history up should return %q, got %q (ok=%v)", commands[1], entry, ok)
+	}
+
+	entry, ok = loop.HistoryUp()
+	if !ok || entry != commands[0] {
+		t.Fatalf("third history up should return %q, got %q (ok=%v)", commands[0], entry, ok)
+	}
+
+	entry, ok = loop.HistoryUp()
+	if !ok || entry != commands[0] {
+		t.Fatalf("additional history up should stay on first command %q, got %q (ok=%v)", commands[0], entry, ok)
+	}
+
+	entry, ok = loop.HistoryDown()
+	if !ok || entry != commands[1] {
+		t.Fatalf("history down should return %q, got %q (ok=%v)", commands[1], entry, ok)
+	}
+
+	entry, ok = loop.HistoryDown()
+	if !ok || entry != commands[2] {
+		t.Fatalf("history down should return %q, got %q (ok=%v)", commands[2], entry, ok)
+	}
+
+	entry, ok = loop.HistoryDown()
+	if ok || entry != "" {
+		t.Fatalf("history down at end should signal empty input, got %q (ok=%v)", entry, ok)
+	}
+
+	loop.EvalLineForTest("gamma: beta + 5")
+	out.Reset()
+	entry, ok = loop.HistoryUp()
+	if !ok || entry != "gamma: beta + 5" {
+		t.Fatalf("after new command, history up should return latest entry, got %q (ok=%v)", entry, ok)
+	}
+}

@@ -21,9 +21,11 @@ import (
 // - Print: Display results (suppress none per FR-044)
 // - Loop: Repeat until exit command
 type REPL struct {
-	evaluator *eval.Evaluator
-	rl        *readline.Instance
-	out       io.Writer
+	evaluator     *eval.Evaluator
+	rl            *readline.Instance
+	out           io.Writer
+	history       []string
+	historyCursor int
 }
 
 // NewREPL creates a new REPL instance.
@@ -40,9 +42,11 @@ func NewREPL() (*REPL, error) {
 	}
 
 	return &REPL{
-		evaluator: eval.NewEvaluator(),
-		rl:        rl,
-		out:       os.Stdout,
+		evaluator:     eval.NewEvaluator(),
+		rl:            rl,
+		out:           os.Stdout,
+		history:       []string{},
+		historyCursor: 0,
 	}, nil
 }
 
@@ -55,9 +59,11 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 		out = io.Discard
 	}
 	return &REPL{
-		evaluator: e,
-		rl:        nil,
-		out:       out,
+		evaluator:     e,
+		rl:            nil,
+		out:           out,
+		history:       []string{},
+		historyCursor: 0,
 	}
 }
 
@@ -90,6 +96,8 @@ func (r *REPL) Run() error {
 			continue
 		}
 
+		r.recordHistory(line)
+
 		// Check for exit commands
 		if line == "exit" || line == "quit" {
 			fmt.Fprintln(r.out, "Goodbye!")
@@ -106,7 +114,12 @@ func (r *REPL) EvalLineForTest(input string) {
 	if r == nil {
 		return
 	}
-	r.evalAndPrint(strings.TrimSpace(input))
+	line := strings.TrimSpace(input)
+	if line == "" {
+		return
+	}
+	r.recordHistory(line)
+	r.evalAndPrint(line)
 }
 
 // evalAndPrint parses, evaluates, and displays the result of an input line.
@@ -199,4 +212,70 @@ func (r *REPL) printError(err *verror.Error) {
 		return
 	}
 	fmt.Fprintln(r.out, verror.FormatErrorWithContext(err))
+}
+
+// HistoryEntries returns a copy of the recorded command history.
+func (r *REPL) HistoryEntries() []string {
+	if r == nil {
+		return nil
+	}
+	entries := make([]string, len(r.history))
+	copy(entries, r.history)
+	return entries
+}
+
+// HistoryUp moves the history cursor upward (towards older commands) and returns the entry.
+func (r *REPL) HistoryUp() (string, bool) {
+	if r == nil || len(r.history) == 0 {
+		return "", false
+	}
+	if r.historyCursor > 0 {
+		r.historyCursor--
+	} else if r.historyCursor == 0 {
+		// stay at first entry
+	} else {
+		// cursor beyond end, step to last entry
+		r.historyCursor = len(r.history) - 1
+	}
+	return r.history[r.historyCursor], true
+}
+
+// HistoryDown moves the history cursor downward (towards newer commands).
+// When reaching the end, it returns an empty string and false to indicate fresh input.
+func (r *REPL) HistoryDown() (string, bool) {
+	if r == nil || len(r.history) == 0 {
+		return "", false
+	}
+	last := len(r.history) - 1
+	switch {
+	case r.historyCursor < last:
+		r.historyCursor++
+		return r.history[r.historyCursor], true
+	case r.historyCursor == last:
+		r.historyCursor = len(r.history)
+		return "", false
+	case r.historyCursor > len(r.history):
+		r.historyCursor = len(r.history)
+		fallthrough
+	default:
+		return "", false
+	}
+}
+
+func (r *REPL) recordHistory(entry string) {
+	if r == nil {
+		return
+	}
+	trimmed := strings.TrimSpace(entry)
+	if trimmed == "" {
+		r.historyCursor = len(r.history)
+		return
+	}
+	r.history = append(r.history, trimmed)
+	r.historyCursor = len(r.history)
+	if r.rl != nil {
+		if err := r.rl.SaveHistory(trimmed); err != nil {
+			// Saving history is best-effort; ignore errors for now.
+		}
+	}
 }
