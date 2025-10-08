@@ -1,9 +1,12 @@
 package repl
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/chzyer/readline"
@@ -16,6 +19,8 @@ import (
 const (
 	primaryPrompt      = ">> "
 	continuationPrompt = "... "
+	historyEnvVar      = "VIRO_HISTORY_FILE"
+	historyFileName    = ".viro_history"
 )
 
 // REPL implements a Read-Eval-Print-Loop for Viro.
@@ -34,22 +39,25 @@ type REPL struct {
 	pendingLines   []string
 	awaitingCont   bool
 	shouldContinue bool
+	historyPath    string
 }
 
 // NewREPL creates a new REPL instance.
 func NewREPL() (*REPL, error) {
+	historyPath := resolveHistoryPath(true)
 	// Create readline instance with prompt
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          primaryPrompt,
-		HistoryFile:     "", // TODO: Add history file in home directory
-		InterruptPrompt: "^C",
-		EOFPrompt:       "exit",
+		Prompt:                 primaryPrompt,
+		HistoryFile:            historyPath,
+		DisableAutoSaveHistory: true,
+		InterruptPrompt:        "^C",
+		EOFPrompt:              "exit",
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &REPL{
+	repl := &REPL{
 		evaluator:      eval.NewEvaluator(),
 		rl:             rl,
 		out:            os.Stdout,
@@ -58,7 +66,10 @@ func NewREPL() (*REPL, error) {
 		pendingLines:   nil,
 		awaitingCont:   false,
 		shouldContinue: true,
-	}, nil
+		historyPath:    historyPath,
+	}
+	repl.loadPersistentHistory()
+	return repl, nil
 }
 
 // NewREPLForTest creates a REPL with injected evaluator and writer for testing purposes.
@@ -69,7 +80,8 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 	if out == nil {
 		out = io.Discard
 	}
-	return &REPL{
+	historyPath := resolveHistoryPath(false)
+	repl := &REPL{
 		evaluator:      e,
 		rl:             nil,
 		out:            out,
@@ -78,7 +90,10 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 		pendingLines:   nil,
 		awaitingCont:   false,
 		shouldContinue: true,
+		historyPath:    historyPath,
 	}
+	repl.loadPersistentHistory()
+	return repl
 }
 
 // Run starts the REPL loop.
@@ -327,11 +342,7 @@ func (r *REPL) recordHistory(entry string) {
 	}
 	r.history = append(r.history, trimmed)
 	r.historyCursor = len(r.history)
-	if r.rl != nil {
-		if err := r.rl.SaveHistory(trimmed); err != nil {
-			// Saving history is best-effort; ignore errors for now.
-		}
-	}
+	r.persistHistoryLine(trimmed)
 }
 
 func (r *REPL) setPrompt(prompt string) {
@@ -401,6 +412,91 @@ func (r *REPL) ResetForTest() {
 // SimulateInterruptForTest emulates a Ctrl+C interrupt for tests.
 func (r *REPL) SimulateInterruptForTest() {
 	r.handleInterrupt(false)
+}
+
+func (r *REPL) loadPersistentHistory() {
+	if r == nil {
+		return
+	}
+	if r.historyPath == "" {
+		r.historyCursor = len(r.history)
+		return
+	}
+	entries, err := readHistoryFile(r.historyPath)
+	if err != nil {
+		return
+	}
+	r.history = append([]string{}, entries...)
+	r.historyCursor = len(r.history)
+}
+
+func (r *REPL) persistHistoryLine(entry string) {
+	if r == nil {
+		return
+	}
+	if r.rl != nil {
+		_ = r.rl.SaveHistory(entry)
+		return
+	}
+	if r.historyPath == "" {
+		return
+	}
+	if err := ensureHistoryDirectory(r.historyPath); err != nil {
+		return
+	}
+	file, err := os.OpenFile(r.historyPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+	_, _ = file.WriteString(entry + "\n")
+}
+
+func resolveHistoryPath(allowDefault bool) string {
+	if override := strings.TrimSpace(os.Getenv(historyEnvVar)); override != "" {
+		return filepath.Clean(override)
+	}
+	if !allowDefault {
+		return ""
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, historyFileName)
+}
+
+func readHistoryFile(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	entries := make([]string, 0)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		entries = append(entries, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+func ensureHistoryDirectory(path string) error {
+	dir := filepath.Dir(path)
+	if dir == "" || dir == "." {
+		return nil
+	}
+	return os.MkdirAll(dir, 0o755)
 }
 
 func shouldAwaitContinuation(err *verror.Error) bool {

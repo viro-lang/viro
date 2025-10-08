@@ -354,8 +354,8 @@ Single project structure (per plan.md):
 #### Command History (chzyer/readline)
 
 - [X] T145 [US6] Integrate `github.com/chzyer/readline` library in `internal/repl/repl.go`
-- [X] T146 [US6] Implement command history storage (up/down arrow navigation) in `cmd/viro/repl.go`
-- [ ] T147 [US6] Implement history persistence (save to ~/.viro_history) in `cmd/viro/repl.go`
+- [X] T146 [US6] Implement command history storage (up/down arrow navigation) in `internal/repl/repl.go`
+- [X] T147 [US6] Implement history persistence (save to ~/.viro_history) in `internal/repl/repl.go`
 
 #### Multi-line Input
 

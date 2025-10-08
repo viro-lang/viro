@@ -2,6 +2,8 @@ package integration
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -246,5 +248,47 @@ func TestREPL_CtrlCInterrupt(t *testing.T) {
 	loop.EvalLineForTest("value: 10")
 	if output := out.String(); !strings.Contains(output, "10") {
 		t.Fatalf("expected evaluation to continue after interrupt, got %q", output)
+	}
+}
+
+func TestREPL_HistoryPersistence(t *testing.T) {
+	tempDir := t.TempDir()
+	historyFile := filepath.Join(tempDir, "history.txt")
+	t.Setenv("VIRO_HISTORY_FILE", historyFile)
+
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	loop.EvalLineForTest("persist1")
+	out.Reset()
+	loop.EvalLineForTest("persist2")
+	out.Reset()
+
+	data, err := os.ReadFile(historyFile)
+	if err != nil {
+		t.Fatalf("expected history file to be written, got error: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	want := []string{"persist1", "persist2"}
+	if len(lines) != len(want) {
+		t.Fatalf("expected %d lines in history file, got %d: %q", len(want), len(lines), lines)
+	}
+	for i, entry := range want {
+		if lines[i] != entry {
+			t.Fatalf("history file entry %d mismatch: expected %q got %q", i, entry, lines[i])
+		}
+	}
+
+	var out2 bytes.Buffer
+	loop2 := repl.NewREPLForTest(eval.NewEvaluator(), &out2)
+	history := loop2.HistoryEntries()
+	if len(history) != len(want) {
+		t.Fatalf("expected %d entries loaded from history, got %d", len(want), len(history))
+	}
+	for i, entry := range want {
+		if history[i] != entry {
+			t.Fatalf("history entry %d mismatch: expected %q got %q", i, entry, history[i])
+		}
 	}
 }
