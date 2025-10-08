@@ -37,7 +37,7 @@
 - Function → `[function]` or function name
 
 **Examples**:
-```rebol
+```viro
 print 42            → prints "42" (with newline)
 print "hello"       → prints "hello"
 print [1 2 3]       → prints "1 2 3" (block reduced: each element evaluated and joined)
@@ -108,7 +108,7 @@ func TestNativePrint(t *testing.T) {
 3. Return line as string value
 
 **Examples**:
-```rebol
+```viro
 name: input         ; waits for user to type and press Enter
                     ; if user types "Alice", name becomes "Alice"
 print name          ; prints "Alice"
@@ -129,7 +129,7 @@ print name          ; prints "Alice"
 - Consumes input line including newline
 
 **Usage in REPL**:
-```rebol
+```viro
 print "What is your name?"
 name: input
 print ["Hello" name]
@@ -205,7 +205,7 @@ func TestNativeInput(t *testing.T) {
 ## REPL Integration
 
 **Print in REPL**:
-```rebol
+```viro
 >> print "hello"
 hello              ; output from print
                    ; no => none shown (none results are suppressed in REPL)
@@ -221,7 +221,7 @@ Hello Alice        ; name evaluated and interpolated
 ```
 
 **Input in REPL**:
-```rebol
+```viro
 >> name: input
 [user types: Alice]
 => "Alice"         ; REPL shows return value (non-none)
@@ -231,7 +231,7 @@ Alice
 ```
 
 **Interactive Examples**:
-```rebol
+```viro
 >> loop 3 [print "hi"]
 hi
 hi
