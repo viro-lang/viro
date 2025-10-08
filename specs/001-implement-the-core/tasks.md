@@ -346,14 +346,14 @@ Single project structure (per plan.md):
 
 - [X] T141 [P] [US6] Integration test for command history (up arrow recalls previous) in `test/integration/repl_test.go`
 - [X] T142 [P] [US6] Integration test for multi-line input (incomplete block shows `...`) in `test/integration/repl_test.go`
-- [ ] T143 [P] [US6] Integration test for exit commands (quit, exit) in `test/integration/repl_test.go`
-- [ ] T144 [P] [US6] Integration test for Ctrl+C interrupt in `test/integration/repl_test.go`
+- [X] T143 [P] [US6] Integration test for exit commands (quit, exit) in `test/integration/repl_test.go`
+- [X] T144 [P] [US6] Integration test for Ctrl+C interrupt in `test/integration/repl_test.go`
 
 ### Implementation for User Story 6
 
 #### Command History (chzyer/readline)
 
-- [ ] T145 [US6] Integrate `github.com/chzyer/readline` library in `cmd/viro/repl.go`
+- [X] T145 [US6] Integrate `github.com/chzyer/readline` library in `internal/repl/repl.go`
 - [X] T146 [US6] Implement command history storage (up/down arrow navigation) in `cmd/viro/repl.go`
 - [ ] T147 [US6] Implement history persistence (save to ~/.viro_history) in `cmd/viro/repl.go`
 
@@ -366,9 +366,9 @@ Single project structure (per plan.md):
 
 #### Exit & Interrupt
 
-- [ ] T152 [US6] Implement exit command recognition (`quit`, `exit`) in `cmd/viro/repl.go`
-- [ ] T153 [US6] Implement graceful REPL termination in `cmd/viro/repl.go`
-- [ ] T154 [US6] Implement Ctrl+C interrupt handling (cancel evaluation, return to prompt) in `cmd/viro/repl.go`
+- [X] T152 [US6] Implement exit command recognition (`quit`, `exit`) in `cmd/viro/repl.go`
+- [X] T153 [US6] Implement graceful REPL termination in `cmd/viro/repl.go`
+- [X] T154 [US6] Implement Ctrl+C interrupt handling (cancel evaluation, return to prompt) in `cmd/viro/repl.go`
 
 #### Data Operations Natives
 

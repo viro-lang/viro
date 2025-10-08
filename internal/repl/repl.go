@@ -26,13 +26,14 @@ const (
 // - Print: Display results (suppress none per FR-044)
 // - Loop: Repeat until exit command
 type REPL struct {
-	evaluator     *eval.Evaluator
-	rl            *readline.Instance
-	out           io.Writer
-	history       []string
-	historyCursor int
-	pendingLines  []string
-	awaitingCont  bool
+	evaluator      *eval.Evaluator
+	rl             *readline.Instance
+	out            io.Writer
+	history        []string
+	historyCursor  int
+	pendingLines   []string
+	awaitingCont   bool
+	shouldContinue bool
 }
 
 // NewREPL creates a new REPL instance.
@@ -49,13 +50,14 @@ func NewREPL() (*REPL, error) {
 	}
 
 	return &REPL{
-		evaluator:     eval.NewEvaluator(),
-		rl:            rl,
-		out:           os.Stdout,
-		history:       []string{},
-		historyCursor: 0,
-		pendingLines:  nil,
-		awaitingCont:  false,
+		evaluator:      eval.NewEvaluator(),
+		rl:             rl,
+		out:            os.Stdout,
+		history:        []string{},
+		historyCursor:  0,
+		pendingLines:   nil,
+		awaitingCont:   false,
+		shouldContinue: true,
 	}, nil
 }
 
@@ -68,13 +70,14 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 		out = io.Discard
 	}
 	return &REPL{
-		evaluator:     e,
-		rl:            nil,
-		out:           out,
-		history:       []string{},
-		historyCursor: 0,
-		pendingLines:  nil,
-		awaitingCont:  false,
+		evaluator:      e,
+		rl:             nil,
+		out:            out,
+		history:        []string{},
+		historyCursor:  0,
+		pendingLines:   nil,
+		awaitingCont:   false,
+		shouldContinue: true,
 	}
 }
 
@@ -93,26 +96,22 @@ func (r *REPL) Run() error {
 	for {
 		line, err := r.rl.Readline()
 		if err != nil {
-			if err == readline.ErrInterrupt || err == io.EOF {
+			if err == readline.ErrInterrupt {
+				r.handleInterrupt(true)
+				continue
+			}
+			if err == io.EOF {
 				fmt.Fprintln(r.out, "")
-				fmt.Fprintln(r.out, "Goodbye!")
+				r.handleExit(true)
 				return nil
 			}
 			return err
 		}
 
-		clean := strings.TrimRight(line, "\r\n")
-		trimmed := strings.TrimSpace(clean)
-		if trimmed == "" && !r.awaitingCont {
-			continue
-		}
-
-		if !r.awaitingCont && (trimmed == "exit" || trimmed == "quit") {
-			fmt.Fprintln(r.out, "Goodbye!")
+		r.processLine(line, true)
+		if !r.shouldContinue {
 			return nil
 		}
-
-		r.processLine(clean, true)
 	}
 }
 
@@ -134,8 +133,20 @@ func (r *REPL) AwaitingContinuation() bool {
 }
 
 func (r *REPL) processLine(input string, interactive bool) {
+	if r == nil || !r.shouldContinue {
+		return
+	}
+
 	clean := strings.TrimRight(input, "\r\n")
 	trimmed := strings.TrimSpace(clean)
+
+	if !r.awaitingCont && isExitCommand(trimmed) {
+		r.pendingLines = nil
+		r.awaitingCont = false
+		r.recordHistory(trimmed)
+		r.handleExit(interactive)
+		return
+	}
 
 	if trimmed == "" && !r.awaitingCont {
 		return
@@ -342,6 +353,56 @@ func (r *REPL) evalParsedValues(values []value.Value) {
 	}
 }
 
+func (r *REPL) handleExit(interactive bool) {
+	if r == nil {
+		return
+	}
+	r.pendingLines = nil
+	r.awaitingCont = false
+	r.shouldContinue = false
+	if interactive {
+		r.setPrompt(primaryPrompt)
+	}
+	fmt.Fprintln(r.out, "Goodbye!")
+}
+
+func (r *REPL) handleInterrupt(interactive bool) {
+	if r == nil {
+		return
+	}
+	r.pendingLines = nil
+	r.awaitingCont = false
+	if interactive {
+		r.setPrompt(primaryPrompt)
+	}
+	r.shouldContinue = true
+	fmt.Fprintln(r.out, "^C")
+}
+
+// ShouldContinue reports whether the REPL should keep accepting input.
+func (r *REPL) ShouldContinue() bool {
+	if r == nil {
+		return false
+	}
+	return r.shouldContinue
+}
+
+// ResetForTest resets the REPL continuation state for testing.
+func (r *REPL) ResetForTest() {
+	if r == nil {
+		return
+	}
+	r.shouldContinue = true
+	r.awaitingCont = false
+	r.pendingLines = nil
+	r.historyCursor = len(r.history)
+}
+
+// SimulateInterruptForTest emulates a Ctrl+C interrupt for tests.
+func (r *REPL) SimulateInterruptForTest() {
+	r.handleInterrupt(false)
+}
+
 func shouldAwaitContinuation(err *verror.Error) bool {
 	if err == nil {
 		return false
@@ -356,4 +417,11 @@ func shouldAwaitContinuation(err *verror.Error) bool {
 	default:
 		return false
 	}
+}
+
+func isExitCommand(input string) bool {
+	if input == "" {
+		return false
+	}
+	return strings.EqualFold(input, "quit") || strings.EqualFold(input, "exit")
 }

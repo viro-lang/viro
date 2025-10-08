@@ -50,7 +50,6 @@ func TestREPL_StatePreservedAfterError(t *testing.T) {
 		t.Fatalf("expected assignment result to include 10, got %q", output)
 	}
 	out.Reset()
-
 	loop.EvalLineForTest("1 / 0")
 	if output := out.String(); !strings.Contains(output, "** Math Error") {
 		t.Fatalf("expected math error header, got %q", output)
@@ -184,5 +183,68 @@ func TestREPL_MultiLineInput(t *testing.T) {
 	loop.EvalLineForTest("value")
 	if output := out.String(); !strings.Contains(output, "15") {
 		t.Fatalf("expected value to be preserved after multi-line evaluation, got %q", output)
+	}
+}
+
+func TestREPL_ExitCommands(t *testing.T) {
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	if !loop.ShouldContinue() {
+		t.Fatalf("new REPL should continue running")
+	}
+
+	loop.EvalLineForTest("quit")
+	if loop.ShouldContinue() {
+		t.Fatalf("REPL should request shutdown after quit")
+	}
+	if output := out.String(); !strings.Contains(output, "Goodbye!") {
+		t.Fatalf("expected goodbye message after quit, got %q", output)
+	}
+	out.Reset()
+
+	loop.ResetForTest()
+	if !loop.ShouldContinue() {
+		t.Fatalf("reset REPL should be ready to continue")
+	}
+
+	loop.EvalLineForTest("exit")
+	if loop.ShouldContinue() {
+		t.Fatalf("REPL should request shutdown after exit")
+	}
+	if output := out.String(); !strings.Contains(output, "Goodbye!") {
+		t.Fatalf("expected goodbye message after exit, got %q", output)
+	}
+}
+
+func TestREPL_CtrlCInterrupt(t *testing.T) {
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	loop.EvalLineForTest("value: (")
+	if !loop.AwaitingContinuation() {
+		t.Fatalf("expected continuation state after opening paren")
+	}
+	if !loop.ShouldContinue() {
+		t.Fatalf("REPL should still be marked as running during multi-line input")
+	}
+
+	loop.SimulateInterruptForTest()
+	if loop.AwaitingContinuation() {
+		t.Fatalf("expected interrupt to clear continuation state")
+	}
+	if !loop.ShouldContinue() {
+		t.Fatalf("interrupt should not stop REPL")
+	}
+	if output := out.String(); !strings.Contains(output, "^C") {
+		t.Fatalf("expected interrupt indicator, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("value: 10")
+	if output := out.String(); !strings.Contains(output, "10") {
+		t.Fatalf("expected evaluation to continue after interrupt, got %q", output)
 	}
 }
