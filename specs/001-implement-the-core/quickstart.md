@@ -52,7 +52,7 @@ Type 'quit' or 'exit' to exit, Ctrl+C to interrupt evaluation
 
 ### 3. Try Basic Expressions
 
-```rebol
+```viro
 >> 42
 => 42
 
@@ -77,7 +77,7 @@ Hello, Viro!
 
 ### Expression Evaluation
 
-```rebol
+```viro
 >> 5 + 3
 => 8
 
@@ -90,7 +90,7 @@ Hello, Viro!
 
 **Operator Precedence** (multiplication/division before addition/subtraction):
 
-```rebol
+```viro
 >> 3 + 4 * 2
 => 11                ; multiplication first: 3 + (4*2)
 
@@ -109,7 +109,7 @@ Hello, Viro!
 
 ### Variables
 
-```rebol
+```viro
 >> name: "Alice"
 => "Alice"
 
@@ -127,7 +127,7 @@ Hello, Viro!
 
 Blocks `[...]` evaluate to themselves (deferred evaluation):
 
-```rebol
+```viro
 >> [1 2 3]
 => [1 2 3]
 
@@ -140,7 +140,7 @@ Blocks `[...]` evaluate to themselves (deferred evaluation):
 
 Parens `(...)` evaluate their contents immediately:
 
-```rebol
+```viro
 >> (1 + 2)
 => 3
 
@@ -160,7 +160,7 @@ Result: 20
 
 ### Control Flow
 
-```rebol
+```viro
 >> when true [print "yes"]
 yes
 
@@ -180,7 +180,7 @@ hi
 
 ### Functions
 
-```rebol
+```viro
 >> square: fn [n] [n * n]
 => [function]
 
@@ -196,7 +196,7 @@ hi
 
 ### Series Operations
 
-```rebol
+```viro
 >> data: [1 2 3]
 => [1 2 3]
 
@@ -215,7 +215,7 @@ hi
 
 ### Multi-line Input
 
-```rebol
+```viro
 >> calculate: fn [x] [
 ...     temp: x * 2      ; temp is local to function
 ...     temp + 1
@@ -234,7 +234,7 @@ Script error (300): No value for word: temp
 
 Functions use local-by-default scoping for safety:
 
-```rebol
+```viro
 >> counter: 0
 => 0
 
@@ -260,7 +260,7 @@ Functions use local-by-default scoping for safety:
 
 Functions support bash-style refinements for optional parameters:
 
-```rebol
+```viro
 >> greet: fn [name --formal --title []] [
 ...     if formal [
 ...         if title [
@@ -488,7 +488,7 @@ export VIRO_DEBUG=1
 
 ### Inspect Values
 
-```rebol
+```viro
 >> x: [1 2 3]
 => [1 2 3]
 
@@ -505,7 +505,7 @@ export VIRO_DEBUG=1
 ### Common Errors
 
 **Undefined Word**:
-```rebol
+```viro
 >> undefined-var
 Script error (300): No value for word: undefined-var
 Near: undefined-var
@@ -513,7 +513,7 @@ Where: (top level)
 ```
 
 **Type Mismatch**:
-```rebol
+```viro
 >> 3 + "string"
 Script error (300): Type mismatch for '+': cannot add integer and string
 Near: 3 + "string"
@@ -521,7 +521,7 @@ Where: (top level)
 ```
 
 **Division by Zero**:
-```rebol
+```viro
 >> 10 / 0
 Math error (400): Division by zero
 Near: 10 / 0
@@ -529,7 +529,7 @@ Where: (top level)
 ```
 
 **Wrong Argument Count**:
-```rebol
+```viro
 >> square: fn [n] [n * n]
 => [function]
 
@@ -545,7 +545,7 @@ Where: (top level)
 
 ### Factorial
 
-```rebol
+```viro
 >> factorial: fn [n] [
 ...     if n <= 1 [
 ...         1
@@ -564,7 +564,7 @@ Where: (top level)
 
 ### Sum of Series
 
-```rebol
+```viro
 >> sum: fn [n] [
 ...     total: 0
 ...     loop n [total: total + n  n: n - 1]
@@ -578,7 +578,7 @@ Where: (top level)
 
 ### Interactive Input
 
-```rebol
+```viro
 >> greet: fn [] [
 ...     print "What is your name?"
 ...     name: input
@@ -594,7 +594,7 @@ Hello Alice
 
 ### Data Processing
 
-```rebol
+```viro
 >> data: [10 20 30]
 => [10 20 30]
 
