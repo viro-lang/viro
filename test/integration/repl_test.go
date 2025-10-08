@@ -144,3 +144,45 @@ func TestREPL_CommandHistory(t *testing.T) {
 		t.Fatalf("after new command, history up should return latest entry, got %q (ok=%v)", entry, ok)
 	}
 }
+
+func TestREPL_MultiLineInput(t *testing.T) {
+	evaluator := eval.NewEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	if loop.AwaitingContinuation() {
+		t.Fatalf("expected REPL not to await continuation initially")
+	}
+
+	loop.EvalLineForTest("value: (")
+	if out.String() != "" {
+		t.Fatalf("expected no output for incomplete first line, got %q", out.String())
+	}
+	if !loop.AwaitingContinuation() {
+		t.Fatalf("expected REPL to await continuation after opening paren")
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("  10 + 5")
+	if out.String() != "" {
+		t.Fatalf("expected no output while awaiting continuation, got %q", out.String())
+	}
+	if !loop.AwaitingContinuation() {
+		t.Fatalf("expected REPL to remain in continuation state after intermediate line")
+	}
+	out.Reset()
+
+	loop.EvalLineForTest(")")
+	if loop.AwaitingContinuation() {
+		t.Fatalf("expected REPL to exit continuation state after closing paren")
+	}
+	if output := out.String(); !strings.Contains(output, "15") {
+		t.Fatalf("expected evaluated result to include 15, got %q", output)
+	}
+	out.Reset()
+
+	loop.EvalLineForTest("value")
+	if output := out.String(); !strings.Contains(output, "15") {
+		t.Fatalf("expected value to be preserved after multi-line evaluation, got %q", output)
+	}
+}

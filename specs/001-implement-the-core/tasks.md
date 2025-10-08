@@ -344,8 +344,8 @@ Single project structure (per plan.md):
 
 ### Contract Tests for User Story 6 (TDD - Write FIRST)
 
-- [ ] T141 [P] [US6] Integration test for command history (up arrow recalls previous) in `test/integration/repl_test.go`
-- [ ] T142 [P] [US6] Integration test for multi-line input (incomplete block shows `...`) in `test/integration/repl_test.go`
+- [X] T141 [P] [US6] Integration test for command history (up arrow recalls previous) in `test/integration/repl_test.go`
+- [X] T142 [P] [US6] Integration test for multi-line input (incomplete block shows `...`) in `test/integration/repl_test.go`
 - [ ] T143 [P] [US6] Integration test for exit commands (quit, exit) in `test/integration/repl_test.go`
 - [ ] T144 [P] [US6] Integration test for Ctrl+C interrupt in `test/integration/repl_test.go`
 
@@ -354,15 +354,15 @@ Single project structure (per plan.md):
 #### Command History (chzyer/readline)
 
 - [ ] T145 [US6] Integrate `github.com/chzyer/readline` library in `cmd/viro/repl.go`
-- [ ] T146 [US6] Implement command history storage (up/down arrow navigation) in `cmd/viro/repl.go`
+- [X] T146 [US6] Implement command history storage (up/down arrow navigation) in `cmd/viro/repl.go`
 - [ ] T147 [US6] Implement history persistence (save to ~/.viro_history) in `cmd/viro/repl.go`
 
 #### Multi-line Input
 
-- [ ] T148 [US6] Implement incomplete expression detection (unclosed blocks/parens) in `cmd/viro/repl.go`
-- [ ] T149 [US6] Implement continuation prompt (`...`) for multi-line input in `cmd/viro/repl.go`
-- [ ] T150 [US6] Implement multi-line buffer accumulation in `cmd/viro/repl.go`
-- [ ] T151 [US6] Implement completion detection (closing brackets matched) in `cmd/viro/repl.go`
+- [X] T148 [US6] Implement incomplete expression detection (unclosed blocks/parens) in `cmd/viro/repl.go`
+- [X] T149 [US6] Implement continuation prompt (`...`) for multi-line input in `cmd/viro/repl.go`
+- [X] T150 [US6] Implement multi-line buffer accumulation in `cmd/viro/repl.go`
+- [X] T151 [US6] Implement completion detection (closing brackets matched) in `cmd/viro/repl.go`
 
 #### Exit & Interrupt
 

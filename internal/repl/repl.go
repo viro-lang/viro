@@ -13,6 +13,11 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+const (
+	primaryPrompt      = ">> "
+	continuationPrompt = "... "
+)
+
 // REPL implements a Read-Eval-Print-Loop for Viro.
 //
 // Architecture per contracts:
@@ -26,13 +31,15 @@ type REPL struct {
 	out           io.Writer
 	history       []string
 	historyCursor int
+	pendingLines  []string
+	awaitingCont  bool
 }
 
 // NewREPL creates a new REPL instance.
 func NewREPL() (*REPL, error) {
 	// Create readline instance with prompt
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          ">> ",
+		Prompt:          primaryPrompt,
 		HistoryFile:     "", // TODO: Add history file in home directory
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
@@ -47,6 +54,8 @@ func NewREPL() (*REPL, error) {
 		out:           os.Stdout,
 		history:       []string{},
 		historyCursor: 0,
+		pendingLines:  nil,
+		awaitingCont:  false,
 	}, nil
 }
 
@@ -64,6 +73,8 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 		out:           out,
 		history:       []string{},
 		historyCursor: 0,
+		pendingLines:  nil,
+		awaitingCont:  false,
 	}
 }
 
@@ -76,10 +87,10 @@ func (r *REPL) Run() error {
 
 	// Print welcome message
 	r.printWelcome()
+	r.setPrompt(primaryPrompt)
 
 	// Main loop
 	for {
-		// Read
 		line, err := r.rl.Readline()
 		if err != nil {
 			if err == readline.ErrInterrupt || err == io.EOF {
@@ -90,22 +101,18 @@ func (r *REPL) Run() error {
 			return err
 		}
 
-		// Skip empty lines
-		line = strings.TrimSpace(line)
-		if line == "" {
+		clean := strings.TrimRight(line, "\r\n")
+		trimmed := strings.TrimSpace(clean)
+		if trimmed == "" && !r.awaitingCont {
 			continue
 		}
 
-		r.recordHistory(line)
-
-		// Check for exit commands
-		if line == "exit" || line == "quit" {
+		if !r.awaitingCont && (trimmed == "exit" || trimmed == "quit") {
 			fmt.Fprintln(r.out, "Goodbye!")
 			return nil
 		}
 
-		// Eval and Print
-		r.evalAndPrint(line)
+		r.processLine(clean, true)
 	}
 }
 
@@ -114,12 +121,58 @@ func (r *REPL) EvalLineForTest(input string) {
 	if r == nil {
 		return
 	}
-	line := strings.TrimSpace(input)
-	if line == "" {
+	r.processLine(strings.TrimRight(input, "\r\n"), false)
+}
+
+// AwaitingContinuation reports whether the REPL is waiting for additional lines
+// to complete the current command (multi-line input state).
+func (r *REPL) AwaitingContinuation() bool {
+	if r == nil {
+		return false
+	}
+	return r.awaitingCont
+}
+
+func (r *REPL) processLine(input string, interactive bool) {
+	clean := strings.TrimRight(input, "\r\n")
+	trimmed := strings.TrimSpace(clean)
+
+	if trimmed == "" && !r.awaitingCont {
 		return
 	}
-	r.recordHistory(line)
-	r.evalAndPrint(line)
+
+	if trimmed != "" || r.awaitingCont {
+		r.pendingLines = append(r.pendingLines, clean)
+	}
+
+	joined := strings.Join(r.pendingLines, "\n")
+	values, err := parse.Parse(joined)
+	if err != nil {
+		if shouldAwaitContinuation(err) {
+			r.awaitingCont = true
+			if interactive {
+				r.setPrompt(continuationPrompt)
+			}
+			return
+		}
+
+		r.awaitingCont = false
+		if interactive {
+			r.setPrompt(primaryPrompt)
+		}
+		r.pendingLines = nil
+		r.recordHistory(joined)
+		r.printError(err)
+		return
+	}
+
+	r.awaitingCont = false
+	if interactive {
+		r.setPrompt(primaryPrompt)
+	}
+	r.pendingLines = nil
+	r.recordHistory(joined)
+	r.evalParsedValues(values)
 }
 
 // evalAndPrint parses, evaluates, and displays the result of an input line.
@@ -131,17 +184,7 @@ func (r *REPL) evalAndPrint(input string) {
 		return
 	}
 
-	// Evaluate
-	result, err := r.evaluator.Do_Blk(values)
-	if err != nil {
-		r.printError(err)
-		return
-	}
-
-	// Print (suppress none per FR-044)
-	if result.Type != value.TypeNone {
-		fmt.Fprintln(r.out, r.formatValue(result))
-	}
+	r.evalParsedValues(values)
 }
 
 // formatValue formats a value for display in the REPL.
@@ -277,5 +320,40 @@ func (r *REPL) recordHistory(entry string) {
 		if err := r.rl.SaveHistory(trimmed); err != nil {
 			// Saving history is best-effort; ignore errors for now.
 		}
+	}
+}
+
+func (r *REPL) setPrompt(prompt string) {
+	if r == nil || r.rl == nil {
+		return
+	}
+	r.rl.SetPrompt(prompt)
+}
+
+func (r *REPL) evalParsedValues(values []value.Value) {
+	result, err := r.evaluator.Do_Blk(values)
+	if err != nil {
+		r.printError(err)
+		return
+	}
+
+	if result.Type != value.TypeNone {
+		fmt.Fprintln(r.out, r.formatValue(result))
+	}
+}
+
+func shouldAwaitContinuation(err *verror.Error) bool {
+	if err == nil {
+		return false
+	}
+
+	switch err.ID {
+	case verror.ErrIDUnexpectedEOF, verror.ErrIDUnclosedBlock, verror.ErrIDUnclosedParen:
+		return true
+	case verror.ErrIDInvalidSyntax:
+		arg := strings.ToLower(err.Args[0])
+		return strings.Contains(arg, "unclosed string literal")
+	default:
+		return false
 	}
 }
