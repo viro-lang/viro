@@ -11,7 +11,7 @@
 Contracts are organized by functional category:
 
 1. **control-flow.md**: Conditional and iteration primitives
-   - `if`, `either`, `loop`, `while`
+   - `if`, `when`, `loop`, `while`
 
 2. **data.md**: Variable manipulation and type inspection
    - `set`, `get`, `type?`
@@ -55,7 +55,7 @@ Each native function contract specifies:
 
 | Category | Functions | Count |
 |----------|-----------|-------|
-| Control Flow | if, either, loop, while | 4 |
+| Control Flow | if, when, loop, while | 4 |
 | Data | set, get, type? | 3 |
 | I/O | print, input | 2 |
 | Math | +, -, *, /, <, >, <=, >=, =, <>, and, or, not | 13 |
@@ -208,7 +208,7 @@ func TestEvalArithmetic(t *testing.T) {
 2. **Math natives** (+, -, *, /, comparisons, logic) - pure functions
 3. **Series natives** (first, last, append, insert, length?) - requires series protocol
 4. **I/O natives** (print, input) - side effects, simple
-5. **Control flow natives** (if, either, loop, while) - requires block evaluation
+5. **Control flow natives** (if, when, loop, while) - requires block evaluation
 6. **Function native** (func) - requires frame creation, most complex
 
 ### Phase D: Integration & Testing

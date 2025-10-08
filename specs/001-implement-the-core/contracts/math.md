@@ -23,7 +23,7 @@
 | 7 | `or` | Left | Logical OR |
 
 **Examples**:
-```rebol
+```viro
 3 + 4 * 2        ; → 3 + (4 * 2) = 11 (not 14)
 2 + 3 * 4        ; → 2 + (3 * 4) = 14 (not 20)
 10 - 4 / 2       ; → 10 - (4 / 2) = 8 (not 3)
@@ -34,7 +34,7 @@ not true and false       ; → (not true) and false = false
 ```
 
 **Override with Parens**:
-```rebol
+```viro
 (3 + 4) * 2      ; → 7 * 2 = 14 (force addition first)
 10 / (2 + 3)     ; → 10 / 5 = 2 (force addition before division)
 ```
@@ -63,7 +63,7 @@ not true and false       ; → (not true) and false = false
 - Phase 1 scope: integers only (decimals deferred)
 
 **Examples**:
-```rebol
+```viro
 3 + 4        → 7
 -5 + 10      → 5
 0 + 0        → 0
@@ -99,7 +99,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Returns arithmetic difference (value1 - value2)
 
 **Examples**:
-```rebol
+```viro
 10 - 3       → 7
 5 - 10       → -5
 0 - 0        → 0
@@ -131,7 +131,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Returns arithmetic product
 
 **Examples**:
-```rebol
+```viro
 3 * 4        → 12
 -2 * 5       → -10
 0 * 100      → 0
@@ -162,7 +162,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Returns integer division result (truncated)
 
 **Examples**:
-```rebol
+```viro
 10 / 3       → 3
 -10 / 3      → -3
 0 / 5        → 0
@@ -196,7 +196,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Returns true if value1 < value2
 
 **Examples**:
-```rebol
+```viro
 3 < 5        → true
 5 < 3        → false
 3 < 3        → false
@@ -225,7 +225,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Returns true if value1 > value2
 
 **Examples**:
-```rebol
+```viro
 5 > 3        → true
 3 > 5        → false
 3 > 3        → false
@@ -242,7 +242,7 @@ not true and false       ; → (not true) and false = false
 **Return**: Logic (true if value1 ≤ value2)
 
 **Examples**:
-```rebol
+```viro
 3 <= 5       → true
 5 <= 3       → false
 3 <= 3       → true
@@ -257,7 +257,7 @@ not true and false       ; → (not true) and false = false
 **Return**: Logic (true if value1 ≥ value2)
 
 **Examples**:
-```rebol
+```viro
 5 >= 3       → true
 3 >= 5       → false
 3 >= 3       → true
@@ -285,7 +285,7 @@ not true and false       ; → (not true) and false = false
 - Different types → false
 
 **Examples**:
-```rebol
+```viro
 5 = 5        → true
 5 = 3        → false
 "abc" = "abc"  → true
@@ -316,7 +316,7 @@ not true and false       ; → (not true) and false = false
 **Behavior**: Negation of `=`
 
 **Examples**:
-```rebol
+```viro
 5 <> 3       → true
 5 <> 5       → false
 ```
@@ -346,7 +346,7 @@ not true and false       ; → (not true) and false = false
 - All others → true
 
 **Examples**:
-```rebol
+```viro
 true and true    → true
 true and false   → false
 false and true   → false
@@ -381,7 +381,7 @@ none and true    → false
 **Behavior**: Returns true if at least one argument truthy
 
 **Examples**:
-```rebol
+```viro
 true or false    → true
 false or true    → true
 false or false   → false
@@ -409,7 +409,7 @@ none or none     → false
 **Behavior**: Returns logical negation of truthy conversion
 
 **Examples**:
-```rebol
+```viro
 not true         → false
 not false        → true
 not none         → true (none is falsy)
