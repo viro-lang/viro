@@ -165,8 +165,8 @@ type BlockValue struct {
 | Common use | Function bodies, lists | Inline expressions, dynamic access |
 
 **Future Use Cases** (post-Phase 1):
-- Path with dynamic index: `array/(index + 1)` 
-- Computed object fields: `obj/(fieldname)`
+- Path with dynamic index: `array.(index + 1)` 
+- Computed object fields: `obj.(fieldname)`
 
 **Relationships**:
 - Shares BlockValue structure with Block
@@ -297,7 +297,7 @@ type ParamSpec struct {
 - Explicit global access requires capturing global word value before function definition (closures)
 
 **Example** (local isolation):
-```rebol
+```viro
 x: 100                    ; global x
 test: fn [] [x: 5  x]     ; x is LOCAL to test, not global
 test                      ; returns 5
@@ -305,7 +305,7 @@ x                         ; still 100 (global x unchanged)
 ```
 
 **Example** (refinements):
-```rebol
+```viro
 ; Function with flag and value refinements
 greet: fn [name --formal --title []] [
     ; name: positional parameter
@@ -385,7 +385,7 @@ type Frame struct {
 - This prevents accidental modification of global state
 
 **Example**:
-```rebol
+```viro
 counter: 0                          ; global counter
 increment: fn [n] [                 ; n is local parameter
     temp: n + 1                     ; temp is local variable (created on assignment)
@@ -599,7 +599,7 @@ type Series interface {
 - Mutation operations modify series in-place (series values are mutable)
 
 **Usage Pattern** (REBOL code examples):
-```rebol
+```viro
 data: [1 2 3]       ; BlockValue with 3 elements
 first data          ; returns 1
 last data           ; returns 3
