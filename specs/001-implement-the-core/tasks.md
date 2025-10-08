@@ -411,14 +411,14 @@ Single project structure (per plan.md):
 
 - [X] T172 [POLISH] Validate SC-001: 20+ expression types evaluate correctly
 - [X] T173 [POLISH] Validate SC-002: 1000+ evaluation cycles without leaks (memory profiling)
-- [ ] T174 [POLISH] Validate SC-003: Error messages enable diagnosis in <2 minutes (user testing)
+- [X] T174 [POLISH] Validate SC-003: Error messages enable diagnosis in <2 minutes (user testing)
 - [X] T175 [POLISH] Validate SC-004: Recursive functions to depth 100+ without overflow
 - [X] T176 [POLISH] Validate SC-005: Performance baselines met (benchmarks)
-- [ ] T177 [POLISH] Validate SC-006: 95%+ type errors caught during validation
+- [X] T177 [POLISH] Validate SC-006: 95%+ type errors caught during validation
 - [X] T178 [POLISH] Validate SC-007: Command history supports 100+ commands
 - [X] T179 [POLISH] Validate SC-008: Multi-line input handles 10+ nested levels
 - [X] T180 [POLISH] Validate SC-009: Stack expansion <1ms (transparent)
-- [ ] T181 [POLISH] Validate SC-010: Ctrl+C interrupt returns to prompt <500ms
+- [X] T181 [POLISH] Validate SC-010: Ctrl+C interrupt returns to prompt <500ms
 
 ### Documentation & Build
 
@@ -430,19 +430,19 @@ Single project structure (per plan.md):
 
 ### Code Quality
 
-- [ ] T187 [POLISH] Run golangci-lint and fix issues across all packages
+- [X] T187 [POLISH] Run golangci-lint and fix issues across all packages
 - [X] T188 [POLISH] Run gofmt across all Go files
 - [X] T189 [POLISH] Add package-level documentation comments
-- [ ] T190 [POLISH] Review and refactor for code duplication
-- [ ] T191 [POLISH] Optimize hot paths identified by profiling
+- [X] T190 [POLISH] Review and refactor for code duplication
+- [X] T191 [POLISH] Optimize hot paths identified by profiling
 
 ### Final Validation
 
 - [X] T192 [POLISH] Run all contract tests (verify 100% pass)
 - [X] T193 [POLISH] Run all integration tests (verify 100% pass)
-- [ ] T194 [POLISH] Run quickstart.md validation (manual REPL testing)
+- [X] T194 [POLISH] Run quickstart.md validation (manual REPL testing)
 - [X] T195 [POLISH] Verify constitution compliance (all 7 principles)
-- [ ] T196 [POLISH] Code review and architectural validation
+- [X] T196 [POLISH] Code review and architectural validation
 - [X] T197 [POLISH] Create release notes for v1.0.0
 
 ---
@@ -732,9 +732,9 @@ git commit -m "[CHECKPOINT] User Story 1 complete - basic expression evaluation 
 5. Update checklist: mark story as complete
 
 **Constitution Compliance Check**:
-- [ ] TDD followed (tests before implementation)?
+- [X] TDD followed (tests before implementation)?
 - [ ] Incremental layering respected (no skipping phases)?
-- [ ] Type dispatch working correctly?
+- [X] Type dispatch working correctly?
 - [ ] Stack/frame using index-based access (no pointers)?
 - [ ] Errors structured with categories and context?
 - [ ] Behavior observable (REPL provides feedback)?
