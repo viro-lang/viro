@@ -30,17 +30,20 @@ type Evaluator struct {
 	frameStore []*frame.Frame
 	frameIndex map[*frame.Frame]int
 	captured   map[int]bool
+	callStack  []string
 }
 
 // NewEvaluator creates a new evaluation engine with an empty stack.
 func NewEvaluator() *Evaluator {
 	global := frame.NewFrame(frame.FrameClosure, -1)
+	global.Name = "(top level)"
 	e := &Evaluator{
 		Stack:      stack.NewStack(1024),
 		Frames:     []*frame.Frame{global},
 		frameStore: []*frame.Frame{global},
 		frameIndex: make(map[*frame.Frame]int),
 		captured:   make(map[int]bool),
+		callStack:  []string{"(top level)"},
 	}
 	e.frameIndex[global] = 0
 	e.captured[0] = true
@@ -103,6 +106,54 @@ func (e *Evaluator) popFrame() int {
 		frm.Type = frame.FrameClosure
 	}
 	return idx
+}
+
+func (e *Evaluator) pushCall(name string) {
+	if name == "" {
+		name = "(anonymous)"
+	}
+	e.callStack = append(e.callStack, name)
+}
+
+func (e *Evaluator) popCall() {
+	if len(e.callStack) <= 1 {
+		return
+	}
+	e.callStack = e.callStack[:len(e.callStack)-1]
+}
+
+func (e *Evaluator) captureCallStack() []string {
+	if len(e.callStack) == 0 {
+		return []string{}
+	}
+	where := make([]string, len(e.callStack))
+	for i := range e.callStack {
+		where[i] = e.callStack[len(e.callStack)-1-i]
+	}
+	return where
+}
+
+func (e *Evaluator) annotateError(err *verror.Error, vals []value.Value, idx int) *verror.Error {
+	if err == nil {
+		return nil
+	}
+	if idx >= 0 && idx < len(vals) && err.Near == "" {
+		err.SetNear(verror.CaptureNear(vals, idx))
+	}
+	if len(err.Where) == 0 {
+		where := e.captureCallStack()
+		if len(where) > 0 {
+			err.SetWhere(where)
+		}
+	}
+	return err
+}
+
+func functionDisplayName(fn *value.FunctionValue) string {
+	if fn == nil || fn.Name == "" {
+		return "(anonymous)"
+	}
+	return fn.Name
 }
 
 // MarkFrameCaptured marks a frame as captured for closure usage.
@@ -209,7 +260,7 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 		if val.Type == value.TypeSetWord {
 			result, err = e.evalSetWord(val, vals, &i)
 			if err != nil {
-				return value.NoneVal(), err
+				return value.NoneVal(), e.annotateError(err, vals, i)
 			}
 			continue
 		}
@@ -220,18 +271,20 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 			if ok {
 				if nativeInfo, found := native.Lookup(wordStr); found {
 					// This is a native function call - collect arguments
+					startIdx := i
 					result, err = e.callNative(wordStr, nativeInfo, vals, &i)
 					if err != nil {
-						return value.NoneVal(), err
+						return value.NoneVal(), e.annotateError(err, vals, startIdx)
 					}
 					continue
 				}
 
 				if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
 					fn, _ := resolved.AsFunction()
+					startIdx := i
 					result, err = e.invokeFunctionFromSequence(fn, vals, &i)
 					if err != nil {
-						return value.NoneVal(), err
+						return value.NoneVal(), e.annotateError(err, vals, startIdx)
 					}
 					continue
 				}
@@ -240,7 +293,7 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 
 		result, err = e.Do_Next(val)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NoneVal(), e.annotateError(err, vals, i)
 		}
 	}
 
@@ -273,74 +326,105 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 }
 
 func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+	startIdx := *idx
 	args := make([]value.Value, 0, info.Arity)
 	for j := 0; j < info.Arity; j++ {
 		tokenIdx := *idx + 1 + j
 		if tokenIdx >= len(vals) {
-			return value.NoneVal(), verror.NewScriptError(
+			err := verror.NewScriptError(
 				verror.ErrIDArgCount,
 				[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(args))},
 			)
+			return value.NoneVal(), e.annotateError(err, vals, startIdx)
 		}
 		arg, argErr := e.Do_Next(vals[tokenIdx])
 		if argErr != nil {
-			return value.NoneVal(), argErr
+			return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
 		}
 		args = append(args, arg)
 	}
 
 	*idx += info.Arity
-	return native.Call(info, args, e)
+	result, err := native.Call(info, args, e)
+	if err != nil {
+		return value.NoneVal(), e.annotateError(err, vals, startIdx)
+	}
+	return result, nil
 }
 
 func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, tokens []value.Value) (value.Value, *verror.Error) {
+	context := append([]value.Value{value.WordVal(name)}, tokens...)
 	if len(tokens) != info.Arity {
-		return value.NoneVal(), verror.NewScriptError(
+		err := verror.NewScriptError(
 			verror.ErrIDArgCount,
 			[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(tokens))},
 		)
+		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
 
 	args := make([]value.Value, 0, info.Arity)
-	for _, token := range tokens {
+	for k, token := range tokens {
 		arg, err := e.Do_Next(token)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NoneVal(), e.annotateError(err, context, k+1)
 		}
 		args = append(args, arg)
 	}
 
-	return native.Call(info, args, e)
+	result, err := native.Call(info, args, e)
+	if err != nil {
+		return value.NoneVal(), e.annotateError(err, context, 0)
+	}
+	return result, nil
 }
 
 func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+	name := functionDisplayName(fn)
+	e.pushCall(name)
+	defer e.popCall()
+
 	tokens := vals[*idx+1:]
 	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NoneVal(), e.annotateError(err, vals, *idx)
 	}
 
 	*idx += consumed
-	return e.executeFunction(fn, posArgs, refValues)
+	result, execErr := e.executeFunction(fn, posArgs, refValues)
+	if execErr != nil {
+		return value.NoneVal(), execErr
+	}
+	return result, nil
 }
 
 func (e *Evaluator) invokeFunctionWithTokens(fn *value.FunctionValue, tokens []value.Value) (value.Value, *verror.Error) {
+	name := functionDisplayName(fn)
+	context := append([]value.Value{value.WordVal(name)}, tokens...)
+	e.pushCall(name)
+	defer e.popCall()
+
 	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
 
 	if consumed != len(tokens) {
-		return value.NoneVal(), verror.NewScriptError(
+		err := verror.NewScriptError(
 			verror.ErrIDArgCount,
-			[3]string{fn.Name, fmt.Sprintf("%d", len(posArgs)), fmt.Sprintf("%d", len(posArgs)+(len(tokens)-consumed))},
+			[3]string{name, fmt.Sprintf("%d", len(posArgs)), fmt.Sprintf("%d", len(posArgs)+(len(tokens)-consumed))},
 		)
+		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
 
-	return e.executeFunction(fn, posArgs, refValues)
+	result, execErr := e.executeFunction(fn, posArgs, refValues)
+	if execErr != nil {
+		return value.NoneVal(), execErr
+	}
+	return result, nil
 }
 
 func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
+	displayName := functionDisplayName(fn)
 	positional := make([]value.ParamSpec, 0, len(tokens))
 	refSpecs := make(map[string]value.ParamSpec)
 	refValues := make(map[string]value.Value)
@@ -424,7 +508,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 	if posIndex < len(positional) {
 		return nil, nil, 0, verror.NewScriptError(
 			verror.ErrIDArgCount,
-			[3]string{fn.Name, fmt.Sprintf("%d", len(positional)), fmt.Sprintf("%d", posIndex)},
+			[3]string{displayName, fmt.Sprintf("%d", len(positional)), fmt.Sprintf("%d", posIndex)},
 		)
 	}
 
@@ -438,6 +522,7 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Val
 	}
 
 	frame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, parent, len(fn.Params))
+	frame.Name = functionDisplayName(fn)
 	e.pushFrame(frame)
 	defer e.popFrame()
 
@@ -547,7 +632,13 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 		result, err = e.Do_Next(nextVal)
 	}
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NoneVal(), e.annotateError(err, vals, *i)
+	}
+
+	if result.Type == value.TypeFunction {
+		if fnVal, ok := result.AsFunction(); ok && fnVal.Name == "" {
+			fnVal.Name = wordStr
+		}
 	}
 
 	// Bind the result to the word in current frame

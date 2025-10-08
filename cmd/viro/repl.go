@@ -9,6 +9,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // REPL implements a Read-Eval-Print-Loop for Viro.
@@ -83,14 +84,14 @@ func (r *REPL) evalAndPrint(input string) {
 	// Parse
 	values, err := parse.Parse(input)
 	if err != nil {
-		fmt.Printf("%s", err.Error())
+		r.printError(err)
 		return
 	}
 
 	// Evaluate
 	result, err := r.evaluator.Do_Blk(values)
 	if err != nil {
-		fmt.Printf("%s", err.Error())
+		r.printError(err)
 		return
 	}
 
@@ -161,4 +162,11 @@ func (r *REPL) printWelcome() {
 	fmt.Println("Viro 0.1.0")
 	fmt.Println("Type 'exit' or 'quit' to leave")
 	fmt.Println()
+}
+
+func (r *REPL) printError(err *verror.Error) {
+	if err == nil {
+		return
+	}
+	fmt.Println(verror.FormatErrorWithContext(err))
 }

@@ -306,24 +306,24 @@ Single project structure (per plan.md):
 
 ### Contract Tests for User Story 5 (TDD - Write FIRST)
 
-- [ ] T127 [P] [US5] Contract test for undefined word errors (Script error 300) in `test/contract/errors_test.go`
-- [ ] T128 [P] [US5] Contract test for division by zero errors (Math error 400) in `test/contract/errors_test.go`
-- [ ] T129 [P] [US5] Contract test for type mismatch errors (Script error 300) in `test/contract/errors_test.go`
-- [ ] T130 [P] [US5] Contract test for syntax errors during parsing (Syntax error 200) in `test/contract/errors_test.go`
-- [ ] T131 [P] [US5] Contract test for error context (Near and Where included) in `test/contract/errors_test.go`
+- [X] T127 [P] [US5] Contract test for undefined word errors (Script error 300) in `test/contract/errors_test.go`
+- [X] T128 [P] [US5] Contract test for division by zero errors (Math error 400) in `test/contract/errors_test.go`
+- [X] T129 [P] [US5] Contract test for type mismatch errors (Script error 300) in `test/contract/errors_test.go`
+- [X] T130 [P] [US5] Contract test for syntax errors during parsing (Syntax error 200) in `test/contract/errors_test.go`
+- [X] T131 [P] [US5] Contract test for error context (Near and Where included) in `test/contract/errors_test.go`
 - [ ] T132 [P] [US5] Contract test for REPL error recovery (continues after error) in `test/integration/repl_test.go`
 
 ### Implementation for User Story 5
 
 #### Error Propagation
 
-- [ ] T133 [US5] Implement error propagation in evaluator (attach context, return error) in `internal/eval/eval.go`
-- [ ] T134 [US5] Implement error propagation through function calls in `internal/eval/eval.go`
+- [X] T133 [US5] Implement error propagation in evaluator (attach context, return error) in `internal/eval/eval.go`
+- [X] T134 [US5] Implement error propagation through function calls in `internal/eval/eval.go`
 
 #### REPL Error Handling
 
-- [ ] T135 [US5] Implement error display in REPL (format with category, message, Near, Where) in `cmd/viro/repl.go`
-- [ ] T136 [US5] Implement REPL error recovery (catch error, display, continue loop) in `cmd/viro/repl.go`
+- [X] T135 [US5] Implement error display in REPL (format with category, message, Near, Where) in `cmd/viro/repl.go`
+- [X] T136 [US5] Implement REPL error recovery (catch error, display, continue loop) in `cmd/viro/repl.go`
 - [ ] T137 [US5] Implement state preservation after errors (maintain global context) in `cmd/viro/repl.go`
 
 #### Error Validation

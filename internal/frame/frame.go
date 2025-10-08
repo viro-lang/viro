@@ -31,6 +31,7 @@ type Frame struct {
 	Words  []string      // Symbol names (parallel to Values)
 	Values []value.Value // Bound values (parallel to Words)
 	Parent int           // Index of parent frame for closures (-1 if none)
+	Name   string        // Optional function or context name for diagnostics
 }
 
 // NewFrame creates an empty frame.
@@ -40,6 +41,7 @@ func NewFrame(frameType FrameType, parent int) *Frame {
 		Words:  []string{},
 		Values: []value.Value{},
 		Parent: parent,
+		Name:   "",
 	}
 }
 
@@ -51,6 +53,7 @@ func NewFrameWithCapacity(frameType FrameType, parent int, capacity int) *Frame 
 		Words:  make([]string, 0, capacity),
 		Values: make([]value.Value, 0, capacity),
 		Parent: parent,
+		Name:   "",
 	}
 }
 

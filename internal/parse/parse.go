@@ -37,7 +37,7 @@ func Parse(input string) ([]value.Value, *verror.Error) {
 		return []value.Value{}, nil
 	}
 
-	p := &parser{tokens: tokens, pos: 0}
+	p := &parser{tokens: tokens, pos: 0, source: input}
 	return p.parseSequence()
 }
 
@@ -65,6 +65,43 @@ const (
 	tokEOF
 )
 
+func makeSyntaxError(input string, pos int, id string, args [3]string) *verror.Error {
+	err := verror.NewSyntaxError(id, args)
+	if input != "" {
+		err.SetNear(snippetAround(input, pos))
+	}
+	return err
+}
+
+func snippetAround(input string, pos int) string {
+	if input == "" {
+		return ""
+	}
+	runes := []rune(input)
+	if len(runes) == 0 {
+		return ""
+	}
+	if pos < 0 {
+		pos = 0
+	}
+	if pos >= len(runes) {
+		pos = len(runes) - 1
+		if pos < 0 {
+			pos = 0
+		}
+	}
+	window := 12
+	start := pos - window
+	if start < 0 {
+		start = 0
+	}
+	end := pos + window + 1
+	if end > len(runes) {
+		end = len(runes)
+	}
+	return string(runes[start:end])
+}
+
 // tokenize converts input string into tokens.
 func tokenize(input string) ([]token, *verror.Error) {
 	var tokens []token
@@ -88,7 +125,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 				pos++
 			}
 			if pos >= len(runes) {
-				return nil, verror.NewSyntaxError("unterminated string", [3]string{input[start:], "", ""})
+				return nil, makeSyntaxError(input, start, verror.ErrIDInvalidSyntax, [3]string{"unclosed string literal", "", ""})
 			}
 			pos++ // Skip closing quote
 			tokens = append(tokens, token{tokString, str.String(), start})
@@ -238,7 +275,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 		}
 
 		// Unknown character
-		return nil, verror.NewSyntaxError("unexpected character", [3]string{string(runes[pos]), "", ""})
+		return nil, makeSyntaxError(input, pos, verror.ErrIDInvalidSyntax, [3]string{fmt.Sprintf("unexpected character %q", runes[pos]), "", ""})
 	}
 
 	return tokens, nil
@@ -266,6 +303,11 @@ func isOperator(word string) bool {
 type parser struct {
 	tokens []token
 	pos    int
+	source string
+}
+
+func (p *parser) syntaxError(pos int, id string, args [3]string) *verror.Error {
+	return makeSyntaxError(p.source, pos, id, args)
 }
 
 // parseSequence parses a sequence of values (top level or within block/paren).
@@ -355,7 +397,7 @@ func getOperatorLevel(op string) int {
 // parsePrimary parses a primary expression (literal, word, block, paren, etc.).
 func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 	if p.isAtEnd() {
-		return value.NoneVal(), verror.NewSyntaxError("unexpected end of input", [3]string{"", "", ""})
+		return value.NoneVal(), p.syntaxError(len([]rune(p.source)), verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
 	}
 
 	tok := p.advance()
@@ -364,7 +406,7 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 	case tokNumber:
 		num, err := strconv.ParseInt(tok.val, 10, 64)
 		if err != nil {
-			return value.NoneVal(), verror.NewSyntaxError("invalid number", [3]string{tok.val, "", ""})
+			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidLiteral, [3]string{tok.val, "", ""})
 		}
 		return value.IntVal(num), nil
 
@@ -405,7 +447,7 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 			return value.NoneVal(), err
 		}
 		if p.isAtEnd() || p.peek().typ != tokRBracket {
-			return value.NoneVal(), verror.NewSyntaxError("unclosed block", [3]string{"[", "", ""})
+			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDUnclosedBlock, [3]string{"[", "", ""})
 		}
 		p.advance() // Consume ]
 		return value.BlockVal(elements), nil
@@ -417,13 +459,13 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 			return value.NoneVal(), err
 		}
 		if p.isAtEnd() || p.peek().typ != tokRParen {
-			return value.NoneVal(), verror.NewSyntaxError("unclosed paren", [3]string{"(", "", ""})
+			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDUnclosedParen, [3]string{"(", "", ""})
 		}
 		p.advance() // Consume )
 		return value.ParenVal(elements), nil
 
 	default:
-		return value.NoneVal(), verror.NewSyntaxError("unexpected token", [3]string{tok.val, "", ""})
+		return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidSyntax, [3]string{tok.val, "", ""})
 	}
 }
 
