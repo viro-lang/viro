@@ -2,11 +2,11 @@
 package contract
 
 import (
-"testing"
+	"testing"
 
-"github.com/marcin-radoszewski/viro/internal/eval"
-"github.com/marcin-radoszewski/viro/internal/parse"
-"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // TestControlFlow_When validates the 'when' conditional native.
@@ -55,12 +55,12 @@ func TestControlFlow_When(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 
 			if tt.wantErr {
@@ -129,12 +129,12 @@ func TestControlFlow_If(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 
 			if tt.wantErr {
@@ -196,12 +196,12 @@ func TestControlFlow_Loop(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 
 			if tt.wantErr {
@@ -277,12 +277,12 @@ while [(< n 3)] [n: (+ n 1)]`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 
 			if tt.wantErr {
@@ -345,12 +345,12 @@ func TestControlFlow_TruthyConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 			if evalErr != nil {
 				t.Errorf("Unexpected error: %v", evalErr)
@@ -410,12 +410,12 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-vals, err := parse.Parse(tt.input)
-if err != nil {
-t.Fatalf("Parse failed: %v", err)
-}
+			vals, err := parse.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse failed: %v", err)
+			}
 
-e := eval.NewEvaluator()
+			e := eval.NewEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 			if evalErr != nil {
 				t.Errorf("Unexpected error: %v", evalErr)

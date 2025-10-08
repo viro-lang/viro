@@ -410,14 +410,14 @@ Single project structure (per plan.md):
 ### Success Criteria Validation
 
 - [X] T172 [POLISH] Validate SC-001: 20+ expression types evaluate correctly
-- [ ] T173 [POLISH] Validate SC-002: 1000+ evaluation cycles without leaks (memory profiling)
+- [X] T173 [POLISH] Validate SC-002: 1000+ evaluation cycles without leaks (memory profiling)
 - [ ] T174 [POLISH] Validate SC-003: Error messages enable diagnosis in <2 minutes (user testing)
-- [ ] T175 [POLISH] Validate SC-004: Recursive functions to depth 100+ without overflow
-- [ ] T176 [POLISH] Validate SC-005: Performance baselines met (benchmarks)
+- [X] T175 [POLISH] Validate SC-004: Recursive functions to depth 100+ without overflow
+- [X] T176 [POLISH] Validate SC-005: Performance baselines met (benchmarks)
 - [ ] T177 [POLISH] Validate SC-006: 95%+ type errors caught during validation
-- [ ] T178 [POLISH] Validate SC-007: Command history supports 100+ commands
-- [ ] T179 [POLISH] Validate SC-008: Multi-line input handles 10+ nested levels
-- [ ] T180 [POLISH] Validate SC-009: Stack expansion <1ms (transparent)
+- [X] T178 [POLISH] Validate SC-007: Command history supports 100+ commands
+- [X] T179 [POLISH] Validate SC-008: Multi-line input handles 10+ nested levels
+- [X] T180 [POLISH] Validate SC-009: Stack expansion <1ms (transparent)
 - [ ] T181 [POLISH] Validate SC-010: Ctrl+C interrupt returns to prompt <500ms
 
 ### Documentation & Build
