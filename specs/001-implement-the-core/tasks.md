@@ -431,15 +431,15 @@ Single project structure (per plan.md):
 ### Code Quality
 
 - [ ] T187 [POLISH] Run golangci-lint and fix issues across all packages
-- [ ] T188 [POLISH] Run gofmt across all Go files
+- [X] T188 [POLISH] Run gofmt across all Go files
 - [ ] T189 [POLISH] Add package-level documentation comments
 - [ ] T190 [POLISH] Review and refactor for code duplication
 - [ ] T191 [POLISH] Optimize hot paths identified by profiling
 
 ### Final Validation
 
-- [ ] T192 [POLISH] Run all contract tests (verify 100% pass)
-- [ ] T193 [POLISH] Run all integration tests (verify 100% pass)
+- [X] T192 [POLISH] Run all contract tests (verify 100% pass)
+- [X] T193 [POLISH] Run all integration tests (verify 100% pass)
 - [ ] T194 [POLISH] Run quickstart.md validation (manual REPL testing)
 - [ ] T195 [POLISH] Verify constitution compliance (all 7 principles)
 - [ ] T196 [POLISH] Code review and architectural validation
