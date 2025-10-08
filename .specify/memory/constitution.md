@@ -33,7 +33,7 @@ Follow-up TODOs: None - all placeholders resolved
 4. Implement minimal code to make tests pass
 5. Refactor with confidence knowing tests protect correctness
 
-**Rationale**: The REBOL interpreter is a complex system with type dispatch, stack management, and frame contexts. TDD ensures each component works correctly in isolation and integration before building the next layer. This is critical for an interpreter where subtle bugs can cascade.
+**Rationale**: The Viro interpreter is a complex system with type dispatch, stack management, and frame contexts. TDD ensures each component works correctly in isolation and integration before building the next layer. This is critical for an interpreter where subtle bugs can cascade.
 
 ### II. Incremental Implementation by Architecture Layer
 
