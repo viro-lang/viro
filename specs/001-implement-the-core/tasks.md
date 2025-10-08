@@ -372,10 +372,10 @@ Single project structure (per plan.md):
 
 #### Data Operations Natives
 
-- [ ] T155 [P] [US6] Implement native `set` (assign value to word) in `internal/native/data.go`
-- [ ] T156 [P] [US6] Implement native `get` (retrieve value from word) in `internal/native/data.go`
-- [ ] T157 [P] [US6] Implement native `type?` (return datatype of value) in `internal/native/data.go`
-- [ ] T158 [US6] Register data natives in native dispatcher in `internal/native/registry.go`
+- [X] T155 [P] [US6] Implement native `set` (assign value to word) in `internal/native/data.go`
+- [X] T156 [P] [US6] Implement native `get` (retrieve value from word) in `internal/native/data.go`
+- [X] T157 [P] [US6] Implement native `type?` (return datatype of value) in `internal/native/data.go`
+- [X] T158 [US6] Register data natives in native dispatcher in `internal/native/registry.go`
 
 #### I/O Natives
 
