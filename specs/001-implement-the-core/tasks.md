@@ -409,7 +409,7 @@ Single project structure (per plan.md):
 
 ### Success Criteria Validation
 
-- [ ] T172 [POLISH] Validate SC-001: 20+ expression types evaluate correctly
+- [X] T172 [POLISH] Validate SC-001: 20+ expression types evaluate correctly
 - [ ] T173 [POLISH] Validate SC-002: 1000+ evaluation cycles without leaks (memory profiling)
 - [ ] T174 [POLISH] Validate SC-003: Error messages enable diagnosis in <2 minutes (user testing)
 - [ ] T175 [POLISH] Validate SC-004: Recursive functions to depth 100+ without overflow
