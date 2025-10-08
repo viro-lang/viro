@@ -26,7 +26,7 @@
 - Second argument can be any type (evaluated)
 
 **Usage Pattern**:
-```rebol
+```viro
 set 'x 10        ; binds x to 10, returns 10
 ; Note: 'x is lit-word (quoted), evaluates to word without lookup
 
@@ -35,7 +35,7 @@ x: 10            ; set-word syntax (more common)
 ```
 
 **Examples**:
-```rebol
+```viro
 set 'x 10        → 10 (x is now bound to 10)
 set 'y 3 + 4     → 7 (y is now bound to 7)
 set 'name "Alice"  → "Alice" (name bound to string)
@@ -75,7 +75,7 @@ set 'name "Alice"  → "Alice" (name bound to string)
 - Word must be bound (error if unbound)
 
 **Usage Pattern**:
-```rebol
+```viro
 x: 10
 get 'x           ; returns 10
 ; Equivalent to:
@@ -83,7 +83,7 @@ get 'x           ; returns 10
 ```
 
 **Examples**:
-```rebol
+```viro
 x: 10
 get 'x           → 10
 
@@ -131,7 +131,7 @@ get 'undefined   → Error: no value for word
 - None → `'none!`
 
 **Examples**:
-```rebol
+```viro
 type? 42         → integer!
 type? "hello"    → string!
 type? [1 2 3]    → block!
@@ -150,7 +150,7 @@ type? none       → none!
 8. `type? 'x` returns `word!` (lit-word evaluates to word)
 
 **Usage**:
-```rebol
+```viro
 ; Type checking in code
 value: 42
 either (type? value) = 'integer! [
@@ -216,7 +216,7 @@ For each native:
 - Frame context tests (local vs parent frame lookup)
 
 **Advanced Scenarios** (to test in integration):
-```rebol
+```viro
 ; Set/get with function arguments
 square: fn [n] [
     set 'temp n * n
