@@ -44,7 +44,7 @@
 7. Refinement names (without `--`) must be unique and not conflict with positional parameters
 
 **Examples**:
-```rebol
+```viro
 ; Simple function
 square: fn [n] [n * n]
 square 5        → 25
@@ -75,9 +75,10 @@ counter         → 0 (global unchanged)
 
 ; Refinements - flag only
 verbose-print: fn [msg --verbose] [
-    either verbose [
+    when verbose [
         print ["[INFO]" msg]
-    ] [
+    ]
+    when not verbose [
         print msg
     ]
 ]
@@ -86,7 +87,7 @@ verbose-print "hello" --verbose → prints "[INFO] hello"
 
 ; Refinements - value refinement
 greet: fn [name --title []] [
-    either title [
+    if title [
         print [title name]
     ] [
         print name
@@ -100,8 +101,8 @@ process: fn [data --deep --limit []] [
     ; data: positional arg
     ; deep: boolean flag
     ; limit: value refinement (integer)
-    result: either deep [deep-copy data] [data]
-    either limit [
+    result: if deep [deep-copy data] [data]
+    if limit [
         take result limit
     ] [
         result
@@ -181,7 +182,7 @@ process [1 2 3] --limit 2 --deep     → same (order doesn't matter)
 - **Local-by-default**: All words used in body are local unless captured from parent
 
 **Example Execution**:
-```rebol
+```viro
 square: fn [n] [n * n]
 square 5
 
@@ -200,8 +201,8 @@ square 5
 
 ; Refinement example:
 greet: fn [name --formal --title []] [
-    either formal [
-        either title [print [title name]] [print name]
+    if formal [
+        if title [print [title name]] [print name]
     ] [
         print ["Hi" name]
     ]
@@ -227,7 +228,7 @@ greet "Alice" --formal --title "Dr."
 - Functions do NOT access or modify global variables by default
 
 **Local-by-Default Example**:
-```rebol
+```viro
 x: 100                  ; global x
 test: fn [] [
     x: 5                ; creates LOCAL x (does not modify global)
@@ -238,7 +239,7 @@ x                       ; still 100 (global unchanged)
 ```
 
 **Closure Example** (capturing outer scope):
-```rebol
+```viro
 make-adder: fn [x] [
     ; x is local to make-adder
     fn [y] [
@@ -271,7 +272,7 @@ add5 10                 ; returns 15 (closure captures x=5)
 4. Body evaluation error → Propagate error with function context in "where"
 
 **Example Error Messages**:
-```rebol
+```viro
 square: fn [n] [n * n]
 square          → Error: Expected 1 arguments, got 0
 square 1 2      → Error: Expected 1 arguments, got 2
@@ -314,7 +315,7 @@ frameBase   Return value slot (initially none)
 - Return: last body evaluation result placed in frameBase slot
 
 **Example Frame Layout**:
-```rebol
+```viro
 greet: fn [name --formal --title []] [...]
 greet "Alice" --formal --title "Dr."
 
@@ -446,7 +447,7 @@ func TestFunctionDefinitionAndCall(t *testing.T) {
 ## Advanced Features (Future Phases)
 
 **Type Constraints** (deferred):
-```rebol
+```viro
 ; Phase 2+: typed parameters
 typed-add: fn [a [integer!] b [integer!]] [a + b]
 typed-add 3 4       → 7
@@ -454,10 +455,10 @@ typed-add "x" 4     → Error: Type mismatch for parameter 'a'
 ```
 
 **Optional Parameters** (deferred):
-```rebol
+```viro
 ; Phase 2+: optional with defaults
 greet: fn [name [string!] /title [string!]] [
-    either title [
+    if title [
         print [title name]
     ] [
         print name
@@ -468,13 +469,13 @@ greet/title "Alice" "Dr."  → prints "Dr. Alice"
 ```
 
 **Refinements** (deferred):
-```rebol
+```viro
 ; Phase 2+: function refinements
 copy/deep data      ; copy with /deep refinement
 ```
 
 **Local Variables** (Phase 1 - local by default):
-```rebol
+```viro
 ; All words in function body are local by default
 calc: fn [x] [
     temp: x * 2       ; temp is LOCAL (created on first assignment)

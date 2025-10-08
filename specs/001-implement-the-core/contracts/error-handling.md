@@ -35,7 +35,7 @@ type Error struct {
 - `continue-outside-loop`: Continue statement outside loop context
 
 **Examples**:
-```rebol
+```viro
 break               → Error: Break outside loop context
 continue            → Error: Continue outside loop context
 
@@ -70,7 +70,7 @@ loop 5 [
 - `unexpected-token`: Token in invalid position
 
 **Examples**:
-```rebol
+```viro
 [1 2 3              → Syntax error (200): Unclosed block at end of input
 
 "hello              → Syntax error (200): Unclosed string at end of input
@@ -103,7 +103,7 @@ loop 5 [
 - `not-defined`: Attempting to use undefined identifier
 
 **Examples**:
-```rebol
+```viro
 undefined-word      → Script error (300): No value for word: undefined-word
 
 3 + "string"        → Script error (300): Type mismatch for '+': cannot add integer and string
@@ -143,7 +143,7 @@ first 42            → Script error (300): First expects series argument, got i
 - `invalid-math`: Invalid mathematical operation
 
 **Examples**:
-```rebol
+```viro
 10 / 0              → Math error (400): Division by zero
 
 9223372036854775807 + 1  → Math error (400): Integer overflow in add
@@ -174,7 +174,7 @@ first 42            → Script error (300): First expects series argument, got i
 - `not-found`: File or resource not found
 
 **Examples**:
-```rebol
+```viro
 ; Phase 1: input read errors
 input               → Access error (500): IO error reading input (if stdin fails)
 
@@ -202,7 +202,7 @@ write %readonly.txt → Access error (500): Write error: file is read-only
 - `not-implemented`: Feature not yet implemented
 
 **Examples**:
-```rebol
+```viro
 ; Recursive function without base case
 infinite: fn [] [infinite]
 infinite            → Internal error (900): Stack overflow (after ~100 levels)
