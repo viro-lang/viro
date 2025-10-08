@@ -402,10 +402,10 @@ Single project structure (per plan.md):
 
 ### Performance Benchmarking
 
-- [ ] T168 [P] [POLISH] Benchmark stack operations (<100ns per research.md) in `internal/stack/stack_bench_test.go`
-- [ ] T169 [P] [POLISH] Benchmark arithmetic operations (<1µs per research.md) in `internal/native/math_bench_test.go`
-- [ ] T170 [P] [POLISH] Benchmark simple expression evaluation (<10ms per SC-005) in `test/integration/eval_bench_test.go`
-- [ ] T171 [P] [POLISH] Benchmark complex expression evaluation (<100ms per SC-005) in `test/integration/eval_bench_test.go`
+- [X] T168 [P] [POLISH] Benchmark stack operations (<100ns per research.md) in `internal/stack/stack_bench_test.go`
+- [X] T169 [P] [POLISH] Benchmark arithmetic operations (<1µs per research.md) in `internal/native/math_bench_test.go`
+- [X] T170 [P] [POLISH] Benchmark simple expression evaluation (<10ms per SC-005) in `test/integration/eval_bench_test.go`
+- [X] T171 [P] [POLISH] Benchmark complex expression evaluation (<100ms per SC-005) in `test/integration/eval_bench_test.go`
 
 ### Success Criteria Validation
 
