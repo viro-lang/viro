@@ -35,7 +35,7 @@
 - Series must be non-empty (error if empty)
 
 **Examples**:
-```rebol
+```viro
 first [1 2 3]        → 1
 first "hello"        → #"h" (character)
 first []             → Error: empty series
@@ -68,7 +68,7 @@ first []             → Error: empty series
 **Behavior**: Returns element at position (length - 1)
 
 **Examples**:
-```rebol
+```viro
 last [1 2 3]         → 3
 last "hello"         → #"o"
 last []              → Error: empty series
@@ -106,7 +106,7 @@ last []              → Error: empty series
 - For String: value must be character or string (appends characters)
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 append data 4        → [1 2 3 4] (data is now [1 2 3 4])
 
@@ -146,7 +146,7 @@ append str " world"  → "hello world" (str is now "hello world")
 **Type Rules**: Same as `append`
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 insert data 0        → [0 1 2 3] (data is now [0 1 2 3])
 
@@ -182,7 +182,7 @@ insert str "hello "  → "hello world"
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 length? [1 2 3]      → 3
 length? []           → 0
 length? "hello"      → 5
@@ -220,7 +220,7 @@ length? ""           → 0
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 next data            → series at position 1 (viewing [2 3])
 first next data      → 2
@@ -259,7 +259,7 @@ next str             → series at position 1 (viewing "ello")
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 data2: next next data    ; at position 2
 back data2               ; at position 1 (viewing [2 3])
@@ -295,7 +295,7 @@ first back data2         → 2
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 data2: next next data    ; at position 2
 head data2               ; back at position 0 (viewing [1 2 3])
@@ -331,7 +331,7 @@ first head data2         → 1
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 tail data                ; at position 3 (past last element)
 tail? tail data          → true
@@ -369,7 +369,7 @@ tail? tail data          → true
 - Second argument must be Integer
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3 4 5]
 skip data 2              ; at position 2 (viewing [3 4 5])
 first skip data 2        → 3
@@ -410,7 +410,7 @@ skip data 100            ; clamps to tail
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 head? data               → true
 head? next data          → false
@@ -447,7 +447,7 @@ head? head next data     → true
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 tail? data               → false
 tail? tail data          → true
@@ -486,7 +486,7 @@ tail? next next next data → true
 - Argument must be Block or String type
 
 **Examples**:
-```rebol
+```viro
 data: [1 2 3]
 index? data              → 1
 index? next data         → 2
@@ -550,7 +550,7 @@ index? tail data         → 4
 - Position is part of the series reference, not the underlying data
 
 **Position Model**:
-```rebol
+```viro
 data: [1 2 3]        ; position 0 (head)
 data2: next data     ; position 1 (new reference)
 first data           → 1 (data still at position 0)
@@ -564,7 +564,7 @@ first data2          → 2 (data2 at position 1)
 - Position is stored separately for each series reference
 
 **Example**:
-```rebol
+```viro
 a: [1 2 3]
 b: a              ; b references same series at same position
 append b 4
@@ -617,7 +617,7 @@ For each native:
 - Position queries (`head?`, `tail?`, `index?`): O(1)
 
 **Future Extensions** (out of Phase 1 scope):
-- Series slicing with `copy/part`
+- Series slicing with `copy --part`
 - Series search (`find`, `select`)
 - Series sorting and transformation
 - Advanced insertion at arbitrary positions (`insert at`)
