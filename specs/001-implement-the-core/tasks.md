@@ -398,7 +398,7 @@ Single project structure (per plan.md):
 - [X] T164 [P] [POLISH] Integration test for User Story 3 scenarios in `test/integration/us3_test.go`
 - [X] T165 [P] [POLISH] Integration test for User Story 4 scenarios in `test/integration/us4_test.go`
 - [X] T166 [P] [POLISH] Integration test for User Story 5 scenarios in `test/integration/us5_test.go`
-- [ ] T167 [P] [POLISH] Integration test for User Story 6 scenarios in `test/integration/us6_test.go`
+- [X] T167 [P] [POLISH] Integration test for User Story 6 scenarios in `test/integration/us6_test.go`
 
 ### Performance Benchmarking
 

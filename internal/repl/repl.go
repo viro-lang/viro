@@ -96,6 +96,11 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 	return repl
 }
 
+// WelcomeMessage returns the default multi-line welcome text shown when the REPL starts.
+func WelcomeMessage() string {
+	return "Viro 0.1.0\nType 'exit' or 'quit' to leave\n\n"
+}
+
 // Run starts the REPL loop.
 func (r *REPL) Run() error {
 	if r.rl == nil {
@@ -271,9 +276,7 @@ func (r *REPL) formatValue(v value.Value) string {
 
 // printWelcome displays the welcome message.
 func (r *REPL) printWelcome() {
-	fmt.Fprintln(r.out, "Viro 0.1.0")
-	fmt.Fprintln(r.out, "Type 'exit' or 'quit' to leave")
-	fmt.Fprintln(r.out, "")
+	fmt.Fprint(r.out, WelcomeMessage())
 }
 
 func (r *REPL) printError(err *verror.Error) {
