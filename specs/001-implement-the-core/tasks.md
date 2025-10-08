@@ -393,10 +393,10 @@ Single project structure (per plan.md):
 
 ### Integration Testing
 
-- [ ] T162 [P] [POLISH] Integration test for User Story 1 scenarios (spec acceptance scenarios) in `test/integration/us1_test.go`
-- [ ] T163 [P] [POLISH] Integration test for User Story 2 scenarios in `test/integration/us2_test.go`
-- [ ] T164 [P] [POLISH] Integration test for User Story 3 scenarios in `test/integration/us3_test.go`
-- [ ] T165 [P] [POLISH] Integration test for User Story 4 scenarios in `test/integration/us4_test.go`
+- [X] T162 [P] [POLISH] Integration test for User Story 1 scenarios (spec acceptance scenarios) in `test/integration/us1_test.go`
+- [X] T163 [P] [POLISH] Integration test for User Story 2 scenarios in `test/integration/us2_test.go`
+- [X] T164 [P] [POLISH] Integration test for User Story 3 scenarios in `test/integration/us3_test.go`
+- [X] T165 [P] [POLISH] Integration test for User Story 4 scenarios in `test/integration/us4_test.go`
 - [ ] T166 [P] [POLISH] Integration test for User Story 5 scenarios in `test/integration/us5_test.go`
 - [ ] T167 [P] [POLISH] Integration test for User Story 6 scenarios in `test/integration/us6_test.go`
 
