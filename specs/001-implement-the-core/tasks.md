@@ -257,42 +257,42 @@ Single project structure (per plan.md):
 
 ### Contract Tests for User Story 4 (TDD - Write FIRST)
 
-- [ ] T105 [P] [US4] Contract test for `fn` (parameter extraction, body capture) in `test/contract/function_test.go`
-- [ ] T106 [P] [US4] Contract test for function calls (argument binding, frame creation) in `test/contract/function_test.go`
-- [ ] T107 [P] [US4] Contract test for local-by-default scoping (local variables don't affect global) in `test/contract/function_test.go`
-- [ ] T108 [P] [US4] Contract test for flag refinements (--verbose → true/false) in `test/contract/function_test.go`
-- [ ] T109 [P] [US4] Contract test for value refinements (--title [] → value/none) in `test/contract/function_test.go`
-- [ ] T110 [P] [US4] Contract test for refinement order independence in `test/contract/function_test.go`
-- [ ] T111 [P] [US4] Contract test for nested function calls and recursion in `test/contract/function_test.go`
+- [X] T105 [P] [US4] Contract test for `fn` (parameter extraction, body capture) in `test/contract/function_test.go`
+- [X] T106 [P] [US4] Contract test for function calls (argument binding, frame creation) in `test/contract/function_test.go`
+- [X] T107 [P] [US4] Contract test for local-by-default scoping (local variables don't affect global) in `test/contract/function_test.go`
+- [X] T108 [P] [US4] Contract test for flag refinements (--verbose → true/false) in `test/contract/function_test.go`
+- [X] T109 [P] [US4] Contract test for value refinements (--title [] → value/none) in `test/contract/function_test.go`
+- [X] T110 [P] [US4] Contract test for refinement order independence in `test/contract/function_test.go`
+- [X] T111 [P] [US4] Contract test for nested function calls and recursion in `test/contract/function_test.go`
 
 ### Implementation for User Story 4
 
 #### Function Native
 
-- [ ] T112 [US4] Implement native `fn` (parse parameters, extract refinements, capture body) in `internal/native/function.go`
-- [ ] T113 [US4] Implement parameter validation (words only, unique names, refinement syntax) in `internal/native/function.go`
-- [ ] T114 [US4] Implement refinement parsing (--flag vs --option []) in `internal/native/function.go`
-- [ ] T115 [US4] Register function native in native dispatcher in `internal/native/registry.go`
+- [X] T112 [US4] Implement native `fn` (parse parameters, extract refinements, capture body) in `internal/native/function.go`
+- [X] T113 [US4] Implement parameter validation (words only, unique names, refinement syntax) in `internal/native/function.go`
+- [X] T114 [US4] Implement refinement parsing (--flag vs --option []) in `internal/native/function.go`
+- [X] T115 [US4] Register function native in native dispatcher in `internal/native/registry.go`
 
 #### Function Call Evaluation
 
-- [ ] T116 [US4] Implement function call dispatch (recognize Function type) in `internal/eval/eval.go`
-- [ ] T117 [US4] Implement argument collection (scan args, separate positional from refinements) in `internal/eval/eval.go`
-- [ ] T118 [US4] Implement refinement collection (flags→true, values→next arg) in `internal/eval/eval.go`
-- [ ] T119 [US4] Implement argument count validation in `internal/eval/eval.go`
+- [X] T116 [US4] Implement function call dispatch (recognize Function type) in `internal/eval/eval.go`
+- [X] T117 [US4] Implement argument collection (scan args, separate positional from refinements) in `internal/eval/eval.go`
+- [X] T118 [US4] Implement refinement collection (flags→true, values→next arg) in `internal/eval/eval.go`
+- [X] T119 [US4] Implement argument count validation in `internal/eval/eval.go`
 
 #### Frame Management for Functions
 
-- [ ] T120 [US4] Implement function frame creation (allocate on stack with layout) in `internal/stack/stack.go`
-- [ ] T121 [US4] Implement parameter binding (positional args + refinements to frame) in `internal/eval/eval.go`
-- [ ] T122 [US4] Implement local-by-default word binding (all body words bound to local frame) in `internal/frame/binding.go`
-- [ ] T123 [US4] Implement body evaluation in function frame context in `internal/eval/eval.go`
-- [ ] T124 [US4] Implement return value handling and frame cleanup in `internal/eval/eval.go`
+- [X] T120 [US4] Implement function frame creation (allocate on stack with layout) in `internal/stack/stack.go`
+- [X] T121 [US4] Implement parameter binding (positional args + refinements to frame) in `internal/eval/eval.go`
+- [X] T122 [US4] Implement local-by-default word binding (all body words bound to local frame) in `internal/frame/binding.go`
+- [X] T123 [US4] Implement body evaluation in function frame context in `internal/eval/eval.go`
+- [X] T124 [US4] Implement return value handling and frame cleanup in `internal/eval/eval.go`
 
 #### Closure Support
 
-- [ ] T125 [US4] Implement parent frame capture for closures in `internal/frame/frame.go`
-- [ ] T126 [US4] Implement lexical scope chain traversal in `internal/frame/binding.go`
+- [X] T125 [US4] Implement parent frame capture for closures in `internal/frame/frame.go`
+- [X] T126 [US4] Implement lexical scope chain traversal in `internal/frame/binding.go`
 
 **Checkpoint**: User Stories 1-4 complete - users can now define and call functions with full scoping and refinements
 
