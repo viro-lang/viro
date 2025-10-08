@@ -27,7 +27,7 @@
 - Block: must be Block type (error if not)
 
 **Examples**:
-```rebol
+```viro
 when true [42]           → 42
 when false [42]          → none
 when 1 [print "yes"]     → prints "yes", returns none (print returns none)
@@ -78,7 +78,7 @@ result: when valid? [
 - Both blocks: must be Block type (error if not)
 
 **Examples**:
-```rebol
+```viro
 if true [1] [2]              → 1
 if false [1] [2]             → 2
 if 1 < 2 ["less"] ["more"]  → "less"
@@ -140,7 +140,7 @@ status: if valid? [
 - Block: must be Block type (error if not)
 
 **Examples**:
-```rebol
+```viro
 loop 3 [print "hi"]    → prints "hi" three times, returns none
 loop 0 [print "hi"]    → none (no execution)
 loop 5 [42]            → 42 (returns last iteration result)
@@ -189,7 +189,7 @@ x: 0  loop 3 [x: x + 1]  → x becomes 3, returns 3
 - User must interrupt infinite loops via Ctrl+C
 
 **Examples**:
-```rebol
+```viro
 x: 0  while [x < 3] [x: x + 1]  → x becomes 3, returns 3
 while [false] [42]               → none (never executes)
 while [true] [42]                → infinite loop (user interrupts)
