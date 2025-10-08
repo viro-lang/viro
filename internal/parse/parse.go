@@ -128,6 +128,18 @@ func tokenize(input string) ([]token, *verror.Error) {
 			continue
 		}
 
+		// Refinement words starting with "--"
+		if runes[pos] == '-' && pos+1 < len(runes) && runes[pos+1] == '-' && pos+2 < len(runes) && isWordStart(runes[pos+2]) {
+			start := pos
+			pos += 2 // Skip leading --
+			for pos < len(runes) && isWordChar(runes[pos]) {
+				pos++
+			}
+			word := string(runes[start:pos])
+			tokens = append(tokens, token{tokWord, word, start})
+			continue
+		}
+
 		// Single-character operators and multi-character operator starts
 		if runes[pos] == '+' || runes[pos] == '*' || runes[pos] == '/' {
 			tokens = append(tokens, token{tokOperator, string(runes[pos]), pos})

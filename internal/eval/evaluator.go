@@ -10,6 +10,9 @@
 package eval
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/stack"
@@ -22,16 +25,111 @@ import (
 // Design per Constitution Principle IV: Index-based access to stack/frames.
 // Stack holds both data and frames in a unified structure.
 type Evaluator struct {
-	Stack  *stack.Stack
-	Frames []*frame.Frame
+	Stack      *stack.Stack
+	Frames     []*frame.Frame
+	frameStore []*frame.Frame
+	frameIndex map[*frame.Frame]int
+	captured   map[int]bool
 }
 
 // NewEvaluator creates a new evaluation engine with an empty stack.
 func NewEvaluator() *Evaluator {
-	return &Evaluator{
-		Stack:  &stack.Stack{Data: make([]value.Value, 0, 1024)},
-		Frames: make([]*frame.Frame, 0, 64),
+	global := frame.NewFrame(frame.FrameClosure, -1)
+	e := &Evaluator{
+		Stack:      stack.NewStack(1024),
+		Frames:     []*frame.Frame{global},
+		frameStore: []*frame.Frame{global},
+		frameIndex: make(map[*frame.Frame]int),
+		captured:   make(map[int]bool),
 	}
+	e.frameIndex[global] = 0
+	e.captured[0] = true
+	return e
+}
+
+// currentFrame returns the active frame (top of frame stack).
+func (e *Evaluator) currentFrame() *frame.Frame {
+	if len(e.Frames) == 0 {
+		return nil
+	}
+	return e.Frames[len(e.Frames)-1]
+}
+
+// currentFrameIndex returns the store index for the active frame.
+func (e *Evaluator) currentFrameIndex() int {
+	frame := e.currentFrame()
+	if frame == nil {
+		return -1
+	}
+	if idx, ok := e.frameIndex[frame]; ok {
+		return idx
+	}
+	return -1
+}
+
+// getFrameByIndex retrieves frame from store by index.
+func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
+	if idx < 0 || idx >= len(e.frameStore) {
+		return nil
+	}
+	return e.frameStore[idx]
+}
+
+// pushFrame registers a new frame as active and stores it for closure lookups.
+func (e *Evaluator) pushFrame(f *frame.Frame) int {
+	idx, ok := e.frameIndex[f]
+	if !ok {
+		idx = len(e.frameStore)
+		e.frameStore = append(e.frameStore, f)
+		e.frameIndex[f] = idx
+	}
+	e.Frames = append(e.Frames, f)
+	return idx
+}
+
+// popFrame removes the active frame and returns its store index.
+func (e *Evaluator) popFrame() int {
+	if len(e.Frames) == 0 {
+		return -1
+	}
+	frm := e.Frames[len(e.Frames)-1]
+	e.Frames = e.Frames[:len(e.Frames)-1]
+	idx := e.frameIndex[frm]
+	if !e.captured[idx] {
+		// Release non-captured frames for GC by clearing store entry
+		e.frameStore[idx] = nil
+		delete(e.frameIndex, frm)
+	} else if frm.Type != frame.FrameClosure {
+		frm.Type = frame.FrameClosure
+	}
+	return idx
+}
+
+// MarkFrameCaptured marks a frame as captured for closure usage.
+func (e *Evaluator) MarkFrameCaptured(idx int) {
+	if idx >= 0 {
+		e.captured[idx] = true
+	}
+}
+
+// CurrentFrameIndex exposes the active frame index (implements frameProvider).
+func (e *Evaluator) CurrentFrameIndex() int {
+	return e.currentFrameIndex()
+}
+
+// lookup searches for a word through the active frame chain.
+func (e *Evaluator) lookup(symbol string) (value.Value, bool) {
+	frame := e.currentFrame()
+	for frame != nil {
+		if val, ok := frame.Get(symbol); ok {
+			return val, true
+		}
+		if frame.Parent == -1 {
+			break
+		}
+		frame = e.getFrameByIndex(frame.Parent)
+	}
+	return value.NoneVal(), false
 }
 
 // Do_Next evaluates a single value and returns the result.
@@ -116,31 +214,22 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 			continue
 		}
 
-		// Special case: word that might be a native function call
+		// Special case: word that might be a native or user-defined function call
 		if val.Type == value.TypeWord {
 			wordStr, ok := val.AsWord()
 			if ok {
 				if nativeInfo, found := native.Lookup(wordStr); found {
 					// This is a native function call - collect arguments
-					args := make([]value.Value, 0, nativeInfo.Arity)
-					for j := 0; j < nativeInfo.Arity; j++ {
-						if i+1+j >= len(vals) {
-							return value.NoneVal(), verror.NewScriptError(
-								verror.ErrIDArgCount,
-								[3]string{wordStr, "", ""},
-							)
-						}
-						arg, argErr := e.Do_Next(vals[i+1+j])
-						if argErr != nil {
-							return value.NoneVal(), argErr
-						}
-						args = append(args, arg)
+					result, err = e.callNative(wordStr, nativeInfo, vals, &i)
+					if err != nil {
+						return value.NoneVal(), err
 					}
-					// Advance index past consumed arguments
-					i += nativeInfo.Arity
+					continue
+				}
 
-					// Call the native
-					result, err = native.Call(nativeInfo, args, e)
+				if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+					fn, _ := resolved.AsFunction()
+					result, err = e.invokeFunctionFromSequence(fn, vals, &i)
 					if err != nil {
 						return value.NoneVal(), err
 					}
@@ -166,29 +255,221 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
 	}
 
-	// Check if this is a native function call pattern: (operator arg1 arg2)
-	if len(block.Elements) >= 3 && block.Elements[0].Type == value.TypeWord {
+	if len(block.Elements) >= 1 && block.Elements[0].Type == value.TypeWord {
 		wordStr, ok := block.Elements[0].AsWord()
 		if ok {
 			if nativeInfo, found := native.Lookup(wordStr); found {
-				// This is a native function call - evaluate arguments first
-				var args []value.Value
-				for i := 1; i < len(block.Elements); i++ {
-					arg, err := e.Do_Next(block.Elements[i])
-					if err != nil {
-						return value.NoneVal(), err
-					}
-					args = append(args, arg)
-				}
+				return e.callNativeFromSlice(wordStr, nativeInfo, block.Elements[1:])
+			}
 
-				// Call the native function (handles both simple and eval-needing natives)
-				return native.Call(nativeInfo, args, e)
+			if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+				fn, _ := resolved.AsFunction()
+				return e.invokeFunctionWithTokens(fn, block.Elements[1:])
 			}
 		}
 	}
 
-	// Otherwise, evaluate contents in sequence
 	return e.Do_Blk(block.Elements)
+}
+
+func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+	args := make([]value.Value, 0, info.Arity)
+	for j := 0; j < info.Arity; j++ {
+		tokenIdx := *idx + 1 + j
+		if tokenIdx >= len(vals) {
+			return value.NoneVal(), verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(args))},
+			)
+		}
+		arg, argErr := e.Do_Next(vals[tokenIdx])
+		if argErr != nil {
+			return value.NoneVal(), argErr
+		}
+		args = append(args, arg)
+	}
+
+	*idx += info.Arity
+	return native.Call(info, args, e)
+}
+
+func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, tokens []value.Value) (value.Value, *verror.Error) {
+	if len(tokens) != info.Arity {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(tokens))},
+		)
+	}
+
+	args := make([]value.Value, 0, info.Arity)
+	for _, token := range tokens {
+		arg, err := e.Do_Next(token)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+		args = append(args, arg)
+	}
+
+	return native.Call(info, args, e)
+}
+
+func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+	tokens := vals[*idx+1:]
+	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	*idx += consumed
+	return e.executeFunction(fn, posArgs, refValues)
+}
+
+func (e *Evaluator) invokeFunctionWithTokens(fn *value.FunctionValue, tokens []value.Value) (value.Value, *verror.Error) {
+	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	if consumed != len(tokens) {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{fn.Name, fmt.Sprintf("%d", len(posArgs)), fmt.Sprintf("%d", len(posArgs)+(len(tokens)-consumed))},
+		)
+	}
+
+	return e.executeFunction(fn, posArgs, refValues)
+}
+
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
+	positional := make([]value.ParamSpec, 0, len(tokens))
+	refSpecs := make(map[string]value.ParamSpec)
+	refValues := make(map[string]value.Value)
+	refProvided := make(map[string]bool)
+
+	for _, spec := range fn.Params {
+		if spec.Refinement {
+			refSpecs[spec.Name] = spec
+			if spec.TakesValue {
+				refValues[spec.Name] = value.NoneVal()
+			} else {
+				refValues[spec.Name] = value.LogicVal(false)
+			}
+			continue
+		}
+		positional = append(positional, spec)
+	}
+
+	posArgs := make([]value.Value, len(positional))
+	consumed := 0
+	posIndex := 0
+
+	for consumed < len(tokens) {
+		token := tokens[consumed]
+
+		if token.Type == value.TypeWord {
+			wordName, _ := token.AsWord()
+			if strings.HasPrefix(wordName, "--") {
+				refName := strings.TrimPrefix(wordName, "--")
+				spec, exists := refSpecs[refName]
+				if !exists {
+					return nil, nil, 0, verror.NewScriptError(
+						verror.ErrIDInvalidOperation,
+						[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
+					)
+				}
+				if refProvided[refName] {
+					return nil, nil, 0, verror.NewScriptError(
+						verror.ErrIDInvalidOperation,
+						[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
+					)
+				}
+
+				if spec.TakesValue {
+					if consumed+1 >= len(tokens) {
+						return nil, nil, 0, verror.NewScriptError(
+							verror.ErrIDInvalidOperation,
+							[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
+						)
+					}
+					valueToken := tokens[consumed+1]
+					arg, err := e.Do_Next(valueToken)
+					if err != nil {
+						return nil, nil, 0, err
+					}
+					refValues[refName] = arg
+					consumed += 2
+				} else {
+					refValues[refName] = value.LogicVal(true)
+					consumed++
+				}
+
+				refProvided[refName] = true
+				continue
+			}
+		}
+
+		if posIndex >= len(positional) {
+			break
+		}
+
+		arg, err := e.Do_Next(token)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		posArgs[posIndex] = arg
+		posIndex++
+		consumed++
+	}
+
+	if posIndex < len(positional) {
+		return nil, nil, 0, verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{fn.Name, fmt.Sprintf("%d", len(positional)), fmt.Sprintf("%d", posIndex)},
+		)
+	}
+
+	return posArgs, refValues, consumed, nil
+}
+
+func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+	parent := fn.Parent
+	if parent == -1 {
+		parent = 0
+	}
+
+	frame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, parent, len(fn.Params))
+	e.pushFrame(frame)
+	defer e.popFrame()
+
+	posIndex := 0
+	for _, spec := range fn.Params {
+		if spec.Refinement {
+			val, ok := refinements[spec.Name]
+			if !ok {
+				if spec.TakesValue {
+					val = value.NoneVal()
+				} else {
+					val = value.LogicVal(false)
+				}
+			}
+			frame.Bind(spec.Name, val)
+			continue
+		}
+
+		frame.Bind(spec.Name, posArgs[posIndex])
+		posIndex++
+	}
+
+	if fn.Body == nil {
+		return value.NoneVal(), verror.NewInternalError("function body missing", [3]string{})
+	}
+
+	result, err := e.Do_Blk(fn.Body.Elements)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	return result, nil
 }
 
 // evalWord looks up a word in the current frame and evaluates the result.
@@ -204,15 +485,7 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 		return val, nil // Return the word itself, not evaluated yet
 	}
 
-	// Get current frame
-	if len(e.Frames) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-	}
-
-	currentFrame := e.Frames[len(e.Frames)-1]
-
-	// Look up word in frame
-	result, ok := currentFrame.Get(wordStr)
+	result, ok := e.lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 	}
@@ -242,18 +515,37 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
 	}
 
-	// Get current frame (create one if needed)
-	if len(e.Frames) == 0 {
-		// Create a global frame if none exists
-		e.Frames = append(e.Frames, frame.NewFrame(frame.FrameFunctionArgs, -1))
+	currentFrame := e.currentFrame()
+	if currentFrame == nil {
+		currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
+		e.pushFrame(currentFrame)
 	}
-
-	currentFrame := e.Frames[len(e.Frames)-1]
 
 	// Advance to next value and evaluate it
 	*i++
 	nextVal := vals[*i]
-	result, err := e.Do_Next(nextVal)
+
+	var (
+		result value.Value
+		err    *verror.Error
+	)
+
+	if nextVal.Type == value.TypeWord {
+		if wordStr, ok := nextVal.AsWord(); ok {
+			if nativeInfo, found := native.Lookup(wordStr); found {
+				result, err = e.callNative(wordStr, nativeInfo, vals, i)
+			} else if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+				fn, _ := resolved.AsFunction()
+				result, err = e.invokeFunctionFromSequence(fn, vals, i)
+			} else {
+				result, err = e.Do_Next(nextVal)
+			}
+		} else {
+			result, err = e.Do_Next(nextVal)
+		}
+	} else {
+		result, err = e.Do_Next(nextVal)
+	}
 	if err != nil {
 		return value.NoneVal(), err
 	}
@@ -277,15 +569,7 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
 	}
 
-	// Get current frame
-	if len(e.Frames) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-	}
-
-	currentFrame := e.Frames[len(e.Frames)-1]
-
-	// Look up word in frame
-	result, ok := currentFrame.Get(wordStr)
+	result, ok := e.lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 	}

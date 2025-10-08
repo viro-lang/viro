@@ -52,6 +52,16 @@ func init() {
 	Registry["or"] = &NativeInfo{Func: Or, NeedsEval: false, Arity: 2}
 	Registry["not"] = &NativeInfo{Func: Not, NeedsEval: false, Arity: 1}
 
+	// Register series natives
+	Registry["first"] = &NativeInfo{Func: First, NeedsEval: false, Arity: 1}
+	Registry["last"] = &NativeInfo{Func: Last, NeedsEval: false, Arity: 1}
+	Registry["append"] = &NativeInfo{Func: Append, NeedsEval: false, Arity: 2}
+	Registry["insert"] = &NativeInfo{Func: Insert, NeedsEval: false, Arity: 2}
+	Registry["length?"] = &NativeInfo{Func: LengthQ, NeedsEval: false, Arity: 1}
+
+	// Register function native
+	Registry["fn"] = &NativeInfo{FuncEval: Fn, NeedsEval: true, Arity: 2}
+
 	// Register control flow natives (need evaluator)
 	Registry["when"] = &NativeInfo{FuncEval: When, NeedsEval: true, Arity: 2}
 	Registry["if"] = &NativeInfo{FuncEval: If, NeedsEval: true, Arity: 3}

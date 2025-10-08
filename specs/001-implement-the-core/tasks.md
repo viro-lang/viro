@@ -222,28 +222,28 @@ Single project structure (per plan.md):
 
 ### Contract Tests for User Story 3 (TDD - Write FIRST)
 
-- [ ] T091 [P] [US3] Contract test for `first` (return first element, error on empty) in `test/contract/series_test.go`
-- [ ] T092 [P] [US3] Contract test for `last` (return last element, error on empty) in `test/contract/series_test.go`
-- [ ] T093 [P] [US3] Contract test for `append` (add to end, in-place modification) in `test/contract/series_test.go`
-- [ ] T094 [P] [US3] Contract test for `insert` (add at beginning, shift elements) in `test/contract/series_test.go`
-- [ ] T095 [P] [US3] Contract test for `length?` (return element count) in `test/contract/series_test.go`
-- [ ] T096 [P] [US3] Contract test for string series operations (character sequences) in `test/contract/series_test.go`
+- [X] T091 [P] [US3] Contract test for `first` (return first element, error on empty) in `test/contract/series_test.go`
+- [X] T092 [P] [US3] Contract test for `last` (return last element, error on empty) in `test/contract/series_test.go`
+- [X] T093 [P] [US3] Contract test for `append` (add to end, in-place modification) in `test/contract/series_test.go`
+- [X] T094 [P] [US3] Contract test for `insert` (add at beginning, shift elements) in `test/contract/series_test.go`
+- [X] T095 [P] [US3] Contract test for `length?` (return element count) in `test/contract/series_test.go`
+- [X] T096 [P] [US3] Contract test for string series operations (character sequences) in `test/contract/series_test.go`
 
 ### Implementation for User Story 3
 
 #### Series Natives
 
-- [ ] T097 [P] [US3] Implement native `first` (return element at index 0, validate non-empty) in `internal/native/series.go`
-- [ ] T098 [P] [US3] Implement native `last` (return element at index length-1, validate non-empty) in `internal/native/series.go`
-- [ ] T099 [P] [US3] Implement native `append` (add value to end, modify in-place) in `internal/native/series.go`
-- [ ] T100 [P] [US3] Implement native `insert` (add value at position 0, shift right) in `internal/native/series.go`
-- [ ] T101 [P] [US3] Implement native `length?` (return element count) in `internal/native/series.go`
-- [ ] T102 [US3] Register series natives in native dispatcher in `internal/native/registry.go`
+- [X] T097 [P] [US3] Implement native `first` (return element at index 0, validate non-empty) in `internal/native/series.go`
+- [X] T098 [P] [US3] Implement native `last` (return element at index length-1, validate non-empty) in `internal/native/series.go`
+- [X] T099 [P] [US3] Implement native `append` (add value to end, modify in-place) in `internal/native/series.go`
+- [X] T100 [P] [US3] Implement native `insert` (add value at position 0, shift right) in `internal/native/series.go`
+- [X] T101 [P] [US3] Implement native `length?` (return element count) in `internal/native/series.go`
+- [X] T102 [US3] Register series natives in native dispatcher in `internal/native/registry.go`
 
 #### Series Type Validation
 
-- [ ] T103 [US3] Implement series type checking (Block or String) in series natives in `internal/native/series.go`
-- [ ] T104 [US3] Implement empty series error handling (Script error 300) in `internal/native/series.go`
+- [X] T103 [US3] Implement series type checking (Block or String) in series natives in `internal/native/series.go`
+- [X] T104 [US3] Implement empty series error handling (Script error 300) in `internal/native/series.go`
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete - users can now work with collections and data structures
 
