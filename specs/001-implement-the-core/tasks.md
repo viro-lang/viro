@@ -311,7 +311,7 @@ Single project structure (per plan.md):
 - [X] T129 [P] [US5] Contract test for type mismatch errors (Script error 300) in `test/contract/errors_test.go`
 - [X] T130 [P] [US5] Contract test for syntax errors during parsing (Syntax error 200) in `test/contract/errors_test.go`
 - [X] T131 [P] [US5] Contract test for error context (Near and Where included) in `test/contract/errors_test.go`
-- [ ] T132 [P] [US5] Contract test for REPL error recovery (continues after error) in `test/integration/repl_test.go`
+- [X] T132 [P] [US5] Contract test for REPL error recovery (continues after error) in `test/integration/repl_test.go`
 
 ### Implementation for User Story 5
 
