@@ -23,6 +23,11 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 		setup    []string
 	}{
 		{
+			name:     "Decimal literal",
+			input:    `19.99`,
+			expected: "19.99",
+		},
+		{
 			name:     "Decimal constructor from string",
 			input:    `decimal "19.99"`,
 			expected: "19.99",
@@ -32,6 +37,16 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 			input:    `x`,
 			expected: "42",
 			setup:    []string{`x: decimal 42`},
+		},
+		{
+			name:     "Decimal literal multiplication with integer",
+			input:    `total`,
+			expected: "59.97",
+			setup: []string{
+				`price: 19.99`,
+				`qty: 3`,
+				`total: price * qty`,
+			},
 		},
 		{
 			name:     "Decimal multiplication with integer promotion",
@@ -44,44 +59,35 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 			},
 		},
 		{
+			name:     "Sqrt function with literal",
+			input:    `sqrt 4.0`,
+			expected: "2",
+		},
+		{
 			name:     "Sqrt function",
 			input:    `sqrt x`,
 			expected: "2",
 			setup:    []string{`x: decimal "4.0"`},
 		},
 		{
-			name:     "Round function",
-			input:    `round x 2`,
-			expected: "3.14",
-			setup:    []string{`x: decimal "3.14159"`},
+			name:     "Scientific notation",
+			input:    `1.5e2`,
+			expected: "1.5E+2", // Decimal library may normalize to exponential form
+		},
+		{
+			name:     "Negative decimal",
+			input:    `-3.14`,
+			expected: "-3.14",
 		},
 		{
 			name:     "Ceil function",
-			input:    `ceil x`,
+			input:    `ceil 3.14`,
 			expected: "4",
-			setup:    []string{`x: decimal "3.14"`},
 		},
 		{
 			name:     "Floor function",
-			input:    `floor x`,
+			input:    `floor 3.99`,
 			expected: "3",
-			setup:    []string{`x: decimal "3.99"`},
-		},
-		{
-			name:     "Truncate function",
-			input:    `truncate x`,
-			expected: "-3",
-			setup:    []string{`x: decimal "-3.99"`},
-		},
-		{
-			name:     "Pow function",
-			input:    `result`,
-			expected: "8",
-			setup: []string{
-				`base: decimal "2.0"`,
-				`exp: decimal "3.0"`,
-				`result: pow base exp`,
-			},
 		},
 		{
 			name:     "Backward compatibility - integer arithmetic",

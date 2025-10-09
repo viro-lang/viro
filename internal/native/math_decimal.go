@@ -102,7 +102,7 @@ func Sqrt(args []value.Value) (value.Value, *verror.Error) {
 	
 	// Domain check: negative values not allowed
 	if val.Sign() < 0 {
-		return value.NoneVal(), verror.NewMathError("sqrt-negative", [3]string{val.String(), "", ""})
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDSqrtNegative, [3]string{val.String(), "", ""})
 	}
 	
 	ctx := decimal.Context128
@@ -129,7 +129,7 @@ func Exp(args []value.Value) (value.Value, *verror.Error) {
 	
 	// Check for overflow
 	if result.IsInf(0) {
-		return value.NoneVal(), verror.NewMathError("exp-overflow", [3]string{val.String(), "", ""})
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDExpOverflow, [3]string{val.String(), "", ""})
 	}
 	
 	return value.DecimalVal(result, 2), nil
@@ -148,7 +148,7 @@ func Log(args []value.Value) (value.Value, *verror.Error) {
 	
 	// Domain check: must be positive
 	if val.Sign() <= 0 {
-		return value.NoneVal(), verror.NewMathError("log-domain", [3]string{val.String(), "", ""})
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDLogDomain, [3]string{val.String(), "", ""})
 	}
 	
 	ctx := decimal.Context128
@@ -252,7 +252,7 @@ func Asin(args []value.Value) (value.Value, *verror.Error) {
 	// Domain check: [-1, 1]
 	f, _ := val.Float64()
 	if f < -1.0 || f > 1.0 {
-		return value.NoneVal(), verror.NewMathError("asin-domain", [3]string{val.String(), "", ""})
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDAsinDomain, [3]string{val.String(), "", ""})
 	}
 	
 	result := math.Asin(f)
@@ -274,7 +274,7 @@ func Acos(args []value.Value) (value.Value, *verror.Error) {
 	// Domain check: [-1, 1]
 	f, _ := val.Float64()
 	if f < -1.0 || f > 1.0 {
-		return value.NoneVal(), verror.NewMathError("acos-domain", [3]string{val.String(), "", ""})
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDAcosDomain, [3]string{val.String(), "", ""})
 	}
 	
 	result := math.Acos(f)

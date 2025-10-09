@@ -41,6 +41,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -72,6 +73,7 @@ type tokenType int
 
 const (
 	tokNumber tokenType = iota
+	tokDecimal
 	tokString
 	tokWord
 	tokOperator
@@ -152,16 +154,60 @@ func tokenize(input string) ([]token, *verror.Error) {
 			continue
 		}
 
-		// Numbers
+		// Numbers (integers and decimals)
+		// Format: [-]digits[.digits][e|E[+|-]digits]
+		// Examples: 42, -3, 19.99, -3.14, 1.5e10, 2.5E-3
 		if unicode.IsDigit(runes[pos]) || (runes[pos] == '-' && pos+1 < len(runes) && unicode.IsDigit(runes[pos+1])) {
 			start := pos
+			hasDecimal := false
+			hasExponent := false
+			
+			// Optional negative sign
 			if runes[pos] == '-' {
 				pos++
 			}
+			
+			// Integer part (required)
 			for pos < len(runes) && unicode.IsDigit(runes[pos]) {
 				pos++
 			}
-			tokens = append(tokens, token{tokNumber, string(runes[start:pos]), start})
+			
+			// Decimal point and fractional part (optional)
+			if pos < len(runes) && runes[pos] == '.' && pos+1 < len(runes) && unicode.IsDigit(runes[pos+1]) {
+				hasDecimal = true
+				pos++ // Skip '.'
+				for pos < len(runes) && unicode.IsDigit(runes[pos]) {
+					pos++
+				}
+			}
+			
+			// Exponent part (optional)
+			if pos < len(runes) && (runes[pos] == 'e' || runes[pos] == 'E') {
+				if pos+1 < len(runes) {
+					nextPos := pos + 1
+					// Optional sign after 'e'
+					if runes[nextPos] == '+' || runes[nextPos] == '-' {
+						nextPos++
+					}
+					// Must have at least one digit after 'e' or 'e+'/'e-'
+					if nextPos < len(runes) && unicode.IsDigit(runes[nextPos]) {
+						hasExponent = true
+						pos = nextPos
+						for pos < len(runes) && unicode.IsDigit(runes[pos]) {
+							pos++
+						}
+					}
+				}
+			}
+			
+			numStr := string(runes[start:pos])
+			
+			// Determine token type based on format
+			if hasDecimal || hasExponent {
+				tokens = append(tokens, token{tokDecimal, numStr, start})
+			} else {
+				tokens = append(tokens, token{tokNumber, numStr, start})
+			}
 			continue
 		}
 
@@ -429,6 +475,28 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidLiteral, [3]string{tok.val, "", ""})
 		}
 		return value.IntVal(num), nil
+
+	case tokDecimal:
+		// Parse decimal literal: creates DecimalValue directly
+		// Format: [-]digits[.digits][e|E[+|-]digits]
+		d := new(decimal.Big)
+		_, ok := d.SetString(tok.val)
+		if !ok {
+			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidLiteral, [3]string{tok.val, "", ""})
+		}
+		
+		// Calculate scale from decimal string representation
+		scale := int16(0)
+		if idx := strings.Index(tok.val, "."); idx >= 0 {
+			// Find end of fractional part (before 'e' or 'E' if present)
+			endIdx := len(tok.val)
+			if eIdx := strings.IndexAny(tok.val, "eE"); eIdx > idx {
+				endIdx = eIdx
+			}
+			scale = int16(endIdx - idx - 1)
+		}
+		
+		return value.DecimalVal(d, scale), nil
 
 	case tokString:
 		return value.StrVal(tok.val), nil

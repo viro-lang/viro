@@ -75,6 +75,15 @@ const (
 	ErrIDDivByZero = "div-zero"
 	ErrIDOverflow  = "overflow"
 	ErrIDUnderflow = "underflow"
+	
+	// Feature 002: Decimal-specific math errors
+	ErrIDSqrtNegative      = "sqrt-negative"       // sqrt of negative number
+	ErrIDLogDomain         = "log-domain"          // log of zero or negative
+	ErrIDExpOverflow       = "exp-overflow"        // exponential overflow
+	ErrIDDecimalPrecision  = "decimal-precision"   // precision overflow (>34 digits)
+	ErrIDInvalidDecimal    = "invalid-decimal"     // invalid decimal string format
+	ErrIDAsinDomain        = "asin-domain"         // asin outside [-1, 1]
+	ErrIDAcosDomain        = "acos-domain"         // acos outside [-1, 1]
 
 	// Internal errors (900)
 	ErrIDStackOverflow   = "stack-overflow"
