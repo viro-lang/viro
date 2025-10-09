@@ -10,6 +10,19 @@ Viro implements a subset of REBOL's evaluation semantics with modern improvement
 - **Bash-style refinements** (`--flag`, `--option value`)
 - **Paren type for immediate evaluation** distinct from deferred blocks
 
+## Feature 002: Deferred Language Capabilities
+
+**Status**: In Progress
+
+This release adds advanced capabilities deferred from the initial implementation:
+- **High-precision decimals** (IEEE 754 decimal128) for financial and scientific calculations
+- **Sandboxed ports** for file and network I/O (HTTP, TCP) with TLS controls
+- **Objects and paths** for structured data organization and nested access
+- **Parse dialect** for declarative pattern matching and data transformation
+- **Observability** including tracing, debugging, and reflection capabilities
+
+See [specs/002-implement-deferred-features/](specs/002-implement-deferred-features/) for detailed specifications.
+
 ## Quick Start
 
 See [specs/001-implement-the-core/quickstart.md](specs/001-implement-the-core/quickstart.md) for detailed build, run, and test instructions.

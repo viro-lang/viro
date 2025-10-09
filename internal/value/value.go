@@ -73,6 +73,26 @@ func (v Value) String() string {
 			return fn.String()
 		}
 		return "function"
+	case TypeDecimal:
+		if dec, ok := v.Payload.(*DecimalValue); ok {
+			return dec.String()
+		}
+		return "0.0"
+	case TypeObject:
+		if obj, ok := v.Payload.(*ObjectInstance); ok {
+			return obj.String()
+		}
+		return "object[]"
+	case TypePort:
+		if port, ok := v.Payload.(*Port); ok {
+			return port.String()
+		}
+		return "port[closed]"
+	case TypePath:
+		if path, ok := v.Payload.(*PathExpression); ok {
+			return path.String()
+		}
+		return "path[]"
 	default:
 		return fmt.Sprintf("<%s>", v.Type)
 	}

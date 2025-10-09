@@ -18,15 +18,15 @@
 
 **Purpose**: Project initialization and dependency management for Feature 002
 
-- [ ] T001 Add `github.com/ericlagergren/decimal` dependency to go.mod
-- [ ] T002 Add `gopkg.in/natefinch/lumberjack.v2` dependency to go.mod
-- [ ] T003 [P] Update README.md with Feature 002 capabilities overview
-- [ ] T004 [P] Create contract test scaffold in test/contract/math_decimal_test.go
-- [ ] T005 [P] Create contract test scaffold in test/contract/ports_test.go
-- [ ] T006 [P] Create contract test scaffold in test/contract/objects_test.go
-- [ ] T007 [P] Create contract test scaffold in test/contract/parse_test.go
-- [ ] T008 [P] Create contract test scaffold in test/contract/trace_debug_test.go
-- [ ] T009 [P] Create contract test scaffold in test/contract/reflection_test.go
+- [X] T001 Add `github.com/ericlagergren/decimal` dependency to go.mod
+- [X] T002 Add `gopkg.in/natefinch/lumberjack.v2` dependency to go.mod
+- [X] T003 [P] Update README.md with Feature 002 capabilities overview
+- [X] T004 [P] Create contract test scaffold in test/contract/math_decimal_test.go
+- [X] T005 [P] Create contract test scaffold in test/contract/ports_test.go
+- [X] T006 [P] Create contract test scaffold in test/contract/objects_test.go
+- [X] T007 [P] Create contract test scaffold in test/contract/parse_test.go
+- [X] T008 [P] Create contract test scaffold in test/contract/trace_debug_test.go
+- [X] T009 [P] Create contract test scaffold in test/contract/reflection_test.go
 
 ---
 
@@ -36,12 +36,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T010 Extend ValueType enumeration in internal/value/types.go (add TypeDecimal, TypeObject, TypePort, TypePath)
-- [ ] T011 [P] Implement DecimalValue struct in internal/value/value.go with decimal.Big wrapper
-- [ ] T012 [P] Implement ObjectInstance struct in internal/value/value.go with FrameIndex and Manifest
-- [ ] T013 [P] Implement Port struct in internal/value/value.go with scheme, driver interface, timeout fields
-- [ ] T014 [P] Implement PathExpression struct in internal/value/value.go with segment representation
-- [ ] T015 Update Value.String() in internal/value/value.go to handle new types (decimal, object, port, path)
+- [X] T010 Extend ValueType enumeration in internal/value/types.go (add TypeDecimal, TypeObject, TypePort, TypePath)
+- [X] T011 [P] Implement DecimalValue struct in internal/value/decimal.go with decimal.Big wrapper
+- [X] T012 [P] Implement ObjectInstance struct in internal/value/object.go with FrameIndex and Manifest
+- [X] T013 [P] Implement Port struct in internal/value/port.go with scheme, driver interface, timeout fields
+- [X] T014 [P] Implement PathExpression struct in internal/value/path.go with segment representation
+- [X] T015 Update Value.String() in internal/value/value.go to handle new types (decimal, object, port, path)
 - [ ] T016 [P] Add CLI flag --sandbox-root to cmd/viro/main.go with default to os.Getwd()
 - [ ] T017 [P] Add CLI flag --trace-file to cmd/viro/main.go for optional trace file redirection (default: stderr output)
 - [ ] T018 [P] Add CLI flag --trace-max-size to cmd/viro/main.go (default 50MB per clarification)
