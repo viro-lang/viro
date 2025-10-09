@@ -203,6 +203,46 @@ func tokenize(input string) ([]token, *verror.Error) {
 
 			numStr := string(runes[start:pos])
 
+			// Check for path after number (e.g., 1.field or 42.0.field)
+			if pos < len(runes) && runes[pos] == '.' && pos+1 < len(runes) && (isWordStart(runes[pos+1]) || unicode.IsDigit(runes[pos+1])) {
+				// This is a path starting with a number
+				pathStr := numStr
+
+				for pos < len(runes) && runes[pos] == '.' {
+					pathStr += "."
+					pos++ // Skip '.'
+
+					// Check if next segment is a number
+					if pos < len(runes) && unicode.IsDigit(runes[pos]) {
+						segStart := pos
+						for pos < len(runes) && unicode.IsDigit(runes[pos]) {
+							pos++
+						}
+						pathStr += string(runes[segStart:pos])
+					} else if pos < len(runes) && isWordStart(runes[pos]) {
+						// Next segment is a word
+						segStart := pos
+						pos++
+						for pos < len(runes) && isWordChar(runes[pos]) {
+							pos++
+						}
+						pathStr += string(runes[segStart:pos])
+					} else {
+						// Invalid path syntax (dot not followed by word or number)
+						return nil, makeSyntaxError(input, pos-1, verror.ErrIDInvalidSyntax, [3]string{"path segment expected after '.'", "", ""})
+					}
+				}
+
+				// Check for set-path (path:)
+				if pos < len(runes) && runes[pos] == ':' {
+					pos++
+					tokens = append(tokens, token{tokSetWord, pathStr, start})
+				} else {
+					tokens = append(tokens, token{tokPath, pathStr, start})
+				}
+				continue
+			}
+
 			// Determine token type based on format
 			if hasDecimal || hasExponent {
 				tokens = append(tokens, token{tokDecimal, numStr, start})

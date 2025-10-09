@@ -92,12 +92,12 @@ func TestObjectConstruction(t *testing.T) {
 				}
 
 				// Verify field values are stored in object's frame
-				if obj.FrameIndex < 0 || obj.FrameIndex >= len(e.Frames) {
+				objFrame := e.GetFrameByIndex(obj.FrameIndex)
+				if objFrame == nil {
 					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
 				}
 
-				frame := e.Frames[obj.FrameIndex]
-				nameVal, found := frame.Get("name")
+				nameVal, found := objFrame.Get("name")
 				if !found {
 					t.Error("field 'name' not found in frame")
 				}
@@ -105,7 +105,7 @@ func TestObjectConstruction(t *testing.T) {
 					t.Errorf("expected name to be string, got %v", nameVal.Type)
 				}
 
-				ageVal, found := frame.Get("age")
+				ageVal, found := objFrame.Get("age")
 				if !found {
 					t.Error("field 'age' not found in frame")
 				}
@@ -177,8 +177,11 @@ func TestNestedObjects(t *testing.T) {
 				}
 
 				// Check nested address object
-				frame := e.Frames[obj.FrameIndex]
-				addrVal, found := frame.Get("address")
+				objFrame := e.GetFrameByIndex(obj.FrameIndex)
+				if objFrame == nil {
+					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
+				}
+				addrVal, found := objFrame.Get("address")
 				if !found {
 					t.Fatal("address field not found")
 				}
@@ -192,7 +195,10 @@ func TestNestedObjects(t *testing.T) {
 					t.Fatal("address is not an object")
 				}
 
-				addrFrame := e.Frames[addrObj.FrameIndex]
+				addrFrame := e.GetFrameByIndex(addrObj.FrameIndex)
+				if addrFrame == nil {
+					t.Fatalf("invalid frame index: %d", addrObj.FrameIndex)
+				}
 				cityVal, found := addrFrame.Get("city")
 				if !found {
 					t.Error("city field not found in nested object")
@@ -220,14 +226,20 @@ func TestNestedObjects(t *testing.T) {
 				}
 
 				// Navigate through three levels
-				frame1 := e.Frames[obj.FrameIndex]
+				frame1 := e.GetFrameByIndex(obj.FrameIndex)
+				if frame1 == nil {
+					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
+				}
 				deptVal, found := frame1.Get("dept")
 				if !found || deptVal.Type != value.TypeObject {
 					t.Fatal("dept not found or not an object")
 				}
 
 				deptObj, _ := deptVal.AsObject()
-				frame2 := e.Frames[deptObj.FrameIndex]
+				frame2 := e.GetFrameByIndex(deptObj.FrameIndex)
+				if frame2 == nil {
+					t.Fatalf("invalid frame index: %d", deptObj.FrameIndex)
+				}
 				teamVal, found := frame2.Get("team")
 				if !found || teamVal.Type != value.TypeObject {
 					t.Fatal("team not found or not an object")
@@ -361,8 +373,11 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("obj is not an object")
 				}
 
-				frame := e.Frames[obj.FrameIndex]
-				nameVal, found := frame.Get("name")
+				objFrame := e.GetFrameByIndex(obj.FrameIndex)
+				if objFrame == nil {
+					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
+				}
+				nameVal, found := objFrame.Get("name")
 				if !found {
 					t.Fatal("name field not found")
 				}
@@ -389,7 +404,10 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("user is not an object")
 				}
 
-				userFrame := e.Frames[user.FrameIndex]
+				userFrame := e.GetFrameByIndex(user.FrameIndex)
+				if userFrame == nil {
+					t.Fatalf("invalid frame index: %d", user.FrameIndex)
+				}
 				addrVal, found := userFrame.Get("address")
 				if !found {
 					t.Fatal("address not found")
@@ -400,7 +418,10 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("address is not an object")
 				}
 
-				addrFrame := e.Frames[addr.FrameIndex]
+				addrFrame := e.GetFrameByIndex(addr.FrameIndex)
+				if addrFrame == nil {
+					t.Fatalf("invalid frame index: %d", addr.FrameIndex)
+				}
 				cityVal, found := addrFrame.Get("city")
 				if !found {
 					t.Fatal("city not found")

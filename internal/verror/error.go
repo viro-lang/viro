@@ -148,11 +148,38 @@ var messageTemplates = map[string]string{
 	ErrIDArgCount:         "Wrong argument count for '%1': expected %2, got %3",
 	ErrIDEmptySeries:      "Cannot get %1 of empty series",
 	ErrIDOutOfBounds:      "Index %1 out of bounds (length: %2)",
+	ErrIDNotImplemented:   "Feature not yet implemented: %1",
+
+	// Feature 002: Path evaluation errors (T091)
+	ErrIDInvalidPath:      "Invalid path: %1",
+	ErrIDNonePath:         "Cannot traverse path through none value",
+	ErrIDNoSuchField:      "No such field '%1' in object",
+	ErrIDIndexOutOfRange:  "%1", // full message in arg
+	ErrIDPathTypeMismatch: "Type mismatch: path requires object or series type, got %1",
+	ErrIDImmutableTarget:  "Cannot assign to immutable target: %1",
+	ErrIDObjectFieldDup:   "Duplicate field '%1' in object",
 
 	// Math errors
 	ErrIDDivByZero: "Division by zero",
 	ErrIDOverflow:  "Integer overflow in operation: %1",
 	ErrIDUnderflow: "Integer underflow in operation: %1",
+
+	// Feature 002: Decimal-specific math errors
+	ErrIDSqrtNegative:     "Square root of negative number: %1",
+	ErrIDLogDomain:        "Logarithm domain error: %1",
+	ErrIDExpOverflow:      "Exponential overflow: %1",
+	ErrIDDecimalPrecision: "Decimal precision overflow (max 34 digits): %1",
+	ErrIDInvalidDecimal:   "Invalid decimal format: %1",
+	ErrIDAsinDomain:       "asin domain error: %1 not in [-1, 1]",
+	ErrIDAcosDomain:       "acos domain error: %1 not in [-1, 1]",
+
+	// Feature 002: Access errors (Port I/O)
+	ErrIDPortClosed:            "Port is closed: %1",
+	ErrIDTLSVerificationFailed: "TLS certificate verification failed: %1",
+	ErrIDSandboxViolation:      "Sandbox violation: path escapes sandbox root: %1",
+	ErrIDTimeout:               "I/O timeout: %1",
+	ErrIDConnectionRefused:     "Connection refused: %1",
+	ErrIDUnknownScheme:         "Unknown port scheme: %1",
 
 	// Internal errors
 	ErrIDStackOverflow:   "Stack overflow (maximum depth exceeded)",

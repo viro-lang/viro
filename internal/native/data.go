@@ -118,6 +118,7 @@ func typeNameFor(t value.ValueType) string {
 type frameManager interface {
 	RegisterFrame(f *frame.Frame) int
 	GetFrameByIndex(idx int) *frame.Frame
+	MarkFrameCaptured(idx int)
 	PushFrameContext(f *frame.Frame) int
 	PopFrameContext()
 	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
@@ -159,7 +160,7 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Parse spec to extract field names and initializers
 	fields := []string{}
-	initializers := make(map[string]value.Value)
+	initializers := make(map[string][]value.Value)
 	seenFields := make(map[string]bool)
 
 	for i := 0; i < len(spec.Elements); i++ {
@@ -177,10 +178,10 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			}
 			fields = append(fields, word)
 			seenFields[word] = true
-			initializers[word] = value.NoneVal() // Default to none
+			initializers[word] = []value.Value{value.NoneVal()} // Default to none
 
 		case value.TypeSetWord:
-			// Field with initializer: field: value
+			// Field with initializer: field: value(s)
 			word, _ := val.AsWord() // SetWord AsWord returns the symbol
 			if seenFields[word] {
 				return value.NoneVal(), verror.NewScriptError(
@@ -191,7 +192,8 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			fields = append(fields, word)
 			seenFields[word] = true
 
-			// Next value is the initializer
+			// Collect initializer values until next SET-WORD
+			// (Plain words/blocks/etc are all part of the initializer expression)
 			i++
 			if i >= len(spec.Elements) {
 				return value.NoneVal(), verror.NewScriptError(
@@ -199,7 +201,24 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 					[3]string{"object", "set-word-without-value", word},
 				)
 			}
-			initializers[word] = spec.Elements[i]
+
+			// Collect all values for this initializer until next SetWord or standalone Word
+			initVals := []value.Value{}
+			for i < len(spec.Elements) {
+				nextVal := spec.Elements[i]
+				// Stop at next SET-WORD (definite field boundary)
+				if nextVal.Type == value.TypeSetWord {
+					i-- // Back up so outer loop processes this
+					break
+				}
+				initVals = append(initVals, nextVal)
+				i++
+			}
+
+			if len(initVals) == 0 {
+				initVals = []value.Value{value.NoneVal()}
+			}
+			initializers[word] = initVals
 
 		default:
 			// Ignore other value types (could be refinements in future)
@@ -216,16 +235,20 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	// Register frame and get its index
 	frameIdx := mgr.RegisterFrame(objFrame)
 
+	// Mark frame as captured so it persists after PopFrameContext
+	// Object frames must remain in frameStore for path traversal
+	mgr.MarkFrameCaptured(frameIdx)
+
 	// Push object frame as active context for initializer evaluation
 	mgr.PushFrameContext(objFrame)
 	defer mgr.PopFrameContext()
 
 	// Evaluate initializers in object context
 	for _, field := range fields {
-		initVal := initializers[field]
+		initVals := initializers[field]
 
-		// Evaluate the initializer value
-		evaled, err := mgr.Do_Blk([]value.Value{initVal})
+		// Evaluate the initializer value(s)
+		evaled, err := mgr.Do_Blk(initVals)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -274,7 +297,7 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Parse spec (same as object)
 	fields := []string{}
-	initializers := make(map[string]value.Value)
+	initializers := make(map[string][]value.Value)
 	seenFields := make(map[string]bool)
 
 	for i := 0; i < len(spec.Elements); i++ {
@@ -291,7 +314,7 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			}
 			fields = append(fields, word)
 			seenFields[word] = true
-			initializers[word] = value.NoneVal()
+			initializers[word] = []value.Value{value.NoneVal()}
 
 		case value.TypeSetWord:
 			word, _ := val.AsWord()
@@ -311,7 +334,23 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 					[3]string{"context", "set-word-without-value", word},
 				)
 			}
-			initializers[word] = spec.Elements[i]
+
+			// Collect all values for this initializer until next SetWord
+			initVals := []value.Value{}
+			for i < len(spec.Elements) {
+				nextVal := spec.Elements[i]
+				if nextVal.Type == value.TypeSetWord {
+					i--
+					break
+				}
+				initVals = append(initVals, nextVal)
+				i++
+			}
+
+			if len(initVals) == 0 {
+				initVals = []value.Value{value.NoneVal()}
+			}
+			initializers[word] = initVals
 
 		default:
 			continue
@@ -322,15 +361,19 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	// Register frame
 	frameIdx := mgr.RegisterFrame(objFrame)
 
+	// Mark frame as captured so it persists after PopFrameContext
+	// Object frames must remain in frameStore for path traversal
+	mgr.MarkFrameCaptured(frameIdx)
+
 	// Push object frame as active context
 	mgr.PushFrameContext(objFrame)
 	defer mgr.PopFrameContext()
 
 	// Evaluate initializers in isolated context
 	for _, field := range fields {
-		initVal := initializers[field]
+		initVals := initializers[field]
 
-		evaled, err := mgr.Do_Blk([]value.Value{initVal})
+		evaled, err := mgr.Do_Blk(initVals)
 		if err != nil {
 			return value.NoneVal(), err
 		}

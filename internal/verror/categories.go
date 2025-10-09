@@ -71,6 +71,15 @@ const (
 	ErrIDOutOfBounds      = "out-of-bounds"
 	ErrIDNotImplemented   = "not-implemented" // Feature 002: feature not yet implemented
 
+	// Feature 002: Path evaluation errors (T091)
+	ErrIDInvalidPath      = "invalid-path"           // malformed path expression
+	ErrIDNonePath         = "none-path"              // path traversal through none value
+	ErrIDNoSuchField      = "no-such-field"          // object field not found
+	ErrIDIndexOutOfRange  = "index-out-of-range"     // series index invalid
+	ErrIDPathTypeMismatch = "path-type-mismatch"     // path applied to wrong type
+	ErrIDImmutableTarget  = "immutable-target"       // attempted assignment to literal
+	ErrIDObjectFieldDup   = "object-field-duplicate" // duplicate field in object spec
+
 	// Math errors (400)
 	ErrIDDivByZero = "div-zero"
 	ErrIDOverflow  = "overflow"
