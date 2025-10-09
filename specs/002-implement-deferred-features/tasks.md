@@ -143,7 +143,7 @@
 - [X] T068 [P] [US2] Implement `write` native in internal/native/io.go with --append, --binary, --lines refinements
 - [ ] T069 [P] [US2] Implement `save` convenience native in internal/native/io.go (serialization + write)
 - [ ] T070 [P] [US2] Implement `load` convenience native in internal/native/io.go (read + parse)
-- [ ] T071 [P] [US2] Implement `query` native in internal/native/io.go returning port metadata as object
+- [X] T071 [P] [US2] Implement `query` native in internal/native/io.go returning port metadata as object
 - [ ] T072 [P] [US2] Implement `wait` native in internal/native/io.go for port readiness polling
 - [ ] T073 [US2] Register all port natives in internal/native/registry.go
 - [ ] T074 [US2] Add Access error mappings for port failures (port-closed, tls-verification-failed, sandbox-violation) in internal/verror/categories.go

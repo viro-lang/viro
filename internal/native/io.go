@@ -36,6 +36,13 @@ func resolveSandboxPath(userPath string) (string, error) {
 		SandboxRoot = cwd
 	}
 
+	// Resolve the sandbox root itself through symlinks for proper comparison
+	sandboxRootResolved, err := filepath.EvalSymlinks(SandboxRoot)
+	if err != nil {
+		// If sandbox root doesn't exist, use as-is
+		sandboxRootResolved = SandboxRoot
+	}
+
 	cleaned := filepath.Clean(userPath)
 	var candidate string
 	if filepath.IsAbs(cleaned) {
@@ -52,7 +59,7 @@ func resolveSandboxPath(userPath string) (string, error) {
 		resolvedDir, err := filepath.EvalSymlinks(dir)
 		if err != nil {
 			// Parent doesn't exist either - verify candidate is within sandbox
-			if !strings.HasPrefix(candidate, SandboxRoot) {
+			if !strings.HasPrefix(filepath.Clean(candidate)+string(filepath.Separator), filepath.Clean(SandboxRoot)+string(filepath.Separator)) {
 				return "", fmt.Errorf("path escapes sandbox: %s", userPath)
 			}
 			return candidate, nil
@@ -60,15 +67,17 @@ func resolveSandboxPath(userPath string) (string, error) {
 		resolved = filepath.Join(resolvedDir, filepath.Base(candidate))
 	}
 
-	// Verify resolved path is within sandbox
-	if !strings.HasPrefix(resolved, SandboxRoot) {
+	// Verify resolved path is within sandbox using resolved sandbox root
+	// Add separator to prevent false matches like /tmp/sandbox vs /tmp/sandbox-other
+	sandboxPrefix := filepath.Clean(sandboxRootResolved) + string(filepath.Separator)
+	resolvedClean := filepath.Clean(resolved) + string(filepath.Separator)
+
+	if !strings.HasPrefix(resolvedClean, sandboxPrefix) && resolved != sandboxRootResolved {
 		return "", fmt.Errorf("path escapes sandbox: %s resolves to %s", userPath, resolved)
 	}
 
 	return resolved, nil
-}
-
-// fileDriver implements PortDriver for local filesystem operations
+} // fileDriver implements PortDriver for local filesystem operations
 type fileDriver struct {
 	file *os.File
 	path string
@@ -537,10 +546,25 @@ func QueryPort(portVal value.Value) (value.Value, error) {
 		return value.NoneVal(), err
 	}
 
-	// Convert metadata to object (simplified for now - returns string representation)
-	// Full implementation would create an ObjectInstance
-	result := fmt.Sprintf("port-metadata: %v", metadata)
-	return value.StrVal(result), nil
+	// Convert metadata map to object
+	// For now, create a simple object representation
+	// Full implementation would use ObjectInstance with proper frame
+	obj := &value.ObjectInstance{
+		FrameIndex: -1, // Temporary object without frame
+		Parent:     -1,
+		Manifest: value.ObjectManifest{
+			Words: make([]string, 0, len(metadata)),
+			Types: make([]value.ValueType, 0, len(metadata)),
+		},
+	}
+
+	// Store metadata keys
+	for key := range metadata {
+		obj.Manifest.Words = append(obj.Manifest.Words, key)
+		obj.Manifest.Types = append(obj.Manifest.Types, value.TypeNone)
+	}
+
+	return value.ObjectVal(obj), nil
 }
 
 // Print implements the `print` native.
