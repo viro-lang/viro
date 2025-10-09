@@ -6,7 +6,6 @@ package native
 
 import (
 	"math"
-	"strconv"
 
 	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -21,7 +20,7 @@ import (
 // - Detects overflow
 func Add(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), mathArityError("+", 2, len(args))
+		return value.NoneVal(), arityError("+", 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
@@ -61,7 +60,7 @@ func Add(args []value.Value) (value.Value, *verror.Error) {
 // - Detects overflow
 func Subtract(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), mathArityError("-", 2, len(args))
+		return value.NoneVal(), arityError("-", 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
@@ -102,7 +101,7 @@ func Subtract(args []value.Value) (value.Value, *verror.Error) {
 // - Detects overflow
 func Multiply(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), mathArityError("*", 2, len(args))
+		return value.NoneVal(), arityError("*", 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
@@ -154,7 +153,7 @@ func Multiply(args []value.Value) (value.Value, *verror.Error) {
 // - Division by zero is an error
 func Divide(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), mathArityError("/", 2, len(args))
+		return value.NoneVal(), arityError("/", 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
@@ -186,28 +185,6 @@ func Divide(args []value.Value) (value.Value, *verror.Error) {
 	return value.IntVal(a / b), nil
 }
 
-func mathArityError(name string, expected, actual int) *verror.Error {
-	return verror.NewScriptError(
-		verror.ErrIDArgCount,
-		[3]string{name, strconv.Itoa(expected), strconv.Itoa(actual)},
-	)
-}
-
-func mathTypeError(name string, got value.Value) *verror.Error {
-	return verror.NewScriptError(
-		verror.ErrIDTypeMismatch,
-		[3]string{name, "integer", got.Type.String()},
-	)
-}
-
-func overflowError(op string) *verror.Error {
-	return verror.NewMathError(verror.ErrIDOverflow, [3]string{op, "", ""})
-}
-
-func underflowError(op string) *verror.Error {
-	return verror.NewMathError(verror.ErrIDUnderflow, [3]string{op, "", ""})
-}
-
 // LessThan implements the < native function.
 //
 // Contract: < value1 value2 → logic
@@ -215,17 +192,17 @@ func underflowError(op string) *verror.Error {
 // - Returns true if value1 < value2, false otherwise
 func LessThan(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"< expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("<", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"< expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"< expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<", args[1])
 	}
 
 	return value.LogicVal(a < b), nil
@@ -238,17 +215,17 @@ func LessThan(args []value.Value) (value.Value, *verror.Error) {
 // - Returns true if value1 > value2, false otherwise
 func GreaterThan(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"> expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError(">", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"> expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError(">", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"> expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError(">", args[1])
 	}
 
 	return value.LogicVal(a > b), nil
@@ -261,17 +238,17 @@ func GreaterThan(args []value.Value) (value.Value, *verror.Error) {
 // - Returns true if value1 <= value2, false otherwise
 func LessOrEqual(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"<= expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("<=", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<=", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<=", args[1])
 	}
 
 	return value.LogicVal(a <= b), nil
@@ -284,17 +261,17 @@ func LessOrEqual(args []value.Value) (value.Value, *verror.Error) {
 // - Returns true if value1 >= value2, false otherwise
 func GreaterOrEqual(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{">= expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError(">=", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{">= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError(">=", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{">= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError(">=", args[1])
 	}
 
 	return value.LogicVal(a >= b), nil
@@ -307,17 +284,17 @@ func GreaterOrEqual(args []value.Value) (value.Value, *verror.Error) {
 // - Returns true if value1 == value2, false otherwise
 func Equal(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"= expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("=", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("=", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"= expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("=", args[1])
 	}
 
 	return value.LogicVal(a == b), nil
@@ -330,17 +307,17 @@ func Equal(args []value.Value) (value.Value, *verror.Error) {
 // - Returns true if value1 != value2, false otherwise
 func NotEqual(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"<> expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("<>", 2, len(args))
 	}
 
 	a, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<> expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<>", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"<> expects integer arguments", "", ""})
+		return value.NoneVal(), mathTypeError("<>", args[1])
 	}
 
 	return value.LogicVal(a != b), nil
@@ -354,7 +331,7 @@ func NotEqual(args []value.Value) (value.Value, *verror.Error) {
 // - Truthy: none/false → false, all others → true
 func And(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"and expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("and", 2, len(args))
 	}
 
 	// Convert both to truthy (using ToTruthy from control.go)
@@ -372,7 +349,7 @@ func And(args []value.Value) (value.Value, *verror.Error) {
 // - Truthy: none/false → false, all others → true
 func Or(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"or expects 2 arguments", "", ""})
+		return value.NoneVal(), arityError("or", 2, len(args))
 	}
 
 	// Convert both to truthy (using ToTruthy from control.go)
@@ -390,7 +367,7 @@ func Or(args []value.Value) (value.Value, *verror.Error) {
 // - Truthy: none/false → false, all others → true
 func Not(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"not expects 1 argument", "", ""})
+		return value.NoneVal(), arityError("not", 1, len(args))
 	}
 
 	// Convert to truthy and negate (using ToTruthy from control.go)
@@ -406,11 +383,11 @@ func addDecimal(a, b value.Value) (value.Value, *verror.Error) {
 	if aVal == nil || bVal == nil {
 		return value.NoneVal(), verror.NewMathError("add-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
 	}
-	
+
 	ctx := decimal.Context128
 	result := new(decimal.Big)
 	ctx.Add(result, aVal, bVal)
-	
+
 	return value.DecimalVal(result, 2), nil
 }
 
@@ -420,11 +397,11 @@ func subtractDecimal(a, b value.Value) (value.Value, *verror.Error) {
 	if aVal == nil || bVal == nil {
 		return value.NoneVal(), verror.NewMathError("subtract-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
 	}
-	
+
 	ctx := decimal.Context128
 	result := new(decimal.Big)
 	ctx.Sub(result, aVal, bVal)
-	
+
 	return value.DecimalVal(result, 2), nil
 }
 
@@ -434,11 +411,11 @@ func multiplyDecimal(a, b value.Value) (value.Value, *verror.Error) {
 	if aVal == nil || bVal == nil {
 		return value.NoneVal(), verror.NewMathError("multiply-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
 	}
-	
+
 	ctx := decimal.Context128
 	result := new(decimal.Big)
 	ctx.Mul(result, aVal, bVal)
-	
+
 	return value.DecimalVal(result, 2), nil
 }
 
@@ -448,16 +425,15 @@ func divideDecimal(a, b value.Value) (value.Value, *verror.Error) {
 	if aVal == nil || bVal == nil {
 		return value.NoneVal(), verror.NewMathError("divide-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
 	}
-	
+
 	// Check for division by zero
 	if bVal.Sign() == 0 {
 		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 	}
-	
+
 	ctx := decimal.Context128
 	result := new(decimal.Big)
 	ctx.Quo(result, aVal, bVal)
-	
+
 	return value.DecimalVal(result, 2), nil
 }
-

@@ -24,18 +24,12 @@ type frameProvider interface {
 // - Returns a user-defined function with captured lexical parent
 func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"fn", "2", fmt.Sprintf("%d", len(args))},
-		)
+		return value.NoneVal(), arityError("fn", 2, len(args))
 	}
 
 	paramsVal := args[0]
 	if paramsVal.Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"fn parameters", "block", paramsVal.Type.String()},
-		)
+		return value.NoneVal(), typeError("fn parameters", "block", paramsVal)
 	}
 
 	paramsBlock, ok := paramsVal.AsBlock()
@@ -50,10 +44,7 @@ func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	bodyVal := args[1]
 	if bodyVal.Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"fn body", "block", bodyVal.Type.String()},
-		)
+		return value.NoneVal(), typeError("fn body", "block", bodyVal)
 	}
 
 	bodyBlock, ok := bodyVal.AsBlock()

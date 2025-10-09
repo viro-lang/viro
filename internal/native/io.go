@@ -707,10 +707,7 @@ func serializeValue(val value.Value) string {
 // - Returns none
 func Print(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"print", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("print", 1, len(args))
 	}
 
 	output, err := buildPrintOutput(args[0], eval)
@@ -735,10 +732,7 @@ func Print(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Returns the line as string value without trailing newline
 func Input(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 0 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"input", "0", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("input", 0, len(args))
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -803,10 +797,7 @@ func valueToPrintString(val value.Value) string {
 // Note: Options/refinements not yet supported in native registry
 func OpenNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"open", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("open", 1, len(args))
 	}
 
 	// Get spec string
@@ -833,17 +824,11 @@ func OpenNative(args []value.Value) (value.Value, *verror.Error) {
 // CloseNative is the native wrapper for close
 func CloseNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"close", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("close", 1, len(args))
 	}
 
 	if args[0].Type != value.TypePort {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"close", "port!", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("close", "port!", args[0])
 	}
 
 	err := ClosePort(args[0])
@@ -860,10 +845,7 @@ func CloseNative(args []value.Value) (value.Value, *verror.Error) {
 // ReadNative is the native wrapper for read
 func ReadNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"read", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("read", 1, len(args))
 	}
 
 	// Get spec string
@@ -889,10 +871,7 @@ func ReadNative(args []value.Value) (value.Value, *verror.Error) {
 // WriteNative is the native wrapper for write
 func WriteNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"write", "2", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("write", 2, len(args))
 	}
 
 	// Get spec string
@@ -918,10 +897,7 @@ func WriteNative(args []value.Value) (value.Value, *verror.Error) {
 // SaveNative is the native wrapper for save
 func SaveNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"save", "2", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("save", 2, len(args))
 	}
 
 	// Get spec string
@@ -947,10 +923,7 @@ func SaveNative(args []value.Value) (value.Value, *verror.Error) {
 // LoadNative is the native wrapper for load
 func LoadNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"load", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("load", 1, len(args))
 	}
 
 	// Get spec string
@@ -976,17 +949,11 @@ func LoadNative(args []value.Value) (value.Value, *verror.Error) {
 // QueryNative is the native wrapper for query
 func QueryNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"query", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("query", 1, len(args))
 	}
 
 	if args[0].Type != value.TypePort {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"query", "port!", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("query", "port!", args[0])
 	}
 
 	result, err := QueryPort(args[0])
@@ -1003,10 +970,7 @@ func QueryNative(args []value.Value) (value.Value, *verror.Error) {
 // WaitNative is the native wrapper for wait
 func WaitNative(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"wait", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("wait", 1, len(args))
 	}
 
 	result, err := WaitPort(args[0])

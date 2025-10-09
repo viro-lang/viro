@@ -14,17 +14,11 @@ import (
 // - Binds word in current frame and returns the value
 func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"set", "2", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("set", 2, len(args))
 	}
 
 	if args[0].Type != value.TypeWord {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"set", "word", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("set", "word", args[0])
 	}
 
 	symbol, _ := args[0].AsWord()
@@ -45,17 +39,11 @@ func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Returns bound value from current frame chain
 func Get(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"get", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("get", 1, len(args))
 	}
 
 	if args[0].Type != value.TypeWord {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"get", "word", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("get", "word", args[0])
 	}
 
 	symbol, _ := args[0].AsWord()
@@ -67,10 +55,7 @@ func Get(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // Contract: type? value -> word representing type name
 func TypeQ(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"type?", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("type?", 1, len(args))
 	}
 
 	typeName := typeNameFor(args[0].Type)
@@ -134,17 +119,11 @@ type frameManager interface {
 //   - Evaluates initializers in object's context
 func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"object", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("object", 1, len(args))
 	}
 
 	if args[0].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"object", "block", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("object", "block", args[0])
 	}
 
 	spec, _ := args[0].AsBlock()
@@ -172,7 +151,7 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			word, _ := val.AsWord()
 			if seenFields[word] {
 				return value.NoneVal(), verror.NewScriptError(
-					"object-field-duplicate",
+					verror.ErrIDObjectFieldDup,
 					[3]string{word, "", ""},
 				)
 			}
@@ -185,7 +164,7 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			word, _ := val.AsWord() // SetWord AsWord returns the symbol
 			if seenFields[word] {
 				return value.NoneVal(), verror.NewScriptError(
-					"object-field-duplicate",
+					verror.ErrIDObjectFieldDup,
 					[3]string{word, "", ""},
 				)
 			}
@@ -271,17 +250,11 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Returns object! instance with isolated frame
 func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"context", "1", formatInt(len(args))},
-		)
+		return value.NoneVal(), arityError("context", 1, len(args))
 	}
 
 	if args[0].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"context", "block", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("context", "block", args[0])
 	}
 
 	spec, _ := args[0].AsBlock()
@@ -308,7 +281,7 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			word, _ := val.AsWord()
 			if seenFields[word] {
 				return value.NoneVal(), verror.NewScriptError(
-					"object-field-duplicate",
+					verror.ErrIDObjectFieldDup,
 					[3]string{word, "", ""},
 				)
 			}
@@ -320,7 +293,7 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 			word, _ := val.AsWord()
 			if seenFields[word] {
 				return value.NoneVal(), verror.NewScriptError(
-					"object-field-duplicate",
+					verror.ErrIDObjectFieldDup,
 					[3]string{word, "", ""},
 				)
 			}

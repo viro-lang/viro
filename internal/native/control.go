@@ -5,8 +5,6 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -21,10 +19,7 @@ import (
 // This is a special native that needs access to evaluator to evaluate blocks.
 func When(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"when", "2", fmt.Sprintf("%d", len(args))},
-		)
+		return value.NoneVal(), arityError("when", 2, len(args))
 	}
 
 	// First argument is condition (already evaluated)
@@ -32,10 +27,7 @@ func When(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Second argument must be a block (NOT evaluated yet)
 	if args[1].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"when", "block", args[1].Type.String()},
-		)
+		return value.NoneVal(), typeError("when", "block", args[1])
 	}
 
 	// Convert condition to truthy/falsy
@@ -61,10 +53,7 @@ func When(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Both blocks required (error if missing)
 func If(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 3 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"if", "3", fmt.Sprintf("%d", len(args))},
-		)
+		return value.NoneVal(), arityError("if", 3, len(args))
 	}
 
 	// First argument is condition (already evaluated)
@@ -72,18 +61,12 @@ func If(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Second argument must be a block (true branch)
 	if args[1].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"if", "block for true branch", args[1].Type.String()},
-		)
+		return value.NoneVal(), typeError("if", "block for true branch", args[1])
 	}
 
 	// Third argument must be a block (false branch)
 	if args[2].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"if", "block for false branch", args[2].Type.String()},
-		)
+		return value.NoneVal(), typeError("if", "block for false branch", args[2])
 	}
 
 	// Convert condition to truthy/falsy
@@ -108,19 +91,13 @@ func If(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Returns result of last iteration, or none if count is 0
 func Loop(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"loop", "2", fmt.Sprintf("%d", len(args))},
-		)
+		return value.NoneVal(), arityError("loop", 2, len(args))
 	}
 
 	// First argument must be an integer
 	count, ok := args[0].AsInteger()
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"loop", "integer for count", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("loop", "integer for count", args[0])
 	}
 
 	// Count must be non-negative
@@ -133,10 +110,7 @@ func Loop(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Second argument must be a block
 	if args[1].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"loop", "block for body", args[1].Type.String()},
-		)
+		return value.NoneVal(), typeError("loop", "block for body", args[1])
 	}
 
 	block, _ := args[1].AsBlock()
@@ -168,26 +142,17 @@ func Loop(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Returns result of last iteration, or none if never executed
 func While(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"while", "2", fmt.Sprintf("%d", len(args))},
-		)
+		return value.NoneVal(), arityError("while", 2, len(args))
 	}
 
 	// First argument must be a block (condition)
 	if args[0].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"while", "block for condition", args[0].Type.String()},
-		)
+		return value.NoneVal(), typeError("while", "block for condition", args[0])
 	}
 
 	// Second argument must be a block (body)
 	if args[1].Type != value.TypeBlock {
-		return value.NoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"while", "block for body", args[1].Type.String()},
-		)
+		return value.NoneVal(), typeError("while", "block for body", args[1])
 	}
 
 	conditionBlock, _ := args[0].AsBlock()

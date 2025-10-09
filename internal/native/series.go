@@ -1,8 +1,6 @@
 package native
 
 import (
-	"strconv"
-
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -140,13 +138,6 @@ func LengthQ(args []value.Value) (value.Value, *verror.Error) {
 	}
 }
 
-func arityError(name string, expected, actual int) *verror.Error {
-	return verror.NewScriptError(
-		verror.ErrIDArgCount,
-		[3]string{name, formatInt(expected), formatInt(actual)},
-	)
-}
-
 func emptySeriesError(op string) *verror.Error {
 	return verror.NewScriptError(
 		verror.ErrIDEmptySeries,
@@ -159,8 +150,4 @@ func seriesTypeError(op, got string) *verror.Error {
 		verror.ErrIDTypeMismatch,
 		[3]string{op, "series", got},
 	)
-}
-
-func formatInt(v int) string {
-	return strconv.Itoa(v)
 }
