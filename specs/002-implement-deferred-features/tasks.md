@@ -43,15 +43,19 @@
 - [ ] T014 [P] Implement PathExpression struct in internal/value/value.go with segment representation
 - [ ] T015 Update Value.String() in internal/value/value.go to handle new types (decimal, object, port, path)
 - [ ] T016 [P] Add CLI flag --sandbox-root to cmd/viro/main.go with default to os.Getwd()
-- [ ] T017 [P] Add CLI flag --trace-file to cmd/viro/main.go for trace sink override
+- [ ] T017 [P] Add CLI flag --trace-file to cmd/viro/main.go for optional trace file redirection (default: stderr output)
 - [ ] T018 [P] Add CLI flag --trace-max-size to cmd/viro/main.go (default 50MB per clarification)
+- [ ] T018.1 [P] Add CLI flag --allow-insecure-tls to cmd/viro/main.go (global TLS verification bypass with stderr warning)
 - [ ] T019 Create sandbox path resolver helper in internal/eval/sandbox.go (resolves paths within root, validates with filepath.EvalSymlinks)
-- [ ] T020 Implement TraceSession struct in internal/native/trace.go with lumberjack integration
+- [ ] T020 Implement TraceSession struct in internal/native/trace.go with dual sink support (stderr default, optional lumberjack file sink)
 - [ ] T021 [P] Implement TraceEvent struct and JSON serialization in internal/native/trace.go
 - [ ] T022 [P] Implement TraceFilters struct in internal/native/trace.go (include/exclude words, min duration)
 - [ ] T023 Implement Debugger struct in internal/native/trace.go (breakpoints map, mode, ID generation)
 - [ ] T024 Update evaluator dispatch in internal/eval/evaluator.go to check type dispatch tables for new types
 - [ ] T025 Add trace instrumentation hooks in internal/eval/evaluator.go (entry/exit of Do_Next, Do_Blk)
+- [ ] T025.1 [FOUNDATION] **CHECKPOINT - TDD Gate**: Write contract tests for new value types (TypeDecimal, TypeObject, TypePort, TypePath) in test/contract/value_types_test.go covering: (1) Value construction, (2) String() output, (3) Type dispatch routing, (4) Error cases (invalid conversions). Run tests and verify they FAIL before proceeding to Phase 3.
+
+**⚠️ BLOCKER**: No user story implementation may begin until T025.1 passes with failing tests documented.
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -67,18 +71,20 @@
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T026 [P] [US1] Contract test: decimal constructor (integer, string, scale preservation) in test/contract/math_decimal_test.go
-- [ ] T027 [P] [US1] Contract test: decimal promotion in mixed arithmetic in test/contract/math_decimal_test.go
-- [ ] T028 [P] [US1] Contract test: pow, sqrt, exp domain validation in test/contract/math_decimal_test.go
-- [ ] T029 [P] [US1] Contract test: log, log-10 domain errors in test/contract/math_decimal_test.go
-- [ ] T030 [P] [US1] Contract test: trig functions (sin, cos, tan, asin, acos, atan) in test/contract/math_decimal_test.go
-- [ ] T031 [P] [US1] Contract test: rounding modes (round --places, --mode, ceil, floor, truncate) in test/contract/math_decimal_test.go
-- [ ] T032 [P] [US1] Contract test: overflow/underflow handling in test/contract/math_decimal_test.go
+- [ ] T026 [US1] Contract test: decimal constructor (integer, string, scale preservation) in test/contract/math_decimal_test.go
+- [ ] T027 [US1] Contract test: decimal promotion in mixed arithmetic in test/contract/math_decimal_test.go
+- [ ] T028 [US1] Contract test: pow, sqrt, exp domain validation in test/contract/math_decimal_test.go
+- [ ] T029 [US1] Contract test: log, log-10 domain errors in test/contract/math_decimal_test.go
+- [ ] T030 [US1] Contract test: trig functions (sin, cos, tan, asin, acos, atan) in test/contract/math_decimal_test.go
+- [ ] T031 [US1] Contract test: rounding modes (round --places, --mode, ceil, floor, truncate) in test/contract/math_decimal_test.go
+- [ ] T032 [US1] Contract test: overflow/underflow handling in test/contract/math_decimal_test.go
+- [ ] T032.1 [US1] **CHECKPOINT**: Run `go test ./test/contract/math_decimal_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 1
 
 - [ ] T033 [P] [US1] Implement decimal literal parser in internal/parse/parse.go (sign, fraction, exponent with scale metadata)
 - [ ] T034 [P] [US1] Implement tokenizer disambiguation logic in internal/parse/parse.go (numbers vs refinements vs paths by first character)
+- [ ] T034.1 [US1] Implement comprehensive token disambiguation validation in internal/parse/parse_test.go covering edge cases: negative decimals (`-3.14`), refinement-like numbers (`--123` ambiguous), path-like numbers (`1.2.3` invalid), and ensure parser correctly classifies per FR-011 first-character rules
 - [ ] T035 [US1] Implement `decimal` native constructor in internal/native/math.go (handles integer, decimal, string inputs)
 - [ ] T036 [US1] Add arithmetic promotion logic in internal/native/math.go (integer→decimal conversion with scale 0)
 - [ ] T037 [US1] Create internal/native/math_decimal.go for advanced math natives
@@ -92,6 +98,7 @@
 - [ ] T045 [P] [US1] Implement `ceil`, `floor`, `truncate` natives in internal/native/math_decimal.go
 - [ ] T046 [US1] Register all decimal and math natives in internal/native/registry.go
 - [ ] T047 [US1] Add Math error mappings for domain violations (sqrt-negative, log-domain, exp-overflow) in internal/verror/categories.go
+- [ ] T047.1 [US1] Add contract test for decimal precision overflow (35+ digit results) raising Math error in test/contract/math_decimal_test.go
 - [ ] T048 [US1] Update error context generation to include decimal metadata (magnitude, scale) in internal/verror/context.go
 
 ### Integration Tests for User Story 1
@@ -99,6 +106,7 @@
 - [ ] T049 [US1] Integration test SC-011: Decimal arithmetic precision validation in test/integration/sc011_validation_test.go
 - [ ] T050 [US1] Integration test SC-011: Performance benchmark (operations <2ms) in test/integration/sc011_validation_test.go
 - [ ] T051 [US1] Add math benchmarks in internal/native/math_bench_test.go (decimal vs integer baseline)
+- [ ] T051.1 [US1] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite (`go test ./test/integration/*_001_*.go`) and verify zero regressions before proceeding to User Story 2
 
 **Checkpoint**: User Story 1 complete - decimal arithmetic and advanced math fully functional
 
@@ -112,14 +120,15 @@
 
 ### Contract Tests for User Story 2
 
-- [ ] T052 [P] [US2] Contract test: open file port with sandbox resolution in test/contract/ports_test.go
-- [ ] T053 [P] [US2] Contract test: open HTTP port with TLS verification in test/contract/ports_test.go
-- [ ] T054 [P] [US2] Contract test: open TCP port with timeout in test/contract/ports_test.go
-- [ ] T055 [P] [US2] Contract test: read/write file operations in test/contract/ports_test.go
-- [ ] T056 [P] [US2] Contract test: HTTP GET/POST/HEAD with redirects in test/contract/ports_test.go
-- [ ] T057 [P] [US2] Contract test: port query metadata in test/contract/ports_test.go
-- [ ] T058 [P] [US2] Contract test: sandbox escape prevention in test/contract/ports_test.go
-- [ ] T059 [P] [US2] Contract test: TLS --insecure flag behavior in test/contract/ports_test.go
+- [ ] T052 [US2] Contract test: open file port with sandbox resolution in test/contract/ports_test.go
+- [ ] T053 [US2] Contract test: open HTTP port with TLS verification in test/contract/ports_test.go
+- [ ] T054 [US2] Contract test: open TCP port with timeout in test/contract/ports_test.go
+- [ ] T055 [US2] Contract test: read/write file operations in test/contract/ports_test.go
+- [ ] T056 [US2] Contract test: HTTP GET/POST/HEAD with redirects in test/contract/ports_test.go
+- [ ] T057 [US2] Contract test: port query metadata in test/contract/ports_test.go
+- [ ] T058 [US2] Contract test: sandbox escape prevention in test/contract/ports_test.go
+- [ ] T059 [US2] Contract test: TLS --insecure flag behavior in test/contract/ports_test.go
+- [ ] T059.1 [US2] **CHECKPOINT**: Run `go test ./test/contract/ports_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 2
 
@@ -146,6 +155,7 @@
 - [ ] T077 [US2] Integration test SC-012: File read/write throughput (50 MB/s) in test/integration/sc012_validation_test.go
 - [ ] T078 [US2] Integration test SC-012: HTTP GET latency (95% <2s LAN) in test/integration/sc012_validation_test.go
 - [ ] T079 [US2] Integration test: Sandbox enforcement scenarios in test/integration/sc012_validation_test.go
+- [ ] T079.1 [US2] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 3
 
 **Checkpoint**: User Story 2 complete - ports operational with sandbox and TLS controls
 
@@ -159,13 +169,14 @@
 
 ### Contract Tests for User Story 3
 
-- [ ] T080 [P] [US3] Contract test: object construction with field initialization in test/contract/objects_test.go
-- [ ] T081 [P] [US3] Contract test: nested object creation in test/contract/objects_test.go
-- [ ] T082 [P] [US3] Contract test: path read traversal (object.field.subfield) in test/contract/objects_test.go
-- [ ] T083 [P] [US3] Contract test: path write mutation in test/contract/objects_test.go
-- [ ] T084 [P] [US3] Contract test: path indexing for blocks (block.3) in test/contract/objects_test.go
-- [ ] T085 [P] [US3] Contract test: parent prototype lookup in test/contract/objects_test.go
-- [ ] T086 [P] [US3] Contract test: path error handling (none-path, index-out-of-range) in test/contract/objects_test.go
+- [ ] T080 [US3] Contract test: object construction with field initialization in test/contract/objects_test.go
+- [ ] T081 [US3] Contract test: nested object creation in test/contract/objects_test.go
+- [ ] T082 [US3] Contract test: path read traversal (object.field.subfield) in test/contract/objects_test.go
+- [ ] T083 [US3] Contract test: path write mutation in test/contract/objects_test.go
+- [ ] T084 [US3] Contract test: path indexing for blocks (block.3) in test/contract/objects_test.go
+- [ ] T085 [US3] Contract test: parent prototype lookup in test/contract/objects_test.go
+- [ ] T086 [US3] Contract test: path error handling (none-path, index-out-of-range) in test/contract/objects_test.go
+- [ ] T086.1 [US3] **CHECKPOINT**: Run `go test ./test/contract/objects_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 3
 
@@ -185,6 +196,7 @@
 
 - [ ] T098 [US3] Integration test SC-013: Nested object path access in test/integration/sc013_validation_test.go
 - [ ] T099 [US3] Integration test SC-013: Path mutation scenarios in test/integration/sc013_validation_test.go
+- [ ] T099.1 [US3] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 4
 
 **Checkpoint**: User Story 3 complete - objects and paths operational with frame safety
 
@@ -198,17 +210,18 @@
 
 ### Contract Tests for User Story 4
 
-- [ ] T100 [P] [US4] Contract test: copy, copy --part for blocks and strings in test/contract/series_test.go
-- [ ] T101 [P] [US4] Contract test: find, find --last in test/contract/series_test.go
-- [ ] T102 [P] [US4] Contract test: remove, remove --part in test/contract/series_test.go
-- [ ] T103 [P] [US4] Contract test: skip, take operations in test/contract/series_test.go
-- [ ] T104 [P] [US4] Contract test: sort, reverse on series in test/contract/series_test.go
-- [ ] T105 [P] [US4] Contract test: parse literal matching in test/contract/parse_test.go
-- [ ] T106 [P] [US4] Contract test: parse quantifiers (some, any, opt) in test/contract/parse_test.go
-- [ ] T107 [P] [US4] Contract test: parse set/copy captures in test/contract/parse_test.go
-- [ ] T108 [P] [US4] Contract test: parse into nested blocks in test/contract/parse_test.go
-- [ ] T109 [P] [US4] Contract test: parse control (not, ahead, fail) in test/contract/parse_test.go
-- [ ] T110 [P] [US4] Contract test: parse failure diagnostics in test/contract/parse_test.go
+- [ ] T100 [US4] Contract test: copy, copy --part for blocks and strings in test/contract/series_test.go
+- [ ] T101 [US4] Contract test: find, find --last in test/contract/series_test.go
+- [ ] T102 [US4] Contract test: remove, remove --part in test/contract/series_test.go
+- [ ] T103 [US4] Contract test: skip, take operations in test/contract/series_test.go
+- [ ] T104 [US4] Contract test: sort, reverse on series in test/contract/series_test.go
+- [ ] T105 [US4] Contract test: parse literal matching in test/contract/parse_test.go
+- [ ] T106 [US4] Contract test: parse quantifiers (some, any, opt) in test/contract/parse_test.go
+- [ ] T107 [US4] Contract test: parse set/copy captures in test/contract/parse_test.go
+- [ ] T108 [US4] Contract test: parse into nested blocks in test/contract/parse_test.go
+- [ ] T109 [US4] Contract test: parse control (not, ahead, fail) in test/contract/parse_test.go
+- [ ] T110 [US4] Contract test: parse failure diagnostics in test/contract/parse_test.go
+- [ ] T110.1 [US4] **CHECKPOINT**: Run `go test ./test/contract/series_test.go ./test/contract/parse_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 4
 
@@ -235,6 +248,7 @@
 - [ ] T128 [US4] Integration test SC-014: Parse dialect validation corpus (50 patterns, 0 false positives/negatives) in test/integration/sc014_validation_test.go
 - [ ] T129 [US4] Integration test SC-014: Parse performance (<250ms for 1MB input) in test/integration/sc014_validation_test.go
 - [ ] T130 [US4] Integration test: CSV parsing scenario in test/integration/sc014_validation_test.go
+- [ ] T130.1 [US4] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 5
 
 **Checkpoint**: User Story 4 complete - advanced series and parse dialect operational
 
@@ -248,16 +262,17 @@
 
 ### Contract Tests for User Story 5
 
-- [ ] T131 [P] [US5] Contract test: trace --on/--off/trace? in test/contract/trace_debug_test.go
-- [ ] T132 [P] [US5] Contract test: trace filtering (--only, --exclude) in test/contract/trace_debug_test.go
-- [ ] T133 [P] [US5] Contract test: trace sink configuration (--file, --append) in test/contract/trace_debug_test.go
-- [ ] T134 [P] [US5] Contract test: debug --breakpoint/--remove in test/contract/trace_debug_test.go
-- [ ] T135 [P] [US5] Contract test: debug stepping (--step, --next, --finish, --continue) in test/contract/trace_debug_test.go
-- [ ] T136 [P] [US5] Contract test: debug --locals/--stack in test/contract/trace_debug_test.go
-- [ ] T137 [P] [US5] Contract test: type-of for all value types in test/contract/reflection_test.go
-- [ ] T138 [P] [US5] Contract test: spec-of for functions/objects in test/contract/reflection_test.go
-- [ ] T139 [P] [US5] Contract test: body-of immutability in test/contract/reflection_test.go
-- [ ] T140 [P] [US5] Contract test: words-of/values-of consistency in test/contract/reflection_test.go
+- [ ] T131 [US5] Contract test: trace --on/--off/trace? in test/contract/trace_debug_test.go
+- [ ] T132 [US5] Contract test: trace filtering (--only, --exclude) in test/contract/trace_debug_test.go
+- [ ] T133 [US5] Contract test: trace sink configuration (--file, --append) in test/contract/trace_debug_test.go
+- [ ] T134 [US5] Contract test: debug --breakpoint/--remove in test/contract/trace_debug_test.go
+- [ ] T135 [US5] Contract test: debug stepping (--step, --next, --finish, --continue) in test/contract/trace_debug_test.go
+- [ ] T136 [US5] Contract test: debug --locals/--stack in test/contract/trace_debug_test.go
+- [ ] T137 [US5] Contract test: type-of for all value types in test/contract/reflection_test.go
+- [ ] T138 [US5] Contract test: spec-of for functions/objects in test/contract/reflection_test.go
+- [ ] T139 [US5] Contract test: body-of immutability in test/contract/reflection_test.go
+- [ ] T140 [US5] Contract test: words-of/values-of consistency in test/contract/reflection_test.go
+- [ ] T140.1 [US5] **CHECKPOINT**: Run `go test ./test/contract/trace_debug_test.go ./test/contract/reflection_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 5
 
@@ -291,6 +306,7 @@
 - [ ] T165 [US5] Integration test SC-015: Breakpoint interaction latency (<150ms) in test/integration/sc015_validation_test.go
 - [ ] T166 [US5] Integration test: End-to-end trace session workflow in test/integration/sc015_validation_test.go
 - [ ] T167 [US5] Integration test: Debug session with stepping and inspection in test/integration/sc015_validation_test.go
+- [ ] T167.1 [US5] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to Phase 8
 
 **Checkpoint**: User Story 5 complete - observability and reflection fully operational
 

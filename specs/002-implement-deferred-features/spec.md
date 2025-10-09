@@ -17,7 +17,7 @@
 
 - Q: What is the TLS certificate verification policy for HTTP ports? → A: Allow user to disable verification per request via CLI flag; otherwise enforce by default.
 - Q: How do users configure the sandbox root for file operations? → A: Single CLI parameter at startup sets sandbox root; fallback to current working directory when omitted.
-- Q: Where do `trace --on` events write by default? → A: Default sink is a log file in the working directory.
+- Q: Where do `trace --on` events write by default? → A: Default sink is **stderr** for immediate visibility. Users may redirect to log file via `--trace-file` CLI flag.
 - Q: Jaki jest domyślny timeout operacji sieciowych portów? → A: Brak wbudowanego limitu – poleganie na limitach systemowych lub jawnej konfiguracji.
 
 ### Session 2025-10-09
@@ -129,9 +129,9 @@ Maintainers can trace evaluation, inspect runtime state, and introspect program 
 
 ### Functional Requirements
 
-- **FR-001**: System MUST introduce a `decimal!` value type supporting at least 34 decimal digits of precision and preserving scale metadata for round-trip formatting.
+- **FR-001**: System MUST introduce a `decimal!` value type supporting **exactly 34 decimal digits of precision** (IEEE 754 decimal128 semantics) and preserving scale metadata for round-trip formatting. Operations that would exceed 34-digit precision MUST raise Math error (400) with code `decimal-overflow`.
 - **FR-002**: System MUST parse decimal literals with optional sign, fractional component, and exponent (`1.23e-4`) and store them as `decimal!` values.
-- **FR-003**: System MUST promote integer operands to `decimal!` during mixed arithmetic and deliver results with deterministic rounding (bankers' rounding at $5$) unless overridden by refinements.
+- **FR-003**: System MUST promote integer operands to `decimal!` during mixed arithmetic and deliver results with **round-to-nearest-even (bankers' rounding) applied automatically to intermediate calculations**. Final result precision follows the operand with greater scale. Explicit `round`, `ceil`, `floor`, `truncate` natives override automatic rounding behavior via their refinements.
 - **FR-004**: System MUST provide math natives `pow`, `sqrt`, `exp`, `log`, `log-10`, `sin`, `cos`, `tan`, `asin`, `acos`, and `atan` accepting `decimal!` and `integer!` values with domain validation.
 - **FR-005**: System MUST expose rounding natives `round`, `ceil`, `floor`, and `truncate`, each accepting refinements to control precision (number of decimal places) and rounding mode (`half-up`, `half-even`).
 - **FR-006**: System MUST provide file natives `read`, `save`, `append`, `remove`, `rename`, and `make-dir` that operate on absolute or sandboxed relative paths with UTF-8 filenames, where the sandbox root is supplied via a startup CLI parameter and defaults to the current working directory if unspecified. File locking behavior defers to operating system defaults; concurrent access from multiple scripts follows OS-level file locking policies.
@@ -143,12 +143,12 @@ Maintainers can trace evaluation, inspect runtime state, and introspect program 
 - **FR-012**: System MUST extend series natives with `copy`, `copy --part`, `find`, `find --last`, `remove`, `remove --part`, `skip`, `take`, `sort`, and `reverse`, all operating on blocks and strings with refinement parity.
 - **FR-013**: System MUST implement the `parse` dialect supporting core combinators (`some`, `any`, `opt`, `not`, `into`, `ahead`, `set`, `copy`) and custom rule blocks, returning boolean success and capture data.
 - **FR-014**: System MUST report parse failures via Syntax error (200) including near/where context and the rule that failed.
-- **FR-015**: System MUST provide tracing controls `trace --on`, `trace --off`, and `trace?`, emitting structured events (timestamp, value, word, duration) through a configurable sink that defaults to a rotating log file in the current working directory. Trace log files rotate at 50 MB per file, retaining up to 5 backup files with compression.
+- **FR-015**: System MUST provide tracing controls `trace --on`, `trace --off`, and `trace?`, emitting structured events (timestamp, value, word, duration) through a configurable sink that defaults to **stderr** for immediate observability. Users may redirect trace output to a rotating log file via the `--trace-file` CLI flag (rotation at 50 MB per file, retaining up to 5 backup files with compression). Trace format is line-delimited JSON for machine parsing.
 - **FR-016**: System MUST expose debugger commands via a `debug` native (subcommands `breakpoint`, `remove`, `step`, `continue`, `stack`, `locals`) that can be invoked interactively or programmatically.
 - **FR-017**: System MUST add reflection natives `type-of`, `spec-of`, `body-of`, `words-of`, and `values-of` for introspecting functions, objects, and frames without mutating them.
 - **FR-018**: System MUST extend error handling so that file and network failures attach relevant metadata (path, host) to the error context.
 - **FR-019**: System MUST preserve backwards compatibility: scripts created for Feature 001 continue to run without modification when none of the new capabilities are used.
-- **FR-020**: System MUST enforce TLS certificate validation for HTTP ports by default and allow users to disable verification explicitly per request via a documented CLI flag.
+- **FR-020**: System MUST enforce TLS certificate validation for HTTPS ports by default and allow users to disable verification via two mechanisms: (1) Global CLI flag `--allow-insecure-tls` applies to all HTTP operations in the session, (2) Per-port refinement `--insecure` passed to `open` or `http` natives overrides default for that specific connection. Both mechanisms MUST emit warning to stderr when used.
 
 ### Key Entities *(include if feature involves data)*
 
