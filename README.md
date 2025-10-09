@@ -5,7 +5,7 @@ Viro is a REBOL interpreter implemented in Go, featuring a type-based dispatch s
 ## Overview
 
 Viro implements a subset of REBOL's evaluation semantics with modern improvements:
-- **Traditional operator precedence** (not left-to-right)
+- **Left-to-right evaluation** (no operator precedence, true to REBOL)
 - **Local-by-default scoping** (safer than REBOL's global-by-default)
 - **Bash-style refinements** (`--flag`, `--option value`)
 - **Paren type for immediate evaluation** distinct from deferred blocks
@@ -51,9 +51,9 @@ go build -o viro ./cmd/viro
 >> x
 10
 >> 3 + 4 * 2
-11
->> (3 + 4) * 2
 14
+>> 3 + (4 * 2)
+11
 >> [1 2 3]
 [1 2 3]
 >> exit
@@ -74,7 +74,7 @@ go test ./...
 - `internal/frame/` - Frame and context system for scoping
 - `internal/native/` - Native function implementations
 - `internal/error/` - Structured error handling
-- `internal/parse/` - Parser with operator precedence
+- `internal/parse/` - Parser with left-to-right evaluation
 - `cmd/viro/` - CLI entry point and REPL
 - `test/contract/` - Contract tests for native functions
 - `test/integration/` - End-to-end interpreter tests
@@ -87,10 +87,10 @@ go test ./...
 - ✅ Literal evaluation (integers, strings, true/false/none)
 - ✅ Variable binding and retrieval (set-word, word)
 - ✅ Arithmetic operations (+, -, *, /) with overflow detection
-- ✅ Traditional operator precedence (* and / before + and -)
+- ✅ Left-to-right evaluation (no operator precedence, REBOL-style)
 - ✅ Block and paren evaluation
 - ✅ Interactive REPL with readline support
-- ✅ Parser with 7 levels of operator precedence
+- ✅ Parser with left-to-right evaluation
 - ✅ 45 contract tests passing
 
 **Remaining for Phase 1:**

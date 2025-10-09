@@ -1,183 +1,31 @@
-# Operator Precedence Reference
+# Operator Evaluation Reference
 
-**Viro Interpreter** - Complete operator precedence guide
-
----
-
-## Precedence Levels
-
-Operators are evaluated in order from highest to lowest precedence. Operators at the same level are evaluated left-to-right.
-
-### Level 1: Function Calls (Highest)
-
-**Syntax**: `function-name arg1 arg2 ...`
-
-**Examples**:
-```
-square 5        → (square 5) → 25
-add 3 4         → (add 3 4) → 7
-max 10 20       → (max 10 20) → 20
-```
-
-**Binding**: Function name followed by expected number of arguments
+**Viro Interpreter** - REBOL-style left-to-right evaluation guide
 
 ---
 
-### Level 2: Unary Negation
+## Left-to-Right Evaluation
 
-**Operator**: `-` (prefix)
+Viro uses **left-to-right evaluation** with **no operator precedence**, matching REBOL's evaluation model. This means operators are evaluated in the order they appear, from left to right.
 
-**Examples**:
+### Basic Principle
+
 ```
--5              → -5
--x              → (- x)
--(3 + 4)        → -(7) → -7
-```
-
-**Note**: Negation binds tighter than binary operators but looser than function calls
-
----
-
-### Level 3: Multiplication and Division
-
-**Operators**: `*`, `/`
-
-**Associativity**: Left-to-right
-
-**Examples**:
-```
-6 * 7           → 42
-20 / 4          → 5
-6 * 7 / 2       → (/ (* 6 7) 2) → 21
-10 / 2 * 3      → (* (/ 10 2) 3) → 15
+3 + 4 * 2       → ((3 + 4) * 2) → (7 * 2) → 14
 ```
 
-**With parens**:
+**NOT**:
 ```
-10 / (2 * 3)    → (/ 10 (* 2 3)) → 1
+3 + 4 * 2       → (3 + (4 * 2)) → (3 + 8) → 11  # This is mathematical precedence
 ```
 
 ---
 
-### Level 4: Addition and Subtraction
-
-**Operators**: `+`, `-`
-
-**Associativity**: Left-to-right
-
-**Examples**:
-```
-3 + 4           → 7
-10 - 3          → 7
-3 + 4 - 2       → (- (+ 3 4) 2) → 5
-```
-
-**With higher precedence**:
-```
-3 + 4 * 2       → (+ 3 (* 4 2)) → 11
-10 - 6 / 2      → (- 10 (/ 6 2)) → 7
-```
-
----
-
-### Level 5: Comparison Operators
-
-**Operators**: `<`, `>`, `<=`, `>=`
-
-**Associativity**: Left-to-right (though chaining not recommended)
-
-**Examples**:
-```
-5 > 3           → true
-10 <= 10        → true
-x < y           → (< x y)
-```
-
-**With arithmetic**:
-```
-3 + 4 < 10      → (< (+ 3 4) 10) → true
-x * 2 >= 10     → (>= (* x 2) 10)
-```
-
----
-
-### Level 6: Equality Operators
-
-**Operators**: `=`, `<>`
-
-**Associativity**: Left-to-right
-
-**Examples**:
-```
-5 = 5           → true
-5 <> 3          → true
-x = y           → (= x y)
-```
-
-**With comparisons**:
-```
-3 < 5 = true    → (= (< 3 5) true) → true
-```
-
----
-
-### Level 7: Logical Operators (Lowest)
-
-**Operators**: `and`, `or`
-
-**Associativity**: Left-to-right
-
-**Examples**:
-```
-true and false  → false
-true or false   → true
-x and y         → (and x y)
-```
-
-**With other operators**:
-```
-5 > 3 and 10 < 20       → (and (> 5 3) (< 10 20)) → true
-x = 0 or y = 0          → (or (= x 0) (= y 0))
-```
-
-**Note**: `not` is a function, not an operator, so it has function call precedence (Level 1)
-
----
-
-## Complete Precedence Table
-
-| Level | Operators         | Associativity | Example              | Result        |
-|-------|-------------------|---------------|----------------------|---------------|
-| 1     | Function calls    | Left-to-right | `square 5`           | `25`          |
-| 2     | `-` (unary)       | Right-to-left | `-5`                 | `-5`          |
-| 3     | `*`, `/`          | Left-to-right | `6 * 7`              | `42`          |
-| 4     | `+`, `-` (binary) | Left-to-right | `3 + 4`              | `7`           |
-| 5     | `<`, `>`, `<=`, `>=` | Left-to-right | `5 > 3`           | `true`        |
-| 6     | `=`, `<>`         | Left-to-right | `5 = 5`              | `true`        |
-| 7     | `and`, `or`       | Left-to-right | `true and false`     | `false`       |
-
----
-
-## Parentheses Override
-
-Parentheses `(...)` have highest priority and force evaluation order:
-
-```
-3 + 4 * 2       → 11            # * before +
-(3 + 4) * 2     → 14            # Parens first
-
-10 / 2 * 3      → 15            # Left-to-right
-10 / (2 * 3)    → 1             # Parens first
-
-x < 10 and y > 0                # and is lowest
-(x < 10) and (y > 0)            # Same (explicit grouping)
-```
-
----
-
-## Examples by Complexity
+## Examples
 
 ### Simple Arithmetic
+
+All operators are evaluated left-to-right as they appear:
 
 ```
 3 + 4           → (+ 3 4) → 7
@@ -186,216 +34,186 @@ x < 10 and y > 0                # and is lowest
 20 / 4          → (/ 20 4) → 5
 ```
 
-### Mixed Operators
+### Multiple Operators
 
 ```
-3 + 4 * 2       → (+ 3 (* 4 2)) → 11
-10 - 6 / 2      → (- 10 (/ 6 2)) → 7
-2 * 3 + 4 * 5   → (+ (* 2 3) (* 4 5)) → 26
+3 + 4 * 2       → (+ 3 4) = 7, then (* 7 2) = 14
+10 - 6 / 2      → (- 10 6) = 4, then (/ 4 2) = 2
+2 * 3 + 4 * 5   → (* 2 3) = 6, then (+ 6 4) = 10, then (* 10 5) = 50
 ```
 
 ### With Comparisons
 
 ```
 5 > 3           → (> 5 3) → true
-3 + 4 > 5       → (> (+ 3 4) 5) → true
-x * 2 < 10      → (< (* x 2) 10)
+3 + 4 > 5       → (+ 3 4) = 7, then (> 7 5) → true
+x * 2 < 10      → (* x 2), then (< result 10)
 ```
 
 ### With Logic
 
 ```
-5 > 3 and 10 < 20       → (and (> 5 3) (< 10 20)) → true
-x = 0 or y = 0          → (or (= x 0) (= y 0))
-not (x > 10) and y < 5  → (and (not (> x 10)) (< y 5))
+5 > 3 and 10 < 20       → (> 5 3) = true, then (and true 10) (evaluates second), then (< result 20)
+x = 0 or y = 0          → (= x 0), then (or result y), then (= result 0)
 ```
 
-### Complex Expressions
+---
+
+## Parentheses Control Order
+
+Use parentheses `(...)` to force specific evaluation order:
 
 ```
-1 + 2 * 3 - 4 + 5 / 2
-→ (+ (- (+ 1 (* 2 3)) 4) (/ 5 2))
-→ (+ (- (+ 1 6) 4) 2)
-→ (+ (- 7 4) 2)
-→ (+ 3 2)
-→ 5
-```
+3 + 4 * 2       → 14            # Left-to-right: (3 + 4) * 2
+3 + (4 * 2)     → 11            # Parens first: 3 + 8
 
-```
-(3 + 4) * (5 - 2)
-→ (* (+ 3 4) (- 5 2))
-→ (* 7 3)
-→ 21
+10 - 6 / 2      → 2             # Left-to-right: (10 - 6) / 2
+10 - (6 / 2)    → 7             # Parens first: 10 - 3
+
+2 + 3 * 4       → 20            # Left-to-right: (2 + 3) * 4
+2 + (3 * 4)     → 14            # Parens first: 2 + 12
 ```
 
 ---
 
 ## Comparison with Other Languages
 
-### C/C++/Java/JavaScript
+### Traditional Languages (C, Java, JavaScript, Python)
 
-Viro's precedence mostly matches these languages:
+Most languages use **mathematical operator precedence**:
 
-| Viro Level | C/Java Equivalent    |
-|------------|----------------------|
-| 1          | Function calls `()`  |
-| 2          | Unary `-`            |
-| 3          | `*`, `/`             |
-| 4          | `+`, `-`             |
-| 5          | `<`, `>`, `<=`, `>=` |
-| 6          | `==`, `!=`           |
-| 7          | `&&`, `||`           |
+```javascript
+// JavaScript
+3 + 4 * 2       // → 11 (multiplication first)
+```
 
-**Difference**: Viro uses `=` for equality (not `==`) and `<>` for inequality (not `!=`).
+**Viro is different**: Uses left-to-right like REBOL
 
-### Python
-
-Similar precedence, with these symbol differences:
-- Viro: `and`, `or` (words) = Python: `and`, `or` (words) ✓
-- Viro: `=` (equality) ≠ Python: `==` (equality)
-- Viro: `<>` (not equal) ≠ Python: `!=` (not equal)
+```
+3 + 4 * 2       ; In Viro → 14 (left-to-right)
+```
 
 ### REBOL
 
-Viro **differs significantly** from REBOL:
+Viro **matches REBOL** exactly:
 
-**REBOL**: Uses strict left-to-right evaluation with *no operator precedence*
+**REBOL**:
 ```rebol
-3 + 4 * 2  ; In REBOL → ((3 + 4) * 2) → 14
+3 + 4 * 2  ; → 14 (left-to-right)
 ```
 
-**Viro**: Uses mathematical precedence (like most languages)
+**Viro**:
 ```
-3 + 4 * 2  ; In Viro → (3 + (4 * 2)) → 11
+3 + 4 * 2  ; → 14 (left-to-right)
 ```
+
+Both use strict left-to-right evaluation with no operator precedence.
 
 ---
 
 ## Function Calls in Expressions
 
-Functions have highest precedence, so they consume arguments before operators:
+Functions consume their arguments before operators continue:
 
 ```
 square: fn [n] [(* n n)]
 
 square 3 + 4
-→ (+ (square 3) 4)
-→ (+ 9 4)
+→ (square 3) + 4
+→ 9 + 4
+→ 13
+
+(square 3) + 4
+→ 9 + 4
 → 13
 
 square (3 + 4)
-→ (square (+ 3 4))
-→ (square 7)
+→ square 7
 → 49
-```
-
-**Multiple function calls**:
-```
-add: fn [a b] [(+ a b)]
-
-add 3 4 * 2
-→ (* (add 3 4) 2)
-→ (* 7 2)
-→ 14
-
-add (3 * 2) (4 * 2)
-→ (add (* 3 2) (* 4 2))
-→ (add 6 8)
-→ 14
 ```
 
 ---
 
-## Common Mistakes
+## Common Patterns
 
-### Mistake 1: Assuming REBOL Evaluation
+### Pattern 1: Mathematical Expressions
 
-**Wrong assumption** (REBOL style):
-```
-3 + 4 * 2  ; Expecting 14
-```
-
-**Actual result**:
-```
-3 + 4 * 2  → 11  # Mathematical precedence
-```
-
-**Fix**: Use parens for REBOL-style evaluation:
-```
-(3 + 4) * 2  → 14
-```
-
-### Mistake 2: Function Call Scope
-
-**Wrong**:
-```
-square 3 + 4  ; Expecting square(3+4) = 49
-→ 13          # Actually: (square 3) + 4
-```
-
-**Right**:
-```
-square (3 + 4)  → 49
-```
-
-### Mistake 3: Comparison Chains
-
-**Unclear**:
-```
-x < y < z  ; Valid but unclear
-```
-
-**Better**:
-```
-(x < y) and (y < z)  ; Explicit intent
-```
-
-### Mistake 4: Operator vs Function
-
-`not` is a **function**, not an operator:
+To get traditional mathematical precedence behavior, use parentheses:
 
 ```
-not true and false
-→ (and (not true) false)
-→ false
+# REBOL/Viro left-to-right:
+3 + 4 * 2       → 14
 
-# not (true and false)  # Would need explicit parens
+# To get mathematical precedence (11):
+3 + (4 * 2)     → 11
+```
+
+### Pattern 2: Chained Operations
+
+```
+# All left-to-right
+a: 10 + 20 * 2 - 5
+; → ((10 + 20) * 2) - 5
+; → (30 * 2) - 5
+; → 60 - 5
+; → 55
+
+# With explicit grouping for clarity
+a: ((10 + 20) * 2) - 5
+```
+
+### Pattern 3: Boolean Logic
+
+```
+# Left-to-right evaluation
+x > 10 and y < 20 or z = 30
+; → ((x > 10) and y) < 20 or z = 30  # Can be confusing!
+
+# Better: use explicit parentheses
+(x > 10) and (y < 20) or (z = 30)
+; or
+((x > 10) and (y < 20)) or (z = 30)
 ```
 
 ---
 
 ## Best Practices
 
-### 1. Use Parens for Clarity
+### 1. Use Parentheses Liberally
 
-Even when not required, parens improve readability:
+Even when not required, parentheses improve readability and prevent confusion:
 
 ```
-# Works but less clear
+# Can be confusing
 x * 2 + y * 3
 
-# Better
+# Much clearer
 (x * 2) + (y * 3)
 ```
 
 ### 2. Break Complex Expressions
 
 ```
-# Hard to read
+# Hard to understand
 result: x * 2 + y * 3 - z / 4
 
-# Easier
+# Much clearer
 a: (x * 2)
 b: (y * 3)
 c: (z / 4)
-result: (a + b - c)
+result: (a + b) - c
 ```
 
-### 3. Function Calls Need Parens in Expressions
+### 3. Know the Evaluation Model
+
+Remember: Viro evaluates **left-to-right**, not by mathematical precedence.
 
 ```
-# Always wrap function calls in expressions
-total: (add x y) + (multiply a b)
+# This may surprise you if you expect math precedence:
+10 + 5 * 2      → 30, not 20
+
+# Use parens for math precedence:
+10 + (5 * 2)    → 20
 ```
 
 ### 4. Test Incrementally
@@ -404,56 +222,49 @@ total: (add x y) + (multiply a b)
 # Build up complex expressions piece by piece
 >> x: 5
 >> y: 10
->> x * 2
-10
->> y * 3
+>> x + y
+15
+>> (x + y) * 2
 30
->> (x * 2) + (y * 3)
-40
+>> x + y * 2    # Note: different result!
+30
 ```
 
 ---
 
-## Quick Reference Card
+## Quick Reference
 
 ```
-Highest Precedence (evaluates first)
+Left-to-Right Evaluation (no precedence)
   ↓
-  function-name args
-  -x (unary negation)
-  * /
-  + -
-  < > <= >=
-  = <>
-  and or
+  Evaluate operators as they appear
+  (operator arg1 arg2)
+  ↓
+  Continue with next operator
   ↑
-Lowest Precedence (evaluates last)
-
-Parens (...) override everything
+Parentheses (...) force specific order
 ```
+
+**Key Rule**: Operations are evaluated in the order they appear, left to right.
 
 ---
 
-## Testing Precedence
+## Testing Evaluation
 
-Use the REPL to verify precedence:
+Use the REPL to verify left-to-right evaluation:
 
 ```
 >> 3 + 4 * 2
-11
-
->> (3 + 4) * 2
 14
 
->> 5 > 3 and 10 < 20
-true
+>> 3 + (4 * 2)
+11
 
->> square: fn [n] [(* n n)]
->> square 3 + 4
-13
+>> 10 - 6 / 2
+2
 
->> square (3 + 4)
-49
+>> 10 - (6 / 2)
+7
 ```
 
 ---

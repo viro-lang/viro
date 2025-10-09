@@ -1,38 +1,21 @@
-// Package parse implements the Viro parser with traditional operator precedence.
+// Package parse implements the Viro parser with REBOL-style left-to-right evaluation.
 //
 // Architecture:
 // - Tokenize input into tokens (numbers, words, operators, brackets)
-// - Parse tokens into Value structures with precedence-aware parsing
-// - Traditional precedence: * and / before + and -, not REBOL's left-to-right
-//
-// Precedence levels per contracts/math.md:
-// 1. not (unary, right associative)
-// 2. * / (left associative)
-// 3. + - (left associative)
-// 4. < > <= >= (left associative)
-// 5. = <> (left associative)
-// 6. and (left associative)
-// 7. or (left associative)
-// Package parse converts text input into Value structures for evaluation.
+// - Parse tokens into Value structures with simple left-to-right parsing
+// - Left-to-right evaluation: no operator precedence, just like REBOL
 //
 // The parser implements a two-stage process:
 //  1. Tokenization: Text → Tokens (lexical analysis)
-//  2. Parsing: Tokens → Values with operator precedence
+//  2. Parsing: Tokens → Values (no precedence handling)
 //
-// Operator precedence (7 levels, highest to lowest):
-//  1. Function calls
-//  2. Unary negation (-)
-//  3. Multiplication and division (*, /)
-//  4. Addition and subtraction (+, -)
-//  5. Comparisons (<, >, <=, >=)
-//  6. Equality (=, <>)
-//  7. Logic (and, or)
+// Left-to-right evaluation means:
+//
+//	3 + 4 * 2 → ((+ 3 4) * 2) → (7 * 2) → 14
+//	Not: (3 + (4 * 2)) → (3 + 8) → 11 (mathematical precedence)
 //
 // The parser transforms infix notation (3 + 4) into prefix notation ((+ 3 4))
-// for evaluation. Parentheses override precedence by forcing immediate evaluation.
-//
-// Key difference from REBOL: Viro uses mathematical operator precedence,
-// while REBOL uses strict left-to-right evaluation with no precedence.
+// for evaluation. Parentheses force immediate evaluation as in REBOL.
 package parse
 
 import (
@@ -472,27 +455,19 @@ func (p *parser) parseSequence() ([]value.Value, *verror.Error) {
 	return values, nil
 }
 
-// parseExpression parses an expression with operator precedence.
-// For now, we'll use a simple precedence climbing parser.
+// parseExpression parses an expression with simple left-to-right evaluation.
+// This matches REBOL's evaluation model: no operator precedence.
+// Example: 3 + 4 * 2 → ((+ 3 4) * 2) → (7 * 2) → 14
 func (p *parser) parseExpression() (value.Value, *verror.Error) {
-	return p.parsePrecedence(7) // Start with lowest precedence (or)
-}
-
-// parsePrecedence implements precedence climbing algorithm.
-// Higher level number = lower precedence (7 is lowest = or)
-func (p *parser) parsePrecedence(level int) (value.Value, *verror.Error) {
-	if level == 0 {
-		return p.parsePrimary()
-	}
-
-	left, err := p.parsePrecedence(level - 1)
+	left, err := p.parsePrimary()
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
-	for !p.isAtEnd() && p.isOperatorAtLevel(level) {
+	// Parse operators in left-to-right order
+	for !p.isAtEnd() && p.peek().typ == tokOperator {
 		op := p.advance()
-		right, err := p.parsePrecedence(level - 1)
+		right, err := p.parsePrimary()
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -506,39 +481,6 @@ func (p *parser) parsePrecedence(level int) (value.Value, *verror.Error) {
 	}
 
 	return left, nil
-}
-
-// isOperatorAtLevel checks if current token is an operator at the given precedence level.
-func (p *parser) isOperatorAtLevel(level int) bool {
-	if p.isAtEnd() || p.peek().typ != tokOperator {
-		return false
-	}
-
-	op := p.peek().val
-	return getOperatorLevel(op) == level
-}
-
-// getOperatorLevel returns precedence level for operator (higher = tighter binding).
-// Inverted from contracts: level 1 in contract = level 7 here (we parse low to high).
-func getOperatorLevel(op string) int {
-	switch op {
-	case "or":
-		return 7 // Lowest precedence
-	case "and":
-		return 6
-	case "=", "<>":
-		return 5
-	case "<", ">", "<=", ">=":
-		return 4
-	case "+", "-":
-		return 3
-	case "*", "/":
-		return 2 // Highest precedence (binary)
-	case "not":
-		return 1 // Unary, handled separately
-	default:
-		return 0
-	}
 }
 
 // parsePrimary parses a primary expression (literal, word, block, paren, etc.).

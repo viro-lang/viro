@@ -148,40 +148,45 @@ func TestArithmeticNatives(t *testing.T) {
 	}
 }
 
-// TestOperatorPrecedence tests that parser respects traditional precedence.
-// Contract per contracts/math.md: * and / before + and -.
+// TestLeftToRightEvaluation tests that parser uses left-to-right evaluation.
+// Contract: REBOL-style left-to-right evaluation, no operator precedence.
 //
-// Critical design decision: Viro uses traditional precedence, NOT REBOL's left-to-right.
-func TestOperatorPrecedence(t *testing.T) {
+// Design decision: Viro now uses left-to-right evaluation, matching REBOL.
+func TestLeftToRightEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
 		expr     string // Expression as string (will be parsed)
 		expected value.Value
 	}{
 		{
-			name:     "multiplication before addition",
+			name:     "left-to-right addition and multiplication",
 			expr:     "3 + 4 * 2",
-			expected: value.IntVal(11), // Not 14 (left-to-right)
+			expected: value.IntVal(14), // (3 + 4) * 2 = 7 * 2 = 14
 		},
 		{
-			name:     "division before subtraction",
+			name:     "left-to-right subtraction and division",
 			expr:     "10 - 6 / 2",
-			expected: value.IntVal(7), // Not 2 (left-to-right)
+			expected: value.IntVal(2), // (10 - 6) / 2 = 4 / 2 = 2
 		},
 		{
-			name:     "parentheses override precedence",
+			name:     "parentheses force specific order",
 			expr:     "(3 + 4) * 2",
-			expected: value.IntVal(14),
+			expected: value.IntVal(14), // Same as left-to-right
 		},
 		{
-			name:     "multiple operations",
+			name:     "multiple operations left-to-right",
 			expr:     "2 + 3 * 4 + 5",
-			expected: value.IntVal(19), // 2 + 12 + 5
+			expected: value.IntVal(25), // ((2 + 3) * 4) + 5 = (5 * 4) + 5 = 20 + 5 = 25
 		},
 		{
 			name:     "nested parentheses",
 			expr:     "((2 + 3) * 4)",
 			expected: value.IntVal(20),
+		},
+		{
+			name:     "division then multiplication left-to-right",
+			expr:     "20 / 2 * 3",
+			expected: value.IntVal(30), // (20 / 2) * 3 = 10 * 3 = 30
 		},
 	}
 

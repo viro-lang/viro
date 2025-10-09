@@ -49,8 +49,8 @@ func TestUS1_BasicExpressions(t *testing.T) {
 		t.Fatalf("paren evaluation expected 3, got %q", output)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "3 + 4 * 2")); output != "11" {
-		t.Fatalf("precedence expected 11, got %q", output)
+	if output := strings.TrimSpace(evalLine(t, loop, &out, "3 + 4 * 2")); output != "14" {
+		t.Fatalf("left-to-right evaluation expected 14, got %q", output)
 	}
 
 	out.Reset()

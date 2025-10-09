@@ -10,8 +10,8 @@
 // Package eval implements the core evaluation engine for the Viro interpreter.
 //
 // The evaluator uses type-based dispatch to evaluate REBOL-style expressions.
-// It supports literals, words, functions, blocks, and parens with proper
-// operator precedence and scoping rules.
+// It supports literals, words, functions, blocks, and parens with left-to-right
+// evaluation (no operator precedence) and proper scoping rules.
 //
 // Key functions:
 //   - Do_Next: Evaluate a single value based on its type

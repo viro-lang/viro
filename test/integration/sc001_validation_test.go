@@ -214,11 +214,11 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 			input:    "type? 42",
 			expected: "integer!",
 		},
-		// 31. Nested arithmetic with precedence
+		// 31. Left-to-right arithmetic evaluation
 		{
-			name:     "Arithmetic precedence",
+			name:     "Left-to-right arithmetic",
 			input:    "3 + 4 * 2",
-			expected: "11",
+			expected: "14", // (3 + 4) * 2 = 7 * 2 = 14
 		},
 		// 32. Complex paren expression
 		{

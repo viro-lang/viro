@@ -24,7 +24,7 @@ Viro v1.0.0 is the first production release of a REBOL R3-inspired interpreter w
 - Function (native and user-defined)
 
 **Evaluation Engine**:
-- Type-based dispatch with proper operator precedence
+- Type-based dispatch with left-to-right evaluation
 - Local-by-default scoping (differs from REBOL)
 - Lexical closures
 - Recursive function support (150+ depth)
@@ -34,10 +34,10 @@ Viro v1.0.0 is the first production release of a REBOL R3-inspired interpreter w
 - Comparison: `<`, `>`, `<=`, `>=`, `=`, `<>`
 - Logic: `and`, `or`, `not`
 
-**Operator Precedence** (7 levels):
-- Mathematical precedence (unlike REBOL's left-to-right)
-- Parentheses override
-- Function calls highest priority
+**Evaluation Model**:
+- Left-to-right evaluation (matches REBOL)
+- Parentheses control order
+- Function calls consume arguments first
 
 ### Native Functions (28)
 
@@ -167,6 +167,8 @@ go build -o viro ./cmd/viro
 >> 3 + 4
 7
 >> 3 + 4 * 2
+14
+>> 3 + (4 * 2)
 11
 ```
 
@@ -212,7 +214,7 @@ large
 
 - **Architecture Overview**: `docs/interpreter.md`
 - **REPL Usage Guide**: `docs/repl-usage.md`
-- **Operator Precedence**: `docs/operator-precedence.md`
+- **Evaluation Reference**: `docs/operator-precedence.md` (left-to-right evaluation)
 - **Scoping Differences**: `docs/scoping-differences.md`
 - **Quickstart Guide**: `specs/001-implement-the-core/quickstart.md`
 - **Constitution Compliance**: `docs/constitution-compliance.md`
@@ -269,7 +271,7 @@ go test ./...
 ### Differences from REBOL
 
 1. **Scoping**: Local-by-default (REBOL is global-by-default)
-2. **Precedence**: Mathematical operator precedence (REBOL is left-to-right)
+2. **Evaluation**: Left-to-right (matches REBOL)
 3. **Native Count**: 28 functions (REBOL has 600+)
 4. **Series Model**: Simplified (no position tracking)
 5. **Datatypes**: 10 types (REBOL has 50+)
@@ -385,7 +387,7 @@ For bug reports, feature requests, or questions:
 - Core interpreter with 10 value types
 - 28 native functions across 6 categories
 - Type-based evaluation engine
-- Operator precedence (7 levels)
+- Left-to-right evaluation (REBOL-style)
 - Local-by-default scoping
 - Lexical closures
 - Structured error system (7 categories)

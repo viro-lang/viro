@@ -106,25 +106,27 @@ Use a word without `:` to get its value:
 5
 ```
 
-### Operator Precedence
+### Left-to-Right Evaluation
 
-Multiplication and division before addition and subtraction:
+All operators are evaluated from left to right (no precedence):
 
 ```
 >> 3 + 4 * 2
-11
->> (3 + 4) * 2
 14
+>> 3 + (4 * 2)
+11
 ```
 
 ### Complex Expressions
 
 ```
->> 1 + 2 * 3 - 4 + 5 / 2
-5
+>> 10 - 6 / 2
+2
+>> 10 - (6 / 2)
+7
 ```
 
-*Precedence*: `*` and `/` first, then `+` and `-`, left to right.
+*Evaluation*: Operations are processed left-to-right. Use parentheses to control order.
 
 ---
 
@@ -713,9 +715,9 @@ integer!
 - Quickstart: `specs/001-implement-the-core/quickstart.md`
 - Contracts: `specs/001-implement-the-core/contracts/`
 
-### Operator Precedence
+### Evaluation Reference
 
-See "Operator Precedence Reference" section in `docs/operator-precedence.md`
+See "Operator Evaluation Reference" section in `docs/operator-precedence.md` for details on left-to-right evaluation.
 
 ---
 
