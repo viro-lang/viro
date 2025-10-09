@@ -120,27 +120,27 @@
 
 ### Contract Tests for User Story 2
 
-- [ ] T052 [US2] Contract test: open file port with sandbox resolution in test/contract/ports_test.go
-- [ ] T053 [US2] Contract test: open HTTP port with TLS verification in test/contract/ports_test.go
-- [ ] T054 [US2] Contract test: open TCP port with timeout in test/contract/ports_test.go
-- [ ] T055 [US2] Contract test: read/write file operations in test/contract/ports_test.go
-- [ ] T056 [US2] Contract test: HTTP GET/POST/HEAD with redirects in test/contract/ports_test.go
-- [ ] T057 [US2] Contract test: port query metadata in test/contract/ports_test.go
-- [ ] T058 [US2] Contract test: sandbox escape prevention in test/contract/ports_test.go
-- [ ] T059 [US2] Contract test: TLS --insecure flag behavior in test/contract/ports_test.go
-- [ ] T059.1 [US2] **CHECKPOINT**: Run `go test ./test/contract/ports_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
+- [X] T052 [US2] Contract test: open file port with sandbox resolution in test/contract/ports_test.go
+- [X] T053 [US2] Contract test: open HTTP port with TLS verification in test/contract/ports_test.go
+- [X] T054 [US2] Contract test: open TCP port with timeout in test/contract/ports_test.go
+- [X] T055 [US2] Contract test: read/write file operations in test/contract/ports_test.go
+- [X] T056 [US2] Contract test: HTTP GET/POST/HEAD with redirects in test/contract/ports_test.go
+- [X] T057 [US2] Contract test: port query metadata in test/contract/ports_test.go
+- [X] T058 [US2] Contract test: sandbox escape prevention in test/contract/ports_test.go
+- [X] T059 [US2] Contract test: TLS --insecure flag behavior in test/contract/ports_test.go
+- [X] T059.1 [US2] **CHECKPOINT**: Run `go test ./test/contract/ports_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 2
 
-- [ ] T060 [US2] Define PortDriver interface in internal/value/value.go (Open, Read, Write, Close, Query methods)
-- [ ] T061 [P] [US2] Implement fileDriver in internal/native/io.go with sandbox path resolution
-- [ ] T062 [P] [US2] Implement tcpDriver in internal/native/io.go with net.Dialer and optional timeout
-- [ ] T063 [US2] Implement httpDriver in internal/native/io.go with http.Client pool keyed by (verifyTLS, timeout)
-- [ ] T064 [US2] Implement redirect following logic (max 10 hops) in internal/native/io.go httpDriver
-- [ ] T065 [US2] Implement `open` native in internal/native/io.go with scheme dispatch and refinement handling
-- [ ] T066 [P] [US2] Implement `close` native in internal/native/io.go (idempotent, state transition)
-- [ ] T067 [P] [US2] Implement `read` native in internal/native/io.go with --binary, --lines, --part refinements
-- [ ] T068 [P] [US2] Implement `write` native in internal/native/io.go with --append, --binary, --lines refinements
+- [X] T060 [US2] Define PortDriver interface in internal/value/value.go (Open, Read, Write, Close, Query methods)
+- [X] T061 [P] [US2] Implement fileDriver in internal/native/io.go with sandbox path resolution
+- [X] T062 [P] [US2] Implement tcpDriver in internal/native/io.go with net.Dialer and optional timeout
+- [X] T063 [US2] Implement httpDriver in internal/native/io.go with http.Client pool keyed by (verifyTLS, timeout)
+- [X] T064 [US2] Implement redirect following logic (max 10 hops) in internal/native/io.go httpDriver
+- [X] T065 [US2] Implement `open` native in internal/native/io.go with scheme dispatch and refinement handling
+- [X] T066 [P] [US2] Implement `close` native in internal/native/io.go (idempotent, state transition)
+- [X] T067 [P] [US2] Implement `read` native in internal/native/io.go with --binary, --lines, --part refinements
+- [X] T068 [P] [US2] Implement `write` native in internal/native/io.go with --append, --binary, --lines refinements
 - [ ] T069 [P] [US2] Implement `save` convenience native in internal/native/io.go (serialization + write)
 - [ ] T070 [P] [US2] Implement `load` convenience native in internal/native/io.go (read + parse)
 - [ ] T071 [P] [US2] Implement `query` native in internal/native/io.go returning port metadata as object
