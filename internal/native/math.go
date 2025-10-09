@@ -12,6 +12,65 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// intOp represents an integer arithmetic operation that may overflow.
+// Returns the result and a boolean indicating if overflow occurred.
+type intOp func(a, b int64) (result int64, overflow bool)
+
+// decimalOp represents a decimal arithmetic operation.
+type decimalOp func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big
+
+// mathOp provides a generic template for binary arithmetic operations.
+// It handles type checking, decimal promotion, and overflow detection.
+func mathOp(name string, args []value.Value, intFn intOp, decFn decimalOp) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError(name, 2, len(args))
+	}
+
+	// Check if either argument is decimal - if so, promote to decimal arithmetic
+	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+		return decimalMathOp(name, args[0], args[1], decFn)
+	}
+
+	// Integer arithmetic
+	a, ok := args[0].AsInteger()
+	if !ok {
+		return value.NoneVal(), mathTypeError(name, args[0])
+	}
+
+	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), mathTypeError(name, args[1])
+	}
+
+	// Perform operation with overflow check
+	result, overflow := intFn(a, b)
+	if overflow {
+		return value.NoneVal(), overflowError(name)
+	}
+
+	return value.IntVal(result), nil
+}
+
+// decimalMathOp handles decimal arithmetic with promotion.
+func decimalMathOp(name string, a, b value.Value, decFn decimalOp) (value.Value, *verror.Error) {
+	aVal := promoteToDecimal(a)
+	bVal := promoteToDecimal(b)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+	}
+
+	// Check for division by zero if the operation might divide
+	if name == "/" && bVal.Sign() == 0 {
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+	}
+
+	ctx := decimal.Context128
+	result := new(decimal.Big)
+	decFn(ctx, result, aVal, bVal)
+
+	return value.DecimalVal(result, 2), nil
+}
+
 // Add implements the + native function.
 //
 // Contract: + value1 value2 → sum
@@ -19,37 +78,22 @@ import (
 // - Returns arithmetic sum with type promotion (integer + decimal → decimal)
 // - Detects overflow
 func Add(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("+", 2, len(args))
-	}
-
-	// Check if either argument is decimal - if so, promote to decimal arithmetic
-	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
-		return addDecimal(args[0], args[1])
-	}
-
-	// Integer arithmetic
-	a, ok := args[0].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("+", args[0])
-	}
-
-	b, ok := args[1].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("+", args[1])
-	}
-
-	// Check for overflow
-	// Positive overflow: a > 0 && b > 0 && a > MaxInt64 - b
-	// Negative overflow: a < 0 && b < 0 && a < MinInt64 - b
-	if a > 0 && b > 0 && a > math.MaxInt64-b {
-		return value.NoneVal(), overflowError("+")
-	}
-	if a < 0 && b < 0 && a < math.MinInt64-b {
-		return value.NoneVal(), underflowError("+")
-	}
-
-	return value.IntVal(a + b), nil
+	return mathOp("+", args,
+		func(a, b int64) (int64, bool) {
+			// Check for overflow
+			// Positive overflow: a > 0 && b > 0 && a > MaxInt64 - b
+			// Negative overflow: a < 0 && b < 0 && a < MinInt64 - b
+			if a > 0 && b > 0 && a > math.MaxInt64-b {
+				return 0, true
+			}
+			if a < 0 && b < 0 && a < math.MinInt64-b {
+				return 0, true
+			}
+			return a + b, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Add(result, a, b)
+		})
 }
 
 // Subtract implements the - native function.
@@ -59,38 +103,23 @@ func Add(args []value.Value) (value.Value, *verror.Error) {
 // - Returns arithmetic difference (value1 - value2) with type promotion
 // - Detects overflow
 func Subtract(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("-", 2, len(args))
-	}
-
-	// Check if either argument is decimal - if so, promote to decimal arithmetic
-	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
-		return subtractDecimal(args[0], args[1])
-	}
-
-	// Integer arithmetic
-	a, ok := args[0].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("-", args[0])
-	}
-
-	b, ok := args[1].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("-", args[1])
-	}
-
-	// Check for overflow
-	// a - b can overflow if:
-	// - a > 0, b < 0, and a > MaxInt64 + b (result too large)
-	// - a < 0, b > 0, and a < MinInt64 + b (result too small)
-	if a > 0 && b < 0 && a > math.MaxInt64+b {
-		return value.NoneVal(), overflowError("-")
-	}
-	if a < 0 && b > 0 && a < math.MinInt64+b {
-		return value.NoneVal(), underflowError("-")
-	}
-
-	return value.IntVal(a - b), nil
+	return mathOp("-", args,
+		func(a, b int64) (int64, bool) {
+			// Check for overflow
+			// a - b can overflow if:
+			// - a > 0, b < 0, and a > MaxInt64 + b (result too large)
+			// - a < 0, b > 0, and a < MinInt64 + b (result too small)
+			if a > 0 && b < 0 && a > math.MaxInt64+b {
+				return 0, true
+			}
+			if a < 0 && b > 0 && a < math.MinInt64+b {
+				return 0, true
+			}
+			return a - b, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Sub(result, a, b)
+		})
 }
 
 // Multiply implements the * native function.
@@ -100,49 +129,32 @@ func Subtract(args []value.Value) (value.Value, *verror.Error) {
 // - Returns arithmetic product with type promotion
 // - Detects overflow
 func Multiply(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("*", 2, len(args))
-	}
+	return mathOp("*", args,
+		func(a, b int64) (int64, bool) {
+			// Special cases: a == 0 or b == 0 (no overflow)
+			if a == 0 || b == 0 {
+				return 0, false
+			}
 
-	// Check if either argument is decimal - if so, promote to decimal arithmetic
-	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
-		return multiplyDecimal(args[0], args[1])
-	}
+			// MinInt64 * -1 overflows
+			if a == math.MinInt64 && b == -1 {
+				return 0, true
+			}
+			if b == math.MinInt64 && a == -1 {
+				return 0, true
+			}
 
-	// Integer arithmetic
-	a, ok := args[0].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("*", args[0])
-	}
+			result := a * b
+			// Check for overflow using division
+			if result/b != a {
+				return 0, true
+			}
 
-	b, ok := args[1].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("*", args[1])
-	}
-	if !ok {
-		return value.NoneVal(), mathTypeError("*", args[1])
-	}
-
-	// Check for overflow using division
-	// If a * b would overflow, then (a * b) / b != a
-	// Special cases: a == 0 or b == 0 (no overflow), and MinInt64 * -1 (overflows)
-	if a == 0 || b == 0 {
-		return value.IntVal(0), nil
-	}
-
-	if a == math.MinInt64 && b == -1 {
-		return value.NoneVal(), overflowError("*")
-	}
-	if b == math.MinInt64 && a == -1 {
-		return value.NoneVal(), overflowError("*")
-	}
-
-	result := a * b
-	if result/b != a {
-		return value.NoneVal(), overflowError("*")
-	}
-
-	return value.IntVal(result), nil
+			return result, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Mul(result, a, b)
+		})
 }
 
 // Divide implements the / native function.
@@ -152,37 +164,24 @@ func Multiply(args []value.Value) (value.Value, *verror.Error) {
 // - Returns arithmetic quotient (truncated toward zero)
 // - Division by zero is an error
 func Divide(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("/", 2, len(args))
+	// Special handling for division by zero in integer case
+	if len(args) == 2 && args[0].Type != value.TypeDecimal && args[1].Type != value.TypeDecimal {
+		if b, ok := args[1].AsInteger(); ok && b == 0 {
+			return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+		}
 	}
 
-	// Check if either argument is decimal - if so, promote to decimal arithmetic
-	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
-		return divideDecimal(args[0], args[1])
-	}
-
-	// Integer arithmetic
-	a, ok := args[0].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("/", args[0])
-	}
-
-	b, ok := args[1].AsInteger()
-	if !ok {
-		return value.NoneVal(), mathTypeError("/", args[1])
-	}
-
-	// Check for division by zero
-	if b == 0 {
-		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
-	}
-
-	// Check for overflow: MinInt64 / -1 overflows
-	if a == math.MinInt64 && b == -1 {
-		return value.NoneVal(), overflowError("/")
-	}
-
-	return value.IntVal(a / b), nil
+	return mathOp("/", args,
+		func(a, b int64) (int64, bool) {
+			// Check for overflow: MinInt64 / -1 overflows
+			if a == math.MinInt64 && b == -1 {
+				return 0, true
+			}
+			return a / b, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Quo(result, a, b)
+		})
 }
 
 // LessThan implements the < native function.
@@ -372,68 +371,4 @@ func Not(args []value.Value) (value.Value, *verror.Error) {
 
 	// Convert to truthy and negate (using ToTruthy from control.go)
 	return value.LogicVal(!ToTruthy(args[0])), nil
-}
-
-// Decimal arithmetic promotion helpers (Feature 002)
-// These functions implement mixed integer/decimal arithmetic with automatic promotion
-
-func addDecimal(a, b value.Value) (value.Value, *verror.Error) {
-	aVal := promoteToDecimal(a)
-	bVal := promoteToDecimal(b)
-	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError("add-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
-	}
-
-	ctx := decimal.Context128
-	result := new(decimal.Big)
-	ctx.Add(result, aVal, bVal)
-
-	return value.DecimalVal(result, 2), nil
-}
-
-func subtractDecimal(a, b value.Value) (value.Value, *verror.Error) {
-	aVal := promoteToDecimal(a)
-	bVal := promoteToDecimal(b)
-	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError("subtract-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
-	}
-
-	ctx := decimal.Context128
-	result := new(decimal.Big)
-	ctx.Sub(result, aVal, bVal)
-
-	return value.DecimalVal(result, 2), nil
-}
-
-func multiplyDecimal(a, b value.Value) (value.Value, *verror.Error) {
-	aVal := promoteToDecimal(a)
-	bVal := promoteToDecimal(b)
-	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError("multiply-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
-	}
-
-	ctx := decimal.Context128
-	result := new(decimal.Big)
-	ctx.Mul(result, aVal, bVal)
-
-	return value.DecimalVal(result, 2), nil
-}
-
-func divideDecimal(a, b value.Value) (value.Value, *verror.Error) {
-	aVal := promoteToDecimal(a)
-	bVal := promoteToDecimal(b)
-	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError("divide-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
-	}
-
-	// Check for division by zero
-	if bVal.Sign() == 0 {
-		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
-	}
-
-	ctx := decimal.Context128
-	result := new(decimal.Big)
-	ctx.Quo(result, aVal, bVal)
-
-	return value.DecimalVal(result, 2), nil
 }

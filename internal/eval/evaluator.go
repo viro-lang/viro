@@ -759,6 +759,265 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 	return result, nil
 }
 
+// pathTraversal represents a path resolution result with intermediate values
+type pathTraversal struct {
+	segments []value.PathSegment // original segments from path expression
+	values   []value.Value       // resolved values at each level (includes base)
+}
+
+// traversePath performs path segment resolution, optionally stopping before the last segment.
+// This centralizes path logic for both read (full traversal) and write (stop before last).
+//
+// Parameters:
+//   - path: the PathExpression to traverse
+//   - stopBeforeLast: if true, stops after resolving penultimate segment (for writes)
+//
+// Returns:
+//   - pathTraversal with segments and resolved values at each level
+//   - error if traversal fails (no-value, none-path, type mismatch, out of range)
+func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool) (*pathTraversal, *verror.Error) {
+	if len(path.Segments) == 0 {
+		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
+	}
+
+	tr := &pathTraversal{
+		segments: path.Segments,
+		values:   make([]value.Value, 0, len(path.Segments)),
+	}
+
+	// Resolve base (first segment)
+	firstSeg := path.Segments[0]
+	var base value.Value
+
+	if firstSeg.Type == value.PathSegmentWord {
+		wordStr, ok := firstSeg.Value.(string)
+		if !ok {
+			return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
+		}
+
+		base, ok = e.lookup(wordStr)
+		if !ok {
+			return nil, verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		}
+	} else if firstSeg.Type == value.PathSegmentIndex {
+		// Path starts with a literal number (e.g., 1.field)
+		num, ok := firstSeg.Value.(int64)
+		if !ok {
+			return nil, verror.NewInternalError("index segment does not contain int64", [3]string{})
+		}
+		base = value.IntVal(num)
+	} else {
+		return nil, verror.NewInternalError("unexpected first segment type", [3]string{fmt.Sprintf("%v", firstSeg.Type), "", ""})
+	}
+
+	tr.values = append(tr.values, base)
+
+	// Determine traversal limit
+	endIdx := len(path.Segments)
+	if stopBeforeLast && len(path.Segments) > 1 {
+		endIdx = len(path.Segments) - 1
+	}
+
+	// Traverse segments
+	for i := 1; i < endIdx; i++ {
+		seg := path.Segments[i]
+		current := tr.values[len(tr.values)-1]
+
+		// Check for none mid-path
+		if current.Type == value.TypeNone {
+			return nil, verror.NewScriptError(verror.ErrIDNonePath, [3]string{})
+		}
+
+		switch seg.Type {
+		case value.PathSegmentWord:
+			// Object field access
+			if current.Type != value.TypeObject {
+				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{current.Type.String(), "", ""})
+			}
+
+			obj, _ := current.AsObject()
+			fieldName, ok := seg.Value.(string)
+			if !ok {
+				return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
+			}
+
+			// Look up field in object's frame
+			objFrame := e.getFrameByIndex(obj.FrameIndex)
+			if objFrame == nil {
+				return nil, verror.NewInternalError("object frame not found", [3]string{})
+			}
+
+			fieldVal, found := objFrame.Get(fieldName)
+			if !found {
+				// Check parent prototype chain
+				currentProto := obj.ParentProto
+				for currentProto != nil && !found {
+					protoFrame := e.getFrameByIndex(currentProto.FrameIndex)
+					if protoFrame == nil {
+						break
+					}
+					fieldVal, found = protoFrame.Get(fieldName)
+					if found {
+						break
+					}
+
+					// Move to next prototype in chain
+					currentProto = currentProto.ParentProto
+				}
+
+				if !found {
+					return nil, verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
+				}
+			}
+
+			tr.values = append(tr.values, fieldVal)
+
+		case value.PathSegmentIndex:
+			// Block or string indexing (1-based)
+			index, ok := seg.Value.(int64)
+			if !ok {
+				return nil, verror.NewInternalError("index segment does not contain int64", [3]string{})
+			}
+
+			if current.Type == value.TypeBlock {
+				block, _ := current.AsBlock()
+				// 1-based indexing
+				if index < 1 || index > int64(len(block.Elements)) {
+					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for block of length %d", index, len(block.Elements)), "", ""})
+				}
+				tr.values = append(tr.values, block.Elements[index-1])
+
+			} else if current.Type == value.TypeString {
+				str, _ := current.AsString()
+				runes := []rune(str.String())
+				if index < 1 || index > int64(len(runes)) {
+					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for string of length %d", index, len(runes)), "", ""})
+				}
+				// Return character as string
+				tr.values = append(tr.values, value.StrVal(string(runes[index-1])))
+
+			} else {
+				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block or string type", "", ""})
+			}
+
+		default:
+			return nil, verror.NewInternalError("unsupported path segment type", [3]string{})
+		}
+	}
+
+	return tr, nil
+}
+
+// parsePathString converts a dot-separated path string into a PathExpression.
+// Used by evalSetPath to leverage the centralized traversePath logic.
+func parsePathString(pathStr string) (*value.PathExpression, *verror.Error) {
+	parts := strings.Split(pathStr, ".")
+	if len(parts) < 2 {
+		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
+	}
+
+	segments := make([]value.PathSegment, len(parts))
+	for i, part := range parts {
+		// Try to parse as integer index
+		if idx, err := strconv.ParseInt(part, 10, 64); err == nil {
+			segments[i] = value.PathSegment{
+				Type:  value.PathSegmentIndex,
+				Value: idx,
+			}
+		} else {
+			// It's a word segment
+			segments[i] = value.PathSegment{
+				Type:  value.PathSegmentWord,
+				Value: part,
+			}
+		}
+	}
+
+	return value.NewPath(segments, value.NoneVal()), nil
+}
+
+// assignToPathTarget performs the final assignment operation after path traversal.
+// This handles assignment to object fields or block elements.
+func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pathStr string) (value.Value, *verror.Error) {
+	if len(tr.segments) < 2 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
+	}
+
+	// Get the penultimate (container) value
+	container := tr.values[len(tr.values)-1]
+	finalSeg := tr.segments[len(tr.segments)-1]
+
+	// Check for immutable target (literal number as base)
+	if tr.segments[0].Type == value.PathSegmentIndex {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{pathStr, "", ""})
+	}
+
+	// Check if container can be mutated
+	if container.Type == value.TypeNone {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot assign to none value", "", ""})
+	}
+
+	switch finalSeg.Type {
+	case value.PathSegmentIndex:
+		// Block element assignment
+		index, ok := finalSeg.Value.(int64)
+		if !ok {
+			return value.NoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
+		}
+
+		if container.Type != value.TypeBlock {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
+		}
+
+		block, _ := container.AsBlock()
+		if index < 1 || index > int64(len(block.Elements)) {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range", index), "", ""})
+		}
+		block.Elements[index-1] = newVal
+
+	case value.PathSegmentWord:
+		// Object field assignment
+		fieldName, ok := finalSeg.Value.(string)
+		if !ok {
+			return value.NoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
+		}
+
+		if container.Type != value.TypeObject {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
+		}
+
+		obj, _ := container.AsObject()
+		objFrame := e.getFrameByIndex(obj.FrameIndex)
+		if objFrame == nil {
+			return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
+		}
+
+		// Check if field exists
+		_, found := objFrame.Get(fieldName)
+		if !found {
+			// Check parent chain to see if it's inherited
+			if obj.Parent >= 0 {
+				parentFrame := e.getFrameByIndex(obj.Parent)
+				if parentFrame != nil {
+					_, found = parentFrame.Get(fieldName)
+				}
+			}
+
+			if !found {
+				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
+			}
+		}
+
+		// Bind to object's frame
+		objFrame.Bind(fieldName, newVal)
+
+	default:
+		return value.NoneVal(), verror.NewInternalError("unsupported path segment type for assignment", [3]string{})
+	}
+
+	return newVal, nil
+}
+
 // evalPath evaluates a path expression by traversing segments (T091).
 //
 // Contract per contracts/objects.md §3:
@@ -783,125 +1042,17 @@ func (e *Evaluator) evalPath(val value.Value) (value.Value, *verror.Error) {
 
 	path, ok := val.AsPath()
 	if !ok {
-
 		return value.NoneVal(), verror.NewInternalError("path value does not contain PathExpression - payload type mismatch", [3]string{fmt.Sprintf("payload=%T", val.Payload), "", ""})
 	}
 
-	if len(path.Segments) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
+	// Use centralized traversal logic for full path resolution
+	tr, err := e.traversePath(path, false)
+	if err != nil {
+		return value.NoneVal(), err
 	}
 
-	// Start with the base value - resolve first segment
-	firstSeg := path.Segments[0]
-	var base value.Value
-
-	if firstSeg.Type == value.PathSegmentWord {
-		wordStr, ok := firstSeg.Value.(string)
-		if !ok {
-			return value.NoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
-		}
-
-		base, ok = e.lookup(wordStr)
-		if !ok {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-		}
-	} else if firstSeg.Type == value.PathSegmentIndex {
-		// Path starts with a literal number (e.g., 1.field)
-		// This is valid for reading but will fail for assignment (immutable target)
-		num, ok := firstSeg.Value.(int64)
-		if !ok {
-			return value.NoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
-		}
-		base = value.IntVal(num)
-	} else {
-		return value.NoneVal(), verror.NewInternalError("unexpected first segment type", [3]string{fmt.Sprintf("%v", firstSeg.Type), "", ""})
-	} // Traverse remaining segments
-	for i := 1; i < len(path.Segments); i++ {
-		seg := path.Segments[i]
-
-		// Check for none mid-path (none-path error)
-		if base.Type == value.TypeNone {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{})
-		}
-
-		switch seg.Type {
-		case value.PathSegmentWord:
-			// Object field access
-			if base.Type != value.TypeObject {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{base.Type.String(), "", ""})
-			}
-
-			obj, _ := base.AsObject()
-			fieldName, ok := seg.Value.(string)
-			if !ok {
-				return value.NoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
-			}
-
-			// Look up field in object's frame
-			objFrame := e.getFrameByIndex(obj.FrameIndex)
-			if objFrame == nil {
-				return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
-			}
-
-			fieldVal, found := objFrame.Get(fieldName)
-			if !found {
-				// Check parent prototype chain
-				currentProto := obj.ParentProto
-				for currentProto != nil && !found {
-					protoFrame := e.getFrameByIndex(currentProto.FrameIndex)
-					if protoFrame == nil {
-						break
-					}
-					fieldVal, found = protoFrame.Get(fieldName)
-					if found {
-						break
-					}
-
-					// Move to next prototype in chain
-					currentProto = currentProto.ParentProto
-				}
-
-				if !found {
-					return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
-				}
-			}
-
-			base = fieldVal
-
-		case value.PathSegmentIndex:
-			// Block or string indexing (1-based)
-			index, ok := seg.Value.(int64)
-			if !ok {
-				return value.NoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
-			}
-
-			if base.Type == value.TypeBlock {
-				block, _ := base.AsBlock()
-				// 1-based indexing
-				if index < 1 || index > int64(len(block.Elements)) {
-					return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for block of length %d", index, len(block.Elements)), "", ""})
-				}
-				base = block.Elements[index-1]
-
-			} else if base.Type == value.TypeString {
-				str, _ := base.AsString()
-				runes := []rune(str.String())
-				if index < 1 || index > int64(len(runes)) {
-					return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for string of length %d", index, len(runes)), "", ""})
-				}
-				// Return character as string
-				base = value.StrVal(string(runes[index-1]))
-
-			} else {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block or string type", "", ""})
-			}
-
-		default:
-			return value.NoneVal(), verror.NewInternalError("unsupported path segment type", [3]string{})
-		}
-	}
-
-	return base, nil
+	// Return the final resolved value
+	return tr.values[len(tr.values)-1], nil
 }
 
 // evalSetPath handles path assignment (set-path) like obj.field: value (T091).
@@ -912,10 +1063,10 @@ func (e *Evaluator) evalPath(val value.Value) (value.Value, *verror.Error) {
 // - Update final segment in target container (object frame or block)
 // - Error if attempting to assign to literal or immutable target
 func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (value.Value, *verror.Error) {
-	// Parse path string into segments
-	parts := strings.Split(pathStr, ".")
-	if len(parts) < 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
+	// Parse path string into PathExpression
+	path, err := parsePathString(pathStr)
+	if err != nil {
+		return value.NoneVal(), err
 	}
 
 	// Evaluate the value to assign
@@ -925,7 +1076,6 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 	}
 
 	var result value.Value
-	var err *verror.Error
 	nextVal := vals[*i]
 
 	result, err = e.evaluateWithFunctionCall(nextVal, vals, i)
@@ -933,129 +1083,12 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}
 
-	// Resolve base value
-	baseName := parts[0]
-	var base value.Value
-	var ok bool
-
-	// Check if base is a literal number (e.g., "1" in "1.field: 100")
-	if _, parseErr := strconv.ParseInt(baseName, 10, 64); parseErr == nil {
-		// Path starts with literal - this is an immutable target
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{pathStr, "", ""})
+	// Use centralized traversal to reach the penultimate container
+	tr, err := e.traversePath(path, true)
+	if err != nil {
+		return value.NoneVal(), err
 	}
 
-	base, ok = e.lookup(baseName)
-	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{baseName, "", ""})
-	}
-
-	// Traverse to penultimate container
-	for j := 1; j < len(parts)-1; j++ {
-		part := parts[j]
-
-		// Check for none mid-path
-		if base.Type == value.TypeNone {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot traverse path through none value", "", ""})
-		}
-
-		// Try as index first
-		if index, parseErr := fmt.Sscanf(part, "%d", new(int64)); parseErr == nil && index == 1 {
-			var idx int64
-			fmt.Sscanf(part, "%d", &idx)
-
-			if base.Type == value.TypeBlock {
-				block, _ := base.AsBlock()
-				if idx < 1 || idx > int64(len(block.Elements)) {
-					return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range", idx), "", ""})
-				}
-				base = block.Elements[idx-1]
-			} else {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block type", "", ""})
-			}
-		} else {
-			// It's a word (object field)
-			if base.Type != value.TypeObject {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"field access requires object type", "", ""})
-			}
-
-			obj, _ := base.AsObject()
-			objFrame := e.getFrameByIndex(obj.FrameIndex)
-			if objFrame == nil {
-				return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
-			}
-
-			fieldVal, found := objFrame.Get(part)
-			if !found {
-				// Check parent chain
-				if obj.Parent >= 0 {
-					parentFrame := e.getFrameByIndex(obj.Parent)
-					if parentFrame != nil {
-						fieldVal, found = parentFrame.Get(part)
-					}
-				}
-
-				if !found {
-					return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{part, "", ""})
-				}
-			}
-
-			base = fieldVal
-		}
-	}
-
-	// Now handle final segment assignment
-	finalPart := parts[len(parts)-1]
-
-	// Check if base can be mutated
-	if base.Type == value.TypeNone {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot assign to none value", "", ""})
-	}
-
-	// Try as index first
-	if index, parseErr := fmt.Sscanf(finalPart, "%d", new(int64)); parseErr == nil && index == 1 {
-		var idx int64
-		fmt.Sscanf(finalPart, "%d", &idx)
-
-		if base.Type == value.TypeBlock {
-			block, _ := base.AsBlock()
-			if idx < 1 || idx > int64(len(block.Elements)) {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range", idx), "", ""})
-			}
-			block.Elements[idx-1] = result
-		} else {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
-		}
-	} else {
-		// It's a word (object field)
-		if base.Type != value.TypeObject {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
-		}
-
-		obj, _ := base.AsObject()
-		objFrame := e.getFrameByIndex(obj.FrameIndex)
-		if objFrame == nil {
-			return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
-		}
-
-		// Check if field exists
-		_, found := objFrame.Get(finalPart)
-		if !found {
-			// Check parent chain to see if it's inherited
-			if obj.Parent >= 0 {
-				parentFrame := e.getFrameByIndex(obj.Parent)
-				if parentFrame != nil {
-					_, found = parentFrame.Get(finalPart)
-				}
-			}
-
-			if !found {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{finalPart, "", ""})
-			}
-		}
-
-		// Bind to object's frame
-		objFrame.Bind(finalPart, result)
-	}
-
-	return result, nil
+	// Perform the final assignment
+	return e.assignToPathTarget(tr, result, pathStr)
 }

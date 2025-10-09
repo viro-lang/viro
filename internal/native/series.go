@@ -5,58 +5,74 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// seriesSelector is a function that selects a value from a series.
+// For blocks: receives elements and returns the selected element.
+// For strings: receives the string and returns a character as a value.
+type seriesSelector func(series value.Value) (value.Value, *verror.Error)
+
+// seriesOperation provides a template for operations on series (blocks and strings).
+// It handles arity checking, type validation, and empty series errors.
+func seriesOperation(name string, args []value.Value, sel seriesSelector) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError(name, 1, len(args))
+	}
+
+	series := args[0]
+
+	// Validate series type
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		if blk.Length() == 0 {
+			return value.NoneVal(), emptySeriesError(name)
+		}
+	case value.TypeString:
+		str, _ := series.AsString()
+		if str.Length() == 0 {
+			return value.NoneVal(), emptySeriesError(name)
+		}
+	default:
+		return value.NoneVal(), typeError(name, "series", series)
+	}
+
+	// Apply selector
+	return sel(series)
+}
+
 // First implements the `first` native for series values.
 //
 // Contract: first series -> first element
 // - Series must be block or string
 // - Error on empty series
 func First(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 1 {
-		return value.NoneVal(), arityError("first", 1, len(args))
-	}
-
-	series := args[0]
-	switch series.Type {
-	case value.TypeBlock:
-		blk, _ := series.AsBlock()
-		if blk.Length() == 0 {
-			return value.NoneVal(), emptySeriesError("first")
+	return seriesOperation("first", args, func(series value.Value) (value.Value, *verror.Error) {
+		switch series.Type {
+		case value.TypeBlock:
+			blk, _ := series.AsBlock()
+			return blk.First(), nil
+		case value.TypeString:
+			str, _ := series.AsString()
+			return value.StrVal(string(str.First())), nil
+		default:
+			return value.NoneVal(), typeError("first", "series", series)
 		}
-		return blk.First(), nil
-	case value.TypeString:
-		str, _ := series.AsString()
-		if str.Length() == 0 {
-			return value.NoneVal(), emptySeriesError("first")
-		}
-		return value.StrVal(string(str.First())), nil
-	default:
-		return value.NoneVal(), typeError("first", "series", series)
-	}
+	})
 }
 
 // Last implements the `last` native for series values.
 func Last(args []value.Value) (value.Value, *verror.Error) {
-	if len(args) != 1 {
-		return value.NoneVal(), arityError("last", 1, len(args))
-	}
-
-	series := args[0]
-	switch series.Type {
-	case value.TypeBlock:
-		blk, _ := series.AsBlock()
-		if blk.Length() == 0 {
-			return value.NoneVal(), emptySeriesError("last")
+	return seriesOperation("last", args, func(series value.Value) (value.Value, *verror.Error) {
+		switch series.Type {
+		case value.TypeBlock:
+			blk, _ := series.AsBlock()
+			return blk.Last(), nil
+		case value.TypeString:
+			str, _ := series.AsString()
+			return value.StrVal(string(str.Last())), nil
+		default:
+			return value.NoneVal(), typeError("last", "series", series)
 		}
-		return blk.Last(), nil
-	case value.TypeString:
-		str, _ := series.AsString()
-		if str.Length() == 0 {
-			return value.NoneVal(), emptySeriesError("last")
-		}
-		return value.StrVal(string(str.Last())), nil
-	default:
-		return value.NoneVal(), typeError("last", "series", series)
-	}
+	})
 }
 
 // Append implements the `append` native for series values.
