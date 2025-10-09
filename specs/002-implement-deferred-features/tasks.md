@@ -42,18 +42,18 @@
 - [X] T013 [P] Implement Port struct in internal/value/port.go with scheme, driver interface, timeout fields
 - [X] T014 [P] Implement PathExpression struct in internal/value/path.go with segment representation
 - [X] T015 Update Value.String() in internal/value/value.go to handle new types (decimal, object, port, path)
-- [ ] T016 [P] Add CLI flag --sandbox-root to cmd/viro/main.go with default to os.Getwd()
-- [ ] T017 [P] Add CLI flag --trace-file to cmd/viro/main.go for optional trace file redirection (default: stderr output)
-- [ ] T018 [P] Add CLI flag --trace-max-size to cmd/viro/main.go (default 50MB per clarification)
-- [ ] T018.1 [P] Add CLI flag --allow-insecure-tls to cmd/viro/main.go (global TLS verification bypass with stderr warning)
-- [ ] T019 Create sandbox path resolver helper in internal/eval/sandbox.go (resolves paths within root, validates with filepath.EvalSymlinks)
-- [ ] T020 Implement TraceSession struct in internal/native/trace.go with dual sink support (stderr default, optional lumberjack file sink)
-- [ ] T021 [P] Implement TraceEvent struct and JSON serialization in internal/native/trace.go
-- [ ] T022 [P] Implement TraceFilters struct in internal/native/trace.go (include/exclude words, min duration)
-- [ ] T023 Implement Debugger struct in internal/native/trace.go (breakpoints map, mode, ID generation)
-- [ ] T024 Update evaluator dispatch in internal/eval/evaluator.go to check type dispatch tables for new types
-- [ ] T025 Add trace instrumentation hooks in internal/eval/evaluator.go (entry/exit of Do_Next, Do_Blk)
-- [ ] T025.1 [FOUNDATION] **CHECKPOINT - TDD Gate**: Write contract tests for new value types (TypeDecimal, TypeObject, TypePort, TypePath) in test/contract/value_types_test.go covering: (1) Value construction, (2) String() output, (3) Type dispatch routing, (4) Error cases (invalid conversions). Run tests and verify they FAIL before proceeding to Phase 3.
+- [X] T016 [P] Add CLI flag --sandbox-root to cmd/viro/main.go with default to os.Getwd()
+- [X] T017 [P] Add CLI flag --trace-file to cmd/viro/main.go for optional trace file redirection (default: stderr output)
+- [X] T018 [P] Add CLI flag --trace-max-size to cmd/viro/main.go (default 50MB per clarification)
+- [X] T018.1 [P] Add CLI flag --allow-insecure-tls to cmd/viro/main.go (global TLS verification bypass with stderr warning)
+- [X] T019 Create sandbox path resolver helper in internal/eval/sandbox.go (resolves paths within root, validates with filepath.EvalSymlinks)
+- [X] T020 Implement TraceSession struct in internal/native/trace.go with dual sink support (stderr default, optional lumberjack file sink)
+- [X] T021 [P] Implement TraceEvent struct and JSON serialization in internal/native/trace.go
+- [X] T022 [P] Implement TraceFilters struct in internal/native/trace.go (include/exclude words, min duration)
+- [X] T023 Implement Debugger struct in internal/native/trace.go (breakpoints map, mode, ID generation)
+- [X] T024 Update evaluator dispatch in internal/eval/evaluator.go to check type dispatch tables for new types
+- [X] T025 Add trace instrumentation hooks in internal/eval/evaluator.go (entry/exit of Do_Next, Do_Blk)
+- [X] T025.1 [FOUNDATION] **CHECKPOINT - TDD Gate**: Write contract tests for new value types (TypeDecimal, TypeObject, TypePort, TypePath) in test/contract/value_types_test.go covering: (1) Value construction, (2) String() output, (3) Type dispatch routing, (4) Error cases (invalid conversions). Run tests and verify they FAIL before proceeding to Phase 3.
 
 **⚠️ BLOCKER**: No user story implementation may begin until T025.1 passes with failing tests documented.
 
