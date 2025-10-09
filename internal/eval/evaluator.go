@@ -24,6 +24,7 @@ package eval
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
@@ -208,46 +209,93 @@ func (e *Evaluator) lookup(symbol string) (value.Value, bool) {
 //
 // Returns the evaluated value and any error encountered.
 func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
+	// Trace instrumentation (Feature 002, T025)
+	// Per FR-015: emit trace events when tracing is enabled
+	var traceStart time.Time
+	var traceWord string
+	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
+		traceStart = time.Now()
+		if val.Type.IsWord() {
+			if w, ok := val.AsWord(); ok {
+				traceWord = w
+			}
+		}
+	}
+
 	// Type-based dispatch per Constitution Principle III
+	var result value.Value
+	var err *verror.Error
+	
 	switch val.Type {
 	case value.TypeInteger, value.TypeString, value.TypeLogic, value.TypeNone:
 		// Literals evaluate to themselves
-		return val, nil
+		result, err = val, nil
 
 	case value.TypeBlock:
 		// Blocks return self (deferred evaluation)
-		return val, nil
+		result, err = val, nil
 
 	case value.TypeParen:
 		// Parens evaluate contents
-		return e.evalParen(val)
+		result, err = e.evalParen(val)
 
 	case value.TypeWord:
 		// Words look up in frame
-		return e.evalWord(val)
+		result, err = e.evalWord(val)
 
 	case value.TypeSetWord:
 		// Set-words are handled in Do_Blk (need next value from sequence)
 		// If we reach here, it's a set-word in isolation (error)
 		wordStr, _ := val.AsWord()
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
+		result, err = value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
 
 	case value.TypeGetWord:
 		// Get-words fetch without evaluation
-		return e.evalGetWord(val)
+		result, err = e.evalGetWord(val)
 
 	case value.TypeLitWord:
 		// Lit-words return as word
 		// Extract the word symbol and return as a word
-		return value.WordVal(val.Payload.(string)), nil
+		result, err = value.WordVal(val.Payload.(string)), nil
 
 	case value.TypeFunction:
 		// Functions return self (they're values)
-		return val, nil
+		result, err = val, nil
+	
+	// Feature 002: New value types (T024)
+	case value.TypeDecimal:
+		// Decimals evaluate to themselves (literals)
+		result, err = val, nil
+	
+	case value.TypeObject:
+		// Objects evaluate to themselves
+		result, err = val, nil
+	
+	case value.TypePort:
+		// Ports evaluate to themselves (handles)
+		result, err = val, nil
+	
+	case value.TypePath:
+		// Paths should be evaluated by path evaluator (implement in T091)
+		result, err = value.NoneVal(), verror.NewScriptError(verror.ErrIDNotImplemented, [3]string{"path evaluation not yet implemented", "", ""})
 
 	default:
-		return value.NoneVal(), verror.NewInternalError("unknown value type in Do_Next", [3]string{})
+		result, err = value.NoneVal(), verror.NewInternalError("unknown value type in Do_Next", [3]string{})
 	}
+
+	// Emit trace event if tracing is enabled
+	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() && traceWord != "" {
+		duration := time.Since(traceStart)
+		native.GlobalTraceSession.Emit(native.TraceEvent{
+			Timestamp: traceStart,
+			Value:     result.String(),
+			Word:      traceWord,
+			Duration:  duration.Nanoseconds(),
+			Depth:     len(e.callStack),
+		})
+	}
+
+	return result, err
 }
 
 // Do_Blk evaluates a block of values in sequence.
