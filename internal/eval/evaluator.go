@@ -72,27 +72,6 @@ func (e *Evaluator) currentFrame() *frame.Frame {
 	return e.Frames[len(e.Frames)-1]
 }
 
-// currentFrameIndex returns the store index for the active frame.
-func (e *Evaluator) currentFrameIndex() int {
-	frame := e.currentFrame()
-	if frame == nil {
-		return -1
-	}
-	if idx, ok := e.frameIndex[frame]; ok {
-		return idx
-	}
-	return -1
-}
-
-// getFrameByIndex retrieves frame from store by index.
-func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
-	if idx < 0 || idx >= len(e.frameStore) {
-		return nil
-	}
-	return e.frameStore[idx]
-}
-
-// pushFrame registers a new frame as active and stores it for closure lookups.
 func (e *Evaluator) pushFrame(f *frame.Frame) int {
 	idx, ok := e.frameIndex[f]
 	if !ok {
@@ -102,6 +81,24 @@ func (e *Evaluator) pushFrame(f *frame.Frame) int {
 	}
 	e.Frames = append(e.Frames, f)
 	return idx
+}
+
+func (e *Evaluator) currentFrameIndex() int {
+	if len(e.Frames) == 0 {
+		return -1
+	}
+	current := e.Frames[len(e.Frames)-1]
+	if idx, ok := e.frameIndex[current]; ok {
+		return idx
+	}
+	return -1
+}
+
+func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
+	if idx < 0 || idx >= len(e.frameStore) {
+		return nil
+	}
+	return e.frameStore[idx]
 }
 
 // popFrame removes the active frame and returns its store index.
@@ -362,35 +359,10 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 			continue
 		}
 
-		// Special case: word that might be a native or user-defined function call
-		if val.Type == value.TypeWord {
-			wordStr, ok := val.AsWord()
-			if ok {
-				if nativeInfo, found := native.Lookup(wordStr); found {
-					// This is a native function call - collect arguments
-					startIdx := i
-					result, err = e.callNative(wordStr, nativeInfo, vals, &i)
-					if err != nil {
-						return value.NoneVal(), e.annotateError(err, vals, startIdx)
-					}
-					continue
-				}
-
-				if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
-					fn, _ := resolved.AsFunction()
-					startIdx := i
-					result, err = e.invokeFunctionFromSequence(fn, vals, &i)
-					if err != nil {
-						return value.NoneVal(), e.annotateError(err, vals, startIdx)
-					}
-					continue
-				}
-			}
-		}
-
-		result, err = e.Do_Next(val)
+		startIdx := i
+		result, err = e.evaluateWithFunctionCall(val, vals, &i)
 		if err != nil {
-			return value.NoneVal(), e.annotateError(err, vals, i)
+			return value.NoneVal(), e.annotateError(err, vals, startIdx)
 		}
 	}
 
@@ -430,7 +402,7 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 		if tokenIdx >= len(vals) {
 			err := verror.NewScriptError(
 				verror.ErrIDArgCount,
-				[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(args))},
+				[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
 			)
 			return value.NoneVal(), e.annotateError(err, vals, startIdx)
 		}
@@ -454,7 +426,7 @@ func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, to
 	if len(tokens) != info.Arity {
 		err := verror.NewScriptError(
 			verror.ErrIDArgCount,
-			[3]string{name, fmt.Sprintf("%d", info.Arity), fmt.Sprintf("%d", len(tokens))},
+			[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(tokens))},
 		)
 		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
@@ -473,6 +445,33 @@ func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, to
 		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
 	return result, nil
+}
+
+// evaluateWithFunctionCall resolves a value that might represent a callable.
+//
+// If the value is a word referring to a native or user-defined function, this
+// helper dispatches to the appropriate call helper (advancing the index when
+// arguments are consumed). Otherwise it falls back to Do_Next.
+func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value, idx *int) (value.Value, *verror.Error) {
+	if val.Type != value.TypeWord {
+		return e.Do_Next(val)
+	}
+
+	wordStr, ok := val.AsWord()
+	if !ok {
+		return e.Do_Next(val)
+	}
+
+	if nativeInfo, found := native.Lookup(wordStr); found {
+		return e.callNative(wordStr, nativeInfo, seq, idx)
+	}
+
+	if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+		fn, _ := resolved.AsFunction()
+		return e.invokeFunctionFromSequence(fn, seq, idx)
+	}
+
+	return e.Do_Next(val)
 }
 
 func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int) (value.Value, *verror.Error) {
@@ -508,7 +507,7 @@ func (e *Evaluator) invokeFunctionWithTokens(fn *value.FunctionValue, tokens []v
 	if consumed != len(tokens) {
 		err := verror.NewScriptError(
 			verror.ErrIDArgCount,
-			[3]string{name, fmt.Sprintf("%d", len(posArgs)), fmt.Sprintf("%d", len(posArgs)+(len(tokens)-consumed))},
+			[3]string{name, strconv.Itoa(len(posArgs)), strconv.Itoa(len(posArgs) + (len(tokens) - consumed))},
 		)
 		return value.NoneVal(), e.annotateError(err, context, 0)
 	}
@@ -605,7 +604,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 	if posIndex < len(positional) {
 		return nil, nil, 0, verror.NewScriptError(
 			verror.ErrIDArgCount,
-			[3]string{displayName, fmt.Sprintf("%d", len(positional)), fmt.Sprintf("%d", posIndex)},
+			[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(posIndex)},
 		)
 	}
 
@@ -717,22 +716,7 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 		err    *verror.Error
 	)
 
-	if nextVal.Type == value.TypeWord {
-		if wordStr, ok := nextVal.AsWord(); ok {
-			if nativeInfo, found := native.Lookup(wordStr); found {
-				result, err = e.callNative(wordStr, nativeInfo, vals, i)
-			} else if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
-				fn, _ := resolved.AsFunction()
-				result, err = e.invokeFunctionFromSequence(fn, vals, i)
-			} else {
-				result, err = e.Do_Next(nextVal)
-			}
-		} else {
-			result, err = e.Do_Next(nextVal)
-		}
-	} else {
-		result, err = e.Do_Next(nextVal)
-	}
+	result, err = e.evaluateWithFunctionCall(nextVal, vals, i)
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}
@@ -932,22 +916,7 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 	var err *verror.Error
 	nextVal := vals[*i]
 
-	if nextVal.Type == value.TypeWord {
-		if wordStr, ok := nextVal.AsWord(); ok {
-			if nativeInfo, found := native.Lookup(wordStr); found {
-				result, err = e.callNative(wordStr, nativeInfo, vals, i)
-			} else if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
-				fn, _ := resolved.AsFunction()
-				result, err = e.invokeFunctionFromSequence(fn, vals, i)
-			} else {
-				result, err = e.Do_Next(nextVal)
-			}
-		} else {
-			result, err = e.Do_Next(nextVal)
-		}
-	} else {
-		result, err = e.Do_Next(nextVal)
-	}
+	result, err = e.evaluateWithFunctionCall(nextVal, vals, i)
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}

@@ -5,7 +5,7 @@ import "testing"
 func TestFormatInt(t *testing.T) {
 	tests := []struct {
 		name string
-		in   int
+		in   int64
 		out  string
 	}{
 		{"zero", 0, "0"},

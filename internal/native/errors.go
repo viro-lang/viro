@@ -1,8 +1,6 @@
 package native
 
 import (
-	"strconv"
-
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -11,7 +9,7 @@ import (
 func arityError(name string, expected, actual int) *verror.Error {
 	return verror.NewScriptError(
 		verror.ErrIDArgCount,
-		[3]string{name, strconv.Itoa(expected), strconv.Itoa(actual)},
+		[3]string{name, formatInt(int64(expected)), formatInt(int64(actual))},
 	)
 }
 

@@ -672,7 +672,7 @@ func WaitPort(portOrBlock value.Value) (value.Value, error) {
 func serializeValue(val value.Value) string {
 	switch val.Type {
 	case value.TypeInteger:
-		return fmt.Sprintf("%d", val.Payload)
+		return formatInt(val.Payload.(int64))
 	case value.TypeDecimal:
 		return val.String()
 	case value.TypeString:

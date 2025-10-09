@@ -30,7 +30,7 @@ func First(args []value.Value) (value.Value, *verror.Error) {
 		}
 		return value.StrVal(string(str.First())), nil
 	default:
-		return value.NoneVal(), seriesTypeError("first", series.Type.String())
+		return value.NoneVal(), typeError("first", "series", series)
 	}
 }
 
@@ -55,7 +55,7 @@ func Last(args []value.Value) (value.Value, *verror.Error) {
 		}
 		return value.StrVal(string(str.Last())), nil
 	default:
-		return value.NoneVal(), seriesTypeError("last", series.Type.String())
+		return value.NoneVal(), typeError("last", "series", series)
 	}
 }
 
@@ -76,16 +76,13 @@ func Append(args []value.Value) (value.Value, *verror.Error) {
 	case value.TypeString:
 		str, _ := target.AsString()
 		if args[1].Type != value.TypeString {
-			return value.NoneVal(), verror.NewScriptError(
-				verror.ErrIDTypeMismatch,
-				[3]string{"append", "string", args[1].Type.String()},
-			)
+			return value.NoneVal(), typeError("append", "string", args[1])
 		}
 		insertStr, _ := args[1].AsString()
 		str.Append(insertStr)
 		return target, nil
 	default:
-		return value.NoneVal(), seriesTypeError("append", target.Type.String())
+		return value.NoneVal(), typeError("append", "series", target)
 	}
 }
 
@@ -105,17 +102,14 @@ func Insert(args []value.Value) (value.Value, *verror.Error) {
 	case value.TypeString:
 		str, _ := target.AsString()
 		if args[1].Type != value.TypeString {
-			return value.NoneVal(), verror.NewScriptError(
-				verror.ErrIDTypeMismatch,
-				[3]string{"insert", "string", args[1].Type.String()},
-			)
+			return value.NoneVal(), typeError("insert", "string", args[1])
 		}
 		insertStr, _ := args[1].AsString()
 		str.SetIndex(0)
 		str.Insert(insertStr)
 		return target, nil
 	default:
-		return value.NoneVal(), seriesTypeError("insert", target.Type.String())
+		return value.NoneVal(), typeError("insert", "series", target)
 	}
 }
 
@@ -134,7 +128,7 @@ func LengthQ(args []value.Value) (value.Value, *verror.Error) {
 		str, _ := series.AsString()
 		return value.IntVal(int64(str.Length())), nil
 	default:
-		return value.NoneVal(), seriesTypeError("length?", series.Type.String())
+		return value.NoneVal(), typeError("length?", "series", series)
 	}
 }
 
@@ -142,12 +136,5 @@ func emptySeriesError(op string) *verror.Error {
 	return verror.NewScriptError(
 		verror.ErrIDEmptySeries,
 		[3]string{op, "", ""},
-	)
-}
-
-func seriesTypeError(op, got string) *verror.Error {
-	return verror.NewScriptError(
-		verror.ErrIDTypeMismatch,
-		[3]string{op, "series", got},
 	)
 }
