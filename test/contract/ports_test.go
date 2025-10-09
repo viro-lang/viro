@@ -1,8 +1,12 @@
 package contract
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/eval"
@@ -68,37 +72,19 @@ func TestFilePortSandbox(t *testing.T) {
 
 // T053: open HTTP port with TLS verification
 func TestHTTPPortTLS(t *testing.T) {
-	t.Run("HTTPSWithValidCert", func(t *testing.T) {
-		// Test opening HTTPS with valid certificate
-		port, err := native.OpenPort("https://www.google.com", nil)
-		if err != nil {
-			t.Errorf("Expected success with valid HTTPS cert, got: %v", err)
-		}
-		if port.Type == value.TypePort {
-			p, _ := port.AsPort()
-			if p.State != value.PortOpen {
-				t.Errorf("Expected PortOpen, got %v", p.State)
-			}
-		}
-	})
+	t.Run("HTTPSWithInsecureFlag", func(t *testing.T) {
+		// Create test HTTPS server with self-signed cert
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		}))
+		defer server.Close()
 
-	t.Run("HTTPSWithInvalidCertNoFlag", func(t *testing.T) {
-		// Test opening HTTPS with invalid cert (should fail without --insecure)
-		// Note: Using expired cert from badssl.com
-		_, err := native.OpenPort("https://expired.badssl.com/", nil)
-		if err == nil {
-			// Some systems may have updated root certificates that trust this
-			// or the cert may have been renewed. Skip if connection succeeds.
-			t.Skip("Certificate validation succeeded (cert may be valid or system trusts it)")
-		}
-	})
-
-	t.Run("HTTPSWithInvalidCertAndInsecureFlag", func(t *testing.T) {
-		// Test opening HTTPS with invalid cert and --insecure flag
+		// Test with --insecure flag (should succeed)
 		opts := map[string]value.Value{
 			"insecure": value.LogicVal(true),
 		}
-		port, err := native.OpenPort("https://self-signed.badssl.com/", opts)
+		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("Expected success with --insecure flag, got: %v", err)
 		}
@@ -107,6 +93,34 @@ func TestHTTPPortTLS(t *testing.T) {
 			if p.State != value.PortOpen {
 				t.Errorf("Expected PortOpen, got %v", p.State)
 			}
+			defer native.ClosePort(port)
+		}
+	})
+
+	t.Run("HTTPSRequestCompletes", func(t *testing.T) {
+		// Verify that HTTPS requests actually work end-to-end
+		testData := "test response data"
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(testData))
+		}))
+		defer server.Close()
+
+		// Read from HTTPS port
+		opts := map[string]value.Value{
+			"insecure": value.LogicVal(true),
+		}
+		content, err := native.ReadPort(server.URL, opts)
+		if err != nil {
+			t.Errorf("Expected successful HTTPS read, got: %v", err)
+		}
+
+		str, ok := content.AsString()
+		if !ok {
+			t.Fatal("Expected string response")
+		}
+		if !strings.Contains(str.String(), testData) {
+			t.Errorf("Expected response to contain '%s', got: %s", testData, str.String())
 		}
 	})
 }
@@ -204,36 +218,82 @@ func TestFilePortOperations(t *testing.T) {
 // T056: HTTP GET/POST/HEAD with redirects
 func TestHTTPMethods(t *testing.T) {
 	t.Run("HTTPGet", func(t *testing.T) {
+		// Create test HTTP server
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != "GET" {
+				t.Errorf("Expected GET method, got %s", r.Method)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("GET response"))
+		}))
+		defer server.Close()
+
 		// Test HTTP GET request
-		content, err := native.ReadPort("http://httpbin.org/get", nil)
+		content, err := native.ReadPort(server.URL, nil)
 		if err != nil {
 			t.Errorf("HTTP GET failed: %v", err)
 		}
 		if content.Type != value.TypeString {
 			t.Errorf("Expected string response, got %v", content.Type)
 		}
+		str, _ := content.AsString()
+		if !strings.Contains(str.String(), "GET response") {
+			t.Errorf("Expected 'GET response' in content, got: %s", str.String())
+		}
 	})
 
 	t.Run("HTTPRedirect", func(t *testing.T) {
-		// Test that redirects are followed automatically (max 10 hops)
-		content, err := native.ReadPort("http://httpbin.org/redirect/3", nil)
+		// Create test server that handles redirects
+		redirectCount := 0
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if redirectCount < 3 {
+				redirectCount++
+				http.Redirect(w, r, "/redirect", http.StatusFound)
+			} else {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("Final destination"))
+			}
+		}))
+		defer server.Close()
+
+		// Test that redirects are followed automatically
+		content, err := native.ReadPort(server.URL, nil)
 		if err != nil {
 			t.Errorf("HTTP redirect failed: %v", err)
 		}
 		if content.Type != value.TypeString {
 			t.Errorf("Expected string response after redirects, got %v", content.Type)
 		}
+		if redirectCount != 3 {
+			t.Errorf("Expected 3 redirects, got %d", redirectCount)
+		}
 	})
 
 	t.Run("HTTPPost", func(t *testing.T) {
+		// Create test server that accepts POST
+		var receivedBody string
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != "POST" {
+				t.Errorf("Expected POST method, got %s", r.Method)
+			}
+			body, _ := io.ReadAll(r.Body)
+			receivedBody = string(body)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("POST received"))
+		}))
+		defer server.Close()
+
 		// Test HTTP POST request
 		data := value.StrVal("test data")
 		opts := map[string]value.Value{
 			"method": value.WordVal("POST"),
 		}
-		err := native.WritePort("http://httpbin.org/post", data, opts)
+		err := native.WritePort(server.URL, data, opts)
 		if err != nil {
 			t.Errorf("HTTP POST failed: %v", err)
+		}
+		if receivedBody != "test data" {
+			t.Errorf("Expected 'test data' in POST body, got: %s", receivedBody)
 		}
 	})
 }
@@ -341,23 +401,42 @@ func TestSandboxEscapePrevention(t *testing.T) {
 // T059: TLS --insecure flag behavior
 func TestTLSInsecureFlag(t *testing.T) {
 	t.Run("InsecureFlagOnHTTPS", func(t *testing.T) {
+		// Create test HTTPS server with self-signed cert
+		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		// Test with --insecure flag (should succeed and emit warning)
 		opts := map[string]value.Value{
 			"insecure": value.LogicVal(true),
 		}
-		_, err := native.OpenPort("https://self-signed.badssl.com/", opts)
+		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
-			t.Errorf("Expected --insecure to allow invalid cert, got: %v", err)
+			t.Errorf("Expected --insecure to allow self-signed cert, got: %v", err)
+		}
+		if port.Type == value.TypePort {
+			native.ClosePort(port)
 		}
 	})
 
 	t.Run("InsecureFlagOnHTTP", func(t *testing.T) {
+		// Create test HTTP server
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
 		// --insecure should be allowed but has no effect on HTTP
 		opts := map[string]value.Value{
 			"insecure": value.LogicVal(true),
 		}
-		_, err := native.OpenPort("http://httpbin.org/get", opts)
+		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("--insecure flag should be allowed on HTTP: %v", err)
+		}
+		if port.Type == value.TypePort {
+			native.ClosePort(port)
 		}
 	})
 

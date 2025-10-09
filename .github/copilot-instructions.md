@@ -25,6 +25,8 @@ Go 1.21+ (requires generics and improved error handling): Follow standard conven
 - Only run the viro interpreter manually when absolutely necessary (e.g., for exploratory testing or user-facing demonstrations)
 - Automated tests provide better coverage, reproducibility, and serve as documentation
 - **When running viro binary for testing**: Always ensure test scripts end with 'quit' command to avoid entering the REPL loop
+- Tests must never perform real network calls (no outbound HTTP, DNS, etc.); mock or stub all external interactions.
+- When network-like interactions are needed, spin up a local in-process or 127.0.0.1 test server (stub/mocked handlers) instead of reaching external services.
 
 ## Recent Changes
 - 002-implement-deferred-features: Added Go 1.21+ + Go standard library, `github.com/ericlagergren/decimal`, `gopkg.in/natefinch/lumberjack.v2`
