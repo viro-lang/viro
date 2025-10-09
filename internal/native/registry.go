@@ -67,6 +67,24 @@ func init() {
 	Registry["or"] = &NativeInfo{Func: Or, NeedsEval: false, Arity: 2}
 	Registry["not"] = &NativeInfo{Func: Not, NeedsEval: false, Arity: 1}
 
+	// Register decimal and advanced math natives (Feature 002)
+	Registry["decimal"] = &NativeInfo{Func: DecimalConstructor, NeedsEval: false, Arity: 1}
+	Registry["pow"] = &NativeInfo{Func: Pow, NeedsEval: false, Arity: 2}
+	Registry["sqrt"] = &NativeInfo{Func: Sqrt, NeedsEval: false, Arity: 1}
+	Registry["exp"] = &NativeInfo{Func: Exp, NeedsEval: false, Arity: 1}
+	Registry["log"] = &NativeInfo{Func: Log, NeedsEval: false, Arity: 1}
+	Registry["log-10"] = &NativeInfo{Func: Log10, NeedsEval: false, Arity: 1}
+	Registry["sin"] = &NativeInfo{Func: Sin, NeedsEval: false, Arity: 1}
+	Registry["cos"] = &NativeInfo{Func: Cos, NeedsEval: false, Arity: 1}
+	Registry["tan"] = &NativeInfo{Func: Tan, NeedsEval: false, Arity: 1}
+	Registry["asin"] = &NativeInfo{Func: Asin, NeedsEval: false, Arity: 1}
+	Registry["acos"] = &NativeInfo{Func: Acos, NeedsEval: false, Arity: 1}
+	Registry["atan"] = &NativeInfo{Func: Atan, NeedsEval: false, Arity: 1}
+	Registry["round"] = &NativeInfo{Func: Round, NeedsEval: false, Arity: 1} // TODO: support --places refinement
+	Registry["ceil"] = &NativeInfo{Func: Ceil, NeedsEval: false, Arity: 1}
+	Registry["floor"] = &NativeInfo{Func: Floor, NeedsEval: false, Arity: 1}
+	Registry["truncate"] = &NativeInfo{Func: Truncate, NeedsEval: false, Arity: 1}
+
 	// Register series natives
 	Registry["first"] = &NativeInfo{Func: First, NeedsEval: false, Arity: 1}
 	Registry["last"] = &NativeInfo{Func: Last, NeedsEval: false, Arity: 1}

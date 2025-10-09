@@ -8,6 +8,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -15,14 +16,20 @@ import (
 // Add implements the + native function.
 //
 // Contract: + value1 value2 → sum
-// - Both arguments must be integers
-// - Returns arithmetic sum
+// - Arguments can be integers or decimals
+// - Returns arithmetic sum with type promotion (integer + decimal → decimal)
 // - Detects overflow
 func Add(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), mathArityError("+", 2, len(args))
 	}
 
+	// Check if either argument is decimal - if so, promote to decimal arithmetic
+	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+		return addDecimal(args[0], args[1])
+	}
+
+	// Integer arithmetic
 	a, ok := args[0].AsInteger()
 	if !ok {
 		return value.NoneVal(), mathTypeError("+", args[0])
@@ -49,14 +56,20 @@ func Add(args []value.Value) (value.Value, *verror.Error) {
 // Subtract implements the - native function.
 //
 // Contract: - value1 value2 → difference
-// - Both arguments must be integers
-// - Returns arithmetic difference (value1 - value2)
+// - Arguments can be integers or decimals
+// - Returns arithmetic difference (value1 - value2) with type promotion
 // - Detects overflow
 func Subtract(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), mathArityError("-", 2, len(args))
 	}
 
+	// Check if either argument is decimal - if so, promote to decimal arithmetic
+	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+		return subtractDecimal(args[0], args[1])
+	}
+
+	// Integer arithmetic
 	a, ok := args[0].AsInteger()
 	if !ok {
 		return value.NoneVal(), mathTypeError("-", args[0])
@@ -84,20 +97,29 @@ func Subtract(args []value.Value) (value.Value, *verror.Error) {
 // Multiply implements the * native function.
 //
 // Contract: * value1 value2 → product
-// - Both arguments must be integers
-// - Returns arithmetic product
+// - Arguments can be integers or decimals
+// - Returns arithmetic product with type promotion
 // - Detects overflow
 func Multiply(args []value.Value) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), mathArityError("*", 2, len(args))
 	}
 
+	// Check if either argument is decimal - if so, promote to decimal arithmetic
+	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+		return multiplyDecimal(args[0], args[1])
+	}
+
+	// Integer arithmetic
 	a, ok := args[0].AsInteger()
 	if !ok {
 		return value.NoneVal(), mathTypeError("*", args[0])
 	}
 
 	b, ok := args[1].AsInteger()
+	if !ok {
+		return value.NoneVal(), mathTypeError("*", args[1])
+	}
 	if !ok {
 		return value.NoneVal(), mathTypeError("*", args[1])
 	}
@@ -135,6 +157,12 @@ func Divide(args []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), mathArityError("/", 2, len(args))
 	}
 
+	// Check if either argument is decimal - if so, promote to decimal arithmetic
+	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+		return divideDecimal(args[0], args[1])
+	}
+
+	// Integer arithmetic
 	a, ok := args[0].AsInteger()
 	if !ok {
 		return value.NoneVal(), mathTypeError("/", args[0])
@@ -368,3 +396,68 @@ func Not(args []value.Value) (value.Value, *verror.Error) {
 	// Convert to truthy and negate (using ToTruthy from control.go)
 	return value.LogicVal(!ToTruthy(args[0])), nil
 }
+
+// Decimal arithmetic promotion helpers (Feature 002)
+// These functions implement mixed integer/decimal arithmetic with automatic promotion
+
+func addDecimal(a, b value.Value) (value.Value, *verror.Error) {
+	aVal := promoteToDecimal(a)
+	bVal := promoteToDecimal(b)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError("add-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+	}
+	
+	ctx := decimal.Context128
+	result := new(decimal.Big)
+	ctx.Add(result, aVal, bVal)
+	
+	return value.DecimalVal(result, 2), nil
+}
+
+func subtractDecimal(a, b value.Value) (value.Value, *verror.Error) {
+	aVal := promoteToDecimal(a)
+	bVal := promoteToDecimal(b)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError("subtract-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+	}
+	
+	ctx := decimal.Context128
+	result := new(decimal.Big)
+	ctx.Sub(result, aVal, bVal)
+	
+	return value.DecimalVal(result, 2), nil
+}
+
+func multiplyDecimal(a, b value.Value) (value.Value, *verror.Error) {
+	aVal := promoteToDecimal(a)
+	bVal := promoteToDecimal(b)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError("multiply-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+	}
+	
+	ctx := decimal.Context128
+	result := new(decimal.Big)
+	ctx.Mul(result, aVal, bVal)
+	
+	return value.DecimalVal(result, 2), nil
+}
+
+func divideDecimal(a, b value.Value) (value.Value, *verror.Error) {
+	aVal := promoteToDecimal(a)
+	bVal := promoteToDecimal(b)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError("divide-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+	}
+	
+	// Check for division by zero
+	if bVal.Sign() == 0 {
+		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+	}
+	
+	ctx := decimal.Context128
+	result := new(decimal.Big)
+	ctx.Quo(result, aVal, bVal)
+	
+	return value.DecimalVal(result, 2), nil
+}
+
