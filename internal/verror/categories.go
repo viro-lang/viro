@@ -69,6 +69,7 @@ const (
 	ErrIDArgCount         = "arg-count"
 	ErrIDEmptySeries      = "empty-series"
 	ErrIDOutOfBounds      = "out-of-bounds"
+	ErrIDNotImplemented   = "not-implemented" // Feature 002: feature not yet implemented
 
 	// Math errors (400)
 	ErrIDDivByZero = "div-zero"
