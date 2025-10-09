@@ -71,14 +71,14 @@
 
 **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T026 [US1] Contract test: decimal constructor (integer, string, scale preservation) in test/contract/math_decimal_test.go
-- [ ] T027 [US1] Contract test: decimal promotion in mixed arithmetic in test/contract/math_decimal_test.go
-- [ ] T028 [US1] Contract test: pow, sqrt, exp domain validation in test/contract/math_decimal_test.go
-- [ ] T029 [US1] Contract test: log, log-10 domain errors in test/contract/math_decimal_test.go
-- [ ] T030 [US1] Contract test: trig functions (sin, cos, tan, asin, acos, atan) in test/contract/math_decimal_test.go
-- [ ] T031 [US1] Contract test: rounding modes (round --places, --mode, ceil, floor, truncate) in test/contract/math_decimal_test.go
-- [ ] T032 [US1] Contract test: overflow/underflow handling in test/contract/math_decimal_test.go
-- [ ] T032.1 [US1] **CHECKPOINT**: Run `go test ./test/contract/math_decimal_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
+- [X] T026 [US1] Contract test: decimal constructor (integer, string, scale preservation) in test/contract/math_decimal_test.go
+- [X] T027 [US1] Contract test: decimal promotion in mixed arithmetic in test/contract/math_decimal_test.go
+- [X] T028 [US1] Contract test: pow, sqrt, exp domain validation in test/contract/math_decimal_test.go
+- [X] T029 [US1] Contract test: log, log-10 domain errors in test/contract/math_decimal_test.go
+- [X] T030 [US1] Contract test: trig functions (sin, cos, tan, asin, acos, atan) in test/contract/math_decimal_test.go
+- [X] T031 [US1] Contract test: rounding modes (round --places, --mode, ceil, floor, truncate) in test/contract/math_decimal_test.go
+- [X] T032 [US1] Contract test: overflow/underflow handling in test/contract/math_decimal_test.go
+- [X] T032.1 [US1] **CHECKPOINT**: Run `go test ./test/contract/math_decimal_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 1
 
