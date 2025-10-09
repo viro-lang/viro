@@ -1,7 +1,6 @@
 package native
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -74,10 +73,7 @@ func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 	for i := 0; i < len(block.Elements); i++ {
 		elem := block.Elements[i]
 		if elem.Type != value.TypeWord {
-			return nil, verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{fmt.Sprintf("Invalid parameter specification: %s", elem.String()), "", ""},
-			)
+			return nil, invalidParamSpecError(elem.String())
 		}
 
 		symbol, _ := elem.AsWord()
@@ -91,10 +87,7 @@ func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 			}
 
 			if _, exists := seen[name]; exists {
-				return nil, verror.NewScriptError(
-					verror.ErrIDInvalidOperation,
-					[3]string{fmt.Sprintf("Duplicate parameter name: %s", name), "", ""},
-				)
+				return nil, duplicateParamError(name)
 			}
 			seen[name] = struct{}{}
 
@@ -116,10 +109,7 @@ func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 
 		name := symbol
 		if _, exists := seen[name]; exists {
-			return nil, verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{fmt.Sprintf("Duplicate parameter name: %s", name), "", ""},
-			)
+			return nil, duplicateParamError(name)
 		}
 		seen[name] = struct{}{}
 

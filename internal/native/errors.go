@@ -35,3 +35,19 @@ func overflowError(op string) *verror.Error {
 func underflowError(op string) *verror.Error {
 	return verror.NewMathError(verror.ErrIDUnderflow, [3]string{op, "", ""})
 }
+
+// invalidParamSpecError returns an error for invalid function parameter specifications.
+func invalidParamSpecError(spec string) *verror.Error {
+	return verror.NewScriptError(
+		verror.ErrIDInvalidOperation,
+		[3]string{"Invalid parameter specification: " + spec, "", ""},
+	)
+}
+
+// duplicateParamError returns an error for duplicate parameter names in function definitions.
+func duplicateParamError(name string) *verror.Error {
+	return verror.NewScriptError(
+		verror.ErrIDInvalidOperation,
+		[3]string{"Duplicate parameter name: " + name, "", ""},
+	)
+}
