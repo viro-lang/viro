@@ -1,43 +1,644 @@
 package contract
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // Test suite for Feature 002: Objects and path expressions
 // Contract tests validate FR-009 through FR-011 requirements
+// These tests follow TDD: they MUST FAIL initially before implementation
+
+// Helper function to evaluate Viro code
+func evalObjectScript(src string) (value.Value, *verror.Error) {
+	vals, err := parse.Parse(src)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	e := eval.NewEvaluator()
+	return e.Do_Blk(vals)
+}
+
+func evalObjectScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.Error) {
+	vals, err := parse.Parse(src)
+	if err != nil {
+		return nil, value.NoneVal(), err
+	}
+
+	e := eval.NewEvaluator()
+	result, evalErr := e.Do_Blk(vals)
+	return e, result, evalErr
+}
 
 // T080: object construction with field initialization
 func TestObjectConstruction(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name        string
+		code        string
+		expectType  value.ValueType
+		checkFields func(*testing.T, value.Value, *eval.Evaluator)
+		wantErr     bool
+	}{
+		{
+			name:       "empty object",
+			code:       "obj: object [] obj",
+			expectType: value.TypeObject,
+			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
+				obj, ok := v.AsObject()
+				if !ok {
+					t.Fatal("expected object type")
+				}
+				if len(obj.Manifest.Words) != 0 {
+					t.Errorf("expected 0 fields, got %d", len(obj.Manifest.Words))
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:       "simple fields without values",
+			code:       "obj: object [name age] obj",
+			expectType: value.TypeObject,
+			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
+				obj, ok := v.AsObject()
+				if !ok {
+					t.Fatal("expected object type")
+				}
+				if len(obj.Manifest.Words) != 2 {
+					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
+				}
+				if obj.Manifest.Words[0] != "name" || obj.Manifest.Words[1] != "age" {
+					t.Errorf("unexpected field names: %v", obj.Manifest.Words)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:       "fields with initialization",
+			code:       "obj: object [name: \"Alice\" age: 30] obj",
+			expectType: value.TypeObject,
+			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
+				obj, ok := v.AsObject()
+				if !ok {
+					t.Fatal("expected object type")
+				}
+				if len(obj.Manifest.Words) != 2 {
+					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
+				}
+
+				// Verify field values are stored in object's frame
+				if obj.FrameIndex < 0 || obj.FrameIndex >= len(e.Frames) {
+					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
+				}
+
+				frame := e.Frames[obj.FrameIndex]
+				nameVal, found := frame.Get("name")
+				if !found {
+					t.Error("field 'name' not found in frame")
+				}
+				if nameVal.Type != value.TypeString {
+					t.Errorf("expected name to be string, got %v", nameVal.Type)
+				}
+
+				ageVal, found := frame.Get("age")
+				if !found {
+					t.Error("field 'age' not found in frame")
+				}
+				if ageVal.Type != value.TypeInteger {
+					t.Errorf("expected age to be integer, got %v", ageVal.Type)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:       "duplicate field names",
+			code:       "object [name: \"Alice\" name: \"Bob\"]",
+			expectType: value.TypeNone,
+			wantErr:    true, // Should raise Script error (object-field-duplicate)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, result, err := evalObjectScriptWithEvaluator(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if err.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", err.Category)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.Type != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			}
+
+			if tt.checkFields != nil {
+				tt.checkFields(t, result, e)
+			}
+		})
+	}
 }
 
 // T081: nested object creation
 func TestNestedObjects(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name       string
+		code       string
+		checkField func(*testing.T, value.Value, *eval.Evaluator)
+		wantErr    bool
+	}{
+		{
+			name: "nested object in field",
+			code: `user: object [
+				name: "Alice"
+				address: object [
+					city: "Portland"
+					zip: 97201
+				]
+			]
+			user`,
+			checkField: func(t *testing.T, v value.Value, e *eval.Evaluator) {
+				obj, ok := v.AsObject()
+				if !ok {
+					t.Fatal("expected object type")
+				}
+
+				// Check nested address object
+				frame := e.Frames[obj.FrameIndex]
+				addrVal, found := frame.Get("address")
+				if !found {
+					t.Fatal("address field not found")
+				}
+
+				if addrVal.Type != value.TypeObject {
+					t.Errorf("expected address to be object, got %v", addrVal.Type)
+				}
+
+				addrObj, ok := addrVal.AsObject()
+				if !ok {
+					t.Fatal("address is not an object")
+				}
+
+				addrFrame := e.Frames[addrObj.FrameIndex]
+				cityVal, found := addrFrame.Get("city")
+				if !found {
+					t.Error("city field not found in nested object")
+				}
+				if cityVal.Type != value.TypeString {
+					t.Errorf("expected city to be string, got %v", cityVal.Type)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "three-level nesting",
+			code: `org: object [
+				dept: object [
+					team: object [
+						name: "Engineering"
+					]
+				]
+			]
+			org`,
+			checkField: func(t *testing.T, v value.Value, e *eval.Evaluator) {
+				obj, ok := v.AsObject()
+				if !ok {
+					t.Fatal("expected object type")
+				}
+
+				// Navigate through three levels
+				frame1 := e.Frames[obj.FrameIndex]
+				deptVal, found := frame1.Get("dept")
+				if !found || deptVal.Type != value.TypeObject {
+					t.Fatal("dept not found or not an object")
+				}
+
+				deptObj, _ := deptVal.AsObject()
+				frame2 := e.Frames[deptObj.FrameIndex]
+				teamVal, found := frame2.Get("team")
+				if !found || teamVal.Type != value.TypeObject {
+					t.Fatal("team not found or not an object")
+				}
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, result, err := evalObjectScriptWithEvaluator(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.checkField != nil {
+				tt.checkField(t, result, e)
+			}
+		})
+	}
 }
 
 // T082: path read traversal (object.field.subfield)
 func TestPathReadTraversal(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name       string
+		code       string
+		expectType value.ValueType
+		expectStr  string // Expected string representation or partial match
+		wantErr    bool
+	}{
+		{
+			name:       "simple field access",
+			code:       "obj: object [name: \"Alice\"] obj.name",
+			expectType: value.TypeString,
+			expectStr:  "Alice",
+			wantErr:    false,
+		},
+		{
+			name:       "nested field access",
+			code:       "user: object [address: object [city: \"Portland\"]] user.address.city",
+			expectType: value.TypeString,
+			expectStr:  "Portland",
+			wantErr:    false,
+		},
+		{
+			name: "three-level path",
+			code: `org: object [
+				dept: object [
+					team: object [name: "Engineering"]
+				]
+			]
+			org.dept.team.name`,
+			expectType: value.TypeString,
+			expectStr:  "Engineering",
+			wantErr:    false,
+		},
+		{
+			name:    "missing field",
+			code:    "obj: object [name: \"Alice\"] obj.age",
+			wantErr: true, // Should raise Script error (no-such-field)
+		},
+		{
+			name:    "none-path error",
+			code:    "obj: object [data: none] obj.data.field",
+			wantErr: true, // Should raise Script error (none-path)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := evalObjectScript(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if err.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", err.Category)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.Type != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			}
+
+			if tt.expectStr != "" {
+				str := result.String()
+				if !strings.Contains(str, tt.expectStr) {
+					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
+				}
+			}
+		})
+	}
 }
 
 // T083: path write mutation
 func TestPathWriteMutation(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name      string
+		code      string
+		checkFunc func(*testing.T, *eval.Evaluator)
+		wantErr   bool
+	}{
+		{
+			name: "update object field via path",
+			code: `obj: object [name: "Alice" age: 30]
+			       obj.name: "Bob"
+			       obj`,
+			checkFunc: func(t *testing.T, e *eval.Evaluator) {
+				objVal, found := e.Frames[0].Get("obj")
+				if !found {
+					t.Fatal("obj not found")
+				}
+				obj, ok := objVal.AsObject()
+				if !ok {
+					t.Fatal("obj is not an object")
+				}
+
+				frame := e.Frames[obj.FrameIndex]
+				nameVal, found := frame.Get("name")
+				if !found {
+					t.Fatal("name field not found")
+				}
+
+				str := nameVal.String()
+				if !strings.Contains(str, "Bob") {
+					t.Errorf("expected name to be Bob, got %s", str)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "update nested field via path",
+			code: `user: object [address: object [city: "Portland"]]
+			       user.address.city: "Seattle"
+			       user`,
+			checkFunc: func(t *testing.T, e *eval.Evaluator) {
+				userVal, found := e.Frames[0].Get("user")
+				if !found {
+					t.Fatal("user not found")
+				}
+				user, ok := userVal.AsObject()
+				if !ok {
+					t.Fatal("user is not an object")
+				}
+
+				userFrame := e.Frames[user.FrameIndex]
+				addrVal, found := userFrame.Get("address")
+				if !found {
+					t.Fatal("address not found")
+				}
+
+				addr, ok := addrVal.AsObject()
+				if !ok {
+					t.Fatal("address is not an object")
+				}
+
+				addrFrame := e.Frames[addr.FrameIndex]
+				cityVal, found := addrFrame.Get("city")
+				if !found {
+					t.Fatal("city not found")
+				}
+
+				str := cityVal.String()
+				if !strings.Contains(str, "Seattle") {
+					t.Errorf("expected city to be Seattle, got %s", str)
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:    "assign to immutable literal",
+			code:    "42: 100",
+			wantErr: true, // Should raise Script error (immutable-target)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, _, err := evalObjectScriptWithEvaluator(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if err.Category != verror.ErrScript && err.Category != verror.ErrSyntax {
+					t.Errorf("expected Script or Syntax error, got %v", err.Category)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.checkFunc != nil {
+				tt.checkFunc(t, e)
+			}
+		})
+	}
 }
 
 // T084: path indexing for blocks (block.3)
 func TestPathIndexing(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name       string
+		code       string
+		expectType value.ValueType
+		expectStr  string
+		wantErr    bool
+	}{
+		{
+			name:       "access block element by index",
+			code:       "data: [10 20 30] data.2",
+			expectType: value.TypeInteger,
+			expectStr:  "20",
+			wantErr:    false,
+		},
+		{
+			name:       "access first element",
+			code:       "data: [100 200 300] data.1",
+			expectType: value.TypeInteger,
+			expectStr:  "100",
+			wantErr:    false,
+		},
+		{
+			name:    "index out of range",
+			code:    "data: [10 20] data.5",
+			wantErr: true, // Should raise Script error (index-out-of-range)
+		},
+		{
+			name:    "zero index (1-based indexing)",
+			code:    "data: [10 20 30] data.0",
+			wantErr: true, // Should raise error (invalid index)
+		},
+		{
+			name:       "nested block access",
+			code:       "matrix: [[1 2] [3 4] [5 6]] matrix.2",
+			expectType: value.TypeBlock,
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := evalObjectScript(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.Type != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			}
+
+			if tt.expectStr != "" {
+				str := result.String()
+				if !strings.Contains(str, tt.expectStr) {
+					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
+				}
+			}
+		})
+	}
 }
 
 // T085: parent prototype lookup
 func TestParentPrototype(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name       string
+		code       string
+		expectType value.ValueType
+		expectStr  string
+		wantErr    bool
+	}{
+		{
+			name: "inherit field from parent",
+			code: `base: object [x: 10 y: 20]
+			       derived: object [parent: base z: 30]
+			       derived.x`,
+			expectType: value.TypeInteger,
+			expectStr:  "10",
+			wantErr:    false,
+		},
+		{
+			name: "override parent field",
+			code: `base: object [name: "Base"]
+			       derived: object [parent: base name: "Derived"]
+			       derived.name`,
+			expectType: value.TypeString,
+			expectStr:  "Derived",
+			wantErr:    false,
+		},
+		{
+			name: "multi-level inheritance",
+			code: `level1: object [a: 1]
+			       level2: object [parent: level1 b: 2]
+			       level3: object [parent: level2 c: 3]
+			       level3.a`,
+			expectType: value.TypeInteger,
+			expectStr:  "1",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := evalObjectScript(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.Type != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			}
+
+			if tt.expectStr != "" {
+				str := result.String()
+				if !strings.Contains(str, tt.expectStr) {
+					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
+				}
+			}
+		})
+	}
 }
 
 // T086: path error handling (none-path, index-out-of-range)
 func TestPathErrorHandling(t *testing.T) {
-	t.Skip("Contract test scaffold - implement after object types defined")
+	tests := []struct {
+		name        string
+		code        string
+		expectCat   verror.ErrorCategory
+		expectToken string // Expected error message token
+	}{
+		{
+			name:        "none-path error",
+			code:        "obj: object [data: none] obj.data.field",
+			expectCat:   verror.ErrScript,
+			expectToken: "none",
+		},
+		{
+			name:        "no-such-field error",
+			code:        "obj: object [x: 10] obj.y",
+			expectCat:   verror.ErrScript,
+			expectToken: "field",
+		},
+		{
+			name:        "index out of range",
+			code:        "data: [1 2 3] data.10",
+			expectCat:   verror.ErrScript,
+			expectToken: "range",
+		},
+		{
+			name:        "path on non-object non-series",
+			code:        "x: 42 x.field",
+			expectCat:   verror.ErrScript,
+			expectToken: "mismatch",
+		},
+		{
+			name:        "immutable target assignment",
+			code:        "1.field: 100",
+			expectCat:   verror.ErrScript,
+			expectToken: "immutable",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := evalObjectScript(tt.code)
+
+			if err == nil {
+				t.Fatal("expected error but got none")
+			}
+
+			if err.Category != tt.expectCat {
+				t.Errorf("expected category %v, got %v", tt.expectCat, err.Category)
+			}
+
+			errMsg := err.Message
+			if !strings.Contains(strings.ToLower(errMsg), strings.ToLower(tt.expectToken)) {
+				t.Errorf("expected error message to contain %q, got %q", tt.expectToken, errMsg)
+			}
+		})
+	}
 }

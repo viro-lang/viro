@@ -29,7 +29,7 @@ type FrameType uint8
 const (
 	FrameFunctionArgs FrameType = iota // Function call frame (arguments + locals)
 	FrameClosure                       // Closure captured environment
-	// FrameObject, FrameModule deferred to later phases
+	FrameObject                        // Object instance frame (Feature 002)
 )
 
 // Frame represents a variable binding context.
@@ -43,22 +43,34 @@ const (
 // Constitution Principle IV: Index-based references
 // - Parent is an integer index, not a pointer
 // - Safe across stack expansion
+//
+// Feature 002: Objects
+// - Manifest: Optional field metadata for object frames (type validation)
 type Frame struct {
-	Type   FrameType     // Frame category
-	Words  []string      // Symbol names (parallel to Values)
-	Values []value.Value // Bound values (parallel to Words)
-	Parent int           // Index of parent frame for closures (-1 if none)
-	Name   string        // Optional function or context name for diagnostics
+	Type     FrameType       // Frame category
+	Words    []string        // Symbol names (parallel to Values)
+	Values   []value.Value   // Bound values (parallel to Words)
+	Parent   int             // Index of parent frame for closures (-1 if none)
+	Name     string          // Optional function or context name for diagnostics
+	Manifest *ObjectManifest // Optional: field metadata for objects (Feature 002)
+}
+
+// ObjectManifest describes the fields and type constraints for an object frame.
+// Used for type validation during field assignment (Feature 002, FR-009).
+type ObjectManifest struct {
+	Words []string          // Published field names (case-sensitive)
+	Types []value.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewFrame creates an empty frame.
 func NewFrame(frameType FrameType, parent int) *Frame {
 	return &Frame{
-		Type:   frameType,
-		Words:  []string{},
-		Values: []value.Value{},
-		Parent: parent,
-		Name:   "",
+		Type:     frameType,
+		Words:    []string{},
+		Values:   []value.Value{},
+		Parent:   parent,
+		Name:     "",
+		Manifest: nil,
 	}
 }
 
@@ -66,11 +78,36 @@ func NewFrame(frameType FrameType, parent int) *Frame {
 // Useful for function frames where parameter count is known.
 func NewFrameWithCapacity(frameType FrameType, parent int, capacity int) *Frame {
 	return &Frame{
-		Type:   frameType,
-		Words:  make([]string, 0, capacity),
-		Values: make([]value.Value, 0, capacity),
+		Type:     frameType,
+		Words:    make([]string, 0, capacity),
+		Values:   make([]value.Value, 0, capacity),
+		Parent:   parent,
+		Name:     "",
+		Manifest: nil,
+	}
+}
+
+// NewObjectFrame creates an object frame with a manifest for type validation.
+// Feature 002: Used by the object native to create typed object instances.
+func NewObjectFrame(parent int, words []string, types []value.ValueType) *Frame {
+	if len(types) == 0 {
+		// Default to TypeNone (any type) for all fields
+		types = make([]value.ValueType, len(words))
+		for i := range types {
+			types[i] = value.TypeNone
+		}
+	}
+
+	return &Frame{
+		Type:   FrameObject,
+		Words:  make([]string, 0, len(words)),
+		Values: make([]value.Value, 0, len(words)),
 		Parent: parent,
 		Name:   "",
+		Manifest: &ObjectManifest{
+			Words: words,
+			Types: types,
+		},
 	}
 }
 
@@ -164,10 +201,62 @@ func (f *Frame) Clone() *Frame {
 	copy(wordsCopy, f.Words)
 	copy(valuesCopy, f.Values)
 
-	return &Frame{
-		Type:   f.Type,
-		Words:  wordsCopy,
-		Values: valuesCopy,
-		Parent: f.Parent,
+	// Copy manifest if present (Feature 002: objects)
+	var manifestCopy *ObjectManifest
+	if f.Manifest != nil {
+		manifestWordsCopy := make([]string, len(f.Manifest.Words))
+		manifestTypesCopy := make([]value.ValueType, len(f.Manifest.Types))
+		copy(manifestWordsCopy, f.Manifest.Words)
+		copy(manifestTypesCopy, f.Manifest.Types)
+		manifestCopy = &ObjectManifest{
+			Words: manifestWordsCopy,
+			Types: manifestTypesCopy,
+		}
 	}
+
+	return &Frame{
+		Type:     f.Type,
+		Words:    wordsCopy,
+		Values:   valuesCopy,
+		Parent:   f.Parent,
+		Manifest: manifestCopy,
+	}
+}
+
+// ValidateFieldType checks if a value matches the expected type for a field in an object frame.
+// Feature 002: Used during object field assignment to enforce type constraints.
+// Returns true if validation passes or if no type constraint exists (TypeNone).
+func (f *Frame) ValidateFieldType(symbol string, val value.Value) bool {
+	if f.Manifest == nil {
+		return true // No manifest = no type validation
+	}
+
+	// Find the field index in the manifest
+	for i, word := range f.Manifest.Words {
+		if word == symbol {
+			expectedType := f.Manifest.Types[i]
+			if expectedType == value.TypeNone {
+				return true // TypeNone allows any type
+			}
+			return val.Type == expectedType
+		}
+	}
+
+	return true // Field not in manifest = no type constraint
+}
+
+// HasManifestField checks if a field is declared in the object's manifest.
+// Feature 002: Used to validate field access in objects.
+func (f *Frame) HasManifestField(symbol string) bool {
+	if f.Manifest == nil {
+		return false
+	}
+
+	for _, word := range f.Manifest.Words {
+		if word == symbol {
+			return true
+		}
+	}
+
+	return false
 }

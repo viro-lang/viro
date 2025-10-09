@@ -181,6 +181,31 @@ func (e *Evaluator) CurrentFrameIndex() int {
 	return e.currentFrameIndex()
 }
 
+// RegisterFrame adds a frame to the evaluator's frame store and returns its index.
+// Feature 002: Used by object native to register object frames.
+func (e *Evaluator) RegisterFrame(f *frame.Frame) int {
+	return e.pushFrame(f)
+}
+
+// GetFrameByIndex retrieves a frame from the store by its index.
+// Feature 002: Used by path traversal to access object frames.
+func (e *Evaluator) GetFrameByIndex(idx int) *frame.Frame {
+	return e.getFrameByIndex(idx)
+}
+
+// PushFrameContext temporarily makes a frame the active context for evaluation.
+// Feature 002: Used by object native to evaluate initializers in object context.
+// Returns the frame index.
+func (e *Evaluator) PushFrameContext(f *frame.Frame) int {
+	return e.pushFrame(f)
+}
+
+// PopFrameContext removes the active frame context.
+// Feature 002: Used after object initialization completes.
+func (e *Evaluator) PopFrameContext() {
+	e.popFrame()
+}
+
 // lookup searches for a word through the active frame chain.
 func (e *Evaluator) lookup(symbol string) (value.Value, bool) {
 	frame := e.currentFrame()
@@ -225,7 +250,7 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	// Type-based dispatch per Constitution Principle III
 	var result value.Value
 	var err *verror.Error
-	
+
 	switch val.Type {
 	case value.TypeInteger, value.TypeString, value.TypeLogic, value.TypeNone:
 		// Literals evaluate to themselves
@@ -261,20 +286,20 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	case value.TypeFunction:
 		// Functions return self (they're values)
 		result, err = val, nil
-	
+
 	// Feature 002: New value types (T024)
 	case value.TypeDecimal:
 		// Decimals evaluate to themselves (literals)
 		result, err = val, nil
-	
+
 	case value.TypeObject:
 		// Objects evaluate to themselves
 		result, err = val, nil
-	
+
 	case value.TypePort:
 		// Ports evaluate to themselves (handles)
 		result, err = val, nil
-	
+
 	case value.TypePath:
 		// Paths should be evaluated by path evaluator (implement in T091)
 		result, err = value.NoneVal(), verror.NewScriptError(verror.ErrIDNotImplemented, [3]string{"path evaluation not yet implemented", "", ""})

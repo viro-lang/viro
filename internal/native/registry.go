@@ -97,6 +97,10 @@ func init() {
 	Registry["get"] = &NativeInfo{FuncEval: Get, NeedsEval: true, Arity: 1}
 	Registry["type?"] = &NativeInfo{Func: TypeQ, NeedsEval: false, Arity: 1}
 
+	// Register object natives (Feature 002 - User Story 3)
+	Registry["object"] = &NativeInfo{FuncEval: Object, NeedsEval: true, Arity: 1}
+	Registry["context"] = &NativeInfo{FuncEval: Context, NeedsEval: true, Arity: 1}
+
 	// Register IO natives
 	Registry["print"] = &NativeInfo{FuncEval: Print, NeedsEval: true, Arity: 1}
 	Registry["input"] = &NativeInfo{Func: Input, NeedsEval: false, Arity: 0}

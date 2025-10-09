@@ -169,21 +169,21 @@
 
 ### Contract Tests for User Story 3
 
-- [ ] T080 [US3] Contract test: object construction with field initialization in test/contract/objects_test.go
-- [ ] T081 [US3] Contract test: nested object creation in test/contract/objects_test.go
-- [ ] T082 [US3] Contract test: path read traversal (object.field.subfield) in test/contract/objects_test.go
-- [ ] T083 [US3] Contract test: path write mutation in test/contract/objects_test.go
-- [ ] T084 [US3] Contract test: path indexing for blocks (block.3) in test/contract/objects_test.go
-- [ ] T085 [US3] Contract test: parent prototype lookup in test/contract/objects_test.go
-- [ ] T086 [US3] Contract test: path error handling (none-path, index-out-of-range) in test/contract/objects_test.go
-- [ ] T086.1 [US3] **CHECKPOINT**: Run `go test ./test/contract/objects_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
+- [X] T080 [US3] Contract test: object construction with field initialization in test/contract/objects_test.go
+- [X] T081 [US3] Contract test: nested object creation in test/contract/objects_test.go
+- [X] T082 [US3] Contract test: path read traversal (object.field.subfield) in test/contract/objects_test.go
+- [X] T083 [US3] Contract test: path write mutation in test/contract/objects_test.go
+- [X] T084 [US3] Contract test: path indexing for blocks (block.3) in test/contract/objects_test.go
+- [X] T085 [US3] Contract test: parent prototype lookup in test/contract/objects_test.go
+- [X] T086 [US3] Contract test: path error handling (none-path, index-out-of-range) in test/contract/objects_test.go
+- [X] T086.1 [US3] **CHECKPOINT**: Run `go test ./test/contract/objects_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 3
 
-- [ ] T087 [US3] Extend Frame to support ObjectManifest (Words, Types) in internal/frame/frame.go
-- [ ] T088 [US3] Implement `object` native in internal/native/data.go (creates frame, binds words, evaluates initializers)
-- [ ] T089 [P] [US3] Implement `context` native in internal/native/data.go (isolated scope variant of object)
-- [ ] T090 [US3] Implement path segment tokenizer in internal/parse/parse.go (distinguish word, index, refinement, paren segments)
+- [X] T087 [US3] Extend Frame to support ObjectManifest (Words, Types) in internal/frame/frame.go
+- [X] T088 [US3] Implement `object` native in internal/native/data.go (creates frame, binds words, evaluates initializers)
+- [X] T089 [P] [US3] Implement `context` native in internal/native/data.go (isolated scope variant of object)
+- [X] T090 [US3] Implement path segment tokenizer in internal/parse/parse.go (distinguish word, index, refinement, paren segments)
 - [ ] T091 [US3] Implement path evaluation logic in internal/eval/evaluator.go (recursive traversal with base value resolution)
 - [ ] T092 [US3] Implement path assignment logic in internal/eval/evaluator.go (penultimate target tracking, mutation)
 - [ ] T093 [P] [US3] Implement `select` native in internal/native/data.go (object field lookup with --default)

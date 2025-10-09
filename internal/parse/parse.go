@@ -16,17 +16,17 @@
 // Package parse converts text input into Value structures for evaluation.
 //
 // The parser implements a two-stage process:
-//   1. Tokenization: Text → Tokens (lexical analysis)
-//   2. Parsing: Tokens → Values with operator precedence
+//  1. Tokenization: Text → Tokens (lexical analysis)
+//  2. Parsing: Tokens → Values with operator precedence
 //
 // Operator precedence (7 levels, highest to lowest):
-//   1. Function calls
-//   2. Unary negation (-)
-//   3. Multiplication and division (*, /)
-//   4. Addition and subtraction (+, -)
-//   5. Comparisons (<, >, <=, >=)
-//   6. Equality (=, <>)
-//   7. Logic (and, or)
+//  1. Function calls
+//  2. Unary negation (-)
+//  3. Multiplication and division (*, /)
+//  4. Addition and subtraction (+, -)
+//  5. Comparisons (<, >, <=, >=)
+//  6. Equality (=, <>)
+//  7. Logic (and, or)
 //
 // The parser transforms infix notation (3 + 4) into prefix notation ((+ 3 4))
 // for evaluation. Parentheses override precedence by forcing immediate evaluation.
@@ -80,6 +80,7 @@ const (
 	tokSetWord
 	tokGetWord
 	tokLitWord
+	tokPath
 	tokLParen
 	tokRParen
 	tokLBracket
@@ -161,17 +162,17 @@ func tokenize(input string) ([]token, *verror.Error) {
 			start := pos
 			hasDecimal := false
 			hasExponent := false
-			
+
 			// Optional negative sign
 			if runes[pos] == '-' {
 				pos++
 			}
-			
+
 			// Integer part (required)
 			for pos < len(runes) && unicode.IsDigit(runes[pos]) {
 				pos++
 			}
-			
+
 			// Decimal point and fractional part (optional)
 			if pos < len(runes) && runes[pos] == '.' && pos+1 < len(runes) && unicode.IsDigit(runes[pos+1]) {
 				hasDecimal = true
@@ -180,7 +181,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 					pos++
 				}
 			}
-			
+
 			// Exponent part (optional)
 			if pos < len(runes) && (runes[pos] == 'e' || runes[pos] == 'E') {
 				if pos+1 < len(runes) {
@@ -199,9 +200,9 @@ func tokenize(input string) ([]token, *verror.Error) {
 					}
 				}
 			}
-			
+
 			numStr := string(runes[start:pos])
-			
+
 			// Determine token type based on format
 			if hasDecimal || hasExponent {
 				tokens = append(tokens, token{tokDecimal, numStr, start})
@@ -291,7 +292,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 			continue
 		}
 
-		// Words (including set-word, get-word, lit-word)
+		// Words (including set-word, get-word, lit-word, and paths)
 		if isWordStart(runes[pos]) {
 			start := pos
 			pos++
@@ -301,9 +302,49 @@ func tokenize(input string) ([]token, *verror.Error) {
 			word := string(runes[start:pos])
 
 			// Check for set-word (word:)
-			if pos < len(runes) && runes[pos] == ':' {
+			if pos < len(runes) && runes[pos] == ':' && (pos+1 >= len(runes) || !unicode.IsDigit(runes[pos+1])) {
 				pos++
 				tokens = append(tokens, token{tokSetWord, word, start})
+				continue
+			}
+
+			// Check for path (word.word or word.123)
+			if pos < len(runes) && runes[pos] == '.' {
+				pathStart := start
+				pathStr := word
+
+				for pos < len(runes) && runes[pos] == '.' {
+					pathStr += "."
+					pos++ // Skip '.'
+
+					// Check if next segment is a number
+					if pos < len(runes) && unicode.IsDigit(runes[pos]) {
+						segStart := pos
+						for pos < len(runes) && unicode.IsDigit(runes[pos]) {
+							pos++
+						}
+						pathStr += string(runes[segStart:pos])
+					} else if pos < len(runes) && isWordStart(runes[pos]) {
+						// Next segment is a word
+						segStart := pos
+						pos++
+						for pos < len(runes) && isWordChar(runes[pos]) {
+							pos++
+						}
+						pathStr += string(runes[segStart:pos])
+					} else {
+						// Invalid path syntax (dot not followed by word or number)
+						return nil, makeSyntaxError(input, pos-1, verror.ErrIDInvalidSyntax, [3]string{"path segment expected after '.'", "", ""})
+					}
+				}
+
+				// Check for set-path (path:)
+				if pos < len(runes) && runes[pos] == ':' {
+					pos++
+					tokens = append(tokens, token{tokSetWord, pathStr, pathStart})
+				} else {
+					tokens = append(tokens, token{tokPath, pathStr, pathStart})
+				}
 				continue
 			}
 
@@ -484,7 +525,7 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 		if !ok {
 			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidLiteral, [3]string{tok.val, "", ""})
 		}
-		
+
 		// Calculate scale from decimal string representation
 		scale := int16(0)
 		if idx := strings.Index(tok.val, "."); idx >= 0 {
@@ -495,7 +536,7 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 			}
 			scale = int16(endIdx - idx - 1)
 		}
-		
+
 		return value.DecimalVal(d, scale), nil
 
 	case tokString:
@@ -527,6 +568,36 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 
 	case tokLitWord:
 		return value.LitWordVal(tok.val), nil
+
+	case tokPath:
+		// Parse path expression: "user.address.city" or "data.2"
+		// tok.val contains the full path string like "user.address.city"
+		pathParts := strings.Split(tok.val, ".")
+		if len(pathParts) < 2 {
+			return value.NoneVal(), p.syntaxError(tok.pos, verror.ErrIDInvalidSyntax, [3]string{"invalid path", "", ""})
+		}
+
+		var segments []value.PathSegment
+		for _, part := range pathParts {
+			// Try to parse as integer (for indexing like block.3)
+			if num, err := strconv.ParseInt(part, 10, 64); err == nil {
+				segments = append(segments, value.PathSegment{
+					Type:  value.PathSegmentIndex,
+					Value: num,
+				})
+			} else {
+				// It's a word segment
+				segments = append(segments, value.PathSegment{
+					Type:  value.PathSegmentWord,
+					Value: part,
+				})
+			}
+		}
+
+		// For now, create a path with no base value (base will be resolved during evaluation)
+		// The first segment is the base word that will be looked up
+		path := value.NewPath(segments, value.NoneVal())
+		return value.PathVal(path), nil
 
 	case tokLBracket:
 		// Parse block contents
@@ -646,6 +717,11 @@ func Format(val value.Value) string {
 		return "paren"
 	case value.TypeFunction:
 		return "function"
+	case value.TypePath:
+		if path, ok := val.AsPath(); ok {
+			return path.String()
+		}
+		return "path"
 	default:
 		return "unknown"
 	}
