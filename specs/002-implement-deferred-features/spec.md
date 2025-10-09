@@ -20,6 +20,14 @@
 - Q: Where do `trace --on` events write by default? → A: Default sink is a log file in the working directory.
 - Q: Jaki jest domyślny timeout operacji sieciowych portów? → A: Brak wbudowanego limitu – poleganie na limitach systemowych lub jawnej konfiguracji.
 
+### Session 2025-10-09
+
+- Q: Jaki jest maksymalny limit głębokości zagnieżdżania obiektów i ścieżek (np. `a.b.c.d.e...`)? → A: Brak limitu (do wyczerpania stosu)
+- Q: Czy HTTP porty automatycznie podążają za przekierowaniami (HTTP 301/302), czy zwracają odpowiedź redirect do skryptu? → A: Automatycznie podążaj (max 10 redirects)
+- Q: Jak system obsługuje próbę otwarcia tego samego portu pliku przez dwa równoczesne skrypty? → A: Brak lockingu - zależy od OS
+- Q: Jakie jest zachowanie HTTP portu gdy odpowiedź ma Content-Type inny niż application/json (np. text/html, application/xml)? → A: Zwróć raw string w body, status/headers bez zmian
+- Q: Jaki jest maksymalny rozmiar pliku trace log przed rotacją (lumberjack)? → A: 50 MB per file
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Precise Calculations with Decimal Numbers (Priority: P1)
@@ -71,7 +79,7 @@ Developers can create object-like contexts and navigate nested data using path e
 1. **Given** the object constructor, **When** a user evaluates `person: object [name: "Ana" address: object [city: "Porto" zip: 4000]]`, **Then** the system produces nested frames with isolated bindings.
 2. **Given** path evaluation semantics, **When** a user reads `person.address.city`, **Then** the system returns `"Porto"` by traversing nested contexts.
 3. **Given** path assignment rules, **When** a user executes `person.address.city: "Lisboa"`, **Then** the stored value updates and subsequent reads reflect the change.
-4. **Given** nested object access, **When** a user creates deeply nested structures, **Then** the system maintains proper frame isolation and parent chain traversal.
+4. **Given** nested object access, **When** a user creates deeply nested structures, **Then** the system maintains proper frame isolation and parent chain traversal without imposing an artificial nesting depth limit (constrained only by available stack space).
 
 ---
 
@@ -126,16 +134,16 @@ Maintainers can trace evaluation, inspect runtime state, and introspect program 
 - **FR-003**: System MUST promote integer operands to `decimal!` during mixed arithmetic and deliver results with deterministic rounding (bankers' rounding at $5$) unless overridden by refinements.
 - **FR-004**: System MUST provide math natives `pow`, `sqrt`, `exp`, `log`, `log-10`, `sin`, `cos`, `tan`, `asin`, `acos`, and `atan` accepting `decimal!` and `integer!` values with domain validation.
 - **FR-005**: System MUST expose rounding natives `round`, `ceil`, `floor`, and `truncate`, each accepting refinements to control precision (number of decimal places) and rounding mode (`half-up`, `half-even`).
-- **FR-006**: System MUST provide file natives `read`, `save`, `append`, `remove`, `rename`, and `make-dir` that operate on absolute or sandboxed relative paths with UTF-8 filenames, where the sandbox root is supplied via a startup CLI parameter and defaults to the current working directory if unspecified.
+- **FR-006**: System MUST provide file natives `read`, `save`, `append`, `remove`, `rename`, and `make-dir` that operate on absolute or sandboxed relative paths with UTF-8 filenames, where the sandbox root is supplied via a startup CLI parameter and defaults to the current working directory if unspecified. File locking behavior defers to operating system defaults; concurrent access from multiple scripts follows OS-level file locking policies.
 - **FR-007**: System MUST implement a unified `port!` abstraction with `open`, `close`, `read`, `write`, and `query` operations that works for files, TCP sockets, and HTTP resources, exposing optional timeout refinements while defaulting to operating-system behavior when unset.
-- **FR-008**: System MUST support HTTP convenience natives `http --get`, `http --post`, and `http --head`, returning structured response blocks containing status, headers, and body.
+- **FR-008**: System MUST support HTTP convenience natives `http --get`, `http --post`, and `http --head`, returning structured response blocks containing status, headers, and body. HTTP client automatically follows redirects (301, 302, 303, 307, 308) up to a maximum of 10 hops before raising a network error. Response body is returned as a raw string regardless of Content-Type; parsing (e.g., JSON) is the caller's responsibility.
 - **FR-009**: System MUST introduce `object!` construction that captures word/value pairs into a dedicated frame supporting nested objects.
 - **FR-010**: System MUST evaluate path expressions (`user.address.city`, `array.3`) across objects, blocks, and future maps, using dot notation (`.`) for both field access and series indexing.
 - **FR-011**: System MUST allow path assignment to mutate terminal targets when permissible (e.g., words, object fields, series elements) while preventing structural violations (e.g., assigning into immutable data). Parser distinguishes tokens by first character(s): numbers start with digit or `-`+digit (`19.99`, `-3.14`), refinements start with `--` (`--option`), words/paths start with letter (`config.timeout`).
 - **FR-012**: System MUST extend series natives with `copy`, `copy --part`, `find`, `find --last`, `remove`, `remove --part`, `skip`, `take`, `sort`, and `reverse`, all operating on blocks and strings with refinement parity.
 - **FR-013**: System MUST implement the `parse` dialect supporting core combinators (`some`, `any`, `opt`, `not`, `into`, `ahead`, `set`, `copy`) and custom rule blocks, returning boolean success and capture data.
 - **FR-014**: System MUST report parse failures via Syntax error (200) including near/where context and the rule that failed.
-- **FR-015**: System MUST provide tracing controls `trace --on`, `trace --off`, and `trace?`, emitting structured events (timestamp, value, word, duration) through a configurable sink that defaults to a rotating log file in the current working directory.
+- **FR-015**: System MUST provide tracing controls `trace --on`, `trace --off`, and `trace?`, emitting structured events (timestamp, value, word, duration) through a configurable sink that defaults to a rotating log file in the current working directory. Trace log files rotate at 50 MB per file, retaining up to 5 backup files with compression.
 - **FR-016**: System MUST expose debugger commands via a `debug` native (subcommands `breakpoint`, `remove`, `step`, `continue`, `stack`, `locals`) that can be invoked interactively or programmatically.
 - **FR-017**: System MUST add reflection natives `type-of`, `spec-of`, `body-of`, `words-of`, and `values-of` for introspecting functions, objects, and frames without mutating them.
 - **FR-018**: System MUST extend error handling so that file and network failures attach relevant metadata (path, host) to the error context.
