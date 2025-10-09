@@ -15,11 +15,11 @@ import (
 // Per FR-015: emits structured events to stderr by default, optional file redirection.
 // Per research.md: uses lumberjack for rotating log file support.
 type TraceSession struct {
-	mu       sync.Mutex
-	enabled  bool
-	sink     io.Writer        // Output destination (stderr or file)
-	logger   *lumberjack.Logger // Optional file logger
-	filters  TraceFilters
+	mu      sync.Mutex
+	enabled bool
+	sink    io.Writer          // Output destination (stderr or file)
+	logger  *lumberjack.Logger // Optional file logger
+	filters TraceFilters
 }
 
 // TraceFilters controls which events are emitted.
@@ -32,10 +32,10 @@ type TraceFilters struct {
 // TraceEvent represents a single trace event (per FR-015 requirements).
 type TraceEvent struct {
 	Timestamp time.Time `json:"timestamp"`
-	Value     string    `json:"value"`     // String representation of evaluated value
-	Word      string    `json:"word"`      // Word being evaluated (if applicable)
-	Duration  int64     `json:"duration"`  // Nanoseconds spent evaluating
-	Depth     int       `json:"depth"`     // Call stack depth
+	Value     string    `json:"value"`    // String representation of evaluated value
+	Word      string    `json:"word"`     // Word being evaluated (if applicable)
+	Duration  int64     `json:"duration"` // Nanoseconds spent evaluating
+	Depth     int       `json:"depth"`    // Call stack depth
 }
 
 // GlobalTraceSession is the active trace session (singleton).
@@ -263,4 +263,86 @@ func (d *Debugger) Mode() DebugMode {
 	defer d.mu.Unlock()
 
 	return d.mode
+}
+
+// Port lifecycle trace event helpers (T076)
+
+// TracePortOpen emits a trace event for port open operation.
+func TracePortOpen(scheme, spec string) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "open",
+		Value:     fmt.Sprintf("port opened: %s (%s)", spec, scheme),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TracePortRead emits a trace event for port read operation.
+func TracePortRead(scheme, spec string, bytes int) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "read",
+		Value:     fmt.Sprintf("port read: %s (%s) %d bytes", spec, scheme, bytes),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TracePortWrite emits a trace event for port write operation.
+func TracePortWrite(scheme, spec string, bytes int) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "write",
+		Value:     fmt.Sprintf("port write: %s (%s) %d bytes", spec, scheme, bytes),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TracePortClose emits a trace event for port close operation.
+func TracePortClose(scheme, spec string) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "close",
+		Value:     fmt.Sprintf("port closed: %s (%s)", spec, scheme),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TracePortError emits a trace event for port error.
+func TracePortError(scheme, spec string, err error) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "error",
+		Value:     fmt.Sprintf("port error: %s (%s) - %v", spec, scheme, err),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
 }

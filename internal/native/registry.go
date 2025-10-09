@@ -101,6 +101,16 @@ func init() {
 	Registry["print"] = &NativeInfo{FuncEval: Print, NeedsEval: true, Arity: 1}
 	Registry["input"] = &NativeInfo{Func: Input, NeedsEval: false, Arity: 0}
 
+	// Register port natives (Feature 002 - User Story 2)
+	Registry["open"] = &NativeInfo{Func: OpenNative, NeedsEval: false, Arity: 1}
+	Registry["close"] = &NativeInfo{Func: CloseNative, NeedsEval: false, Arity: 1}
+	Registry["read"] = &NativeInfo{Func: ReadNative, NeedsEval: false, Arity: 1}
+	Registry["write"] = &NativeInfo{Func: WriteNative, NeedsEval: false, Arity: 2}
+	Registry["save"] = &NativeInfo{Func: SaveNative, NeedsEval: false, Arity: 2}
+	Registry["load"] = &NativeInfo{Func: LoadNative, NeedsEval: false, Arity: 1}
+	Registry["query"] = &NativeInfo{Func: QueryNative, NeedsEval: false, Arity: 1}
+	Registry["wait"] = &NativeInfo{Func: WaitNative, NeedsEval: false, Arity: 1}
+
 	// Register function native
 	Registry["fn"] = &NativeInfo{FuncEval: Fn, NeedsEval: true, Arity: 2}
 

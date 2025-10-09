@@ -75,15 +75,23 @@ const (
 	ErrIDDivByZero = "div-zero"
 	ErrIDOverflow  = "overflow"
 	ErrIDUnderflow = "underflow"
-	
+
 	// Feature 002: Decimal-specific math errors
-	ErrIDSqrtNegative      = "sqrt-negative"       // sqrt of negative number
-	ErrIDLogDomain         = "log-domain"          // log of zero or negative
-	ErrIDExpOverflow       = "exp-overflow"        // exponential overflow
-	ErrIDDecimalPrecision  = "decimal-precision"   // precision overflow (>34 digits)
-	ErrIDInvalidDecimal    = "invalid-decimal"     // invalid decimal string format
-	ErrIDAsinDomain        = "asin-domain"         // asin outside [-1, 1]
-	ErrIDAcosDomain        = "acos-domain"         // acos outside [-1, 1]
+	ErrIDSqrtNegative     = "sqrt-negative"     // sqrt of negative number
+	ErrIDLogDomain        = "log-domain"        // log of zero or negative
+	ErrIDExpOverflow      = "exp-overflow"      // exponential overflow
+	ErrIDDecimalPrecision = "decimal-precision" // precision overflow (>34 digits)
+	ErrIDInvalidDecimal   = "invalid-decimal"   // invalid decimal string format
+	ErrIDAsinDomain       = "asin-domain"       // asin outside [-1, 1]
+	ErrIDAcosDomain       = "acos-domain"       // acos outside [-1, 1]
+
+	// Access errors (500) - Feature 002: Port I/O
+	ErrIDPortClosed            = "port-closed"             // operation on closed port
+	ErrIDTLSVerificationFailed = "tls-verification-failed" // HTTPS certificate validation failed
+	ErrIDSandboxViolation      = "sandbox-violation"       // file path escapes sandbox root
+	ErrIDTimeout               = "timeout"                 // I/O operation timeout
+	ErrIDConnectionRefused     = "connection-refused"      // TCP/HTTP connection refused
+	ErrIDUnknownScheme         = "unknown-port-scheme"     // unsupported port scheme
 
 	// Internal errors (900)
 	ErrIDStackOverflow   = "stack-overflow"

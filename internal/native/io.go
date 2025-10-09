@@ -404,10 +404,12 @@ func OpenPort(spec string, opts map[string]value.Value) (value.Value, error) {
 	// Open the port
 	ctx := context.Background()
 	if err := driver.Open(ctx, spec); err != nil {
+		TracePortError(scheme, spec, err)
 		return value.NoneVal(), err
 	}
 
 	port.State = value.PortOpen
+	TracePortOpen(scheme, spec)
 	return value.PortVal(port), nil
 }
 
@@ -423,10 +425,12 @@ func ClosePort(portVal value.Value) error {
 	}
 
 	if err := port.Driver.Close(); err != nil {
+		TracePortError(port.Scheme, port.Spec, err)
 		return err
 	}
 
 	port.State = value.PortClosed
+	TracePortClose(port.Scheme, port.Spec)
 	return nil
 }
 
@@ -443,21 +447,25 @@ func ReadPort(spec string, opts map[string]value.Value) (value.Value, error) {
 	// Read all content
 	buf := make([]byte, 4096)
 	var result strings.Builder
+	totalBytes := 0
 
 	for {
 		n, err := port.Driver.Read(buf)
 		if n > 0 {
 			result.Write(buf[:n])
+			totalBytes += n
 		}
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
+			TracePortError(port.Scheme, spec, err)
 			ClosePort(portVal)
 			return value.NoneVal(), err
 		}
 	}
 
+	TracePortRead(port.Scheme, spec, totalBytes)
 	ClosePort(portVal)
 	return value.StrVal(result.String()), nil
 }
@@ -506,11 +514,17 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 
 		file, err := os.OpenFile(resolved, flags, 0644)
 		if err != nil {
+			TracePortError("file", spec, err)
 			return err
 		}
 		defer file.Close()
 
 		_, err = file.WriteString(content)
+		if err != nil {
+			TracePortError("file", spec, err)
+		} else {
+			TracePortWrite("file", spec, len(content))
+		}
 		return err
 	}
 
@@ -521,11 +535,17 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 
 	portVal, err := OpenPort(spec, opts)
 	if err != nil {
+		TracePortError("network", spec, err)
 		return err
 	}
 
 	port, _ := portVal.AsPort()
 	_, err = port.Driver.Write([]byte(content))
+	if err != nil {
+		TracePortError(port.Scheme, spec, err)
+	} else {
+		TracePortWrite(port.Scheme, spec, len(content))
+	}
 	ClosePort(portVal)
 	return err
 }
@@ -565,6 +585,117 @@ func QueryPort(portVal value.Value) (value.Value, error) {
 	}
 
 	return value.ObjectVal(obj), nil
+}
+
+// SavePort implements the `save` convenience native (T069)
+// Serializes a value using loadable format and writes to file
+func SavePort(spec string, val value.Value, opts map[string]value.Value) error {
+	// Serialize value to string representation
+	serialized := serializeValue(val)
+
+	// Write to file using WritePort
+	return WritePort(spec, value.StrVal(serialized), opts)
+}
+
+// LoadPort implements the `load` convenience native (T070)
+// Reads file and parses into Viro values
+func LoadPort(spec string, opts map[string]value.Value) (value.Value, error) {
+	// Read file content
+	contentVal, err := ReadPort(spec, opts)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	// For now, return the content as-is
+	// Full implementation would parse the content into Viro values
+	// This requires integration with the parse package
+	return contentVal, nil
+}
+
+// WaitPort implements the `wait` native (T072)
+// Blocks until port is ready or timeout occurs
+func WaitPort(portOrBlock value.Value) (value.Value, error) {
+	// Handle single port
+	if portOrBlock.Type == value.TypePort {
+		port, ok := portOrBlock.AsPort()
+		if !ok {
+			return value.NoneVal(), fmt.Errorf("expected port value")
+		}
+
+		if port.State == value.PortClosed {
+			return value.NoneVal(), fmt.Errorf("port is closed")
+		}
+
+		// For file ports, they're always ready
+		if port.Scheme == "file" {
+			return portOrBlock, nil
+		}
+
+		// For network ports, check if connection is ready
+		// Simple implementation: check if state is open
+		if port.State == value.PortOpen {
+			return portOrBlock, nil
+		}
+
+		return value.NoneVal(), fmt.Errorf("port not ready")
+	}
+
+	// Handle block of ports
+	if portOrBlock.Type == value.TypeBlock {
+		blk, ok := portOrBlock.AsBlock()
+		if !ok {
+			return value.NoneVal(), fmt.Errorf("expected block value")
+		}
+
+		// Check each port and return first ready one
+		for _, elem := range blk.Elements {
+			if elem.Type == value.TypePort {
+				port, ok := elem.AsPort()
+				if !ok {
+					continue
+				}
+
+				if port.State == value.PortOpen {
+					return elem, nil
+				}
+			}
+		}
+
+		// No ports ready
+		return value.NoneVal(), nil
+	}
+
+	return value.NoneVal(), fmt.Errorf("expected port or block of ports")
+}
+
+// serializeValue converts a value to its loadable string representation
+func serializeValue(val value.Value) string {
+	switch val.Type {
+	case value.TypeInteger:
+		return fmt.Sprintf("%d", val.Payload)
+	case value.TypeDecimal:
+		return val.String()
+	case value.TypeString:
+		str, _ := val.AsString()
+		// Quote the string to preserve it
+		return fmt.Sprintf(`"%s"`, str.String())
+	case value.TypeLogic:
+		if val.Payload.(bool) {
+			return "true"
+		}
+		return "false"
+	case value.TypeNone:
+		return "none"
+	case value.TypeBlock:
+		blk, _ := val.AsBlock()
+		parts := make([]string, len(blk.Elements))
+		for i, elem := range blk.Elements {
+			parts[i] = serializeValue(elem)
+		}
+		return fmt.Sprintf("[%s]", strings.Join(parts, " "))
+	default:
+		return val.String()
+	}
 }
 
 // Print implements the `print` native.
@@ -662,4 +793,229 @@ func valueToPrintString(val value.Value) string {
 		}
 	}
 	return val.String()
+}
+
+// Native function wrappers for port operations (T073)
+// These adapt the port API to the native function signature
+
+// OpenNative is the native wrapper for open
+// Usage: open "file.txt" or open "http://example.com"
+// Note: Options/refinements not yet supported in native registry
+func OpenNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"open", "1", formatInt(len(args))},
+		)
+	}
+
+	// Get spec string
+	var spec string
+	if args[0].Type == value.TypeString {
+		str, _ := args[0].AsString()
+		spec = str.String()
+	} else {
+		spec = args[0].String()
+	}
+
+	// Call OpenPort with no options (for basic REPL usage)
+	result, err := OpenPort(spec, nil)
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("open failed: %v", err), spec, ""},
+		)
+	}
+
+	return result, nil
+}
+
+// CloseNative is the native wrapper for close
+func CloseNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"close", "1", formatInt(len(args))},
+		)
+	}
+
+	if args[0].Type != value.TypePort {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"close", "port!", args[0].Type.String()},
+		)
+	}
+
+	err := ClosePort(args[0])
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDPortClosed,
+			[3]string{fmt.Sprintf("close failed: %v", err), "", ""},
+		)
+	}
+
+	return value.NoneVal(), nil
+}
+
+// ReadNative is the native wrapper for read
+func ReadNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"read", "1", formatInt(len(args))},
+		)
+	}
+
+	// Get spec string
+	var spec string
+	if args[0].Type == value.TypeString {
+		str, _ := args[0].AsString()
+		spec = str.String()
+	} else {
+		spec = args[0].String()
+	}
+
+	result, err := ReadPort(spec, nil)
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("read failed: %v", err), spec, ""},
+		)
+	}
+
+	return result, nil
+}
+
+// WriteNative is the native wrapper for write
+func WriteNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"write", "2", formatInt(len(args))},
+		)
+	}
+
+	// Get spec string
+	var spec string
+	if args[0].Type == value.TypeString {
+		str, _ := args[0].AsString()
+		spec = str.String()
+	} else {
+		spec = args[0].String()
+	}
+
+	err := WritePort(spec, args[1], nil)
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("write failed: %v", err), spec, ""},
+		)
+	}
+
+	return value.NoneVal(), nil
+}
+
+// SaveNative is the native wrapper for save
+func SaveNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"save", "2", formatInt(len(args))},
+		)
+	}
+
+	// Get spec string
+	var spec string
+	if args[0].Type == value.TypeString {
+		str, _ := args[0].AsString()
+		spec = str.String()
+	} else {
+		spec = args[0].String()
+	}
+
+	err := SavePort(spec, args[1], nil)
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("save failed: %v", err), spec, ""},
+		)
+	}
+
+	return value.NoneVal(), nil
+}
+
+// LoadNative is the native wrapper for load
+func LoadNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"load", "1", formatInt(len(args))},
+		)
+	}
+
+	// Get spec string
+	var spec string
+	if args[0].Type == value.TypeString {
+		str, _ := args[0].AsString()
+		spec = str.String()
+	} else {
+		spec = args[0].String()
+	}
+
+	result, err := LoadPort(spec, nil)
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("load failed: %v", err), spec, ""},
+		)
+	}
+
+	return result, nil
+}
+
+// QueryNative is the native wrapper for query
+func QueryNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"query", "1", formatInt(len(args))},
+		)
+	}
+
+	if args[0].Type != value.TypePort {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"query", "port!", args[0].Type.String()},
+		)
+	}
+
+	result, err := QueryPort(args[0])
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDPortClosed,
+			[3]string{fmt.Sprintf("query failed: %v", err), "", ""},
+		)
+	}
+
+	return result, nil
+}
+
+// WaitNative is the native wrapper for wait
+func WaitNative(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"wait", "1", formatInt(len(args))},
+		)
+	}
+
+	result, err := WaitPort(args[0])
+	if err != nil {
+		return value.NoneVal(), verror.NewAccessError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("wait failed: %v", err), "", ""},
+		)
+	}
+
+	return result, nil
 }

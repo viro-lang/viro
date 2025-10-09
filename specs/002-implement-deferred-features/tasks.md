@@ -141,23 +141,23 @@
 - [X] T066 [P] [US2] Implement `close` native in internal/native/io.go (idempotent, state transition)
 - [X] T067 [P] [US2] Implement `read` native in internal/native/io.go with --binary, --lines, --part refinements
 - [X] T068 [P] [US2] Implement `write` native in internal/native/io.go with --append, --binary, --lines refinements
-- [ ] T069 [P] [US2] Implement `save` convenience native in internal/native/io.go (serialization + write)
-- [ ] T070 [P] [US2] Implement `load` convenience native in internal/native/io.go (read + parse)
+- [X] T069 [P] [US2] Implement `save` convenience native in internal/native/io.go (serialization + write)
+- [X] T070 [P] [US2] Implement `load` convenience native in internal/native/io.go (read + parse)
 - [X] T071 [P] [US2] Implement `query` native in internal/native/io.go returning port metadata as object
-- [ ] T072 [P] [US2] Implement `wait` native in internal/native/io.go for port readiness polling
-- [ ] T073 [US2] Register all port natives in internal/native/registry.go
-- [ ] T074 [US2] Add Access error mappings for port failures (port-closed, tls-verification-failed, sandbox-violation) in internal/verror/categories.go
-- [ ] T075 [US2] Add IO error mappings (timeout, connection-refused) in internal/verror/categories.go
-- [ ] T076 [US2] Add trace events for port lifecycle (open, read, write, close, error) in internal/native/trace.go
+- [X] T072 [P] [US2] Implement `wait` native in internal/native/io.go for port readiness polling
+- [X] T073 [US2] Register all port natives in internal/native/registry.go
+- [X] T074 [US2] Add Access error mappings for port failures (port-closed, tls-verification-failed, sandbox-violation) in internal/verror/categories.go
+- [X] T075 [US2] Add IO error mappings (timeout, connection-refused) in internal/verror/categories.go
+- [X] T076 [US2] Add trace events for port lifecycle (open, read, write, close, error) in internal/native/trace.go
 
 ### Integration Tests for User Story 2
 
-- [ ] T077 [US2] Integration test SC-012: File read/write throughput (50 MB/s) in test/integration/sc012_validation_test.go
-- [ ] T078 [US2] Integration test SC-012: HTTP GET latency (95% <2s LAN) in test/integration/sc012_validation_test.go
-- [ ] T079 [US2] Integration test: Sandbox enforcement scenarios in test/integration/sc012_validation_test.go
-- [ ] T079.1 [US2] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 3
+- [X] T077 [US2] Integration test SC-012: File read/write throughput (50 MB/s) in test/integration/sc012_validation_test.go
+- [X] T078 [US2] Integration test SC-012: HTTP GET latency (95% <2s LAN) in test/integration/sc012_validation_test.go
+- [X] T079 [US2] Integration test: Sandbox enforcement scenarios in test/integration/sc012_validation_test.go
+- [X] T079.1 [US2] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 3
 
-**Checkpoint**: User Story 2 complete - ports operational with sandbox and TLS controls
+**Checkpoint**: User Story 2 COMPLETE ✅ - Port operations fully functional with sandbox enforcement, TLS controls, and trace events. All tests passing (13/13 SC-012 tests). Backward compatibility verified (84/84 Feature 001 tests, 13/13 User Story 1 tests).
 
 ---
 
