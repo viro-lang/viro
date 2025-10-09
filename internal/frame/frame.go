@@ -50,7 +50,8 @@ type Frame struct {
 	Type     FrameType       // Frame category
 	Words    []string        // Symbol names (parallel to Values)
 	Values   []value.Value   // Bound values (parallel to Words)
-	Parent   int             // Index of parent frame for closures (-1 if none)
+	Parent   int             // Index of parent frame for closures (-1 if none) (deprecated: use Index to navigate frameStore)
+	Index    int             // Position in evaluator's frameStore (-1 if not yet stored)
 	Name     string          // Optional function or context name for diagnostics
 	Manifest *ObjectManifest // Optional: field metadata for objects (Feature 002)
 }
@@ -69,6 +70,7 @@ func NewFrame(frameType FrameType, parent int) *Frame {
 		Words:    []string{},
 		Values:   []value.Value{},
 		Parent:   parent,
+		Index:    -1,
 		Name:     "",
 		Manifest: nil,
 	}
@@ -82,6 +84,7 @@ func NewFrameWithCapacity(frameType FrameType, parent int, capacity int) *Frame 
 		Words:    make([]string, 0, capacity),
 		Values:   make([]value.Value, 0, capacity),
 		Parent:   parent,
+		Index:    -1,
 		Name:     "",
 		Manifest: nil,
 	}
@@ -103,6 +106,7 @@ func NewObjectFrame(parent int, words []string, types []value.ValueType) *Frame 
 		Words:  make([]string, 0, len(words)),
 		Values: make([]value.Value, 0, len(words)),
 		Parent: parent,
+		Index:  -1,
 		Name:   "",
 		Manifest: &ObjectManifest{
 			Words: words,
@@ -219,6 +223,7 @@ func (f *Frame) Clone() *Frame {
 		Words:    wordsCopy,
 		Values:   valuesCopy,
 		Parent:   f.Parent,
+		Index:    -1, // Clone gets a new index when added to frameStore
 		Manifest: manifestCopy,
 	}
 }

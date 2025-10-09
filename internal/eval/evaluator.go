@@ -42,7 +42,6 @@ type Evaluator struct {
 	Stack      *stack.Stack
 	Frames     []*frame.Frame
 	frameStore []*frame.Frame
-	frameIndex map[*frame.Frame]int
 	captured   map[int]bool
 	callStack  []string
 }
@@ -51,15 +50,14 @@ type Evaluator struct {
 func NewEvaluator() *Evaluator {
 	global := frame.NewFrame(frame.FrameClosure, -1)
 	global.Name = "(top level)"
+	global.Index = 0
 	e := &Evaluator{
 		Stack:      stack.NewStack(1024),
 		Frames:     []*frame.Frame{global},
 		frameStore: []*frame.Frame{global},
-		frameIndex: make(map[*frame.Frame]int),
 		captured:   make(map[int]bool),
 		callStack:  []string{"(top level)"},
 	}
-	e.frameIndex[global] = 0
 	e.captured[0] = true
 	return e
 }
@@ -73,11 +71,12 @@ func (e *Evaluator) currentFrame() *frame.Frame {
 }
 
 func (e *Evaluator) pushFrame(f *frame.Frame) int {
-	idx, ok := e.frameIndex[f]
-	if !ok {
+	idx := f.Index
+	if idx < 0 {
+		// Frame not yet in frameStore, add it
 		idx = len(e.frameStore)
 		e.frameStore = append(e.frameStore, f)
-		e.frameIndex[f] = idx
+		f.Index = idx
 	}
 	e.Frames = append(e.Frames, f)
 	return idx
@@ -88,10 +87,7 @@ func (e *Evaluator) currentFrameIndex() int {
 		return -1
 	}
 	current := e.Frames[len(e.Frames)-1]
-	if idx, ok := e.frameIndex[current]; ok {
-		return idx
-	}
-	return -1
+	return current.Index
 }
 
 func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
@@ -101,6 +97,80 @@ func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
 	return e.frameStore[idx]
 }
 
+// evalFunc is a type-specific evaluation function
+type evalFunc func(*Evaluator, value.Value) (value.Value, *verror.Error)
+
+// evalDispatch maps value types to their evaluation functions.
+// Initialized at package load time.
+var evalDispatch map[value.ValueType]evalFunc
+
+func init() {
+	evalDispatch = map[value.ValueType]evalFunc{
+		value.TypeInteger:  evalLiteral,
+		value.TypeString:   evalLiteral,
+		value.TypeLogic:    evalLiteral,
+		value.TypeNone:     evalLiteral,
+		value.TypeDecimal:  evalLiteral,
+		value.TypeObject:   evalLiteral,
+		value.TypePort:     evalLiteral,
+		value.TypeDatatype: evalLiteral,
+		value.TypeBlock:    evalBlock,
+		value.TypeFunction: evalFunction,
+		value.TypeParen:    evalParenDispatch,
+		value.TypeWord:     evalWordDispatch,
+		value.TypeSetWord:  evalSetWordDispatch,
+		value.TypeGetWord:  evalGetWordDispatch,
+		value.TypeLitWord:  evalLitWordDispatch,
+		value.TypePath:     evalPathDispatch,
+	}
+}
+
+// evalLiteral handles all literal types that evaluate to themselves
+func evalLiteral(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return val, nil
+}
+
+// evalBlock handles block evaluation (deferred - returns self)
+func evalBlock(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return val, nil
+}
+
+// evalFunction handles function evaluation (returns self)
+func evalFunction(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return val, nil
+}
+
+// evalParenDispatch handles paren evaluation
+func evalParenDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return e.evalParen(val)
+}
+
+// evalWordDispatch handles word evaluation
+func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return e.evalWord(val)
+}
+
+// evalSetWordDispatch handles set-word evaluation (error in isolation)
+func evalSetWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	wordStr, _ := val.AsWord()
+	return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
+}
+
+// evalGetWordDispatch handles get-word evaluation
+func evalGetWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return e.evalGetWord(val)
+}
+
+// evalLitWordDispatch handles lit-word evaluation
+func evalLitWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return value.WordVal(val.Payload.(string)), nil
+}
+
+// evalPathDispatch handles path evaluation
+func evalPathDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return e.evalPath(val)
+}
+
 // popFrame removes the active frame and returns its store index.
 func (e *Evaluator) popFrame() int {
 	if len(e.Frames) == 0 {
@@ -108,11 +178,11 @@ func (e *Evaluator) popFrame() int {
 	}
 	frm := e.Frames[len(e.Frames)-1]
 	e.Frames = e.Frames[:len(e.Frames)-1]
-	idx := e.frameIndex[frm]
+	idx := frm.Index
 	if !e.captured[idx] {
 		// Release non-captured frames for GC by clearing store entry
 		e.frameStore[idx] = nil
-		delete(e.frameIndex, frm)
+		frm.Index = -1
 	} else if frm.Type != frame.FrameClosure {
 		frm.Type = frame.FrameClosure
 	}
@@ -185,14 +255,14 @@ func (e *Evaluator) CurrentFrameIndex() int {
 // Use PushFrameContext to make it active.
 func (e *Evaluator) RegisterFrame(f *frame.Frame) int {
 	// Check if frame is already registered
-	if idx, ok := e.frameIndex[f]; ok {
-		return idx
+	if f.Index >= 0 {
+		return f.Index
 	}
 
 	// Add to store
 	idx := len(e.frameStore)
 	e.frameStore = append(e.frameStore, f)
-	e.frameIndex[f] = idx
+	f.Index = idx
 	return idx
 }
 
@@ -256,70 +326,15 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 		}
 	}
 
-	// Type-based dispatch per Constitution Principle III
-	var result value.Value
-	var err *verror.Error
-
-	switch val.Type {
-	case value.TypeInteger, value.TypeString, value.TypeLogic, value.TypeNone:
-		// Literals evaluate to themselves
-		result, err = val, nil
-
-	case value.TypeBlock:
-		// Blocks return self (deferred evaluation)
-		result, err = val, nil
-
-	case value.TypeParen:
-		// Parens evaluate contents
-		result, err = e.evalParen(val)
-
-	case value.TypeWord:
-		// Words look up in frame
-		result, err = e.evalWord(val)
-
-	case value.TypeSetWord:
-		// Set-words are handled in Do_Blk (need next value from sequence)
-		// If we reach here, it's a set-word in isolation (error)
-		wordStr, _ := val.AsWord()
-		result, err = value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
-
-	case value.TypeGetWord:
-		// Get-words fetch without evaluation
-		result, err = e.evalGetWord(val)
-
-	case value.TypeLitWord:
-		// Lit-words return as word
-		// Extract the word symbol and return as a word
-		result, err = value.WordVal(val.Payload.(string)), nil
-
-	case value.TypeFunction:
-		// Functions return self (they're values)
-		result, err = val, nil
-
-	// Feature 002: New value types (T024)
-	case value.TypeDecimal:
-		// Decimals evaluate to themselves (literals)
-		result, err = val, nil
-
-	case value.TypeObject:
-		// Objects evaluate to themselves
-		result, err = val, nil
-
-	case value.TypePort:
-		// Ports evaluate to themselves (handles)
-		result, err = val, nil
-
-	case value.TypeDatatype:
-		// Datatypes evaluate to themselves (literals like object!)
-		result, err = val, nil
-
-	case value.TypePath:
-		// Paths are evaluated by path evaluator (T091)
-		result, err = e.evalPath(val)
-
-	default:
-		result, err = value.NoneVal(), verror.NewInternalError("unknown value type in Do_Next", [3]string{})
+	// Type-based dispatch using dispatch table
+	evalFn, found := evalDispatch[val.Type]
+	if !found {
+		result := value.NoneVal()
+		err := verror.NewInternalError("unknown value type in Do_Next", [3]string{})
+		return result, err
 	}
+
+	result, err := evalFn(e, val)
 
 	// Emit trace event if tracing is enabled
 	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() && traceWord != "" {
