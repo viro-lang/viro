@@ -158,6 +158,7 @@ var messageTemplates = map[string]string{
 	ErrIDPathTypeMismatch: "Type mismatch: path requires object or series type, got %1",
 	ErrIDImmutableTarget:  "Cannot assign to immutable target: %1",
 	ErrIDObjectFieldDup:   "Duplicate field '%1' in object",
+	ErrIDReservedField:    "Field '%1' is reserved in object specifications",
 
 	// Math errors
 	ErrIDDivByZero: "Division by zero",

@@ -93,6 +93,11 @@ func (v Value) String() string {
 			return path.String()
 		}
 		return "path[]"
+	case TypeDatatype:
+		if name, ok := v.Payload.(string); ok {
+			return name
+		}
+		return "datatype!"
 	default:
 		return fmt.Sprintf("<%s>", v.Type)
 	}
@@ -120,6 +125,8 @@ func (v Value) Equals(other Value) bool {
 		}
 		return vStr.Equals(oStr)
 	case TypeWord, TypeSetWord, TypeGetWord, TypeLitWord:
+		return v.Payload.(string) == other.Payload.(string)
+	case TypeDatatype:
 		return v.Payload.(string) == other.Payload.(string)
 	case TypeBlock, TypeParen:
 		vBlk, vOk := v.Payload.(*BlockValue)
@@ -195,6 +202,11 @@ func FuncVal(fn *FunctionValue) Value {
 	return Value{Type: TypeFunction, Payload: fn}
 }
 
+// DatatypeVal creates a datatype value (e.g., object!, integer!).
+func DatatypeVal(name string) Value {
+	return Value{Type: TypeDatatype, Payload: name}
+}
+
 // Type assertion helpers for safe payload extraction.
 // Return (value, true) on success or (zero-value, false) on type mismatch.
 
@@ -250,6 +262,15 @@ func (v Value) AsFunction() (*FunctionValue, bool) {
 	}
 	fn, ok := v.Payload.(*FunctionValue)
 	return fn, ok
+}
+
+// AsDatatype extracts datatype name if value is TypeDatatype.
+func (v Value) AsDatatype() (string, bool) {
+	if v.Type != TypeDatatype {
+		return "", false
+	}
+	name, ok := v.Payload.(string)
+	return name, ok
 }
 
 // IsTruthy returns true if value is considered "true" in conditional contexts.

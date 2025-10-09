@@ -1,6 +1,8 @@
 package native
 
 import (
+	"strings"
+
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -94,6 +96,8 @@ func typeNameFor(t value.ValueType) string {
 		return "port!"
 	case value.TypePath:
 		return "path!"
+	case value.TypeDatatype:
+		return "datatype!"
 	default:
 		return "unknown!"
 	}
@@ -107,6 +111,121 @@ type frameManager interface {
 	PushFrameContext(f *frame.Frame) int
 	PopFrameContext()
 	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
+}
+
+func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]value.Value, *verror.Error) {
+	fields := []string{}
+	initializers := make(map[string][]value.Value)
+	seenFields := make(map[string]bool)
+
+	for i := 0; i < len(spec.Elements); i++ {
+		val := spec.Elements[i]
+
+		switch val.Type {
+		case value.TypeWord:
+			word, _ := val.AsWord()
+			if isReservedField(word) {
+				return nil, nil, verror.NewScriptError(
+					verror.ErrIDReservedField,
+					[3]string{word, "", ""},
+				)
+			}
+			if seenFields[word] {
+				return nil, nil, verror.NewScriptError(
+					verror.ErrIDObjectFieldDup,
+					[3]string{word, "", ""},
+				)
+			}
+			fields = append(fields, word)
+			seenFields[word] = true
+			initializers[word] = []value.Value{value.NoneVal()}
+
+		case value.TypeSetWord:
+			word, _ := val.AsWord()
+			if isReservedField(word) {
+				return nil, nil, verror.NewScriptError(
+					verror.ErrIDReservedField,
+					[3]string{word, "", ""},
+				)
+			}
+			if seenFields[word] {
+				return nil, nil, verror.NewScriptError(
+					verror.ErrIDObjectFieldDup,
+					[3]string{word, "", ""},
+				)
+			}
+			fields = append(fields, word)
+			seenFields[word] = true
+
+			i++
+			if i >= len(spec.Elements) {
+				return nil, nil, verror.NewScriptError(
+					verror.ErrIDInvalidSyntax,
+					[3]string{nativeName, "set-word-without-value", word},
+				)
+			}
+
+			initVals := []value.Value{}
+			for i < len(spec.Elements) {
+				nextVal := spec.Elements[i]
+				if nextVal.Type == value.TypeSetWord {
+					i--
+					break
+				}
+				initVals = append(initVals, nextVal)
+				i++
+			}
+
+			if len(initVals) == 0 {
+				initVals = []value.Value{value.NoneVal()}
+			}
+			initializers[word] = initVals
+
+		default:
+			continue
+		}
+	}
+
+	return fields, initializers, nil
+}
+
+func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]value.Value) (value.Value, *verror.Error) {
+	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
+
+	frameIdx := mgr.RegisterFrame(objFrame)
+	mgr.MarkFrameCaptured(frameIdx)
+
+	mgr.PushFrameContext(objFrame)
+	defer mgr.PopFrameContext()
+
+	for _, field := range fields {
+		initVals := initializers[field]
+
+		evaled, err := mgr.Do_Blk(initVals)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+
+		objFrame.Bind(field, evaled)
+	}
+
+	obj := value.NewObject(frameIdx, fields, nil)
+	if prototype != nil {
+		obj.ParentProto = prototype
+		obj.Parent = prototype.FrameIndex // For backward compatibility
+		mgr.MarkFrameCaptured(prototype.FrameIndex)
+	}
+
+	return value.ObjectVal(obj), nil
+}
+
+func isReservedField(name string) bool {
+	switch strings.ToLower(name) {
+	case "parent", "spec":
+		return true
+	default:
+		return false
+	}
 }
 
 // Object implements the `object` native.
@@ -137,109 +256,18 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		)
 	}
 
-	// Parse spec to extract field names and initializers
-	fields := []string{}
-	initializers := make(map[string][]value.Value)
-	seenFields := make(map[string]bool)
+	fields, initializers, err := buildObjectSpec("object", spec)
+	if err != nil {
+		return value.NoneVal(), err
+	}
 
-	for i := 0; i < len(spec.Elements); i++ {
-		val := spec.Elements[i]
-
-		switch val.Type {
-		case value.TypeWord:
-			// Simple field declaration: field
-			word, _ := val.AsWord()
-			if seenFields[word] {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDObjectFieldDup,
-					[3]string{word, "", ""},
-				)
-			}
-			fields = append(fields, word)
-			seenFields[word] = true
-			initializers[word] = []value.Value{value.NoneVal()} // Default to none
-
-		case value.TypeSetWord:
-			// Field with initializer: field: value(s)
-			word, _ := val.AsWord() // SetWord AsWord returns the symbol
-			if seenFields[word] {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDObjectFieldDup,
-					[3]string{word, "", ""},
-				)
-			}
-			fields = append(fields, word)
-			seenFields[word] = true
-
-			// Collect initializer values until next SET-WORD
-			// (Plain words/blocks/etc are all part of the initializer expression)
-			i++
-			if i >= len(spec.Elements) {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDInvalidSyntax,
-					[3]string{"object", "set-word-without-value", word},
-				)
-			}
-
-			// Collect all values for this initializer until next SetWord or standalone Word
-			initVals := []value.Value{}
-			for i < len(spec.Elements) {
-				nextVal := spec.Elements[i]
-				// Stop at next SET-WORD (definite field boundary)
-				if nextVal.Type == value.TypeSetWord {
-					i-- // Back up so outer loop processes this
-					break
-				}
-				initVals = append(initVals, nextVal)
-				i++
-			}
-
-			if len(initVals) == 0 {
-				initVals = []value.Value{value.NoneVal()}
-			}
-			initializers[word] = initVals
-
-		default:
-			// Ignore other value types (could be refinements in future)
-			continue
-		}
-	} // Create object frame with parent set to current frame
+	// Create object frame with parent set to current frame
 	parentIdx := 0 // Global frame as parent
 	if provider, ok := eval.(frameProvider); ok {
 		parentIdx = provider.CurrentFrameIndex()
 	}
 
-	objFrame := frame.NewObjectFrame(parentIdx, fields, nil)
-
-	// Register frame and get its index
-	frameIdx := mgr.RegisterFrame(objFrame)
-
-	// Mark frame as captured so it persists after PopFrameContext
-	// Object frames must remain in frameStore for path traversal
-	mgr.MarkFrameCaptured(frameIdx)
-
-	// Push object frame as active context for initializer evaluation
-	mgr.PushFrameContext(objFrame)
-	defer mgr.PopFrameContext()
-
-	// Evaluate initializers in object context
-	for _, field := range fields {
-		initVals := initializers[field]
-
-		// Evaluate the initializer value(s)
-		evaled, err := mgr.Do_Blk(initVals)
-		if err != nil {
-			return value.NoneVal(), err
-		}
-
-		// Bind to object frame
-		objFrame.Bind(field, evaled)
-	}
-
-	// Create ObjectInstance wrapping the frame
-	obj := value.NewObject(frameIdx, fields, nil)
-
-	return value.ObjectVal(obj), nil
+	return instantiateObject(mgr, eval, parentIdx, nil, fields, initializers)
 }
 
 // Context implements the `context` native.
@@ -268,94 +296,99 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		)
 	}
 
-	// Parse spec (same as object)
-	fields := []string{}
-	initializers := make(map[string][]value.Value)
-	seenFields := make(map[string]bool)
-
-	for i := 0; i < len(spec.Elements); i++ {
-		val := spec.Elements[i]
-
-		switch val.Type {
-		case value.TypeWord:
-			word, _ := val.AsWord()
-			if seenFields[word] {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDObjectFieldDup,
-					[3]string{word, "", ""},
-				)
-			}
-			fields = append(fields, word)
-			seenFields[word] = true
-			initializers[word] = []value.Value{value.NoneVal()}
-
-		case value.TypeSetWord:
-			word, _ := val.AsWord()
-			if seenFields[word] {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDObjectFieldDup,
-					[3]string{word, "", ""},
-				)
-			}
-			fields = append(fields, word)
-			seenFields[word] = true
-
-			i++
-			if i >= len(spec.Elements) {
-				return value.NoneVal(), verror.NewScriptError(
-					verror.ErrIDInvalidSyntax,
-					[3]string{"context", "set-word-without-value", word},
-				)
-			}
-
-			// Collect all values for this initializer until next SetWord
-			initVals := []value.Value{}
-			for i < len(spec.Elements) {
-				nextVal := spec.Elements[i]
-				if nextVal.Type == value.TypeSetWord {
-					i--
-					break
-				}
-				initVals = append(initVals, nextVal)
-				i++
-			}
-
-			if len(initVals) == 0 {
-				initVals = []value.Value{value.NoneVal()}
-			}
-			initializers[word] = initVals
-
-		default:
-			continue
-		}
-	} // Create object frame with NO parent (-1 = isolated)
-	objFrame := frame.NewObjectFrame(-1, fields, nil)
-
-	// Register frame
-	frameIdx := mgr.RegisterFrame(objFrame)
-
-	// Mark frame as captured so it persists after PopFrameContext
-	// Object frames must remain in frameStore for path traversal
-	mgr.MarkFrameCaptured(frameIdx)
-
-	// Push object frame as active context
-	mgr.PushFrameContext(objFrame)
-	defer mgr.PopFrameContext()
-
-	// Evaluate initializers in isolated context
-	for _, field := range fields {
-		initVals := initializers[field]
-
-		evaled, err := mgr.Do_Blk(initVals)
-		if err != nil {
-			return value.NoneVal(), err
-		}
-
-		objFrame.Bind(field, evaled)
+	fields, initializers, err := buildObjectSpec("context", spec)
+	if err != nil {
+		return value.NoneVal(), err
 	}
 
-	// Create ObjectInstance
-	obj := value.NewObject(frameIdx, fields, nil)
+	return instantiateObject(mgr, eval, -1, nil, fields, initializers)
+}
 
-	return value.ObjectVal(obj), nil
+// Make implements the `make` native supporting object prototypes.
+//
+// Contract: make target spec
+// - When target is word "object!" create new base object (prototype = none)
+// - When target is object value (or word resolving to object), use it as prototype
+// - Spec must be block describing fields/initializers (same as object)
+func Make(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError("make", 2, len(args))
+	}
+
+	specVal := args[1]
+	if specVal.Type != value.TypeBlock {
+		return value.NoneVal(), typeError("make spec", "block", specVal)
+	}
+
+	specBlock, ok := specVal.AsBlock()
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError("make spec missing block payload", [3]string{})
+	}
+
+	mgr, ok := eval.(frameManager)
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError(
+			"internal-error",
+			[3]string{"make", "frame-manager-unavailable", ""},
+		)
+	}
+
+	fields, initializers, err := buildObjectSpec("make", specBlock)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+
+	var prototype *value.ObjectInstance
+	target := args[0]
+
+	// Handle datatype literal like object!
+	if target.Type == value.TypeDatatype {
+		dtName, _ := target.AsDatatype()
+		if strings.EqualFold(dtName, "object!") {
+			prototype = nil
+			goto instantiate
+		}
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"make", "object!", dtName},
+		)
+	}
+
+	// Evaluate target to get object prototype
+	for {
+		switch target.Type {
+		case value.TypeWord:
+			word, _ := target.AsWord()
+			evaluated, evalErr := eval.Do_Next(value.WordVal(word))
+			if evalErr != nil {
+				return value.NoneVal(), evalErr
+			}
+			target = evaluated
+			continue
+
+		case value.TypeGetWord:
+			symbol, _ := target.AsWord()
+			evaluated, evalErr := eval.Do_Next(value.GetWordVal(symbol))
+			if evalErr != nil {
+				return value.NoneVal(), evalErr
+			}
+			target = evaluated
+			continue
+
+		case value.TypeObject:
+			obj, _ := target.AsObject()
+			prototype = obj
+		default:
+			return value.NoneVal(), typeError("make target", "object", target)
+		}
+		break
+	}
+
+instantiate:
+	parentIdx := 0
+	if provider, ok := eval.(frameProvider); ok {
+		parentIdx = provider.CurrentFrameIndex()
+	}
+
+	return instantiateObject(mgr, eval, parentIdx, prototype, fields, initializers)
 }

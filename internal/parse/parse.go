@@ -592,6 +592,10 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 		case "none":
 			return value.NoneVal(), nil
 		default:
+			// Check if it's a datatype literal (ends with !)
+			if strings.HasSuffix(tok.val, "!") {
+				return value.DatatypeVal(tok.val), nil
+			}
 			return value.WordVal(tok.val), nil
 		}
 

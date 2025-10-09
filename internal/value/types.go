@@ -20,12 +20,13 @@ const (
 	TypeBlock                     // Series of values (deferred evaluation)
 	TypeParen                     // Series of values (immediate evaluation)
 	TypeFunction                  // Executable function (native or user-defined)
-	
+
 	// Feature 002: Deferred Language Capabilities
-	TypeDecimal                   // IEEE 754 decimal128 high-precision decimal
-	TypeObject                    // Object instance with frame-based fields
-	TypePort                      // I/O port abstraction (file, TCP, HTTP)
-	TypePath                      // Path expression (transient evaluation type)
+	TypeDecimal  // IEEE 754 decimal128 high-precision decimal
+	TypeObject   // Object instance with frame-based fields
+	TypePort     // I/O port abstraction (file, TCP, HTTP)
+	TypePath     // Path expression (transient evaluation type)
+	TypeDatatype // Datatype literal (e.g., object!, integer!)
 )
 
 // String returns the type name for debugging and error messages.
@@ -61,6 +62,8 @@ func (t ValueType) String() string {
 		return "port"
 	case TypePath:
 		return "path"
+	case TypeDatatype:
+		return "datatype"
 	default:
 		return "unknown"
 	}

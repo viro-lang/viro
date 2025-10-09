@@ -547,8 +547,8 @@ func TestParentPrototype(t *testing.T) {
 	}{
 		{
 			name: "inherit field from parent",
-			code: `base: object [x: 10 y: 20]
-			       derived: object [parent: base z: 30]
+			code: `base: make object! [x: 10 y: 20]
+			       derived: make base [z: 30]
 			       derived.x`,
 			expectType: value.TypeInteger,
 			expectStr:  "10",
@@ -556,8 +556,8 @@ func TestParentPrototype(t *testing.T) {
 		},
 		{
 			name: "override parent field",
-			code: `base: object [name: "Base"]
-			       derived: object [parent: base name: "Derived"]
+			code: `base: make object! [name: "Base"]
+			       derived: make base [name: "Derived"]
 			       derived.name`,
 			expectType: value.TypeString,
 			expectStr:  "Derived",
@@ -565,9 +565,9 @@ func TestParentPrototype(t *testing.T) {
 		},
 		{
 			name: "multi-level inheritance",
-			code: `level1: object [a: 1]
-			       level2: object [parent: level1 b: 2]
-			       level3: object [parent: level2 c: 3]
+			code: `level1: make object! [a: 1]
+			       level2: make level1 [b: 2]
+			       level3: make level2 [c: 3]
 			       level3.a`,
 			expectType: value.TypeInteger,
 			expectStr:  "1",
@@ -599,6 +599,42 @@ func TestParentPrototype(t *testing.T) {
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
+			}
+		})
+	}
+}
+
+func TestMakePrototypeErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		errorID string
+	}{
+		{
+			name:    "non-object target",
+			code:    "make 10 [x]",
+			errorID: verror.ErrIDTypeMismatch,
+		},
+		{
+			name:    "parent field forbidden",
+			code:    "make object! [parent: none]",
+			errorID: verror.ErrIDReservedField,
+		},
+		{
+			name:    "spec reserved field",
+			code:    "make object! [spec: 1]",
+			errorID: verror.ErrIDReservedField,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := evalObjectScript(tt.code)
+			if err == nil {
+				t.Fatalf("expected error but got none")
+			}
+			if err.ID != tt.errorID {
+				t.Fatalf("expected error id %s, got %s", tt.errorID, err.ID)
 			}
 		})
 	}

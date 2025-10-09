@@ -79,6 +79,7 @@ const (
 	ErrIDPathTypeMismatch = "path-type-mismatch"     // path applied to wrong type
 	ErrIDImmutableTarget  = "immutable-target"       // attempted assignment to literal
 	ErrIDObjectFieldDup   = "object-field-duplicate" // duplicate field in object spec
+	ErrIDReservedField    = "reserved-object-field"  // reserved field name used in object spec
 
 	// Math errors (400)
 	ErrIDDivByZero = "div-zero"

@@ -309,6 +309,10 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 		// Ports evaluate to themselves (handles)
 		result, err = val, nil
 
+	case value.TypeDatatype:
+		// Datatypes evaluate to themselves (literals like object!)
+		result, err = val, nil
+
 	case value.TypePath:
 		// Paths are evaluated by path evaluator (T091)
 		result, err = e.evalPath(val)
@@ -841,12 +845,20 @@ func (e *Evaluator) evalPath(val value.Value) (value.Value, *verror.Error) {
 
 			fieldVal, found := objFrame.Get(fieldName)
 			if !found {
-				// Check parent chain
-				if obj.Parent >= 0 {
-					parentFrame := e.getFrameByIndex(obj.Parent)
-					if parentFrame != nil {
-						fieldVal, found = parentFrame.Get(fieldName)
+				// Check parent prototype chain
+				currentProto := obj.ParentProto
+				for currentProto != nil && !found {
+					protoFrame := e.getFrameByIndex(currentProto.FrameIndex)
+					if protoFrame == nil {
+						break
 					}
+					fieldVal, found = protoFrame.Get(fieldName)
+					if found {
+						break
+					}
+
+					// Move to next prototype in chain
+					currentProto = currentProto.ParentProto
 				}
 
 				if !found {

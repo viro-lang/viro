@@ -6,14 +6,17 @@ import "fmt"
 //
 // Design per data-model.md:
 // - FrameIndex: index into frame registry/stack (reuses frame infrastructure)
-// - Parent: index of parent object frame (-1 if none) for prototype chain
+// - ParentProto: reference to parent prototype object (nil if none) for prototype chain
 // - Manifest: published field names and optional type hints
 //
 // Per FR-009: captures word/value pairs into dedicated frame with nested object support
 type ObjectInstance struct {
-	FrameIndex int            // Index into frame storage
-	Parent     int            // Parent object frame index (-1 = no parent)
-	Manifest   ObjectManifest // Field metadata
+	FrameIndex  int             // Index into frame storage
+	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
+	Manifest    ObjectManifest  // Field metadata
+
+	// Deprecated: Parent field kept for backward compatibility
+	Parent int // Parent object frame index (-1 = no parent)
 }
 
 // ObjectManifest describes the fields exposed by an object.
@@ -29,8 +32,9 @@ func NewObject(frameIndex int, words []string, types []ValueType) *ObjectInstanc
 		types = make([]ValueType, len(words))
 	}
 	return &ObjectInstance{
-		FrameIndex: frameIndex,
-		Parent:     -1, // No parent by default
+		FrameIndex:  frameIndex,
+		ParentProto: nil, // No parent by default
+		Parent:      -1,  // Deprecated field
 		Manifest: ObjectManifest{
 			Words: words,
 			Types: types,
