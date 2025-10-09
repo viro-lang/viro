@@ -34,7 +34,7 @@ Users can evaluate simple REBOL-style expressions in the REPL, including literal
 5. **Given** variable `x` is bound to `10`, **When** user enters `x`, **Then** system retrieves and displays `10`
 6. **Given** REPL is started, **When** user enters block `[1 + 2]`, **Then** system returns the block itself (deferred evaluation), displays `[1 + 2]`
 7. **Given** REPL is started, **When** user enters paren `(1 + 2)`, **Then** system evaluates contents immediately, displays `3`
-8. **Given** REPL is started, **When** user enters `3 + 4 * 2`, **Then** system evaluates with correct precedence (multiplication first) and displays `11` (not 14)
+8. **Given** REPL is started, **When** user enters `3 + 4 * 2`, **Then** system evaluates left-to-right and displays `14` (REBOL-style)
 9. **Given** user enters an undefined word, **When** evaluation occurs, **Then** system reports "no value" error with word name
 
 ---
@@ -198,7 +198,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 **Math Operations:**
 - **FR-026**: System MUST provide arithmetic operators: `+`, `-`, `*`, `/` for **integer arithmetic only** (Phase 1 scope - decimal/floating-point arithmetic deferred to Phase 2)
-- **FR-026a**: System MUST implement **traditional operator precedence** (not REBOL's left-to-right): multiplication/division before addition/subtraction, comparisons before equality, logical AND before OR. Example: `3 + 4 * 2` must evaluate to `11` (not 14). See contracts/math.md for complete precedence table.
+- **FR-026a**: System MUST implement **left-to-right evaluation** (REBOL-style, no operator precedence): operators are evaluated in the order they appear. Example: `3 + 4 * 2` must evaluate to `14` (not 11). Parentheses control evaluation order: `3 + (4 * 2)` evaluates to `11`. See contracts/math.md for details.
 - **FR-027**: System MUST provide comparison operators: `<`, `>`, `<=`, `>=`, `=`, `<>` (not equal) - **integer operands only in Phase 1**
 - **FR-028**: System MUST provide logic operators: `and`, `or`, `not`
 

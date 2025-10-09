@@ -6,43 +6,35 @@
 
 ---
 
-## Operator Precedence
+## Evaluation Order
 
-**Critical Note**: Unlike REBOL's strict left-to-right evaluation, Viro implements **traditional operator precedence** to match user expectations from mainstream languages (C, JavaScript, Python, etc.).
+**Critical Note**: Viro implements **left-to-right evaluation** matching REBOL's evaluation model. There is **no operator precedence**.
 
-**Precedence Levels** (highest to lowest):
+**Evaluation Model**:
 
-| Level | Operators | Associativity | Description |
-|-------|-----------|---------------|-------------|
-| 1 | `not` | Right | Logical negation (unary) |
-| 2 | `*` `/` | Left | Multiplication, division |
-| 3 | `+` `-` | Left | Addition, subtraction |
-| 4 | `<` `>` `<=` `>=` | Left | Comparison |
-| 5 | `=` `<>` | Left | Equality, inequality |
-| 6 | `and` | Left | Logical AND |
-| 7 | `or` | Left | Logical OR |
+Operators are evaluated in the order they appear, from left to right. Each operator consumes its two operands and produces a result, which becomes the left operand for the next operator.
 
 **Examples**:
 ```viro
-3 + 4 * 2        ; → 3 + (4 * 2) = 11 (not 14)
-2 + 3 * 4        ; → 2 + (3 * 4) = 14 (not 20)
-10 - 4 / 2       ; → 10 - (4 / 2) = 8 (not 3)
-5 * 2 + 3        ; → (5 * 2) + 3 = 13
-1 + 2 < 4        ; → (1 + 2) < 4 = true
-true or false and false  ; → true or (false and false) = true
-not true and false       ; → (not true) and false = false
+3 + 4 * 2        ; → ((3 + 4) * 2) = (7 * 2) = 14
+2 + 3 * 4        ; → ((2 + 3) * 4) = (5 * 4) = 20
+10 - 4 / 2       ; → ((10 - 4) / 2) = (6 / 2) = 3
+5 * 2 + 3        ; → ((5 * 2) + 3) = (10 + 3) = 13
+1 + 2 < 4        ; → ((1 + 2) < 4) = (3 < 4) = true
+true or false and false  ; → ((true or false) and false) = (true and false) = false
 ```
 
-**Override with Parens**:
+**Control Order with Parens**:
 ```viro
-(3 + 4) * 2      ; → 7 * 2 = 14 (force addition first)
-10 / (2 + 3)     ; → 10 / 5 = 2 (force addition before division)
+3 + (4 * 2)      ; → 3 + 8 = 11 (evaluate paren first)
+10 / (2 + 3)     ; → 10 / 5 = 2 (evaluate paren first)
+(3 + 4) * 2      ; → 7 * 2 = 14 (same as without parens due to left-to-right)
 ```
 
 **Design Rationale**:
-- **Why deviate from REBOL?** REBOL's left-to-right evaluation is simple but counterintuitive for users from other languages. `3 + 4 * 2` yielding 14 violates mathematical conventions.
-- **Why this precedence table?** Matches C-family languages and mathematical notation. Multiplication/division bind tighter than addition/subtraction, comparisons before equality, logical AND before OR.
-- **Implementation note**: Parser must build AST respecting precedence, not simple left-to-right evaluation.
+- **Why follow REBOL?** REBOL's left-to-right evaluation is simpler and more consistent with homoiconic philosophy. All operations are treated uniformly.
+- **Why no precedence?** Eliminates need for complex precedence tables and parser logic. Users control order explicitly with parentheses when needed.
+- **Implementation note**: Parser transforms infix notation to prefix calls in left-to-right order. No precedence climbing needed.
 
 ---
 
