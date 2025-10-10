@@ -116,7 +116,7 @@ func TestREPL_HelpIntegration(t *testing.T) {
 			expectedInOut: nil,
 		},
 		{
-			name:          "words returns block and prints",
+			name:          "words returns block",
 			input:         "words",
 			checkOutput:   true,
 			shouldContain: "[", // Returns a block

@@ -70,9 +70,6 @@ func TestWords(t *testing.T) {
 	if !ok {
 		t.Fatal("Failed to convert to BlockValue")
 	}
-	if len(block.Elements) < 57 {
-		t.Errorf("Expected at least 57 functions, got %d", len(block.Elements))
-	}
 
 	for i, elem := range block.Elements {
 		if elem.Type != value.TypeWord {
@@ -91,6 +88,27 @@ func TestWords(t *testing.T) {
 		if !names[fn] {
 			t.Errorf("Expected function '%s' not found in words output", fn)
 		}
+	}
+}
+
+func TestWordsDirectCall(t *testing.T) {
+	// Test direct call to Words function
+	val, err := native.Words([]value.Value{})
+	if err != nil {
+		t.Fatalf("Words failed: %v", err)
+	}
+
+	if val.Type != value.TypeBlock {
+		t.Fatalf("Expected block!, got %v", val.Type)
+	}
+
+	block, ok := val.AsBlock()
+	if !ok {
+		t.Fatal("Failed to convert to BlockValue")
+	}
+
+	if len(block.Elements) < 57 {
+		t.Errorf("Expected at least 57 functions, got %d", len(block.Elements))
 	}
 }
 

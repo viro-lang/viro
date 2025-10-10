@@ -81,10 +81,6 @@ func Words(args []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), arityError("words", 0, len(args))
 	}
 
-	// Print the formatted words list
-	fmt.Print(FormatWordsList(Registry))
-
-	// Also return a block containing all words
 	names := make([]value.Value, 0, len(Registry))
 	for name := range Registry {
 		names = append(names, value.WordVal(name))

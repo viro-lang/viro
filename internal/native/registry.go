@@ -1099,11 +1099,11 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 			Category: "Help",
 			Summary:  "Lists all available native function names",
 			Description: `Returns a block containing all native function names as words.
-Also prints a formatted list to stdout, grouped by category for easier reading.
-Useful for quick reference and discovering available functionality.`,
+Does not print by default - use 'print words' to display the list.
+Useful for programmatic access to available functionality.`,
 			Parameters: []ParamDoc{},
 			Returns:    "[block!] A block containing all function names as words",
-			Examples:   []string{"words  ; display and return all function names", "fns: words\nlength? fns  ; count available functions"},
+			Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
 			SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
 		},
 	}
