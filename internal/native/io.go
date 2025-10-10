@@ -705,7 +705,7 @@ func serializeValue(val value.Value) string {
 // - For blocks: reduce elements (evaluate each) and join with spaces
 // - Writes result to stdout followed by newline
 // - Returns none
-func Print(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Print(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("print", 1, len(args))
 	}

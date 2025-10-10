@@ -14,7 +14,7 @@ import (
 // - First argument must be a lit-word (receives unevaluated word)
 // - Second argument is any value (already evaluated)
 // - Binds word in current frame and returns the value
-func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Set(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("set", 2, len(args))
 	}
@@ -39,7 +39,7 @@ func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // Contract: get 'word
 // - Argument must be a lit-word (receives unevaluated word symbol)
 // - Returns bound value from current frame chain
-func Get(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Get(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("get", 1, len(args))
 	}
@@ -239,7 +239,7 @@ func isReservedField(name string) bool {
 //     [word: value] for explicit initialization
 //   - Returns object! instance with dedicated frame
 //   - Evaluates initializers in object's context
-func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("object", 1, len(args))
 	}
@@ -279,7 +279,7 @@ func Object(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Alias for object but with isolated scope (no parent frame)
 // - spec: block describing fields and optional initial values
 // - Returns object! instance with isolated frame
-func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Context(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("context", 1, len(args))
 	}
@@ -313,7 +313,7 @@ func Context(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - When target is word "object!" create new base object (prototype = none)
 // - When target is object value (or word resolving to object), use it as prototype
 // - Spec must be block describing fields/initializers (same as object)
-func Make(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("make", 2, len(args))
 	}
@@ -403,7 +403,7 @@ instantiate:
 // - field: word! or string! representing field name
 // - --default: optional refinement providing fallback value when field missing
 // - Returns field value or default (or none! if no default provided)
-func Select(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) < 2 {
 		return value.NoneVal(), arityError("select", 2, len(args))
 	}
@@ -423,20 +423,10 @@ func Select(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		return value.NoneVal(), typeError("select field", "word or string", fieldVal)
 	}
 
-	// Check for --default refinement
-	defaultVal := value.NoneVal()
-	hasDefault := false
-	for i := 2; i < len(args); i++ {
-		if args[i].Type == value.TypeWord {
-			word, _ := args[i].AsWord()
-			if word == "--default" || word == "default" {
-				if i+1 < len(args) {
-					defaultVal = args[i+1]
-					hasDefault = true
-					i++ // Skip the value
-				}
-			}
-		}
+	// Check for --default refinement value
+	defaultVal, hasDefault := refValues["default"]
+	if !hasDefault {
+		defaultVal = value.NoneVal()
 	}
 
 	// Handle object selection
@@ -532,7 +522,7 @@ func Select(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - value: any value to assign to the field
 // - Updates field in object's frame after optional type validation
 // - Returns the assigned value
-func Put(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Put(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 3 {
 		return value.NoneVal(), arityError("put", 3, len(args))
 	}

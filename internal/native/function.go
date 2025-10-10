@@ -21,7 +21,7 @@ type frameProvider interface {
 // - Parameters block defines positional parameters and refinements
 // - Body block captures function code (stored as block value)
 // - Returns a user-defined function with captured lexical parent
-func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Fn(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("fn", 2, len(args))
 	}

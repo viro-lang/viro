@@ -51,7 +51,7 @@ func init() {
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Add(args)
 			if err == nil {
 				return result, nil
@@ -82,7 +82,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Subtract(args)
 			if err == nil {
 				return result, nil
@@ -113,7 +113,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Multiply(args)
 			if err == nil {
 				return result, nil
@@ -144,7 +144,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Divide(args)
 			if err == nil {
 				return result, nil
@@ -176,7 +176,7 @@ Raises an error if dividing by zero.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := LessThan(args)
 			if err == nil {
 				return result, nil
@@ -206,7 +206,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := GreaterThan(args)
 			if err == nil {
 				return result, nil
@@ -236,7 +236,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := LessOrEqual(args)
 			if err == nil {
 				return result, nil
@@ -266,7 +266,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := GreaterOrEqual(args)
 			if err == nil {
 				return result, nil
@@ -296,7 +296,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Equal(args)
 			if err == nil {
 				return result, nil
@@ -326,7 +326,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values are equ
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := NotEqual(args)
 			if err == nil {
 				return result, nil
@@ -357,7 +357,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values differ.
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := And(args)
 			if err == nil {
 				return result, nil
@@ -387,7 +387,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Or(args)
 			if err == nil {
 				return result, nil
@@ -416,7 +416,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Not(args)
 			if err == nil {
 				return result, nil
@@ -465,7 +465,7 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 		Registry[name] = value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
@@ -743,11 +743,11 @@ Returns an integer representing the length of the series.`,
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			// We need to pass a native.Evaluator to Set, but we have value.Evaluator
 			// Create a reverse adapter that converts value.Evaluator back to native.Evaluator
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Set(args, reverseAdapter.unwrap())
+			result, err := Set(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -774,9 +774,9 @@ The word is not evaluated; the value is evaluated before assignment. Returns the
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Get(args, reverseAdapter.unwrap())
+			result, err := Get(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -816,9 +816,9 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Object(args, reverseAdapter.unwrap())
+			result, err := Object(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -845,9 +845,9 @@ Returns the newly created object.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Context(args, reverseAdapter.unwrap())
+			result, err := Context(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -875,9 +875,9 @@ and all word definitions become fields of the context.`,
 			value.NewParamSpec("parent", true), // evaluated
 			value.NewParamSpec("spec", false),  // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Make(args, reverseAdapter.unwrap())
+			result, err := Make(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -904,10 +904,11 @@ new or overriding field definitions. The new object shares the parent's fields b
 		[]value.ParamSpec{
 			value.NewParamSpec("target", true), // evaluated
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
+			value.NewRefinementSpec("default", true),
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Select(args, reverseAdapter.unwrap())
+			result, err := Select(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -944,9 +945,9 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
 			value.NewParamSpec("value", true),  // evaluated
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Put(args, reverseAdapter.unwrap())
+			result, err := Put(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -981,9 +982,9 @@ Returns the assigned value.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Print(args, reverseAdapter.unwrap())
+			result, err := Print(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1128,9 +1129,9 @@ Returns the port that became ready, or none if a timeout occurred.`,
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := When(args, reverseAdapter.unwrap())
+			result, err := When(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1159,9 +1160,9 @@ the result of the body block. If the condition is false, returns none. This is a
 			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
 			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := If(args, reverseAdapter.unwrap())
+			result, err := If(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1191,9 +1192,9 @@ This is a two-branch conditional (if-then-else).`,
 			value.NewParamSpec("count", true), // evaluated
 			value.NewParamSpec("body", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Loop(args, reverseAdapter.unwrap())
+			result, err := Loop(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1221,9 +1222,9 @@ The count must be a non-negative integer. Returns the result of the last iterati
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := While(args, reverseAdapter.unwrap())
+			result, err := While(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1253,9 +1254,9 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 			value.NewParamSpec("params", false), // NOT evaluated (block)
 			value.NewParamSpec("body", false),   // NOT evaluated (block)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Fn(args, reverseAdapter.unwrap())
+			result, err := Fn(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1284,7 +1285,7 @@ Returns a function value that can be called. Functions capture their defining co
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
 		},
-		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
 			result, err := Help(args)
 			if err == nil {
 				return result, nil
@@ -1331,9 +1332,14 @@ func Lookup(name string) (*value.FunctionValue, bool) {
 	return fn, ok
 }
 
-// Call invokes a native function (FunctionValue) with the given arguments and evaluator.
+// Call invokes a native function (FunctionValue) with the given arguments, refinements, and evaluator.
 // The evaluator is always passed to the native function (even if the function doesn't use it).
-func Call(fn *value.FunctionValue, args []value.Value, eval Evaluator) (value.Value, error) {
+//
+// Arguments:
+// - posArgs: positional arguments (already evaluated or raw according to ParamSpec.Eval)
+// - refValues: refinement values (map of refinement name to value)
+// - eval: evaluator for natives that need to evaluate blocks or expressions
+func Call(fn *value.FunctionValue, posArgs []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, error) {
 	if fn.Type != value.FuncNative {
 		return value.NoneVal(), verror.NewInternalError(
 			"Call() expects native function", [3]string{})
@@ -1342,7 +1348,7 @@ func Call(fn *value.FunctionValue, args []value.Value, eval Evaluator) (value.Va
 	// Create an adapter to bridge native.Evaluator (returns *verror.Error)
 	// to value.Evaluator (returns error)
 	adapter := evaluatorAdapter{eval}
-	return fn.Native(args, adapter)
+	return fn.Native(posArgs, refValues, adapter)
 }
 
 // evaluatorAdapter wraps native.Evaluator to implement value.Evaluator.

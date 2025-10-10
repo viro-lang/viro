@@ -460,9 +460,8 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 
 	// Dispatch based on function type
 	if fn.Type == value.FuncNative {
-		// Native functions expect flat positional args array
-		// Call native - always pass evaluator (native ignores if not needed)
-		result, callErr := native.Call(fn, posArgs, e)
+		// Native functions receive both positional args and refinement values
+		result, callErr := native.Call(fn, posArgs, refValues, e)
 		if callErr != nil {
 			// Convert error interface back to *verror.Error for annotation
 			var vErr *verror.Error

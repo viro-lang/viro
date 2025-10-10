@@ -17,7 +17,7 @@ import (
 // - If falsy: returns none without evaluating block
 //
 // This is a special native that needs access to evaluator to evaluate blocks.
-func When(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func When(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("when", 2, len(args))
 	}
@@ -51,7 +51,7 @@ func When(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - If truthy: evaluates true-block and returns result
 // - If falsy: evaluates false-block and returns result
 // - Both blocks required (error if missing)
-func If(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func If(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 3 {
 		return value.NoneVal(), arityError("if", 3, len(args))
 	}
@@ -89,7 +89,7 @@ func If(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Count must be a non-negative integer
 // - Executes block count times
 // - Returns result of last iteration, or none if count is 0
-func Loop(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Loop(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("loop", 2, len(args))
 	}
@@ -140,7 +140,7 @@ func Loop(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // - Body must be a block
 // - Loops while condition evaluates to truthy
 // - Returns result of last iteration, or none if never executed
-func While(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func While(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("while", 2, len(args))
 	}
