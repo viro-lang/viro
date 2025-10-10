@@ -1,10 +1,20 @@
 // Package eval provides the core evaluation engine for Viro.
 //
-// Architecture:
+// Architecture (inspired by Lua implementation):
 // - Evaluator struct holds the stack and execution state
-// - Do_Next evaluates a single value
-// - Do_Blk evaluates a block of values in sequence
+// - Do_Next evaluates a single value (like eval.eval_expr in Lua)
+// - Do_Blk evaluates a block of values in sequence (like eval_block in Lua)
 // - Type-based dispatch routes evaluation by value type
+//
+// Function call handling (similar to Lua's handle_fn_call):
+// - collectFunctionArgsWithInfix: reads arguments with refinements between them
+// - readRefinements: reads refinements from current position (like read_refinements in Lua)
+// - isRefinement: checks if token is a refinement (like is_refinement in Lua)
+//
+// Key improvements from Lua port:
+// - Refinements can appear anywhere: fn arg1 --ref1 arg2 --ref2 arg3
+// - Infix operators supported for both native and user functions
+// - Simple loop through parameters (like Lua's while i <= #fn.args)
 //
 // Per Constitution Principle III: Explicit type dispatch, no polymorphism.
 // Package eval implements the core evaluation engine for the Viro interpreter.
@@ -418,60 +428,46 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 	startIdx := *idx
 	args := make([]value.Value, 0, info.Arity)
 
-	// If this is an infix operator AND we have a lastResult, use it as first argument
-	// Otherwise, treat as prefix function (collect all args normally)
+	// Infix handling: if info.Infix && lastResult is not none, use lastResult as first arg
+	// This matches Lua: if fn.infix then table.insert(args, last_value)
 	useInfix := info.Infix && lastResult.Type != value.TypeNone
+	argIndex := 0 // tracks which parameter we're collecting
+	tokensConsumed := 0
 
 	if useInfix {
 		args = append(args, lastResult)
-		// Collect remaining arguments (info.Arity - 1)
-		for j := 1; j < info.Arity; j++ {
-			tokenIdx := *idx + j
-			if tokenIdx >= len(vals) {
-				err := verror.NewScriptError(
-					verror.ErrIDArgCount,
-					[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
-				)
-				return value.NoneVal(), e.annotateError(err, vals, startIdx)
-			}
-			var arg value.Value
-			var argErr *verror.Error
-			if info.EvalArgs != nil && j < len(info.EvalArgs) && !info.EvalArgs[j] {
-				arg = vals[tokenIdx]
-			} else {
-				arg, argErr = e.Do_Next(vals[tokenIdx])
-				if argErr != nil {
-					return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
-				}
-			}
-			args = append(args, arg)
-		}
-		*idx += info.Arity - 1
-	} else {
-		// Prefix mode: collect all arguments normally
-		for j := 0; j < info.Arity; j++ {
-			tokenIdx := *idx + 1 + j
-			if tokenIdx >= len(vals) {
-				err := verror.NewScriptError(
-					verror.ErrIDArgCount,
-					[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
-				)
-				return value.NoneVal(), e.annotateError(err, vals, startIdx)
-			}
-			var arg value.Value
-			var argErr *verror.Error
-			if info.EvalArgs != nil && j < len(info.EvalArgs) && !info.EvalArgs[j] {
-				arg = vals[tokenIdx]
-			} else {
-				arg, argErr = e.Do_Next(vals[tokenIdx])
-				if argErr != nil {
-					return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
-				}
-			}
-			args = append(args, arg)
-		}
-		*idx += info.Arity
+		argIndex = 1
 	}
+
+	// Collect remaining arguments (simple loop like Lua)
+	for argIndex < info.Arity {
+		tokenIdx := *idx + 1 + tokensConsumed
+		if tokenIdx >= len(vals) {
+			err := verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
+			)
+			return value.NoneVal(), e.annotateError(err, vals, startIdx)
+		}
+
+		var arg value.Value
+		var argErr *verror.Error
+		// Check if this argument should be evaluated
+		if info.EvalArgs != nil && argIndex < len(info.EvalArgs) && !info.EvalArgs[argIndex] {
+			arg = vals[tokenIdx]
+		} else {
+			arg, argErr = e.Do_Next(vals[tokenIdx])
+			if argErr != nil {
+				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+			}
+		}
+		args = append(args, arg)
+		argIndex++
+		tokensConsumed++
+	}
+
+	// Advance index by number of tokens consumed from sequence
+	*idx += tokensConsumed
 
 	result, err := native.Call(info, args, e)
 	if err != nil {
@@ -536,19 +532,19 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 
 	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
-		return e.invokeFunctionFromSequence(fn, seq, idx)
+		return e.invokeFunctionFromSequence(fn, seq, idx, lastResult)
 	}
 
 	return e.Do_Next(val)
 }
 
-func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
 	name := functionDisplayName(fn)
 	e.pushCall(name)
 	defer e.popCall()
 
 	tokens := vals[*idx+1:]
-	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
+	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(fn, tokens, lastResult)
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, *idx)
 	}
@@ -587,9 +583,89 @@ func (e *Evaluator) invokeFunctionWithTokens(fn *value.FunctionValue, tokens []v
 	return result, nil
 }
 
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
+// isRefinement checks if a value is a refinement (word starting with "--")
+// Corresponds to is_refinement in Lua implementation
+func isRefinement(val value.Value) bool {
+	if val.Type != value.TypeWord {
+		return false
+	}
+	wordStr, ok := val.AsWord()
+	if !ok {
+		return false
+	}
+	return strings.HasPrefix(wordStr, "--")
+}
+
+// readRefinements reads refinements from current position in tokens.
+// Corresponds to read_refinements in Lua implementation.
+//
+// Returns:
+//   - newPos: position after consuming refinements
+//   - error: if unknown refinement or missing value for value-taking refinement
+//
+// Modifies refValues map in-place with found refinements.
+func (e *Evaluator) readRefinements(
+	fn *value.FunctionValue,
+	tokens []value.Value,
+	pos int,
+	refSpecs map[string]value.ParamSpec,
+	refValues map[string]value.Value,
+	refProvided map[string]bool,
+) (int, *verror.Error) {
+	for pos < len(tokens) && isRefinement(tokens[pos]) {
+		wordStr, _ := tokens[pos].AsWord()
+		refName := strings.TrimPrefix(wordStr, "--")
+
+		spec, exists := refSpecs[refName]
+		if !exists {
+			return pos, verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
+			)
+		}
+
+		if refProvided[refName] {
+			return pos, verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
+			)
+		}
+
+		if spec.TakesValue {
+			if pos+1 >= len(tokens) {
+				return pos, verror.NewScriptError(
+					verror.ErrIDInvalidOperation,
+					[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
+				)
+			}
+			// Evaluate the value for the refinement
+			arg, err := e.Do_Next(tokens[pos+1])
+			if err != nil {
+				return pos, err
+			}
+			refValues[refName] = arg
+			pos += 2
+		} else {
+			refValues[refName] = value.LogicVal(true)
+			pos++
+		}
+
+		refProvided[refName] = true
+	}
+
+	return pos, nil
+}
+
+// collectFunctionArgsWithInfix collects function arguments with optional infix support.
+// Corresponds to handle_fn_call in Lua implementation.
+//
+// If fn.Infix is true AND lastResult is not none, lastResult becomes the first argument.
+// This matches the Lua behavior: if fn.infix then table.insert(args, last_value)
+func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens []value.Value, lastResult value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
 	displayName := functionDisplayName(fn)
-	positional := make([]value.ParamSpec, 0, len(tokens))
+
+	// Separate positional params from refinements
+	positional := make([]value.ParamSpec, 0, len(fn.Params))
 	refSpecs := make(map[string]value.ParamSpec)
 	refValues := make(map[string]value.Value)
 	refProvided := make(map[string]bool)
@@ -597,6 +673,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 	for _, spec := range fn.Params {
 		if spec.Refinement {
 			refSpecs[spec.Name] = spec
+			// Initialize refinement values
 			if spec.TakesValue {
 				refValues[spec.Name] = value.NoneVal()
 			} else {
@@ -608,80 +685,44 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 	}
 
 	posArgs := make([]value.Value, len(positional))
-	consumed := 0
-	posIndex := 0
+	pos := 0
+	paramIndex := 0
 
-	// Helper function to read refinements at current position (like Lua's read_refinements)
-	readRefinements := func() error {
-		for consumed < len(tokens) {
-			token := tokens[consumed]
-			if token.Type != value.TypeWord {
-				break
-			}
-			wordName, _ := token.AsWord()
-			if !strings.HasPrefix(wordName, "--") {
-				break
-			}
-
-			refName := strings.TrimPrefix(wordName, "--")
-			spec, exists := refSpecs[refName]
-			if !exists {
-				return verror.NewScriptError(
-					verror.ErrIDInvalidOperation,
-					[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
-				)
-			}
-			if refProvided[refName] {
-				return verror.NewScriptError(
-					verror.ErrIDInvalidOperation,
-					[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
-				)
-			}
-
-			if spec.TakesValue {
-				if consumed+1 >= len(tokens) {
-					return verror.NewScriptError(
-						verror.ErrIDInvalidOperation,
-						[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
-					)
-				}
-				valueToken := tokens[consumed+1]
-				arg, err := e.Do_Next(valueToken)
-				if err != nil {
-					return err
-				}
-				refValues[refName] = arg
-				consumed += 2
-			} else {
-				refValues[refName] = value.LogicVal(true)
-				consumed++
-			}
-
-			refProvided[refName] = true
-		}
-		return nil
-	}
-
-	// Collect positional arguments, reading refinements before each one
-	for posIndex < len(positional) {
-		// Read refinements before this argument (like Lua does)
-		if err := readRefinements(); err != nil {
-			return nil, nil, 0, err.(*verror.Error)
-		}
-
-		// Check if we've run out of tokens
-		if consumed >= len(tokens) {
+	// Infix handling (like Lua: if fn.infix then add last_value as first arg)
+	useInfix := fn.Infix && lastResult.Type != value.TypeNone
+	if useInfix {
+		if len(positional) == 0 {
 			return nil, nil, 0, verror.NewScriptError(
 				verror.ErrIDArgCount,
-				[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(posIndex)},
+				[3]string{displayName, "0", "1 (infix requires at least one parameter)"},
+			)
+		}
+		posArgs[0] = lastResult
+		paramIndex = 1
+	}
+
+	// Main loop: iterate through positional parameters (like Lua's while i <= #fn.args)
+	for paramIndex < len(positional) {
+		paramSpec := positional[paramIndex]
+
+		// Read refinements BEFORE this argument (like Lua)
+		newPos, err := e.readRefinements(fn, tokens, pos, refSpecs, refValues, refProvided)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		pos = newPos
+
+		// Check if we've run out of tokens
+		if pos >= len(tokens) {
+			return nil, nil, 0, verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
 			)
 		}
 
-		// Read the positional argument
-		token := tokens[consumed]
-		paramSpec := positional[posIndex]
+		// Read the argument (eval or raw, based on paramSpec.Eval)
+		token := tokens[pos]
 		var arg value.Value
-		var err *verror.Error
 		if paramSpec.Eval {
 			arg, err = e.Do_Next(token)
 			if err != nil {
@@ -690,17 +731,25 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 		} else {
 			arg = token
 		}
-		posArgs[posIndex] = arg
-		posIndex++
-		consumed++
+
+		posArgs[paramIndex] = arg
+		paramIndex++
+		pos++
 	}
 
-	// Read remaining refinements after all positional arguments (like Lua does)
-	if err := readRefinements(); err != nil {
-		return nil, nil, 0, err.(*verror.Error)
+	// Read remaining refinements AFTER all arguments (like Lua)
+	newPos, err := e.readRefinements(fn, tokens, pos, refSpecs, refValues, refProvided)
+	if err != nil {
+		return nil, nil, 0, err
 	}
+	pos = newPos
 
-	return posArgs, refValues, consumed, nil
+	return posArgs, refValues, pos, nil
+}
+
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
+	// Delegate to the infix-aware version with none as lastResult
+	return e.collectFunctionArgsWithInfix(fn, tokens, value.NoneVal())
 }
 
 func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {

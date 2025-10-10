@@ -49,6 +49,7 @@ type FunctionValue struct {
 	Body   *BlockValue                                         // function body (nil for natives)
 	Native func(args []Value, eval interface{}) (Value, error) // native implementation (nil for user functions)
 	Parent int                                                 // parent frame index for closures (-1 if none)
+	Infix  bool                                                // true if function can be used as infix operator
 }
 
 // NewNativeFunction creates a native (built-in) function.
