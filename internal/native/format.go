@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // FormatHelp formats NativeDoc for display in the REPL.
@@ -86,12 +88,12 @@ func FormatHelp(funcName string, doc *NativeDoc) string {
 }
 
 // FormatCategoryList formats a list of all categories with function counts.
-func FormatCategoryList(registry map[string]*NativeInfo) string {
+func FormatCategoryList(registry map[string]*value.FunctionValue) string {
 	// Count functions per category
 	categoryCount := make(map[string]int)
-	for _, info := range registry {
-		if info.Doc != nil && info.Doc.Category != "" {
-			categoryCount[info.Doc.Category]++
+	for _, fn := range registry {
+		if fn.Doc != nil && fn.Doc.Category != "" {
+			categoryCount[fn.Doc.Category]++
 		}
 	}
 
@@ -119,7 +121,7 @@ func FormatCategoryList(registry map[string]*NativeInfo) string {
 }
 
 // FormatFunctionList formats a list of functions in a specific category.
-func FormatFunctionList(category string, registry map[string]*NativeInfo) string {
+func FormatFunctionList(category string, registry map[string]*value.FunctionValue) string {
 	// Collect functions in this category
 	type funcInfo struct {
 		name    string
@@ -127,11 +129,11 @@ func FormatFunctionList(category string, registry map[string]*NativeInfo) string
 	}
 	functions := make([]funcInfo, 0)
 
-	for name, info := range registry {
-		if info.Doc != nil && strings.EqualFold(info.Doc.Category, category) {
+	for name, fn := range registry {
+		if fn.Doc != nil && strings.EqualFold(fn.Doc.Category, category) {
 			functions = append(functions, funcInfo{
 				name:    name,
-				summary: info.Doc.Summary,
+				summary: fn.Doc.Summary,
 			})
 		}
 	}
@@ -168,7 +170,7 @@ func FormatFunctionList(category string, registry map[string]*NativeInfo) string
 }
 
 // FormatWordsList formats a flat list of all function names.
-func FormatWordsList(registry map[string]*NativeInfo) string {
+func FormatWordsList(registry map[string]*value.FunctionValue) string {
 	// Collect all function names
 	names := make([]string, 0, len(registry))
 	for name := range registry {
@@ -188,7 +190,7 @@ func FormatWordsList(registry map[string]*NativeInfo) string {
 	for _, cat := range categories {
 		catFuncs := make([]string, 0)
 		for _, name := range names {
-			if info := registry[name]; info.Doc != nil && info.Doc.Category == cat {
+			if fn := registry[name]; fn.Doc != nil && fn.Doc.Category == cat {
 				catFuncs = append(catFuncs, name)
 			}
 		}
@@ -206,7 +208,7 @@ func FormatWordsList(registry map[string]*NativeInfo) string {
 
 // FindSimilar finds function names similar to the input (for typo suggestions).
 // Uses simple string distance heuristics.
-func FindSimilar(word string, registry map[string]*NativeInfo, maxResults int) []string {
+func FindSimilar(word string, registry map[string]*value.FunctionValue, maxResults int) []string {
 	type match struct {
 		name     string
 		distance int

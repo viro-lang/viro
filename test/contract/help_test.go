@@ -113,30 +113,26 @@ func TestWordsDirectCall(t *testing.T) {
 }
 
 func TestHelpFunctionExists(t *testing.T) {
-	info, found := native.Lookup("?")
+	fn, found := native.LookupFunction("?")
 	if !found {
-		t.Fatal("? function not found in native.Registry")
+		t.Fatal("? function not found in native.FunctionRegistry")
 	}
 
-	if info.Func == nil {
-		t.Error("? function has nil Func")
+	if fn.Native == nil {
+		t.Error("? function has nil Native")
 	}
 
-	if info.NeedsEval {
-		t.Error("? function should have NeedsEval=false (to receive unevaluated words)")
-	}
-
-	if info.Doc == nil {
+	if fn.Doc == nil {
 		t.Error("? function has no documentation")
 	}
 
-	if info.Doc.Category != "Help" {
-		t.Errorf("Expected category 'Help', got '%s'", info.Doc.Category)
+	if fn.Doc.Category != "Help" {
+		t.Errorf("Expected category 'Help', got '%s'", fn.Doc.Category)
 	}
 }
 
 func TestHelpFormatterOutput(t *testing.T) {
-	output := native.FormatCategoryList(native.Registry)
+	output := native.FormatCategoryList(native.FunctionRegistry)
 
 	if !strings.Contains(output, "Available categories") {
 		t.Error("FormatCategoryList missing 'Available categories' header")
@@ -152,12 +148,12 @@ func TestHelpFormatterOutput(t *testing.T) {
 }
 
 func TestHelpFunctionDetail(t *testing.T) {
-	info, found := native.Lookup("+")
+	fn, found := native.LookupFunction("+")
 	if !found {
 		t.Fatal("+ function not found")
 	}
 
-	output := native.FormatHelp("+", info.Doc)
+	output := native.FormatHelp("+", fn.Doc)
 
 	if !strings.Contains(output, "+") {
 		t.Error("FormatHelp missing function name")

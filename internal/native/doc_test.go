@@ -3,6 +3,8 @@ package native
 import (
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // TestNativeDoc_Validate tests the validation of NativeDoc structs
@@ -191,7 +193,7 @@ func TestNativeDoc_HasDoc(t *testing.T) {
 
 // TestGetCategories tests the GetCategories function
 func TestGetCategories(t *testing.T) {
-	registry := map[string]*NativeInfo{
+	registry := map[string]*value.FunctionValue{
 		"add": {
 			Doc: &NativeDoc{Category: "Math"},
 		},
@@ -232,7 +234,7 @@ func TestGetCategories(t *testing.T) {
 
 // TestGetFunctionsInCategory tests the GetFunctionsInCategory function
 func TestGetFunctionsInCategory(t *testing.T) {
-	registry := map[string]*NativeInfo{
+	registry := map[string]*value.FunctionValue{
 		"add": {
 			Doc: &NativeDoc{Category: "Math"},
 		},
@@ -304,13 +306,13 @@ func TestGetFunctionsInCategory(t *testing.T) {
 func TestCountDocumented(t *testing.T) {
 	tests := []struct {
 		name           string
-		registry       map[string]*NativeInfo
+		registry       map[string]*value.FunctionValue
 		wantDocumented int
 		wantTotal      int
 	}{
 		{
 			name: "all documented",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {Doc: &NativeDoc{Summary: "Doc 1"}},
 				"fn2": {Doc: &NativeDoc{Summary: "Doc 2"}},
 			},
@@ -319,7 +321,7 @@ func TestCountDocumented(t *testing.T) {
 		},
 		{
 			name: "none documented",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {Doc: nil},
 				"fn2": {Doc: nil},
 			},
@@ -328,7 +330,7 @@ func TestCountDocumented(t *testing.T) {
 		},
 		{
 			name: "partially documented",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {Doc: &NativeDoc{Summary: "Doc 1"}},
 				"fn2": {Doc: nil},
 				"fn3": {Doc: &NativeDoc{Summary: "Doc 3"}},
@@ -339,7 +341,7 @@ func TestCountDocumented(t *testing.T) {
 		},
 		{
 			name:           "empty registry",
-			registry:       map[string]*NativeInfo{},
+			registry:       map[string]*value.FunctionValue{},
 			wantDocumented: 0,
 			wantTotal:      0,
 		},
@@ -429,12 +431,12 @@ func TestNewDocTemplate(t *testing.T) {
 func TestValidateRegistry(t *testing.T) {
 	tests := []struct {
 		name         string
-		registry     map[string]*NativeInfo
+		registry     map[string]*value.FunctionValue
 		wantErrorCnt int
 	}{
 		{
 			name: "all valid",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {
 					Doc: &NativeDoc{
 						Category:    "Test",
@@ -458,7 +460,7 @@ func TestValidateRegistry(t *testing.T) {
 		},
 		{
 			name: "some invalid",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {
 					Doc: &NativeDoc{
 						Category:    "Test",
@@ -491,7 +493,7 @@ func TestValidateRegistry(t *testing.T) {
 		},
 		{
 			name: "undocumented functions ignored",
-			registry: map[string]*NativeInfo{
+			registry: map[string]*value.FunctionValue{
 				"fn1": {Doc: nil},
 				"fn2": {Doc: nil},
 			},

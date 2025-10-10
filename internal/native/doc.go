@@ -1,6 +1,10 @@
 package native
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/value"
+)
 
 // ...istniejący kod...
 
@@ -9,11 +13,11 @@ import "fmt"
 // ...istniejący kod...
 
 // GetCategories returns a list of all unique categories from a registry.
-func GetCategories(registry map[string]*NativeInfo) []string {
+func GetCategories(registry map[string]*value.FunctionValue) []string {
 	categorySet := make(map[string]bool)
-	for _, info := range registry {
-		if info.Doc != nil && info.Doc.Category != "" {
-			categorySet[info.Doc.Category] = true
+	for _, fn := range registry {
+		if fn.Doc != nil && fn.Doc.Category != "" {
+			categorySet[fn.Doc.Category] = true
 		}
 	}
 
@@ -25,10 +29,10 @@ func GetCategories(registry map[string]*NativeInfo) []string {
 }
 
 // GetFunctionsInCategory returns all function names in a given category.
-func GetFunctionsInCategory(registry map[string]*NativeInfo, category string) []string {
+func GetFunctionsInCategory(registry map[string]*value.FunctionValue, category string) []string {
 	functions := make([]string, 0)
-	for name, info := range registry {
-		if info.Doc != nil && info.Doc.Category == category {
+	for name, fn := range registry {
+		if fn.Doc != nil && fn.Doc.Category == category {
 			functions = append(functions, name)
 		}
 	}
@@ -36,10 +40,10 @@ func GetFunctionsInCategory(registry map[string]*NativeInfo, category string) []
 }
 
 // CountDocumented returns the number of documented vs total native functions.
-func CountDocumented(registry map[string]*NativeInfo) (documented, total int) {
+func CountDocumented(registry map[string]*value.FunctionValue) (documented, total int) {
 	total = len(registry)
-	for _, info := range registry {
-		if info.Doc != nil && info.Doc.HasDoc() {
+	for _, fn := range registry {
+		if fn.Doc != nil && fn.Doc.HasDoc() {
 			documented++
 		}
 	}
@@ -75,11 +79,11 @@ func NewDocTemplate(funcName, category string, paramCount int) *NativeDoc {
 
 // ValidateRegistry checks all documentation in the registry and returns
 // a list of validation errors. Returns empty slice if all docs are valid.
-func ValidateRegistry(registry map[string]*NativeInfo) []string {
+func ValidateRegistry(registry map[string]*value.FunctionValue) []string {
 	errors := make([]string, 0)
-	for name, info := range registry {
-		if info.Doc != nil {
-			if err := info.Doc.Validate(name); err != "" {
+	for name, fn := range registry {
+		if fn.Doc != nil {
+			if err := fn.Doc.Validate(name); err != "" {
 				errors = append(errors, err)
 			}
 		}

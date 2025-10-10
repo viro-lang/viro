@@ -7,8 +7,8 @@ import (
 // TestAllNativesDocumented verifies that all native functions have documentation.
 func TestAllNativesDocumented(t *testing.T) {
 	undocumented := []string{}
-	for name, info := range Registry {
-		if info.Doc == nil || !info.Doc.HasDoc() {
+	for name, fn := range FunctionRegistry {
+		if fn.Doc == nil || !fn.Doc.HasDoc() {
 			undocumented = append(undocumented, name)
 		}
 	}
@@ -16,13 +16,13 @@ func TestAllNativesDocumented(t *testing.T) {
 	if len(undocumented) > 0 {
 		t.Errorf("Found %d undocumented native functions: %v", len(undocumented), undocumented)
 	} else {
-		t.Logf("All %d native functions are documented ✓", len(Registry))
+		t.Logf("All %d native functions are documented ✓", len(FunctionRegistry))
 	}
 }
 
 // TestDocumentationValid validates all documentation entries.
 func TestDocumentationValid(t *testing.T) {
-	errors := ValidateRegistry(Registry)
+	errors := ValidateRegistry(FunctionRegistry)
 	if len(errors) > 0 {
 		t.Errorf("Found %d documentation validation errors:", len(errors))
 		for _, err := range errors {
@@ -35,12 +35,12 @@ func TestDocumentationValid(t *testing.T) {
 
 // TestDocumentationCompleteness checks that each documented function has all required fields.
 func TestDocumentationCompleteness(t *testing.T) {
-	for name, info := range Registry {
-		if info.Doc == nil {
+	for name, fn := range FunctionRegistry {
+		if fn.Doc == nil {
 			continue // Skip undocumented (caught by other test)
 		}
 
-		doc := info.Doc
+		doc := fn.Doc
 
 		// Check required fields
 		if doc.Category == "" {
@@ -59,25 +59,30 @@ func TestDocumentationCompleteness(t *testing.T) {
 			t.Errorf("%s: missing examples", name)
 		}
 
-		// Check parameter count matches arity
-		// Arity represents the minimum required parameters.
-		// Optional parameters (refinements) are documented but don't count toward arity.
+		// Check parameter count matches function's parameter spec
 		// Special case: ? function has variable arity (0 or 1) with 1 optional param
 		if name == "?" {
 			if len(doc.Parameters) != 1 || !doc.Parameters[0].Optional {
 				t.Errorf("%s: should have exactly 1 optional parameter", name)
 			}
 		} else {
-			// Count required (non-optional) parameters
+			// Count required (non-optional) parameters in documentation
 			requiredCount := 0
 			for _, param := range doc.Parameters {
 				if !param.Optional {
 					requiredCount++
 				}
 			}
-			if requiredCount != info.Arity {
-				t.Errorf("%s: required parameter count (%d) doesn't match arity (%d)",
-					name, requiredCount, info.Arity)
+			// Count required (non-optional, non-refinement) parameters from function spec
+			funcRequiredCount := 0
+			for _, param := range fn.Params {
+				if !param.Optional && !param.Refinement {
+					funcRequiredCount++
+				}
+			}
+			if requiredCount != funcRequiredCount {
+				t.Errorf("%s: required parameter count in doc (%d) doesn't match function spec (%d)",
+					name, requiredCount, funcRequiredCount)
 			}
 		}
 
@@ -109,9 +114,9 @@ func TestDocumentationCategories(t *testing.T) {
 	}
 
 	invalidCategories := []string{}
-	for name, info := range Registry {
-		if info.Doc != nil && !validCategories[info.Doc.Category] {
-			invalidCategories = append(invalidCategories, name+":"+info.Doc.Category)
+	for name, fn := range FunctionRegistry {
+		if fn.Doc != nil && !validCategories[fn.Doc.Category] {
+			invalidCategories = append(invalidCategories, name+":"+fn.Doc.Category)
 		}
 	}
 
@@ -122,17 +127,17 @@ func TestDocumentationCategories(t *testing.T) {
 
 // TestDocumentationExamples checks that examples are present and non-empty.
 func TestDocumentationExamples(t *testing.T) {
-	for name, info := range Registry {
-		if info.Doc == nil {
+	for name, fn := range FunctionRegistry {
+		if fn.Doc == nil {
 			continue
 		}
 
-		if len(info.Doc.Examples) == 0 {
+		if len(fn.Doc.Examples) == 0 {
 			t.Errorf("%s: no examples provided", name)
 			continue
 		}
 
-		for i, example := range info.Doc.Examples {
+		for i, example := range fn.Doc.Examples {
 			if example == "" {
 				t.Errorf("%s: example %d is empty", name, i)
 			}
@@ -142,8 +147,8 @@ func TestDocumentationExamples(t *testing.T) {
 
 // TestDocumentationStats prints statistics about the documentation.
 func TestDocumentationStats(t *testing.T) {
-	documented, total := CountDocumented(Registry)
-	categories := GetCategories(Registry)
+	documented, total := CountDocumented(FunctionRegistry)
+	categories := GetCategories(FunctionRegistry)
 
 	t.Logf("Documentation Statistics:")
 	t.Logf("  Total functions: %d", total)
@@ -154,9 +159,9 @@ func TestDocumentationStats(t *testing.T) {
 
 	// Count functions per category
 	categoryCount := make(map[string]int)
-	for _, info := range Registry {
-		if info.Doc != nil {
-			categoryCount[info.Doc.Category]++
+	for _, fn := range FunctionRegistry {
+		if fn.Doc != nil {
+			categoryCount[fn.Doc.Category]++
 		}
 	}
 

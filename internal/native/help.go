@@ -25,7 +25,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 
 	// No arguments - show category list
 	if len(args) == 0 {
-		fmt.Print(FormatCategoryList(Registry))
+		fmt.Print(FormatCategoryList(FunctionRegistry))
 		return value.NoneVal(), nil
 	}
 
@@ -43,10 +43,10 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Try to find the function in the registry
-	if info, ok := Registry[lookupName]; ok {
+	if fn, ok := FunctionRegistry[lookupName]; ok {
 		// Found a function - show detailed help
-		if info.Doc != nil {
-			fmt.Print(FormatHelp(lookupName, info.Doc))
+		if fn.Doc != nil {
+			fmt.Print(FormatHelp(lookupName, fn.Doc))
 		} else {
 			fmt.Printf("\n%s: Native function (no documentation available)\n\n", lookupName)
 		}
@@ -54,7 +54,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Not a function - maybe it's a category?
-	output := FormatFunctionList(lookupName, Registry)
+	output := FormatFunctionList(lookupName, FunctionRegistry)
 	if !strings.Contains(output, "not found") {
 		// It's a valid category
 		fmt.Print(output)
@@ -62,7 +62,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Not found - suggest similar functions
-	similar := FindSimilar(lookupName, Registry, 5)
+	similar := FindSimilar(lookupName, FunctionRegistry, 5)
 	if len(similar) > 0 {
 		fmt.Printf("\n'%s' not found.\n", lookupName)
 		fmt.Printf("Did you mean: %s?\n\n", strings.Join(similar, ", "))
@@ -81,8 +81,8 @@ func Words(args []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), arityError("words", 0, len(args))
 	}
 
-	names := make([]value.Value, 0, len(Registry))
-	for name := range Registry {
+	names := make([]value.Value, 0, len(FunctionRegistry))
+	for name := range FunctionRegistry {
 		names = append(names, value.WordVal(name))
 	}
 
