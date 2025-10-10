@@ -41,7 +41,7 @@ func TestRegistrySimpleMath(t *testing.T) {
 		}
 
 		// Test invocation
-		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -64,7 +64,7 @@ func TestRegistrySimpleMath(t *testing.T) {
 			t.Error("Expected '-' to be infix")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(3)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(3)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -84,7 +84,7 @@ func TestRegistrySimpleMath(t *testing.T) {
 			t.Error("Expected '*' to be infix")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -105,7 +105,7 @@ func TestRegistrySimpleMath(t *testing.T) {
 		}
 
 		// Test integer division (10 / 2 = 5 as integer)
-		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(2)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(2)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -131,7 +131,7 @@ func TestRegistryComparison(t *testing.T) {
 			t.Error("Expected '<' to be infix")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(5)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -151,7 +151,7 @@ func TestRegistryComparison(t *testing.T) {
 			t.Fatal("Function '>' not found in Registry")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(5)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -168,7 +168,7 @@ func TestRegistryComparison(t *testing.T) {
 			t.Fatal("Function '=' not found in Registry")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(5), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(5), value.IntVal(5)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
@@ -185,7 +185,7 @@ func TestRegistryComparison(t *testing.T) {
 			t.Fatal("Function '<>' not found in Registry")
 		}
 
-		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, map[string]value.Value{}, mockEvaluator{})
 		if err != nil {
 			t.Fatalf("Call failed: %v", err)
 		}
