@@ -2,92 +2,11 @@ package native
 
 import "fmt"
 
-// NativeDoc contains documentation metadata for a native function.
-// It provides comprehensive information for the help system including
-// usage, parameters, examples, and cross-references.
-type NativeDoc struct {
-	// Category groups related functions (e.g., "Math", "Control", "Series", "Data", "Function", "I/O", "Ports", "Objects")
-	Category string
-
-	// Summary is a one-line description of what the function does
-	Summary string
-
-	// Description is a detailed multi-line explanation of the function's behavior,
-	// edge cases, and usage notes
-	Description string
-
-	// Parameters documents each parameter the function accepts
-	Parameters []ParamDoc
-
-	// Returns describes what the function returns
-	Returns string
-
-	// Examples contains usage examples with expected results
-	// Each example should be a valid viro expression or script snippet
-	Examples []string
-
-	// SeeAlso lists related function names for cross-referencing
-	SeeAlso []string
-
-	// Tags provides searchable keywords for function discovery
-	Tags []string
-}
-
-// ParamDoc documents a single parameter of a native function.
-type ParamDoc struct {
-	// Name is the parameter name as used in documentation
-	Name string
-
-	// Type describes expected type(s) - e.g., "integer!", "block!", "any-type!"
-	// Multiple types can be listed: "integer! decimal!"
-	Type string
-
-	// Description explains the parameter's purpose and usage
-	Description string
-
-	// Optional indicates whether this parameter can be omitted
-	Optional bool
-}
+// ...istniejący kod...
 
 // Validate checks if the documentation is complete and well-formed.
 // Returns an error message if validation fails, empty string if valid.
-func (d *NativeDoc) Validate(funcName string) string {
-	if d.Category == "" {
-		return funcName + ": missing category"
-	}
-	if d.Summary == "" {
-		return funcName + ": missing summary"
-	}
-	if d.Description == "" {
-		return funcName + ": missing description"
-	}
-	if d.Returns == "" {
-		return funcName + ": missing returns documentation"
-	}
-	if len(d.Examples) == 0 {
-		return funcName + ": missing examples"
-	}
-
-	// Validate each parameter
-	for i, param := range d.Parameters {
-		if param.Name == "" {
-			return funcName + ": parameter " + string(rune(i)) + " missing name"
-		}
-		if param.Type == "" {
-			return funcName + ": parameter '" + param.Name + "' missing type"
-		}
-		if param.Description == "" {
-			return funcName + ": parameter '" + param.Name + "' missing description"
-		}
-	}
-
-	return ""
-}
-
-// HasDoc returns true if the documentation is present and non-empty.
-func (d *NativeDoc) HasDoc() bool {
-	return d != nil && d.Summary != ""
-}
+// ...istniejący kod...
 
 // GetCategories returns a list of all unique categories from a registry.
 func GetCategories(registry map[string]*NativeInfo) []string {
