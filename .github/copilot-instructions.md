@@ -33,4 +33,5 @@ Go 1.21+ (requires generics and improved error handling): Follow standard conven
 - 001-implement-the-core: Added Go 1.21+ (requires generics and improved error handling) + Go standard library + github.com/chzyer/readline (REPL command history and multi-line input)
 
 <!-- MANUAL ADDITIONS START -->
+- Every code change must be covered by at least one automated test; the agent must verify the existence of a (new or updated) test covering the change before finalization.
 <!-- MANUAL ADDITIONS END -->
