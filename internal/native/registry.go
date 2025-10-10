@@ -46,6 +46,7 @@ type NativeInfo struct {
 	Arity     int                // Number of arguments expected
 	Infix     bool               // True if this function uses infix notation (consumes lastResult as first arg)
 	EvalArgs  []bool             // NEW: per-arg evaluation control (nil = all eval)
+	Doc       *NativeDoc         // Documentation metadata (nil for undocumented functions)
 }
 
 // Registry holds all registered native functions.
