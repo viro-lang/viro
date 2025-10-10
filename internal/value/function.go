@@ -1,6 +1,10 @@
 package value
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/docmodel"
+)
 
 // FunctionType distinguishes native (built-in) from user-defined functions.
 type FunctionType uint8
@@ -50,6 +54,7 @@ type FunctionValue struct {
 	Native func(args []Value, eval interface{}) (Value, error) // native implementation (nil for user functions)
 	Parent int                                                 // parent frame index for closures (-1 if none)
 	Infix  bool                                                // true if function can be used as infix operator
+	Doc    *docmodel.FuncDoc                                   // dokumentacja funkcji użytkownika (nil jeśli brak)
 }
 
 // NewNativeFunction creates a native (built-in) function.
@@ -65,7 +70,8 @@ func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, inter
 }
 
 // NewUserFunction creates a user-defined function.
-func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFrame int) *FunctionValue {
+// Dodano argument doc typu *docmodel.FuncDoc (może być nil)
+func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFrame int, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncUser,
 		Name:   name,
@@ -73,6 +79,7 @@ func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFr
 		Body:   body,
 		Native: nil,
 		Parent: parentFrame,
+		Doc:    doc,
 	}
 }
 

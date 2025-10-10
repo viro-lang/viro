@@ -62,7 +62,7 @@ func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		}
 	}
 
-	fnValue := value.NewUserFunction("", specs, bodyClone, parentIndex)
+	fnValue := value.NewUserFunction("", specs, bodyClone, parentIndex, nil)
 	return value.FuncVal(fnValue), nil
 }
 
