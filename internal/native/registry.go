@@ -20,6 +20,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -43,6 +45,7 @@ type NativeInfo struct {
 	NeedsEval bool               // True if this native needs evaluator access
 	Arity     int                // Number of arguments expected
 	Infix     bool               // True if this function uses infix notation (consumes lastResult as first arg)
+	EvalArgs  []bool             // NEW: per-arg evaluation control (nil = all eval)
 }
 
 // Registry holds all registered native functions.
@@ -118,13 +121,21 @@ func init() {
 	Registry["wait"] = &NativeInfo{Func: WaitNative, NeedsEval: false, Arity: 1}
 
 	// Register function native
-	Registry["fn"] = &NativeInfo{FuncEval: Fn, NeedsEval: true, Arity: 2}
+	Registry["fn"] = &NativeInfo{FuncEval: Fn, NeedsEval: true, Arity: 2, EvalArgs: []bool{false, false}}
 
 	// Register control flow natives (need evaluator)
-	Registry["when"] = &NativeInfo{FuncEval: When, NeedsEval: true, Arity: 2}
-	Registry["if"] = &NativeInfo{FuncEval: If, NeedsEval: true, Arity: 3}
-	Registry["loop"] = &NativeInfo{FuncEval: Loop, NeedsEval: true, Arity: 2}
-	Registry["while"] = &NativeInfo{FuncEval: While, NeedsEval: true, Arity: 2}
+	Registry["when"] = &NativeInfo{FuncEval: When, NeedsEval: true, Arity: 2, EvalArgs: []bool{true, false}}
+	Registry["if"] = &NativeInfo{FuncEval: If, NeedsEval: true, Arity: 3, EvalArgs: []bool{true, false, false}}
+	Registry["loop"] = &NativeInfo{FuncEval: Loop, NeedsEval: true, Arity: 2, EvalArgs: []bool{true, false}}
+	Registry["while"] = &NativeInfo{FuncEval: While, NeedsEval: true, Arity: 2, EvalArgs: []bool{true, false}}
+
+	// Validate EvalArgs length matches Arity
+	for name, info := range Registry {
+		if info.EvalArgs != nil && len(info.EvalArgs) != info.Arity {
+			panic(fmt.Sprintf("Native %s: EvalArgs length (%d) != Arity (%d)",
+				name, len(info.EvalArgs), info.Arity))
+		}
+	}
 }
 
 // Lookup finds a native function by name.

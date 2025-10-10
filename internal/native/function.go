@@ -36,7 +36,7 @@ func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("fn parameters missing block payload", [3]string{})
 	}
 
-	specs, err := parseParamSpecs(paramsBlock)
+	specs, err := ParseParamSpecs(paramsBlock)
 	if err != nil {
 		return value.NoneVal(), err
 	}
@@ -66,26 +66,49 @@ func Fn(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	return value.FuncVal(fnValue), nil
 }
 
-func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error) {
+func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error) {
 	specs := make([]value.ParamSpec, 0, len(block.Elements))
 	seen := make(map[string]struct{})
 
 	for i := 0; i < len(block.Elements); i++ {
 		elem := block.Elements[i]
-		if elem.Type != value.TypeWord {
+		eval := true
+		paramName := ""
+
+		// Obsługa lit-wordów
+		if elem.Type == value.TypeLitWord {
+			wordStr, ok := elem.AsWord()
+			if !ok {
+				return nil, invalidParamSpecError(elem.String())
+			}
+			eval = false
+			paramName = wordStr
+		} else if elem.Type == value.TypeWord {
+			wordStr, ok := elem.AsWord()
+			if !ok {
+				return nil, invalidParamSpecError(elem.String())
+			}
+			paramName = wordStr
+		} else {
 			return nil, invalidParamSpecError(elem.String())
 		}
 
-		symbol, _ := elem.AsWord()
-		if strings.HasPrefix(symbol, "--") {
-			name := strings.TrimPrefix(symbol, "--")
+		// Refinement
+		if strings.HasPrefix(paramName, "--") {
+			if !eval {
+				// Lit-word refinement: błąd
+				return nil, verror.NewScriptError(
+					verror.ErrIDInvalidOperation,
+					[3]string{"Refinements cannot be unevaluated (lit-word)", paramName, ""},
+				)
+			}
+			name := strings.TrimPrefix(paramName, "--")
 			if name == "" {
 				return nil, verror.NewScriptError(
 					verror.ErrIDInvalidOperation,
 					[3]string{"Invalid refinement name", "", ""},
 				)
 			}
-
 			if _, exists := seen[name]; exists {
 				return nil, duplicateParamError(name)
 			}
@@ -96,18 +119,18 @@ func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 				takesValue = true
 				i++ // Skip metadata block (type/docstring)
 			}
-
 			specs = append(specs, value.ParamSpec{
 				Name:       name,
 				Type:       value.TypeNone,
 				Optional:   true,
 				Refinement: true,
 				TakesValue: takesValue,
+				Eval:       true, // refinements zawsze ewaluowane
 			})
 			continue
 		}
 
-		name := symbol
+		name := paramName
 		if _, exists := seen[name]; exists {
 			return nil, duplicateParamError(name)
 		}
@@ -119,6 +142,7 @@ func parseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 			Optional:   false,
 			Refinement: false,
 			TakesValue: false,
+			Eval:       eval,
 		})
 	}
 

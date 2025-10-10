@@ -162,6 +162,7 @@ func evalGetWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Er
 }
 
 // evalLitWordDispatch handles lit-word evaluation
+// Lit-word ('word) evaluates to the corresponding word (word)
 func evalLitWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
 	return value.WordVal(val.Payload.(string)), nil
 }
@@ -286,7 +287,7 @@ func (e *Evaluator) PopFrameContext() {
 }
 
 // lookup searches for a word through the active frame chain.
-func (e *Evaluator) lookup(symbol string) (value.Value, bool) {
+func (e *Evaluator) Lookup(symbol string) (value.Value, bool) {
 	frame := e.currentFrame()
 	for frame != nil {
 		if val, ok := frame.Get(symbol); ok {
@@ -403,7 +404,7 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 				return e.callNativeFromSlice(wordStr, nativeInfo, block.Elements[1:])
 			}
 
-			if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+			if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 				fn, _ := resolved.AsFunction()
 				return e.invokeFunctionWithTokens(fn, block.Elements[1:])
 			}
@@ -433,9 +434,15 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 				)
 				return value.NoneVal(), e.annotateError(err, vals, startIdx)
 			}
-			arg, argErr := e.Do_Next(vals[tokenIdx])
-			if argErr != nil {
-				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+			var arg value.Value
+			var argErr *verror.Error
+			if info.EvalArgs != nil && j < len(info.EvalArgs) && !info.EvalArgs[j] {
+				arg = vals[tokenIdx]
+			} else {
+				arg, argErr = e.Do_Next(vals[tokenIdx])
+				if argErr != nil {
+					return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+				}
 			}
 			args = append(args, arg)
 		}
@@ -451,9 +458,15 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 				)
 				return value.NoneVal(), e.annotateError(err, vals, startIdx)
 			}
-			arg, argErr := e.Do_Next(vals[tokenIdx])
-			if argErr != nil {
-				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+			var arg value.Value
+			var argErr *verror.Error
+			if info.EvalArgs != nil && j < len(info.EvalArgs) && !info.EvalArgs[j] {
+				arg = vals[tokenIdx]
+			} else {
+				arg, argErr = e.Do_Next(vals[tokenIdx])
+				if argErr != nil {
+					return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+				}
 			}
 			args = append(args, arg)
 		}
@@ -479,9 +492,15 @@ func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, to
 
 	args := make([]value.Value, 0, info.Arity)
 	for k, token := range tokens {
-		arg, err := e.Do_Next(token)
-		if err != nil {
-			return value.NoneVal(), e.annotateError(err, context, k+1)
+		var arg value.Value
+		var err *verror.Error
+		if info.EvalArgs != nil && k < len(info.EvalArgs) && !info.EvalArgs[k] {
+			arg = token
+		} else {
+			arg, err = e.Do_Next(token)
+			if err != nil {
+				return value.NoneVal(), e.annotateError(err, context, k+1)
+			}
 		}
 		args = append(args, arg)
 	}
@@ -515,7 +534,7 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.callNative(wordStr, nativeInfo, seq, idx, lastResult)
 	}
 
-	if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
+	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
 		return e.invokeFunctionFromSequence(fn, seq, idx)
 	}
@@ -660,9 +679,16 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 
 		// Read the positional argument
 		token := tokens[consumed]
-		arg, err := e.Do_Next(token)
-		if err != nil {
-			return nil, nil, 0, err
+		paramSpec := positional[posIndex]
+		var arg value.Value
+		var err *verror.Error
+		if paramSpec.Eval {
+			arg, err = e.Do_Next(token)
+			if err != nil {
+				return nil, nil, 0, err
+			}
+		} else {
+			arg = token
 		}
 		posArgs[posIndex] = arg
 		posIndex++
@@ -732,13 +758,14 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 		return val, nil // Return the word itself, not evaluated yet
 	}
 
-	result, ok := e.lookup(wordStr)
+	result, ok := e.Lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 	}
 
-	// Evaluate the result (words evaluate to their values, then re-evaluate)
-	return e.Do_Next(result)
+	// Return the value without re-evaluation
+	// (Functions are called via evaluateWithFunctionCall, not here)
+	return result, nil
 }
 
 // evalSetWord handles set-word evaluation: binds next value to word.
@@ -808,7 +835,7 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
 	}
 
-	result, ok := e.lookup(wordStr)
+	result, ok := e.Lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 	}
@@ -853,7 +880,7 @@ func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool
 			return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
 		}
 
-		base, ok = e.lookup(wordStr)
+		base, ok = e.Lookup(wordStr)
 		if !ok {
 			return nil, verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 		}

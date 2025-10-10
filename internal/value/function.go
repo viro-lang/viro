@@ -23,6 +23,7 @@ type ParamSpec struct {
 	Optional   bool      // true if parameter can be omitted
 	Refinement bool      // true if this is a refinement (--flag or --option)
 	TakesValue bool      // for refinements: true if accepts value, false if boolean flag
+	Eval       bool      // NEW: if true, argument is evaluated; if false, passed raw
 }
 
 // FunctionValue represents an executable function.
