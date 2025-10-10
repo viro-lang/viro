@@ -592,55 +592,74 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 	consumed := 0
 	posIndex := 0
 
-	for consumed < len(tokens) {
-		token := tokens[consumed]
-
-		if token.Type == value.TypeWord {
-			wordName, _ := token.AsWord()
-			if strings.HasPrefix(wordName, "--") {
-				refName := strings.TrimPrefix(wordName, "--")
-				spec, exists := refSpecs[refName]
-				if !exists {
-					return nil, nil, 0, verror.NewScriptError(
-						verror.ErrIDInvalidOperation,
-						[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
-					)
-				}
-				if refProvided[refName] {
-					return nil, nil, 0, verror.NewScriptError(
-						verror.ErrIDInvalidOperation,
-						[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
-					)
-				}
-
-				if spec.TakesValue {
-					if consumed+1 >= len(tokens) {
-						return nil, nil, 0, verror.NewScriptError(
-							verror.ErrIDInvalidOperation,
-							[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
-						)
-					}
-					valueToken := tokens[consumed+1]
-					arg, err := e.Do_Next(valueToken)
-					if err != nil {
-						return nil, nil, 0, err
-					}
-					refValues[refName] = arg
-					consumed += 2
-				} else {
-					refValues[refName] = value.LogicVal(true)
-					consumed++
-				}
-
-				refProvided[refName] = true
-				continue
+	// Helper function to read refinements at current position (like Lua's read_refinements)
+	readRefinements := func() error {
+		for consumed < len(tokens) {
+			token := tokens[consumed]
+			if token.Type != value.TypeWord {
+				break
 			}
+			wordName, _ := token.AsWord()
+			if !strings.HasPrefix(wordName, "--") {
+				break
+			}
+
+			refName := strings.TrimPrefix(wordName, "--")
+			spec, exists := refSpecs[refName]
+			if !exists {
+				return verror.NewScriptError(
+					verror.ErrIDInvalidOperation,
+					[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
+				)
+			}
+			if refProvided[refName] {
+				return verror.NewScriptError(
+					verror.ErrIDInvalidOperation,
+					[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
+				)
+			}
+
+			if spec.TakesValue {
+				if consumed+1 >= len(tokens) {
+					return verror.NewScriptError(
+						verror.ErrIDInvalidOperation,
+						[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
+					)
+				}
+				valueToken := tokens[consumed+1]
+				arg, err := e.Do_Next(valueToken)
+				if err != nil {
+					return err
+				}
+				refValues[refName] = arg
+				consumed += 2
+			} else {
+				refValues[refName] = value.LogicVal(true)
+				consumed++
+			}
+
+			refProvided[refName] = true
+		}
+		return nil
+	}
+
+	// Collect positional arguments, reading refinements before each one
+	for posIndex < len(positional) {
+		// Read refinements before this argument (like Lua does)
+		if err := readRefinements(); err != nil {
+			return nil, nil, 0, err.(*verror.Error)
 		}
 
-		if posIndex >= len(positional) {
-			break
+		// Check if we've run out of tokens
+		if consumed >= len(tokens) {
+			return nil, nil, 0, verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(posIndex)},
+			)
 		}
 
+		// Read the positional argument
+		token := tokens[consumed]
 		arg, err := e.Do_Next(token)
 		if err != nil {
 			return nil, nil, 0, err
@@ -650,11 +669,9 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.
 		consumed++
 	}
 
-	if posIndex < len(positional) {
-		return nil, nil, 0, verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(posIndex)},
-		)
+	// Read remaining refinements after all positional arguments (like Lua does)
+	if err := readRefinements(); err != nil {
+		return nil, nil, 0, err.(*verror.Error)
 	}
 
 	return posArgs, refValues, consumed, nil
