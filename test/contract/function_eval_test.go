@@ -183,3 +183,30 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 		t.Errorf("Expected 'word!', got '%s'", result.String())
 	}
 }
+
+func TestUserFunctionNestedCalls(t *testing.T) {
+	code := `
+		inc: fn [i] [i + 1]
+		result: inc inc inc inc 1
+		result
+	`
+	e := eval.NewEvaluator()
+	vals, err := parse.Parse(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, evalErr := e.Do_Blk(vals)
+	if evalErr != nil {
+		t.Fatal(evalErr)
+	}
+	if result.Type != 2 { // TypeInteger
+		t.Fatalf("Expected integer result, got type %d", result.Type)
+	}
+	ival, ok := result.AsInteger()
+	if !ok {
+		t.Fatal("Failed to extract integer value")
+	}
+	if ival != 5 {
+		t.Errorf("Expected result 5, got %d", ival)
+	}
+}

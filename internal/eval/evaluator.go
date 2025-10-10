@@ -399,6 +399,35 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 	return lastResult, nil
 }
 
+// evalExpressionFromTokens evaluates a single expression starting at the given
+// position in the token slice and returns the resulting value along with the
+// next position to continue reading from. This mirrors the Lua evaluator's
+// eval_expr helper used when collecting function arguments and refinement
+// values.
+func (e *Evaluator) evalExpressionFromTokens(tokens []value.Value, pos int, lastResult value.Value) (value.Value, int, *verror.Error) {
+	if pos >= len(tokens) {
+		return value.NoneVal(), pos, verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
+	}
+
+	idx := pos
+	current := tokens[idx]
+
+	if current.Type == value.TypeSetWord {
+		result, err := e.evalSetWord(current, tokens, &idx)
+		if err != nil {
+			return value.NoneVal(), pos, err
+		}
+		return result, idx + 1, nil
+	}
+
+	result, err := e.evaluateWithFunctionCall(current, tokens, &idx, lastResult)
+	if err != nil {
+		return value.NoneVal(), pos, err
+	}
+
+	return result, idx + 1, nil
+}
+
 // evalParen evaluates the contents of a paren and returns the result.
 // Special handling: if paren starts with a word that's a native, treat it as a function call.
 func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
@@ -638,13 +667,13 @@ func (e *Evaluator) readRefinements(
 					[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
 				)
 			}
-			// Evaluate the value for the refinement
-			arg, err := e.Do_Next(tokens[pos+1])
+			// Evaluate the value for the refinement using expression-aware evaluation
+			arg, nextPos, err := e.evalExpressionFromTokens(tokens, pos+1, value.NoneVal())
 			if err != nil {
 				return pos, err
 			}
 			refValues[refName] = arg
-			pos += 2
+			pos = nextPos
 		} else {
 			refValues[refName] = value.LogicVal(true)
 			pos++
@@ -721,20 +750,22 @@ func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens
 		}
 
 		// Read the argument (eval or raw, based on paramSpec.Eval)
-		token := tokens[pos]
 		var arg value.Value
 		if paramSpec.Eval {
-			arg, err = e.Do_Next(token)
+			var nextPos int
+			arg, nextPos, err = e.evalExpressionFromTokens(tokens, pos, value.NoneVal())
 			if err != nil {
 				return nil, nil, 0, err
 			}
+			pos = nextPos
 		} else {
+			token := tokens[pos]
 			arg = token
+			pos++
 		}
 
 		posArgs[paramIndex] = arg
 		paramIndex++
-		pos++
 	}
 
 	// Read remaining refinements AFTER all arguments (like Lua)
