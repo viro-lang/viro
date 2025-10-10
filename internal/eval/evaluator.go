@@ -436,20 +436,6 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
 	}
 
-	if len(block.Elements) >= 1 && block.Elements[0].Type == value.TypeWord {
-		wordStr, ok := block.Elements[0].AsWord()
-		if ok {
-			if nativeInfo, found := native.Lookup(wordStr); found {
-				return e.callNativeFromSlice(wordStr, nativeInfo, block.Elements[1:])
-			}
-
-			if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
-				fn, _ := resolved.AsFunction()
-				return e.invokeFunctionWithTokens(fn, block.Elements[1:])
-			}
-		}
-	}
-
 	return e.Do_Blk(block.Elements)
 }
 
@@ -520,30 +506,6 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 	return result, nil
 }
 
-func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, tokens []value.Value) (value.Value, *verror.Error) {
-	context := append([]value.Value{value.WordVal(name)}, tokens...)
-
-	args, consumed, err := e.collectNativeArgs(context, 1, name, info, value.NoneVal())
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	if consumed != len(tokens) {
-		actualCount := info.Arity + (len(tokens) - consumed)
-		err := verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(actualCount)},
-		)
-		return value.NoneVal(), e.annotateError(err, context, 1+consumed)
-	}
-
-	result, callErr := native.Call(info, args, e)
-	if callErr != nil {
-		return value.NoneVal(), e.annotateError(callErr, context, 0)
-	}
-	return result, nil
-}
-
 // evaluateWithFunctionCall resolves a value that might represent a callable.
 //
 // If the value is a word referring to a native or user-defined function, this
@@ -586,32 +548,6 @@ func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []v
 	}
 
 	*idx += consumed
-	result, execErr := e.executeFunction(fn, posArgs, refValues)
-	if execErr != nil {
-		return value.NoneVal(), execErr
-	}
-	return result, nil
-}
-
-func (e *Evaluator) invokeFunctionWithTokens(fn *value.FunctionValue, tokens []value.Value) (value.Value, *verror.Error) {
-	name := functionDisplayName(fn)
-	context := append([]value.Value{value.WordVal(name)}, tokens...)
-	e.pushCall(name)
-	defer e.popCall()
-
-	posArgs, refValues, consumed, err := e.collectFunctionArgs(fn, tokens)
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, context, 0)
-	}
-
-	if consumed != len(tokens) {
-		err := verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{name, strconv.Itoa(len(posArgs)), strconv.Itoa(len(posArgs) + (len(tokens) - consumed))},
-		)
-		return value.NoneVal(), e.annotateError(err, context, 0)
-	}
-
 	result, execErr := e.executeFunction(fn, posArgs, refValues)
 	if execErr != nil {
 		return value.NoneVal(), execErr
@@ -783,11 +719,6 @@ func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens
 	pos = newPos
 
 	return posArgs, refValues, pos, nil
-}
-
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
-	// Delegate to the infix-aware version with none as lastResult
-	return e.collectFunctionArgsWithInfix(fn, tokens, value.NoneVal())
 }
 
 func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {

@@ -158,6 +158,16 @@ func TestParenEvaluation(t *testing.T) {
 			}),
 			expected: value.IntVal(42),
 		},
+		{
+			name: "paren evaluates like block with extra tokens",
+			input: value.ParenVal([]value.Value{
+				value.WordVal("+"),
+				value.IntVal(1),
+				value.IntVal(2),
+				value.IntVal(4),
+			}),
+			expected: value.IntVal(4),
+		},
 		// More complex tests require arithmetic implementation
 	}
 
