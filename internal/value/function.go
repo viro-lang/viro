@@ -6,6 +6,14 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/docmodel"
 )
 
+// Evaluator is a minimal interface for evaluating Viro code.
+// Used by native functions that need to evaluate arguments or blocks.
+// The actual implementation is in the eval package to avoid circular dependencies.
+type Evaluator interface {
+	Do_Blk(vals []Value) (Value, error)
+	Do_Next(val Value) (Value, error)
+}
+
 // FunctionType distinguishes native (built-in) from user-defined functions.
 type FunctionType uint8
 
@@ -30,6 +38,46 @@ type ParamSpec struct {
 	Eval       bool      // NEW: if true, argument is evaluated; if false, passed raw
 }
 
+// NewParamSpec creates a ParamSpec for a positional parameter.
+// This is a convenience function for native function registration.
+//
+// Parameters:
+//   - name: parameter name
+//   - eval: if true, argument is evaluated before passing to function;
+//     if false, argument is passed raw (unevaluated)
+//
+// The parameter is non-optional, accepts any type, and is not a refinement.
+func NewParamSpec(name string, eval bool) ParamSpec {
+	return ParamSpec{
+		Name:       name,
+		Type:       TypeNone, // any type by default
+		Optional:   false,
+		Refinement: false,
+		TakesValue: false,
+		Eval:       eval,
+	}
+}
+
+// NewRefinementSpec creates a ParamSpec for a refinement (flag or option).
+// This is a convenience function for native function registration.
+//
+// Parameters:
+//   - name: refinement name (without -- prefix)
+//   - takesValue: if true, refinement accepts a value (e.g., --title "text");
+//     if false, refinement is a boolean flag (e.g., --verbose)
+//
+// Refinements are always optional and their arguments are always evaluated.
+func NewRefinementSpec(name string, takesValue bool) ParamSpec {
+	return ParamSpec{
+		Name:       name,
+		Type:       TypeNone, // any type by default
+		Optional:   true,     // refinements are always optional
+		Refinement: true,
+		TakesValue: takesValue,
+		Eval:       true, // refinement values always evaluated
+	}
+}
+
 // FunctionValue represents an executable function.
 //
 // Native functions:
@@ -47,18 +95,18 @@ type ParamSpec struct {
 // - Local-by-default scoping: all words in body are local by default
 // - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	Type   FunctionType                                        // Native or User
-	Name   string                                              // function name (for error messages and debugging)
-	Params []ParamSpec                                         // formal parameter specifications
-	Body   *BlockValue                                         // function body (nil for natives)
-	Native func(args []Value, eval interface{}) (Value, error) // native implementation (nil for user functions)
-	Parent int                                                 // parent frame index for closures (-1 if none)
-	Infix  bool                                                // true if function can be used as infix operator
-	Doc    *docmodel.FuncDoc                                   // dokumentacja funkcji użytkownika (nil jeśli brak)
+	Type   FunctionType                                      // Native or User
+	Name   string                                            // function name (for error messages and debugging)
+	Params []ParamSpec                                       // formal parameter specifications
+	Body   *BlockValue                                       // function body (nil for natives)
+	Native func(args []Value, eval Evaluator) (Value, error) // native implementation (nil for user functions)
+	Parent int                                               // parent frame index for closures (-1 if none)
+	Infix  bool                                              // true if function can be used as infix operator
+	Doc    *docmodel.FuncDoc                                 // dokumentacja funkcji użytkownika (nil jeśli brak)
 }
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, interface{}) (Value, error)) *FunctionValue {
+func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, Evaluator) (Value, error)) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncNative,
 		Name:   name,
