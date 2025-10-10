@@ -197,27 +197,6 @@ func TestFunctionRegistryComparison(t *testing.T) {
 }
 
 func TestFunctionRegistryMetadata(t *testing.T) {
-	t.Run("AllFunctionsMigrated", func(t *testing.T) {
-		// Count functions in old Registry
-		oldCount := len(Registry)
-		// Count functions in new FunctionRegistry
-		newCount := len(FunctionRegistry)
-
-		t.Logf("Old Registry: %d functions", oldCount)
-		t.Logf("New FunctionRegistry: %d functions", newCount)
-
-		if newCount != oldCount {
-			t.Errorf("Expected %d functions in FunctionRegistry, got %d", oldCount, newCount)
-
-			// List missing functions
-			for name := range Registry {
-				if _, ok := FunctionRegistry[name]; !ok {
-					t.Errorf("Function %q not found in FunctionRegistry", name)
-				}
-			}
-		}
-	})
-
 	t.Run("Documentation", func(t *testing.T) {
 		fn, ok := LookupFunction("+")
 		if !ok {

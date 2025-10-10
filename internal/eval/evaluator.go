@@ -796,7 +796,7 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 
 	// Check if it's a native function - if so, return the word itself
 	// (it will be called when it appears in function position)
-	if _, ok := native.Lookup(wordStr); ok {
+	if _, ok := native.LookupFunction(wordStr); ok {
 		return val, nil // Return the word itself, not evaluated yet
 	}
 
