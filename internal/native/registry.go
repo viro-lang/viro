@@ -52,6 +52,10 @@ type NativeInfo struct {
 // Registry holds all registered native functions.
 var Registry = make(map[string]*NativeInfo)
 
+// FunctionRegistry holds native functions as FunctionValue instances (new unified representation).
+// This is the new registry that will eventually replace Registry after migration is complete.
+var FunctionRegistry = make(map[string]*value.FunctionValue)
+
 func init() {
 	// Register math natives (simple - don't need evaluator)
 	Registry["+"] = &NativeInfo{
@@ -1159,6 +1163,579 @@ Useful for programmatic access to available functionality.`,
 		},
 	}
 
+	// ===== NEW: Populate FunctionRegistry =====
+	// Group 1: Simple math operations (4 functions)
+	FunctionRegistry["+"] = value.NewNativeFunction(
+		"+",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Add(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn := FunctionRegistry["+"]
+	fn.Infix = true
+	fn.Doc = Registry["+"].Doc
+
+	FunctionRegistry["-"] = value.NewNativeFunction(
+		"-",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Subtract(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["-"]
+	fn.Infix = true
+	fn.Doc = Registry["-"].Doc
+
+	FunctionRegistry["*"] = value.NewNativeFunction(
+		"*",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Multiply(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["*"]
+	fn.Infix = true
+	fn.Doc = Registry["*"].Doc
+
+	FunctionRegistry["/"] = value.NewNativeFunction(
+		"/",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Divide(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["/"]
+	fn.Infix = true
+	fn.Doc = Registry["/"].Doc
+
+	// Group 2: Comparison operators (6 functions)
+	FunctionRegistry["<"] = value.NewNativeFunction(
+		"<",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := LessThan(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["<"]
+	fn.Infix = true
+	fn.Doc = Registry["<"].Doc
+
+	FunctionRegistry[">"] = value.NewNativeFunction(
+		">",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := GreaterThan(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry[">"]
+	fn.Infix = true
+	fn.Doc = Registry[">"].Doc
+
+	FunctionRegistry["<="] = value.NewNativeFunction(
+		"<=",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := LessOrEqual(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["<="]
+	fn.Infix = true
+	fn.Doc = Registry["<="].Doc
+
+	FunctionRegistry[">="] = value.NewNativeFunction(
+		">=",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := GreaterOrEqual(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry[">="]
+	fn.Infix = true
+	fn.Doc = Registry[">="].Doc
+
+	FunctionRegistry["="] = value.NewNativeFunction(
+		"=",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Equal(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["="]
+	fn.Infix = true
+	fn.Doc = Registry["="].Doc
+
+	FunctionRegistry["<>"] = value.NewNativeFunction(
+		"<>",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := NotEqual(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["<>"]
+	fn.Infix = true
+	fn.Doc = Registry["<>"].Doc
+
+	// Group 3: Logic operators (3 functions)
+	FunctionRegistry["and"] = value.NewNativeFunction(
+		"and",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := And(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["and"]
+	fn.Infix = true
+	fn.Doc = Registry["and"].Doc
+
+	FunctionRegistry["or"] = value.NewNativeFunction(
+		"or",
+		[]value.ParamSpec{
+			value.NewParamSpec("left", true),
+			value.NewParamSpec("right", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Or(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["or"]
+	fn.Infix = true
+	fn.Doc = Registry["or"].Doc
+
+	FunctionRegistry["not"] = value.NewNativeFunction(
+		"not",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Not(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["not"]
+	fn.Infix = false
+	fn.Doc = Registry["not"].Doc
+
+	// Group 4: Advanced math functions (16 functions)
+	// Helper function to wrap simple math functions
+	registerSimpleMathFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int) {
+		// Extract parameter names from existing documentation
+		params := make([]value.ParamSpec, arity)
+		oldInfo := Registry[name]
+
+		if oldInfo.Doc != nil && len(oldInfo.Doc.Parameters) == arity {
+			// Use parameter names from documentation
+			for i := 0; i < arity; i++ {
+				params[i] = value.NewParamSpec(oldInfo.Doc.Parameters[i].Name, true)
+			}
+		} else {
+			// Fallback to generic names if documentation is missing or mismatched
+			paramNames := []string{"value", "left", "right", "base", "exponent"}
+			for i := 0; i < arity; i++ {
+				if i < len(paramNames) {
+					params[i] = value.NewParamSpec(paramNames[i], true)
+				} else {
+					params[i] = value.NewParamSpec("arg", true)
+				}
+			}
+		}
+
+		FunctionRegistry[name] = value.NewNativeFunction(
+			name,
+			params,
+			func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+				result, err := impl(args)
+				if err == nil {
+					return result, nil
+				}
+				return result, err
+			},
+		)
+		fn := FunctionRegistry[name]
+		fn.Doc = Registry[name].Doc
+	}
+
+	registerSimpleMathFunc("decimal", DecimalConstructor, 1)
+	registerSimpleMathFunc("pow", Pow, 2)
+	registerSimpleMathFunc("sqrt", Sqrt, 1)
+	registerSimpleMathFunc("exp", Exp, 1)
+	registerSimpleMathFunc("log", Log, 1)
+	registerSimpleMathFunc("log-10", Log10, 1)
+	registerSimpleMathFunc("sin", Sin, 1)
+	registerSimpleMathFunc("cos", Cos, 1)
+	registerSimpleMathFunc("tan", Tan, 1)
+	registerSimpleMathFunc("asin", Asin, 1)
+	registerSimpleMathFunc("acos", Acos, 1)
+	registerSimpleMathFunc("atan", Atan, 1)
+	registerSimpleMathFunc("round", Round, 1)
+	registerSimpleMathFunc("ceil", Ceil, 1)
+	registerSimpleMathFunc("floor", Floor, 1)
+	registerSimpleMathFunc("truncate", Truncate, 1)
+
+	// Group 5: Series operations (5 functions)
+	registerSimpleMathFunc("first", First, 1)
+	registerSimpleMathFunc("last", Last, 1)
+	registerSimpleMathFunc("append", Append, 2)
+	registerSimpleMathFunc("insert", Insert, 2)
+	registerSimpleMathFunc("length?", LengthQ, 1)
+
+	// Group 6: Data operations (3 functions)
+	// set and get need evaluator, type? doesn't
+	FunctionRegistry["set"] = value.NewNativeFunction(
+		"set",
+		[]value.ParamSpec{
+			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
+			value.NewParamSpec("value", true), // evaluated
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			// We need to pass a native.Evaluator to Set, but we have value.Evaluator
+			// Create a reverse adapter that converts value.Evaluator back to native.Evaluator
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Set(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["set"]
+	fn.Doc = Registry["set"].Doc
+
+	FunctionRegistry["get"] = value.NewNativeFunction(
+		"get",
+		[]value.ParamSpec{
+			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Get(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["get"]
+	fn.Doc = Registry["get"].Doc
+
+	registerSimpleMathFunc("type?", TypeQ, 1)
+
+	// Group 7: Object operations (5 functions - all need evaluator)
+	FunctionRegistry["object"] = value.NewNativeFunction(
+		"object",
+		[]value.ParamSpec{
+			value.NewParamSpec("spec", false), // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Object(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["object"]
+	fn.Doc = Registry["object"].Doc
+
+	FunctionRegistry["context"] = value.NewNativeFunction(
+		"context",
+		[]value.ParamSpec{
+			value.NewParamSpec("spec", false), // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Context(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["context"]
+	fn.Doc = Registry["context"].Doc
+
+	FunctionRegistry["make"] = value.NewNativeFunction(
+		"make",
+		[]value.ParamSpec{
+			value.NewParamSpec("parent", true), // evaluated
+			value.NewParamSpec("spec", false),  // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Make(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["make"]
+	fn.Doc = Registry["make"].Doc
+
+	FunctionRegistry["select"] = value.NewNativeFunction(
+		"select",
+		[]value.ParamSpec{
+			value.NewParamSpec("target", true), // evaluated
+			value.NewParamSpec("field", false), // NOT evaluated (word/string)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Select(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["select"]
+	fn.Doc = Registry["select"].Doc
+
+	FunctionRegistry["put"] = value.NewNativeFunction(
+		"put",
+		[]value.ParamSpec{
+			value.NewParamSpec("object", true), // evaluated
+			value.NewParamSpec("field", false), // NOT evaluated (word/string)
+			value.NewParamSpec("value", true),  // evaluated
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Put(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["put"]
+	fn.Doc = Registry["put"].Doc
+
+	// Group 8: I/O operations (2 functions - print needs evaluator)
+	FunctionRegistry["print"] = value.NewNativeFunction(
+		"print",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Print(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["print"]
+	fn.Doc = Registry["print"].Doc
+
+	registerSimpleMathFunc("input", Input, 0)
+
+	// Group 9: Port operations (8 functions)
+	registerSimpleMathFunc("open", OpenNative, 1)
+	registerSimpleMathFunc("close", CloseNative, 1)
+	registerSimpleMathFunc("read", ReadNative, 1)
+	registerSimpleMathFunc("write", WriteNative, 2)
+	registerSimpleMathFunc("save", SaveNative, 2)
+	registerSimpleMathFunc("load", LoadNative, 1)
+	registerSimpleMathFunc("query", QueryNative, 1)
+	registerSimpleMathFunc("wait", WaitNative, 1)
+
+	// Group 10: Control flow (4 functions - all need evaluator)
+	FunctionRegistry["when"] = value.NewNativeFunction(
+		"when",
+		[]value.ParamSpec{
+			value.NewParamSpec("condition", true), // evaluated
+			value.NewParamSpec("body", false),     // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := When(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["when"]
+	fn.Doc = Registry["when"].Doc
+
+	FunctionRegistry["if"] = value.NewNativeFunction(
+		"if",
+		[]value.ParamSpec{
+			value.NewParamSpec("condition", true),     // evaluated
+			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
+			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := If(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["if"]
+	fn.Doc = Registry["if"].Doc
+
+	FunctionRegistry["loop"] = value.NewNativeFunction(
+		"loop",
+		[]value.ParamSpec{
+			value.NewParamSpec("count", true), // evaluated
+			value.NewParamSpec("body", false), // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Loop(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["loop"]
+	fn.Doc = Registry["loop"].Doc
+
+	FunctionRegistry["while"] = value.NewNativeFunction(
+		"while",
+		[]value.ParamSpec{
+			value.NewParamSpec("condition", true), // evaluated
+			value.NewParamSpec("body", false),     // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := While(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["while"]
+	fn.Doc = Registry["while"].Doc
+
+	// Group 11: Function creation (1 function - needs evaluator)
+	FunctionRegistry["fn"] = value.NewNativeFunction(
+		"fn",
+		[]value.ParamSpec{
+			value.NewParamSpec("params", false), // NOT evaluated (block)
+			value.NewParamSpec("body", false),   // NOT evaluated (block)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Fn(args, reverseAdapter)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["fn"]
+	fn.Doc = Registry["fn"].Doc
+
+	// Group 12: Help system (2 functions)
+	FunctionRegistry["?"] = value.NewNativeFunction(
+		"?",
+		[]value.ParamSpec{
+			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
+		},
+		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Help(args)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = FunctionRegistry["?"]
+	fn.Doc = Registry["?"].Doc
+
+	registerSimpleMathFunc("words", Words, 0)
+
 	// Validate EvalArgs length matches Arity
 	for name, info := range Registry {
 		if info.EvalArgs != nil && len(info.EvalArgs) != info.Arity {
@@ -1170,6 +1747,7 @@ Useful for programmatic access to available functionality.`,
 
 // Lookup finds a native function by name.
 // Returns the function info and true if found, nil and false otherwise.
+// DEPRECATED: Use LookupFunction for new code. This will be removed after migration.
 func Lookup(name string) (*NativeInfo, bool) {
 	info, ok := Registry[name]
 	return info, ok
@@ -1177,9 +1755,79 @@ func Lookup(name string) (*NativeInfo, bool) {
 
 // Call invokes a native function with the given arguments and evaluator.
 // Handles both simple natives and natives that need evaluator access.
+// DEPRECATED: Use CallFunction for new code. This will be removed after migration.
 func Call(info *NativeInfo, args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if info.NeedsEval {
 		return info.FuncEval(args, eval)
 	}
 	return info.Func(args)
+}
+
+// LookupFunction finds a native function by name in the new FunctionRegistry.
+// Returns the function value and true if found, nil and false otherwise.
+func LookupFunction(name string) (*value.FunctionValue, bool) {
+	fn, ok := FunctionRegistry[name]
+	return fn, ok
+}
+
+// CallFunction invokes a native function (FunctionValue) with the given arguments and evaluator.
+// The evaluator is always passed to the native function (even if the function doesn't use it).
+func CallFunction(fn *value.FunctionValue, args []value.Value, eval Evaluator) (value.Value, error) {
+	if fn.Type != value.FuncNative {
+		return value.NoneVal(), verror.NewInternalError(
+			"CallFunction() expects native function", [3]string{})
+	}
+
+	// Create an adapter to bridge native.Evaluator (returns *verror.Error)
+	// to value.Evaluator (returns error)
+	adapter := evaluatorAdapter{eval}
+	return fn.Native(args, adapter)
+}
+
+// evaluatorAdapter wraps native.Evaluator to implement value.Evaluator.
+// This bridges the difference in return types (*verror.Error vs error).
+type evaluatorAdapter struct {
+	eval Evaluator
+}
+
+func (a evaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, error) {
+	result, err := a.eval.Do_Blk(vals)
+	return result, err // *verror.Error implements error interface
+}
+
+func (a evaluatorAdapter) Do_Next(val value.Value) (value.Value, error) {
+	result, err := a.eval.Do_Next(val)
+	return result, err // *verror.Error implements error interface
+}
+
+// nativeEvaluatorAdapter wraps value.Evaluator to implement native.Evaluator.
+// This is the reverse of evaluatorAdapter - converts value.Evaluator (error) back to native.Evaluator (*verror.Error).
+type nativeEvaluatorAdapter struct {
+	eval value.Evaluator
+}
+
+func (a *nativeEvaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
+	result, err := a.eval.Do_Blk(vals)
+	if err == nil {
+		return result, nil
+	}
+	// Convert error to *verror.Error
+	if verr, ok := err.(*verror.Error); ok {
+		return result, verr
+	}
+	// If it's not a *verror.Error, wrap it
+	return value.NoneVal(), verror.NewInternalError(err.Error(), [3]string{})
+}
+
+func (a *nativeEvaluatorAdapter) Do_Next(val value.Value) (value.Value, *verror.Error) {
+	result, err := a.eval.Do_Next(val)
+	if err == nil {
+		return result, nil
+	}
+	// Convert error to *verror.Error
+	if verr, ok := err.(*verror.Error); ok {
+		return result, verr
+	}
+	// If it's not a *verror.Error, wrap it
+	return value.NoneVal(), verror.NewInternalError(err.Error(), [3]string{})
 }
