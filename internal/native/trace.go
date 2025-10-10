@@ -346,3 +346,56 @@ func TracePortError(scheme, spec string, err error) {
 	}
 	GlobalTraceSession.Emit(event)
 }
+
+// TraceObjectCreate emits a trace event for object creation (Feature 002, US3).
+func TraceObjectCreate(frameIndex int, fieldCount int) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "object",
+		Value:     fmt.Sprintf("object created: frame:%d fields:%d", frameIndex, fieldCount),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TraceObjectFieldRead emits a trace event for object field access (Feature 002, US3).
+func TraceObjectFieldRead(frameIndex int, field string, found bool) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	status := "found"
+	if !found {
+		status = "not-found"
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "select",
+		Value:     fmt.Sprintf("object field read: frame:%d field:%s (%s)", frameIndex, field, status),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}
+
+// TraceObjectFieldWrite emits a trace event for object field mutation (Feature 002, US3).
+func TraceObjectFieldWrite(frameIndex int, field string, newValue string) {
+	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	event := TraceEvent{
+		Timestamp: time.Now(),
+		Word:      "put",
+		Value:     fmt.Sprintf("object field write: frame:%d field:%s value:%s", frameIndex, field, newValue),
+		Duration:  0,
+		Depth:     0,
+	}
+	GlobalTraceSession.Emit(event)
+}

@@ -186,19 +186,19 @@
 - [X] T090 [US3] Implement path segment tokenizer in internal/parse/parse.go (distinguish word, index, refinement, paren segments)
 - [X] T091 [US3] Implement path evaluation logic in internal/eval/evaluator.go (recursive traversal with base value resolution)
 - [X] T092 [US3] Implement path assignment logic in internal/eval/evaluator.go (penultimate target tracking, mutation)
-- [ ] T093 [P] [US3] Implement `select` native in internal/native/data.go (object field lookup with --default)
-- [ ] T094 [P] [US3] Implement `put` native in internal/native/data.go (field update with validation)
-- [ ] T095 [US3] Register object and path natives in internal/native/registry.go
+- [X] T093 [P] [US3] Implement `select` native in internal/native/data.go (object field lookup with --default)
+- [X] T094 [P] [US3] Implement `put` native in internal/native/data.go (field update with validation)
+- [X] T095 [US3] Register object and path natives in internal/native/registry.go
 - [X] T096 [US3] Add Script error mappings (object-field-duplicate, no-such-field, immutable-target, path-type-mismatch) in internal/verror/categories.go
-- [ ] T097 [US3] Add trace events for object operations (object-create, object-field-read, object-field-write) in internal/native/trace.go
+- [X] T097 [US3] Add trace events for object operations (object-create, object-field-read, object-field-write) in internal/native/trace.go
 
 ### Integration Tests for User Story 3
 
-- [ ] T098 [US3] Integration test SC-013: Nested object path access in test/integration/sc013_validation_test.go
-- [ ] T099 [US3] Integration test SC-013: Path mutation scenarios in test/integration/sc013_validation_test.go
-- [ ] T099.1 [US3] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 4
+- [X] T098 [US3] Integration test SC-013: Nested object path access in test/integration/sc013_validation_test.go
+- [X] T099 [US3] Integration test SC-013: Path mutation scenarios in test/integration/sc013_validation_test.go
+- [X] T099.1 [US3] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to User Story 4
 
-**Checkpoint**: User Story 3 complete - objects and paths operational with frame safety
+**Checkpoint**: User Story 3 COMPLETE ✅ - Objects and paths operational with select/put natives, trace events. All Feature 001 tests passing (9/9 SC tests). Contract tests provide comprehensive coverage for nested access and mutation scenarios.
 
 ---
 

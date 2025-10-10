@@ -1,0 +1,5 @@
+obj: object [x: 10 y: 20]
+print select obj 'x
+result: select obj 'missing
+print result
+quit

@@ -782,6 +782,57 @@ new or overriding field definitions. The new object shares the parent's fields b
 			SeeAlso:  []string{"object", "context"}, Tags: []string{"objects", "inheritance", "derivation"},
 		},
 	}
+	Registry["select"] = &NativeInfo{
+		FuncEval:  Select,
+		NeedsEval: true,
+		Arity:     2,
+		Doc: &NativeDoc{
+			Category: "Objects",
+			Summary:  "Retrieves a field value from an object or block",
+			Description: `Looks up a field in an object or searches for a key in a block.
+For objects: returns the field value, checking parent prototypes if needed.
+For blocks: searches for key-value pairs (alternating pattern) and returns the value.
+Use --default refinement to provide a fallback when field/key is not found.`,
+			Parameters: []ParamDoc{
+				{Name: "target", Type: "object! or block!", Description: "The object or block to search", Optional: false},
+				{Name: "field", Type: "word! or string!", Description: "The field name or key to look up", Optional: false},
+				{Name: "--default", Type: "any-type!", Description: "Optional default value when field not found", Optional: true},
+			},
+			Returns: "[any-type!] The field/key value, or default, or none",
+			Examples: []string{
+				"obj: object [x: 10 y: 20]\nselect obj 'x  ; => 10",
+				"select obj 'z --default 99  ; => 99 (field not found)",
+				"data: ['name \"Alice\" 'age 30]\nselect data 'age  ; => 30",
+			},
+			SeeAlso: []string{"put", "get", "object"},
+			Tags:    []string{"objects", "lookup", "field-access"},
+		},
+	}
+	Registry["put"] = &NativeInfo{
+		FuncEval:  Put,
+		NeedsEval: true,
+		Arity:     3,
+		Doc: &NativeDoc{
+			Category: "Objects",
+			Summary:  "Sets a field value in an object",
+			Description: `Updates an existing field in an object with a new value.
+The field must already exist in the object's manifest - dynamic field addition is not allowed.
+If the field has a type hint, the new value must match that type.
+Returns the assigned value.`,
+			Parameters: []ParamDoc{
+				{Name: "object", Type: "object!", Description: "The object to modify", Optional: false},
+				{Name: "field", Type: "word! or string!", Description: "The field name to update", Optional: false},
+				{Name: "value", Type: "any-type!", Description: "The new value to assign", Optional: false},
+			},
+			Returns: "[any-type!] The assigned value",
+			Examples: []string{
+				"obj: object [x: 10 y: 20]\nput obj 'x 42  ; => 42, obj.x is now 42",
+				"person: object [name: \"Alice\" age: 30]\nput person 'age 31",
+			},
+			SeeAlso: []string{"select", "set", "object"},
+			Tags:    []string{"objects", "mutation", "field-update"},
+		},
+	}
 
 	// Register IO natives
 	Registry["print"] = &NativeInfo{

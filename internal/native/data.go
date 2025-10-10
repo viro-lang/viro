@@ -216,6 +216,9 @@ func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prot
 		mgr.MarkFrameCaptured(prototype.FrameIndex)
 	}
 
+	// Emit trace event for object creation (Feature 002, T097)
+	TraceObjectCreate(frameIdx, len(fields))
+
 	return value.ObjectVal(obj), nil
 }
 
@@ -391,4 +394,221 @@ instantiate:
 	}
 
 	return instantiateObject(mgr, eval, parentIdx, prototype, fields, initializers)
+}
+
+// Select implements the `select` native for object field lookup with default.
+//
+// Contract (Feature 002, FR-014): select object field --default value
+// - object: object! to query
+// - field: word! or string! representing field name
+// - --default: optional refinement providing fallback value when field missing
+// - Returns field value or default (or none! if no default provided)
+func Select(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+	if len(args) < 2 {
+		return value.NoneVal(), arityError("select", 2, len(args))
+	}
+
+	targetVal := args[0]
+	fieldVal := args[1]
+
+	// Extract field name from word or string
+	var fieldName string
+	switch fieldVal.Type {
+	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
+		fieldName, _ = fieldVal.AsWord()
+	case value.TypeString:
+		str, _ := fieldVal.AsString()
+		fieldName = str.String()
+	default:
+		return value.NoneVal(), typeError("select field", "word or string", fieldVal)
+	}
+
+	// Check for --default refinement
+	defaultVal := value.NoneVal()
+	hasDefault := false
+	for i := 2; i < len(args); i++ {
+		if args[i].Type == value.TypeWord {
+			word, _ := args[i].AsWord()
+			if word == "--default" || word == "default" {
+				if i+1 < len(args) {
+					defaultVal = args[i+1]
+					hasDefault = true
+					i++ // Skip the value
+				}
+			}
+		}
+	}
+
+	// Handle object selection
+	if targetVal.Type == value.TypeObject {
+		obj, _ := targetVal.AsObject()
+
+		// Type-assert to access frame operations
+		mgr, ok := eval.(frameManager)
+		if !ok {
+			return value.NoneVal(), verror.NewInternalError(
+				"internal-error",
+				[3]string{"select", "frame-manager-unavailable", ""},
+			)
+		}
+
+		// Look up field in object's frame
+		objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+		if objFrame == nil {
+			return value.NoneVal(), verror.NewInternalError(
+				"internal-error",
+				[3]string{"select", "invalid-frame-index", ""},
+			)
+		}
+
+		// Try to get the field value
+		if result, found := objFrame.Get(fieldName); found {
+			TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
+			return result, nil
+		}
+
+		// Check parent prototype chain
+		current := obj.ParentProto
+		for current != nil {
+			parentFrame := mgr.GetFrameByIndex(current.FrameIndex)
+			if parentFrame != nil {
+				if result, found := parentFrame.Get(fieldName); found {
+					TraceObjectFieldRead(current.FrameIndex, fieldName, true)
+					return result, nil
+				}
+			}
+			current = current.ParentProto
+		}
+
+		// Field not found - return default or none (not an error)
+		TraceObjectFieldRead(obj.FrameIndex, fieldName, false)
+		if hasDefault {
+			return defaultVal, nil
+		}
+
+		return value.NoneVal(), nil
+	}
+
+	// Handle block selection (key-value pairs)
+	if targetVal.Type == value.TypeBlock {
+		block, _ := targetVal.AsBlock()
+		elements := block.Elements
+
+		// Search for key-value pairs
+		for i := 0; i+1 < len(elements); i += 2 {
+			key := elements[i]
+			var keyStr string
+
+			switch key.Type {
+			case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
+				keyStr, _ = key.AsWord()
+			case value.TypeString:
+				str, _ := key.AsString()
+				keyStr = str.String()
+			default:
+				continue
+			}
+
+			if keyStr == fieldName {
+				return elements[i+1], nil
+			}
+		}
+
+		// Not found - return default or none
+		if hasDefault {
+			return defaultVal, nil
+		}
+		return value.NoneVal(), nil
+	}
+
+	return value.NoneVal(), typeError("select target", "object or block", targetVal)
+}
+
+// Put implements the `put` native for object field mutation.
+//
+// Contract (Feature 002, FR-014): put object field value
+// - object: object! to modify
+// - field: word! or string! representing field name
+// - value: any value to assign to the field
+// - Updates field in object's frame after optional type validation
+// - Returns the assigned value
+func Put(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+	if len(args) != 3 {
+		return value.NoneVal(), arityError("put", 3, len(args))
+	}
+
+	targetVal := args[0]
+	fieldVal := args[1]
+	newVal := args[2]
+
+	// Extract field name
+	var fieldName string
+	switch fieldVal.Type {
+	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
+		fieldName, _ = fieldVal.AsWord()
+	case value.TypeString:
+		str, _ := fieldVal.AsString()
+		fieldName = str.String()
+	default:
+		return value.NoneVal(), typeError("put field", "word or string", fieldVal)
+	}
+
+	// Only support objects for now
+	if targetVal.Type != value.TypeObject {
+		return value.NoneVal(), typeError("put target", "object", targetVal)
+	}
+
+	obj, _ := targetVal.AsObject()
+
+	// Type-assert to access frame operations
+	mgr, ok := eval.(frameManager)
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError(
+			"internal-error",
+			[3]string{"put", "frame-manager-unavailable", ""},
+		)
+	}
+
+	// Get object's frame
+	objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+	if objFrame == nil {
+		return value.NoneVal(), verror.NewInternalError(
+			"internal-error",
+			[3]string{"put", "invalid-frame-index", ""},
+		)
+	}
+
+	// Check if field exists in manifest
+	fieldIndex := -1
+	for i, word := range obj.Manifest.Words {
+		if word == fieldName {
+			fieldIndex = i
+			break
+		}
+	}
+
+	if fieldIndex == -1 {
+		// Field doesn't exist - error per contract (no dynamic field addition)
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDNoSuchField,
+			[3]string{fieldName, "", ""},
+		)
+	}
+
+	// Optional: Type validation if type hint is present
+	expectedType := obj.Manifest.Types[fieldIndex]
+	if expectedType != value.TypeNone && expectedType != newVal.Type {
+		return value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{typeNameFor(expectedType), typeNameFor(newVal.Type), fieldName},
+		)
+	}
+
+	// Update the field in the frame
+	objFrame.Set(fieldName, newVal)
+
+	// Emit trace event for field write (Feature 002, T097)
+	TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())
+
+	return newVal, nil
 }
