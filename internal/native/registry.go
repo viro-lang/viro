@@ -21,6 +21,19 @@ import (
 )
 
 // Evaluator interface for natives that need to evaluate code.
+//
+// NOTE: This is intentionally a separate interface from value.Evaluator even though
+// they have identical method names. The difference is in return types:
+//   - native.Evaluator returns *verror.Error (for native function implementations)
+//   - value.Evaluator returns error (for FunctionValue.Native field)
+//
+// This separation exists because of an import cycle constraint:
+//   - verror imports value (for error context formatting)
+//   - value cannot import verror without creating a cycle
+//
+// Native function implementations (When, If, Set, Get, etc.) use this interface
+// to work directly with *verror.Error for type safety. The registry code provides
+// a simple adapter when registering functions to bridge between the two interfaces.
 type Evaluator interface {
 	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
 	Do_Next(val value.Value) (value.Value, *verror.Error)
