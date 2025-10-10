@@ -12,11 +12,11 @@
 //   - Exit commands: 'quit', 'exit', or Ctrl+D
 //
 // The REPL loop:
-//   1. Read: Get input line (with history/editing)
-//   2. Parse: Convert text to values
-//   3. Eval: Execute via evaluator
-//   4. Print: Display result (suppress 'none')
-//   5. Loop: Repeat until exit
+//  1. Read: Get input line (with history/editing)
+//  2. Parse: Convert text to values
+//  3. Eval: Execute via evaluator
+//  4. Print: Display result (suppress 'none')
+//  5. Loop: Repeat until exit
 //
 // Prompt modes:
 //   - `>> `: Ready for new input
@@ -34,6 +34,7 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -188,6 +189,14 @@ func (r *REPL) processLine(input string, interactive bool) {
 		r.awaitingCont = false
 		r.recordHistory(trimmed)
 		r.handleExit(interactive)
+		return
+	}
+
+	// Special REPL-only shortcut: bare '?' shows categories
+	// In scripts, '?' requires an argument per its Arity: 1
+	if !r.awaitingCont && trimmed == "?" {
+		r.recordHistory(trimmed)
+		r.handleHelpShortcut()
 		return
 	}
 
@@ -546,4 +555,48 @@ func isExitCommand(input string) bool {
 		return false
 	}
 	return strings.EqualFold(input, "quit") || strings.EqualFold(input, "exit")
+}
+
+// handleHelpShortcut handles the special REPL-only '?' command (no arguments).
+// This calls the native Help function with an empty argument list to display categories.
+func (r *REPL) handleHelpShortcut() {
+	if r == nil {
+		return
+	}
+
+	// Temporarily redirect os.Stdout to capture Help output
+	oldStdout := os.Stdout
+	rOut, wOut, err := os.Pipe()
+	if err != nil {
+		// Fallback: call Help normally if pipe creation fails
+		_, _ = native.Help([]value.Value{})
+		return
+	}
+
+	os.Stdout = wOut
+
+	// Call Help function directly with no arguments to show categories
+	result, helpErr := native.Help([]value.Value{})
+
+	// Restore stdout immediately
+	wOut.Close()
+	os.Stdout = oldStdout
+
+	// Copy captured output to REPL's writer
+	output := make([]byte, 8192)
+	n, _ := rOut.Read(output)
+	if n > 0 {
+		r.out.Write(output[:n])
+	}
+	rOut.Close()
+
+	if helpErr != nil {
+		r.printError(helpErr)
+		return
+	}
+
+	// Help returns none, no need to print result
+	if result.Type != value.TypeNone {
+		fmt.Fprintln(r.out, r.formatValue(result))
+	}
 }

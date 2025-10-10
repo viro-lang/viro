@@ -1066,6 +1066,48 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 		},
 	}
 
+	// Register help system natives
+	Registry["?"] = &NativeInfo{
+		Func:      Help,
+		NeedsEval: false,         // Do not evaluate args - we want word literals
+		Arity:     1,             // Requires one argument in scripts
+		EvalArgs:  []bool{false}, // Do not evaluate the first arg
+		Doc: &NativeDoc{
+			Category: "Help",
+			Summary:  "Displays help for functions or lists functions in a category",
+			Description: `Interactive help system for discovering and learning about viro functions.
+Provide a word argument to show detailed documentation for that function or list functions in that category.
+Provides usage examples, parameter descriptions, and cross-references.
+
+Note: In the REPL, typing just '?' (without arguments) is a special shortcut that shows all categories.
+In scripts, you must provide an argument: '? math' or '? append'.`,
+			Parameters: []ParamDoc{
+				{Name: "topic", Type: "word! string!", Description: "Function name or category to get help for", Optional: true},
+			},
+			Returns:  "[none!] Always returns none (displays help to stdout)",
+			Examples: []string{"? math  ; list functions in Math category", "? append  ; show detailed help for append", "? \"sqrt\"  ; help using string"},
+			SeeAlso:  []string{"words", "type?"},
+			Tags:     []string{"help", "documentation", "discovery", "introspection"},
+		},
+	}
+
+	Registry["words"] = &NativeInfo{
+		Func:      Words,
+		NeedsEval: false,
+		Arity:     0,
+		Doc: &NativeDoc{
+			Category: "Help",
+			Summary:  "Lists all available native function names",
+			Description: `Returns a block containing all native function names as words.
+Also prints a formatted list to stdout, grouped by category for easier reading.
+Useful for quick reference and discovering available functionality.`,
+			Parameters: []ParamDoc{},
+			Returns:    "[block!] A block containing all function names as words",
+			Examples:   []string{"words  ; display and return all function names", "fns: words\nlength? fns  ; count available functions"},
+			SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
+		},
+	}
+
 	// Validate EvalArgs length matches Arity
 	for name, info := range Registry {
 		if info.EvalArgs != nil && len(info.EvalArgs) != info.Arity {

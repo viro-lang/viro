@@ -60,8 +60,13 @@ func TestDocumentationCompleteness(t *testing.T) {
 		}
 
 		// Check parameter count matches arity
-		if len(doc.Parameters) != info.Arity {
-			t.Errorf("%s: parameter count (%d) doesn't match arity (%d)", 
+		// Special case: ? function has variable arity (0 or 1) with 1 optional param
+		if name == "?" {
+			if len(doc.Parameters) != 1 || !doc.Parameters[0].Optional {
+				t.Errorf("%s: should have exactly 1 optional parameter", name)
+			}
+		} else if len(doc.Parameters) != info.Arity {
+			t.Errorf("%s: parameter count (%d) doesn't match arity (%d)",
 				name, len(doc.Parameters), info.Arity)
 		}
 
@@ -78,9 +83,7 @@ func TestDocumentationCompleteness(t *testing.T) {
 			}
 		}
 	}
-}
-
-// TestDocumentationCategories verifies all functions are in valid categories.
+} // TestDocumentationCategories verifies all functions are in valid categories.
 func TestDocumentationCategories(t *testing.T) {
 	validCategories := map[string]bool{
 		"Math":     true,
@@ -91,6 +94,7 @@ func TestDocumentationCategories(t *testing.T) {
 		"I/O":      true,
 		"Ports":    true,
 		"Objects":  true,
+		"Help":     true,
 	}
 
 	invalidCategories := []string{}
