@@ -7,7 +7,7 @@ import (
 // TestAllNativesDocumented verifies that all native functions have documentation.
 func TestAllNativesDocumented(t *testing.T) {
 	undocumented := []string{}
-	for name, fn := range FunctionRegistry {
+	for name, fn := range Registry {
 		if fn.Doc == nil || !fn.Doc.HasDoc() {
 			undocumented = append(undocumented, name)
 		}
@@ -16,13 +16,13 @@ func TestAllNativesDocumented(t *testing.T) {
 	if len(undocumented) > 0 {
 		t.Errorf("Found %d undocumented native functions: %v", len(undocumented), undocumented)
 	} else {
-		t.Logf("All %d native functions are documented ✓", len(FunctionRegistry))
+		t.Logf("All %d native functions are documented ✓", len(Registry))
 	}
 }
 
 // TestDocumentationValid validates all documentation entries.
 func TestDocumentationValid(t *testing.T) {
-	errors := ValidateRegistry(FunctionRegistry)
+	errors := ValidateRegistry(Registry)
 	if len(errors) > 0 {
 		t.Errorf("Found %d documentation validation errors:", len(errors))
 		for _, err := range errors {
@@ -35,7 +35,7 @@ func TestDocumentationValid(t *testing.T) {
 
 // TestDocumentationCompleteness checks that each documented function has all required fields.
 func TestDocumentationCompleteness(t *testing.T) {
-	for name, fn := range FunctionRegistry {
+	for name, fn := range Registry {
 		if fn.Doc == nil {
 			continue // Skip undocumented (caught by other test)
 		}
@@ -114,7 +114,7 @@ func TestDocumentationCategories(t *testing.T) {
 	}
 
 	invalidCategories := []string{}
-	for name, fn := range FunctionRegistry {
+	for name, fn := range Registry {
 		if fn.Doc != nil && !validCategories[fn.Doc.Category] {
 			invalidCategories = append(invalidCategories, name+":"+fn.Doc.Category)
 		}
@@ -127,7 +127,7 @@ func TestDocumentationCategories(t *testing.T) {
 
 // TestDocumentationExamples checks that examples are present and non-empty.
 func TestDocumentationExamples(t *testing.T) {
-	for name, fn := range FunctionRegistry {
+	for name, fn := range Registry {
 		if fn.Doc == nil {
 			continue
 		}
@@ -147,8 +147,8 @@ func TestDocumentationExamples(t *testing.T) {
 
 // TestDocumentationStats prints statistics about the documentation.
 func TestDocumentationStats(t *testing.T) {
-	documented, total := CountDocumented(FunctionRegistry)
-	categories := GetCategories(FunctionRegistry)
+	documented, total := CountDocumented(Registry)
+	categories := GetCategories(Registry)
 
 	t.Logf("Documentation Statistics:")
 	t.Logf("  Total functions: %d", total)
@@ -159,7 +159,7 @@ func TestDocumentationStats(t *testing.T) {
 
 	// Count functions per category
 	categoryCount := make(map[string]int)
-	for _, fn := range FunctionRegistry {
+	for _, fn := range Registry {
 		if fn.Doc != nil {
 			categoryCount[fn.Doc.Category]++
 		}

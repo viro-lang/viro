@@ -12,16 +12,10 @@
 //   - Function: fn (function definition)
 //   - I/O: print, input
 //
-// Native types:
-//   - Simple natives (NativeFunc): Don't need evaluator access
-//   - Eval natives (NativeFuncWithEval): Need evaluator for code evaluation
-//
-// All natives are registered in the Registry map with metadata (arity, eval requirement).
+// All native functions are unified under the FunctionValue type and stored in the Registry.
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -32,34 +26,13 @@ type Evaluator interface {
 	Do_Next(val value.Value) (value.Value, *verror.Error)
 }
 
-// NativeFunc is the signature for simple native functions (like math operations).
-type NativeFunc func([]value.Value) (value.Value, *verror.Error)
-
-// NativeFuncWithEval is the signature for natives that need evaluator access (like control flow).
-type NativeFuncWithEval func([]value.Value, Evaluator) (value.Value, *verror.Error)
-
-// NativeInfo wraps a native function with metadata.
-type NativeInfo struct {
-	Func      NativeFunc         // Simple native (if NeedsEval is false)
-	FuncEval  NativeFuncWithEval // Native needing evaluator (if NeedsEval is true)
-	NeedsEval bool               // True if this native needs evaluator access
-	Arity     int                // Number of arguments expected
-	Infix     bool               // True if this function uses infix notation (consumes lastResult as first arg)
-	EvalArgs  []bool             // NEW: per-arg evaluation control (nil = all eval)
-	Doc       *NativeDoc         // Documentation metadata (nil for undocumented functions)
-}
-
-// Registry holds all registered native functions.
-var Registry = make(map[string]*NativeInfo)
-
-// FunctionRegistry holds native functions as FunctionValue instances (new unified representation).
-// This is the new registry that will eventually replace Registry after migration is complete.
-var FunctionRegistry = make(map[string]*value.FunctionValue)
+// Registry holds all registered native functions as FunctionValue instances.
+var Registry = make(map[string]*value.FunctionValue)
 
 func init() {
-	// ===== NEW: Populate FunctionRegistry =====
+	// ===== NEW: Populate Registry =====
 	// Group 1: Simple math operations (4 functions)
-	FunctionRegistry["+"] = value.NewNativeFunction(
+	Registry["+"] = value.NewNativeFunction(
 		"+",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -73,7 +46,7 @@ func init() {
 			return result, err
 		},
 	)
-	fn := FunctionRegistry["+"]
+	fn := Registry["+"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -90,7 +63,7 @@ Supports infix notation for natural mathematical expressions.`,
 		SeeAlso:  []string{"-", "*", "/"}, Tags: []string{"arithmetic", "math", "addition"},
 	}
 
-	FunctionRegistry["-"] = value.NewNativeFunction(
+	Registry["-"] = value.NewNativeFunction(
 		"-",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -104,7 +77,7 @@ Supports infix notation for natural mathematical expressions.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["-"]
+	fn = Registry["-"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -121,7 +94,7 @@ Supports infix notation for natural mathematical expressions.`,
 		SeeAlso:  []string{"+", "*", "/"}, Tags: []string{"arithmetic", "math", "subtraction"},
 	}
 
-	FunctionRegistry["*"] = value.NewNativeFunction(
+	Registry["*"] = value.NewNativeFunction(
 		"*",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -135,7 +108,7 @@ Supports infix notation for natural mathematical expressions.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["*"]
+	fn = Registry["*"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -152,7 +125,7 @@ Supports infix notation for natural mathematical expressions.`,
 		SeeAlso:  []string{"+", "-", "/", "pow"}, Tags: []string{"arithmetic", "math", "multiplication"},
 	}
 
-	FunctionRegistry["/"] = value.NewNativeFunction(
+	Registry["/"] = value.NewNativeFunction(
 		"/",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -166,7 +139,7 @@ Supports infix notation for natural mathematical expressions.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["/"]
+	fn = Registry["/"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -184,7 +157,7 @@ Raises an error if dividing by zero.`,
 	}
 
 	// Group 2: Comparison operators (6 functions)
-	FunctionRegistry["<"] = value.NewNativeFunction(
+	Registry["<"] = value.NewNativeFunction(
 		"<",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -198,7 +171,7 @@ Raises an error if dividing by zero.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["<"]
+	fn = Registry["<"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -214,7 +187,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 		SeeAlso:  []string{">", "<=", ">=", "=", "<>"}, Tags: []string{"comparison", "math", "logic"},
 	}
 
-	FunctionRegistry[">"] = value.NewNativeFunction(
+	Registry[">"] = value.NewNativeFunction(
 		">",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -228,7 +201,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			return result, err
 		},
 	)
-	fn = FunctionRegistry[">"]
+	fn = Registry[">"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -244,7 +217,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 		SeeAlso:  []string{"<", "<=", ">=", "=", "<>"}, Tags: []string{"comparison", "math", "logic"},
 	}
 
-	FunctionRegistry["<="] = value.NewNativeFunction(
+	Registry["<="] = value.NewNativeFunction(
 		"<=",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -258,7 +231,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["<="]
+	fn = Registry["<="]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -274,7 +247,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 		SeeAlso:  []string{"<", ">", ">=", "=", "<>"}, Tags: []string{"comparison", "math", "logic"},
 	}
 
-	FunctionRegistry[">="] = value.NewNativeFunction(
+	Registry[">="] = value.NewNativeFunction(
 		">=",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -288,7 +261,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			return result, err
 		},
 	)
-	fn = FunctionRegistry[">="]
+	fn = Registry[">="]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -304,7 +277,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 		SeeAlso:  []string{"<", ">", "<=", "=", "<>"}, Tags: []string{"comparison", "math", "logic"},
 	}
 
-	FunctionRegistry["="] = value.NewNativeFunction(
+	Registry["="] = value.NewNativeFunction(
 		"=",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -318,7 +291,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["="]
+	fn = Registry["="]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -334,7 +307,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values are equ
 		SeeAlso:  []string{"<>", "<", ">", "<=", ">="}, Tags: []string{"comparison", "equality", "logic"},
 	}
 
-	FunctionRegistry["<>"] = value.NewNativeFunction(
+	Registry["<>"] = value.NewNativeFunction(
 		"<>",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -348,7 +321,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values are equ
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["<>"]
+	fn = Registry["<>"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -365,7 +338,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values differ.
 	}
 
 	// Group 3: Logic operators (3 functions)
-	FunctionRegistry["and"] = value.NewNativeFunction(
+	Registry["and"] = value.NewNativeFunction(
 		"and",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -379,7 +352,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values differ.
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["and"]
+	fn = Registry["and"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -395,7 +368,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 		SeeAlso:  []string{"or", "not"}, Tags: []string{"logic", "boolean", "and"},
 	}
 
-	FunctionRegistry["or"] = value.NewNativeFunction(
+	Registry["or"] = value.NewNativeFunction(
 		"or",
 		[]value.ParamSpec{
 			value.NewParamSpec("left", true),
@@ -409,7 +382,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["or"]
+	fn = Registry["or"]
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -425,7 +398,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 		SeeAlso:  []string{"and", "not"}, Tags: []string{"logic", "boolean", "or"},
 	}
 
-	FunctionRegistry["not"] = value.NewNativeFunction(
+	Registry["not"] = value.NewNativeFunction(
 		"not",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
@@ -438,7 +411,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["not"]
+	fn = Registry["not"]
 	fn.Infix = false
 	fn.Doc = &NativeDoc{
 		Category: "Math",
@@ -476,7 +449,7 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 			}
 		}
 
-		FunctionRegistry[name] = value.NewNativeFunction(
+		Registry[name] = value.NewNativeFunction(
 			name,
 			params,
 			func(args []value.Value, eval value.Evaluator) (value.Value, error) {
@@ -487,7 +460,7 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 				return result, err
 			},
 		)
-		fn := FunctionRegistry[name]
+		fn := Registry[name]
 		fn.Doc = doc
 	}
 
@@ -751,7 +724,7 @@ Returns an integer representing the length of the series.`,
 
 	// Group 6: Data operations (3 functions)
 	// set and get need evaluator, type? doesn't
-	FunctionRegistry["set"] = value.NewNativeFunction(
+	Registry["set"] = value.NewNativeFunction(
 		"set",
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
@@ -768,7 +741,7 @@ Returns an integer representing the length of the series.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["set"]
+	fn = Registry["set"]
 	fn.Doc = &NativeDoc{
 		Category: "Data",
 		Summary:  "Sets a word to a value in the current context",
@@ -783,7 +756,7 @@ The word is not evaluated; the value is evaluated before assignment. Returns the
 		SeeAlso:  []string{"get", ":", "type?"}, Tags: []string{"data", "assignment", "variable"},
 	}
 
-	FunctionRegistry["get"] = value.NewNativeFunction(
+	Registry["get"] = value.NewNativeFunction(
 		"get",
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
@@ -797,7 +770,7 @@ The word is not evaluated; the value is evaluated before assignment. Returns the
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["get"]
+	fn = Registry["get"]
 	fn.Doc = &NativeDoc{
 		Category: "Data",
 		Summary:  "Gets the value of a word from the current context",
@@ -825,7 +798,7 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 	})
 
 	// Group 7: Object operations (5 functions - all need evaluator)
-	FunctionRegistry["object"] = value.NewNativeFunction(
+	Registry["object"] = value.NewNativeFunction(
 		"object",
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
@@ -839,7 +812,7 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["object"]
+	fn = Registry["object"]
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
 		Summary:  "Creates a new object from a block of definitions",
@@ -854,7 +827,7 @@ Returns the newly created object.`,
 		SeeAlso:  []string{"context", "make"}, Tags: []string{"objects", "context", "creation"},
 	}
 
-	FunctionRegistry["context"] = value.NewNativeFunction(
+	Registry["context"] = value.NewNativeFunction(
 		"context",
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
@@ -868,7 +841,7 @@ Returns the newly created object.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["context"]
+	fn = Registry["context"]
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
 		Summary:  "Creates a new context (alias for object)",
@@ -883,7 +856,7 @@ and all word definitions become fields of the context.`,
 		SeeAlso:  []string{"object", "make"}, Tags: []string{"objects", "context", "creation"},
 	}
 
-	FunctionRegistry["make"] = value.NewNativeFunction(
+	Registry["make"] = value.NewNativeFunction(
 		"make",
 		[]value.ParamSpec{
 			value.NewParamSpec("parent", true), // evaluated
@@ -898,7 +871,7 @@ and all word definitions become fields of the context.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["make"]
+	fn = Registry["make"]
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
 		Summary:  "Creates a derived object from a parent object",
@@ -913,7 +886,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 		Examples: []string{"base: object [x: 1 y: 2]\nderived: make base [z: 3]  ; => object with x, y, z", "point: object [x: 0 y: 0]\npoint3d: make point [z: 0]"},
 		SeeAlso:  []string{"object", "context"}, Tags: []string{"objects", "inheritance", "derivation"},
 	}
-	FunctionRegistry["select"] = value.NewNativeFunction(
+	Registry["select"] = value.NewNativeFunction(
 		"select",
 		[]value.ParamSpec{
 			value.NewParamSpec("target", true), // evaluated
@@ -928,7 +901,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["select"]
+	fn = Registry["select"]
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
 		Summary:  "Retrieves a field value from an object or block",
@@ -951,7 +924,7 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 		Tags:    []string{"objects", "lookup", "field-access"},
 	}
 
-	FunctionRegistry["put"] = value.NewNativeFunction(
+	Registry["put"] = value.NewNativeFunction(
 		"put",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true), // evaluated
@@ -967,7 +940,7 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["put"]
+	fn = Registry["put"]
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
 		Summary:  "Sets a field value in an object",
@@ -990,7 +963,7 @@ Returns the assigned value.`,
 	}
 
 	// Group 8: I/O operations (2 functions - print needs evaluator)
-	FunctionRegistry["print"] = value.NewNativeFunction(
+	Registry["print"] = value.NewNativeFunction(
 		"print",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
@@ -1004,7 +977,7 @@ Returns the assigned value.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["print"]
+	fn = Registry["print"]
 	fn.Doc = &NativeDoc{
 		Category: "I/O",
 		Summary:  "Prints a value to standard output",
@@ -1136,7 +1109,7 @@ Returns the port that became ready, or none if a timeout occurred.`,
 	})
 
 	// Group 10: Control flow (4 functions - all need evaluator)
-	FunctionRegistry["when"] = value.NewNativeFunction(
+	Registry["when"] = value.NewNativeFunction(
 		"when",
 		[]value.ParamSpec{
 			value.NewParamSpec("condition", true), // evaluated
@@ -1151,7 +1124,7 @@ Returns the port that became ready, or none if a timeout occurred.`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["when"]
+	fn = Registry["when"]
 	fn.Doc = &NativeDoc{
 		Category: "Control",
 		Summary:  "Executes a block of code if a condition is true",
@@ -1166,7 +1139,7 @@ the result of the body block. If the condition is false, returns none. This is a
 		SeeAlso:  []string{"if", "loop", "while"}, Tags: []string{"control", "conditional", "when"},
 	}
 
-	FunctionRegistry["if"] = value.NewNativeFunction(
+	Registry["if"] = value.NewNativeFunction(
 		"if",
 		[]value.ParamSpec{
 			value.NewParamSpec("condition", true),     // evaluated
@@ -1182,7 +1155,7 @@ the result of the body block. If the condition is false, returns none. This is a
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["if"]
+	fn = Registry["if"]
 	fn.Doc = &NativeDoc{
 		Category: "Control",
 		Summary:  "Executes one of two blocks based on a condition",
@@ -1199,7 +1172,7 @@ This is a two-branch conditional (if-then-else).`,
 		SeeAlso:  []string{"when", "loop", "while"}, Tags: []string{"control", "conditional", "if", "else"},
 	}
 
-	FunctionRegistry["loop"] = value.NewNativeFunction(
+	Registry["loop"] = value.NewNativeFunction(
 		"loop",
 		[]value.ParamSpec{
 			value.NewParamSpec("count", true), // evaluated
@@ -1214,7 +1187,7 @@ This is a two-branch conditional (if-then-else).`,
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["loop"]
+	fn = Registry["loop"]
 	fn.Doc = &NativeDoc{
 		Category: "Control",
 		Summary:  "Executes a block a specified number of times",
@@ -1229,7 +1202,7 @@ The count must be a non-negative integer. Returns the result of the last iterati
 		SeeAlso:  []string{"while", "if", "when"}, Tags: []string{"control", "loop", "iteration", "repeat"},
 	}
 
-	FunctionRegistry["while"] = value.NewNativeFunction(
+	Registry["while"] = value.NewNativeFunction(
 		"while",
 		[]value.ParamSpec{
 			value.NewParamSpec("condition", true), // evaluated
@@ -1244,7 +1217,7 @@ The count must be a non-negative integer. Returns the result of the last iterati
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["while"]
+	fn = Registry["while"]
 	fn.Doc = &NativeDoc{
 		Category: "Control",
 		Summary:  "Executes a block repeatedly while a condition is true",
@@ -1261,7 +1234,7 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 	}
 
 	// Group 11: Function creation (1 function - needs evaluator)
-	FunctionRegistry["fn"] = value.NewNativeFunction(
+	Registry["fn"] = value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
 			value.NewParamSpec("params", false), // NOT evaluated (block)
@@ -1276,7 +1249,7 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["fn"]
+	fn = Registry["fn"]
 	fn.Doc = &NativeDoc{
 		Category: "Function",
 		Summary:  "Creates a new function",
@@ -1293,7 +1266,7 @@ Returns a function value that can be called. Functions capture their defining co
 	}
 
 	// Group 12: Help system (2 functions)
-	FunctionRegistry["?"] = value.NewNativeFunction(
+	Registry["?"] = value.NewNativeFunction(
 		"?",
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
@@ -1306,7 +1279,7 @@ Returns a function value that can be called. Functions capture their defining co
 			return result, err
 		},
 	)
-	fn = FunctionRegistry["?"]
+	fn = Registry["?"]
 	fn.Doc = &NativeDoc{
 		Category: "Help",
 		Summary:  "Displays help for functions or lists functions in a category",
@@ -1336,29 +1309,21 @@ Useful for programmatic access to available functionality.`,
 		Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
 		SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
 	})
-
-	// Validate EvalArgs length matches Arity
-	for name, info := range Registry {
-		if info.EvalArgs != nil && len(info.EvalArgs) != info.Arity {
-			panic(fmt.Sprintf("Native %s: EvalArgs length (%d) != Arity (%d)",
-				name, len(info.EvalArgs), info.Arity))
-		}
-	}
 }
 
-// LookupFunction finds a native function by name in the new FunctionRegistry.
+// Lookup finds a native function by name in the Registry.
 // Returns the function value and true if found, nil and false otherwise.
-func LookupFunction(name string) (*value.FunctionValue, bool) {
-	fn, ok := FunctionRegistry[name]
+func Lookup(name string) (*value.FunctionValue, bool) {
+	fn, ok := Registry[name]
 	return fn, ok
 }
 
-// CallFunction invokes a native function (FunctionValue) with the given arguments and evaluator.
+// Call invokes a native function (FunctionValue) with the given arguments and evaluator.
 // The evaluator is always passed to the native function (even if the function doesn't use it).
-func CallFunction(fn *value.FunctionValue, args []value.Value, eval Evaluator) (value.Value, error) {
+func Call(fn *value.FunctionValue, args []value.Value, eval Evaluator) (value.Value, error) {
 	if fn.Type != value.FuncNative {
 		return value.NoneVal(), verror.NewInternalError(
-			"CallFunction() expects native function", [3]string{})
+			"Call() expects native function", [3]string{})
 	}
 
 	// Create an adapter to bridge native.Evaluator (returns *verror.Error)

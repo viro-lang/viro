@@ -20,12 +20,12 @@ func (m mockEvaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	return val, nil
 }
 
-func TestFunctionRegistrySimpleMath(t *testing.T) {
+func TestRegistrySimpleMath(t *testing.T) {
 	// Test addition (+)
 	t.Run("Add", func(t *testing.T) {
-		fn, ok := LookupFunction("+")
+		fn, ok := Lookup("+")
 		if !ok {
-			t.Fatal("Function '+' not found in FunctionRegistry")
+			t.Fatal("Function '+' not found in Registry")
 		}
 		if fn.Name != "+" {
 			t.Errorf("Expected name '+', got %q", fn.Name)
@@ -41,9 +41,9 @@ func TestFunctionRegistrySimpleMath(t *testing.T) {
 		}
 
 		// Test invocation
-		result, err := CallFunction(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		if result.Type != value.TypeInteger {
 			t.Errorf("Expected integer result, got %v", result.Type)
@@ -56,17 +56,17 @@ func TestFunctionRegistrySimpleMath(t *testing.T) {
 
 	// Test subtraction (-)
 	t.Run("Subtract", func(t *testing.T) {
-		fn, ok := LookupFunction("-")
+		fn, ok := Lookup("-")
 		if !ok {
-			t.Fatal("Function '-' not found in FunctionRegistry")
+			t.Fatal("Function '-' not found in Registry")
 		}
 		if !fn.Infix {
 			t.Error("Expected '-' to be infix")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(10), value.IntVal(3)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(3)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		intVal, ok := result.AsInteger()
 		if !ok || intVal != 7 {
@@ -76,17 +76,17 @@ func TestFunctionRegistrySimpleMath(t *testing.T) {
 
 	// Test multiplication (*)
 	t.Run("Multiply", func(t *testing.T) {
-		fn, ok := LookupFunction("*")
+		fn, ok := Lookup("*")
 		if !ok {
-			t.Fatal("Function '*' not found in FunctionRegistry")
+			t.Fatal("Function '*' not found in Registry")
 		}
 		if !fn.Infix {
 			t.Error("Expected '*' to be infix")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		intVal, ok := result.AsInteger()
 		if !ok || intVal != 12 {
@@ -96,18 +96,18 @@ func TestFunctionRegistrySimpleMath(t *testing.T) {
 
 	// Test division (/)
 	t.Run("Divide", func(t *testing.T) {
-		fn, ok := LookupFunction("/")
+		fn, ok := Lookup("/")
 		if !ok {
-			t.Fatal("Function '/' not found in FunctionRegistry")
+			t.Fatal("Function '/' not found in Registry")
 		}
 		if !fn.Infix {
 			t.Error("Expected '/' to be infix")
 		}
 
 		// Test integer division (10 / 2 = 5 as integer)
-		result, err := CallFunction(fn, []value.Value{value.IntVal(10), value.IntVal(2)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(2)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		// When both inputs are integers, mathOp returns integer result
 		if result.Type != value.TypeInteger {
@@ -120,20 +120,20 @@ func TestFunctionRegistrySimpleMath(t *testing.T) {
 	})
 }
 
-func TestFunctionRegistryComparison(t *testing.T) {
+func TestRegistryComparison(t *testing.T) {
 	// Test less than (<)
 	t.Run("LessThan", func(t *testing.T) {
-		fn, ok := LookupFunction("<")
+		fn, ok := Lookup("<")
 		if !ok {
-			t.Fatal("Function '<' not found in FunctionRegistry")
+			t.Fatal("Function '<' not found in Registry")
 		}
 		if !fn.Infix {
 			t.Error("Expected '<' to be infix")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(3), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(5)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		if result.Type != value.TypeLogic {
 			t.Errorf("Expected logic result, got %v", result.Type)
@@ -146,14 +146,14 @@ func TestFunctionRegistryComparison(t *testing.T) {
 
 	// Test greater than (>)
 	t.Run("GreaterThan", func(t *testing.T) {
-		fn, ok := LookupFunction(">")
+		fn, ok := Lookup(">")
 		if !ok {
-			t.Fatal("Function '>' not found in FunctionRegistry")
+			t.Fatal("Function '>' not found in Registry")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(10), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(10), value.IntVal(5)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		logicVal, ok := result.AsLogic()
 		if !ok || !logicVal {
@@ -163,14 +163,14 @@ func TestFunctionRegistryComparison(t *testing.T) {
 
 	// Test equal (=)
 	t.Run("Equal", func(t *testing.T) {
-		fn, ok := LookupFunction("=")
+		fn, ok := Lookup("=")
 		if !ok {
-			t.Fatal("Function '=' not found in FunctionRegistry")
+			t.Fatal("Function '=' not found in Registry")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(5), value.IntVal(5)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(5), value.IntVal(5)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		logicVal, ok := result.AsLogic()
 		if !ok || !logicVal {
@@ -180,14 +180,14 @@ func TestFunctionRegistryComparison(t *testing.T) {
 
 	// Test not equal (<>)
 	t.Run("NotEqual", func(t *testing.T) {
-		fn, ok := LookupFunction("<>")
+		fn, ok := Lookup("<>")
 		if !ok {
-			t.Fatal("Function '<>' not found in FunctionRegistry")
+			t.Fatal("Function '<>' not found in Registry")
 		}
 
-		result, err := CallFunction(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
+		result, err := Call(fn, []value.Value{value.IntVal(3), value.IntVal(4)}, mockEvaluator{})
 		if err != nil {
-			t.Fatalf("CallFunction failed: %v", err)
+			t.Fatalf("Call failed: %v", err)
 		}
 		logicVal, ok := result.AsLogic()
 		if !ok || !logicVal {
@@ -196,9 +196,9 @@ func TestFunctionRegistryComparison(t *testing.T) {
 	})
 }
 
-func TestFunctionRegistryMetadata(t *testing.T) {
+func TestRegistryMetadata(t *testing.T) {
 	t.Run("Documentation", func(t *testing.T) {
-		fn, ok := LookupFunction("+")
+		fn, ok := Lookup("+")
 		if !ok {
 			t.Fatal("Function '+' not found")
 		}
@@ -215,7 +215,7 @@ func TestFunctionRegistryMetadata(t *testing.T) {
 	})
 
 	t.Run("ParamSpecs", func(t *testing.T) {
-		fn, ok := LookupFunction("+")
+		fn, ok := Lookup("+")
 		if !ok {
 			t.Fatal("Function '+' not found")
 		}
@@ -240,7 +240,7 @@ func TestFunctionRegistryMetadata(t *testing.T) {
 
 	t.Run("ParamNamesMatchDocumentation", func(t *testing.T) {
 		// Verify that parameter names in ParamSpec match the documentation
-		for name, fn := range FunctionRegistry {
+		for name, fn := range Registry {
 			if fn.Doc == nil || len(fn.Doc.Parameters) == 0 {
 				continue // Skip functions without documentation
 			}

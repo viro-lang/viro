@@ -513,7 +513,7 @@ func (e *Evaluator) callNative(fn *value.FunctionValue, vals []value.Value, idx 
 	*idx += consumed
 
 	// Call native - always pass evaluator (native ignores if not needed)
-	result, callErr := native.CallFunction(fn, args, e)
+	result, callErr := native.Call(fn, args, e)
 	if callErr != nil {
 		// Convert error interface back to *verror.Error for annotation
 		var vErr *verror.Error
@@ -547,8 +547,8 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	// Check native registry first - use new LookupFunction
-	if nativeFn, found := native.LookupFunction(wordStr); found {
+	// Check native registry first - use new Lookup
+	if nativeFn, found := native.Lookup(wordStr); found {
 		return e.callNative(nativeFn, seq, idx, lastResult)
 	}
 
@@ -796,7 +796,7 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 
 	// Check if it's a native function - if so, return the word itself
 	// (it will be called when it appears in function position)
-	if _, ok := native.LookupFunction(wordStr); ok {
+	if _, ok := native.Lookup(wordStr); ok {
 		return val, nil // Return the word itself, not evaluated yet
 	}
 
