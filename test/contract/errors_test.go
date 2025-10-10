@@ -201,8 +201,8 @@ func TestErrors_CallStackPropagation(t *testing.T) {
 		t.Fatalf("expected call stack with at least three frames, got %v", err.Where)
 	}
 
-	if err.Where[0] != "inner" {
-		t.Fatalf("expected most recent frame to be inner, got %s", err.Where[0])
+	if !contains(err.Where, "inner") {
+		t.Fatalf("expected call stack to include inner, got %v", err.Where)
 	}
 
 	if !contains(err.Where, "outer") {

@@ -439,92 +439,49 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 	return e.Do_Blk(block.Elements)
 }
 
-func (e *Evaluator) collectNativeFunctionArgs(vals []value.Value, start int, fn *value.FunctionValue, lastResult value.Value) ([]value.Value, int, *verror.Error) {
-	// Get positional params (non-refinements)
-	positional := make([]value.ParamSpec, 0, len(fn.Params))
-	for _, spec := range fn.Params {
-		if !spec.Refinement {
-			positional = append(positional, spec)
-		}
-	}
-
-	args := make([]value.Value, 0, len(positional))
-	pos := start
-	consumed := 0
-	argIndex := 0
-
-	// Handle infix
-	if fn.Infix && lastResult.Type != value.TypeNone {
-		args = append(args, lastResult)
-		argIndex = 1
-	}
-
-	annotateBase := start - 1
-	if annotateBase < 0 {
-		annotateBase = 0
-	}
-	if len(vals) > 0 && annotateBase >= len(vals) {
-		annotateBase = len(vals) - 1
-	}
-
-	// Collect positional arguments
-	for argIndex < len(positional) {
-		if pos >= len(vals) {
-			err := verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{fn.Name, strconv.Itoa(len(positional)), strconv.Itoa(len(args))},
-			)
-			return nil, consumed, e.annotateError(err, vals, annotateBase)
-		}
-
-		paramSpec := positional[argIndex]
-
-		// Use ParamSpec.Eval instead of EvalArgs array
-		if !paramSpec.Eval {
-			// Pass raw (unevaluated)
-			args = append(args, vals[pos])
-			pos++
-		} else {
-			// Evaluate argument
-			arg, nextPos, err := e.evalExpressionFromTokens(vals, pos, value.NoneVal())
-			if err != nil {
-				return nil, consumed, e.annotateError(err, vals, pos)
-			}
-			args = append(args, arg)
-			pos = nextPos
-		}
-
-		consumed = pos - start
-		argIndex++
-	}
-
-	return args, consumed, nil
-}
-
-func (e *Evaluator) callNative(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
+// invokeFunction is the unified function invocation handler for both native and user-defined functions.
+// It collects arguments (with infix and refinement support) and dispatches to the appropriate execution path.
+func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
 	startIdx := *idx
+	name := functionDisplayName(fn)
 
-	// Collect arguments using unified ParamSpec-based logic
-	args, consumed, err := e.collectNativeFunctionArgs(vals, *idx+1, fn, lastResult)
+	// Push call stack entry for both native and user functions
+	e.pushCall(name)
+	defer e.popCall()
+
+	// Collect arguments using unified logic (supports both native and user functions)
+	tokens := vals[*idx+1:]
+	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(fn, tokens, lastResult)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NoneVal(), e.annotateError(err, vals, startIdx)
 	}
 
 	*idx += consumed
 
-	// Call native - always pass evaluator (native ignores if not needed)
-	result, callErr := native.Call(fn, args, e)
-	if callErr != nil {
-		// Convert error interface back to *verror.Error for annotation
-		var vErr *verror.Error
+	// Dispatch based on function type
+	if fn.Type == value.FuncNative {
+		// Native functions expect flat positional args array
+		// Call native - always pass evaluator (native ignores if not needed)
+		result, callErr := native.Call(fn, posArgs, e)
 		if callErr != nil {
-			if ve, ok := callErr.(*verror.Error); ok {
-				vErr = ve
-			} else {
-				vErr = verror.NewInternalError(callErr.Error(), [3]string{})
+			// Convert error interface back to *verror.Error for annotation
+			var vErr *verror.Error
+			if callErr != nil {
+				if ve, ok := callErr.(*verror.Error); ok {
+					vErr = ve
+				} else {
+					vErr = verror.NewInternalError(callErr.Error(), [3]string{})
+				}
 			}
+			return value.NoneVal(), e.annotateError(vErr, vals, startIdx)
 		}
-		return value.NoneVal(), e.annotateError(vErr, vals, startIdx)
+		return result, nil
+	}
+
+	// User-defined function: use executeFunction with refinements
+	result, execErr := e.executeFunction(fn, posArgs, refValues)
+	if execErr != nil {
+		return value.NoneVal(), execErr
 	}
 	return result, nil
 }
@@ -532,7 +489,7 @@ func (e *Evaluator) callNative(fn *value.FunctionValue, vals []value.Value, idx 
 // evaluateWithFunctionCall resolves a value that might represent a callable.
 //
 // If the value is a word referring to a native or user-defined function, this
-// helper dispatches to the appropriate call helper (advancing the index when
+// helper dispatches to the unified invokeFunction (advancing the index when
 // arguments are consumed). Otherwise it falls back to Do_Next.
 //
 // lastResult is used for infix operators - if the function is infix, lastResult
@@ -547,36 +504,18 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	// Check native registry first - use new Lookup
+	// Check native registry first
 	if nativeFn, found := native.Lookup(wordStr); found {
-		return e.callNative(nativeFn, seq, idx, lastResult)
+		return e.invokeFunction(nativeFn, seq, idx, lastResult)
 	}
 
+	// Check user-defined functions
 	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
-		return e.invokeFunctionFromSequence(fn, seq, idx, lastResult)
+		return e.invokeFunction(fn, seq, idx, lastResult)
 	}
 
 	return e.Do_Next(val)
-}
-
-func (e *Evaluator) invokeFunctionFromSequence(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
-	name := functionDisplayName(fn)
-	e.pushCall(name)
-	defer e.popCall()
-
-	tokens := vals[*idx+1:]
-	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(fn, tokens, lastResult)
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, vals, *idx)
-	}
-
-	*idx += consumed
-	result, execErr := e.executeFunction(fn, posArgs, refValues)
-	if execErr != nil {
-		return value.NoneVal(), execErr
-	}
-	return result, nil
 }
 
 // isRefinement checks if a value is a refinement (word starting with "--")
