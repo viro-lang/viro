@@ -1,0 +1,5 @@
+test_infix: fn [] [
+  print ["test:" 2 * 3]
+]
+test_infix
+quit

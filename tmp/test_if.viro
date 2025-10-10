@@ -1,0 +1,4 @@
+x: 1
+result: if x = 1 [print "true branch" 100] [print "false branch" 200]
+print ["result is" result]
+quit

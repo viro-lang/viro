@@ -1,0 +1,6 @@
+get_val: fn [] [3]
+test: fn [] [
+  print ["test:" 2 * get_val]
+]
+test
+quit

@@ -1,0 +1,7 @@
+fac: fn [n] [
+  if n = 1 [1] [
+    n * fac (n - 1)
+  ]
+]
+print (fac 5)
+quit

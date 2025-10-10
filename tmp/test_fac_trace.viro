@@ -1,0 +1,16 @@
+fac: fn [n] [
+  print ["fac called with n =" n]
+  if n = 1 [
+    print "returning 1"
+    1
+  ] [
+    sub_result: fac (n - 1)
+    print ["fac" (n - 1) "returned" sub_result]
+    final: n * sub_result
+    print ["n * sub_result =" n "*" sub_result "=" final]
+    final
+  ]
+]
+result: fac 5
+print ["final result:" result]
+quit

@@ -1,0 +1,26 @@
+; Test 1: Simple infix
+print ["Simple infix: 2 * 3 =" 2 * 3]
+
+; Test 2: Zero-argument function as operand
+get_val: fn [] [5]
+print ["Function call: 2 * get_val =" 2 * get_val]
+
+; Test 3: Factorial (original issue)
+fac: fn [n] [
+    if n = 1 [1] [n * fac (n - 1)]
+]
+print ["Factorial 5 =" fac 5]
+
+; Test 4: Assignment with infix
+x: 10
+x: x + 5
+print ["Assignment: x =" x]
+
+; Test 5: Print with multiple infix expressions
+print ["Multiple:" 1 + 2 3 * 4 5 - 1]
+
+; Test 6: Operators as prefix (new capability!)
+print ["Prefix mode: (+ 2 3) =" (+ 2 3)]
+print ["Prefix mode: (* 4 5) =" (* 4 5)]
+
+quit
