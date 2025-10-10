@@ -17,10 +17,6 @@
 //  3. Eval: Execute via evaluator
 //  4. Print: Display result (suppress 'none')
 //  5. Loop: Repeat until exit
-//
-// Prompt modes:
-//   - `>> `: Ready for new input
-//   - `.. `: Continuation line (incomplete expression)
 package repl
 
 import (
