@@ -210,3 +210,27 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 		t.Errorf("Expected result 5, got %d", ival)
 	}
 }
+
+func TestTypeQueryLitWordArgument(t *testing.T) {
+	code := `
+		f: fn ['w] [w]
+		type? f word
+	`
+	e := eval.NewEvaluator()
+	vals, err := parse.Parse(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, evalErr := e.Do_Blk(vals)
+	if evalErr == nil {
+		if result.Type != 4 {
+			t.Fatalf("Expected word! result, got type %d", result.Type)
+		}
+		if result.String() != "word!" {
+			t.Errorf("Expected 'word!', got '%s'", result.String())
+		}
+		return
+	}
+	// Should not produce an error; include failure message for visibility
+	t.Fatalf("type? failed: %v", evalErr)
+}

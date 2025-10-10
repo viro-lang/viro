@@ -484,15 +484,17 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 		// Check if this argument should be evaluated
 		if info.EvalArgs != nil && argIndex < len(info.EvalArgs) && !info.EvalArgs[argIndex] {
 			arg = vals[tokenIdx]
+			tokensConsumed++
 		} else {
-			arg, argErr = e.Do_Next(vals[tokenIdx])
+			var nextPos int
+			arg, nextPos, argErr = e.evalExpressionFromTokens(vals, tokenIdx, value.NoneVal())
 			if argErr != nil {
 				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
 			}
+			tokensConsumed += nextPos - tokenIdx
 		}
 		args = append(args, arg)
 		argIndex++
-		tokensConsumed++
 	}
 
 	// Advance index by number of tokens consumed from sequence
@@ -507,27 +509,38 @@ func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []valu
 
 func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, tokens []value.Value) (value.Value, *verror.Error) {
 	context := append([]value.Value{value.WordVal(name)}, tokens...)
-	if len(tokens) != info.Arity {
-		err := verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(tokens))},
-		)
-		return value.NoneVal(), e.annotateError(err, context, 0)
-	}
 
 	args := make([]value.Value, 0, info.Arity)
-	for k, token := range tokens {
-		var arg value.Value
-		var err *verror.Error
-		if info.EvalArgs != nil && k < len(info.EvalArgs) && !info.EvalArgs[k] {
-			arg = token
-		} else {
-			arg, err = e.Do_Next(token)
-			if err != nil {
-				return value.NoneVal(), e.annotateError(err, context, k+1)
-			}
+	pos := 0
+	for argIndex := 0; argIndex < info.Arity; argIndex++ {
+		if pos >= len(tokens) {
+			err := verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
+			)
+			return value.NoneVal(), e.annotateError(err, context, 0)
+		}
+
+		if info.EvalArgs != nil && argIndex < len(info.EvalArgs) && !info.EvalArgs[argIndex] {
+			args = append(args, tokens[pos])
+			pos++
+			continue
+		}
+
+		arg, nextPos, err := e.evalExpressionFromTokens(tokens, pos, value.NoneVal())
+		if err != nil {
+			return value.NoneVal(), e.annotateError(err, context, pos+1)
 		}
 		args = append(args, arg)
+		pos = nextPos
+	}
+
+	if pos != len(tokens) {
+		err := verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(info.Arity + (len(tokens) - pos))},
+		)
+		return value.NoneVal(), e.annotateError(err, context, pos)
 	}
 
 	result, err := native.Call(info, args, e)
