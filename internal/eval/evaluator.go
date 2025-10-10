@@ -439,13 +439,22 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 	return e.Do_Blk(block.Elements)
 }
 
-func (e *Evaluator) collectNativeArgs(vals []value.Value, start int, name string, info *native.NativeInfo, lastResult value.Value) ([]value.Value, int, *verror.Error) {
-	args := make([]value.Value, 0, info.Arity)
+func (e *Evaluator) collectNativeFunctionArgs(vals []value.Value, start int, fn *value.FunctionValue, lastResult value.Value) ([]value.Value, int, *verror.Error) {
+	// Get positional params (non-refinements)
+	positional := make([]value.ParamSpec, 0, len(fn.Params))
+	for _, spec := range fn.Params {
+		if !spec.Refinement {
+			positional = append(positional, spec)
+		}
+	}
+
+	args := make([]value.Value, 0, len(positional))
 	pos := start
 	consumed := 0
 	argIndex := 0
 
-	if info.Infix && lastResult.Type != value.TypeNone {
+	// Handle infix
+	if fn.Infix && lastResult.Type != value.TypeNone {
 		args = append(args, lastResult)
 		argIndex = 1
 	}
@@ -458,30 +467,33 @@ func (e *Evaluator) collectNativeArgs(vals []value.Value, start int, name string
 		annotateBase = len(vals) - 1
 	}
 
-	for argIndex < info.Arity {
+	// Collect positional arguments
+	for argIndex < len(positional) {
 		if pos >= len(vals) {
 			err := verror.NewScriptError(
 				verror.ErrIDArgCount,
-				[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
+				[3]string{fn.Name, strconv.Itoa(len(positional)), strconv.Itoa(len(args))},
 			)
 			return nil, consumed, e.annotateError(err, vals, annotateBase)
 		}
 
-		if info.EvalArgs != nil && argIndex < len(info.EvalArgs) && !info.EvalArgs[argIndex] {
+		paramSpec := positional[argIndex]
+
+		// Use ParamSpec.Eval instead of EvalArgs array
+		if !paramSpec.Eval {
+			// Pass raw (unevaluated)
 			args = append(args, vals[pos])
 			pos++
-			consumed = pos - start
-			argIndex++
-			continue
+		} else {
+			// Evaluate argument
+			arg, nextPos, err := e.evalExpressionFromTokens(vals, pos, value.NoneVal())
+			if err != nil {
+				return nil, consumed, e.annotateError(err, vals, pos)
+			}
+			args = append(args, arg)
+			pos = nextPos
 		}
 
-		arg, nextPos, err := e.evalExpressionFromTokens(vals, pos, value.NoneVal())
-		if err != nil {
-			return nil, consumed, e.annotateError(err, vals, pos)
-		}
-
-		args = append(args, arg)
-		pos = nextPos
 		consumed = pos - start
 		argIndex++
 	}
@@ -489,19 +501,30 @@ func (e *Evaluator) collectNativeArgs(vals []value.Value, start int, name string
 	return args, consumed, nil
 }
 
-func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) callNative(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
 	startIdx := *idx
 
-	args, consumed, err := e.collectNativeArgs(vals, *idx+1, name, info, lastResult)
+	// Collect arguments using unified ParamSpec-based logic
+	args, consumed, err := e.collectNativeFunctionArgs(vals, *idx+1, fn, lastResult)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
 	*idx += consumed
 
-	result, callErr := native.Call(info, args, e)
+	// Call native - always pass evaluator (native ignores if not needed)
+	result, callErr := native.CallFunction(fn, args, e)
 	if callErr != nil {
-		return value.NoneVal(), e.annotateError(callErr, vals, startIdx)
+		// Convert error interface back to *verror.Error for annotation
+		var vErr *verror.Error
+		if callErr != nil {
+			if ve, ok := callErr.(*verror.Error); ok {
+				vErr = ve
+			} else {
+				vErr = verror.NewInternalError(callErr.Error(), [3]string{})
+			}
+		}
+		return value.NoneVal(), e.annotateError(vErr, vals, startIdx)
 	}
 	return result, nil
 }
@@ -524,8 +547,9 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	if nativeInfo, found := native.Lookup(wordStr); found {
-		return e.callNative(wordStr, nativeInfo, seq, idx, lastResult)
+	// Check native registry first - use new LookupFunction
+	if nativeFn, found := native.LookupFunction(wordStr); found {
+		return e.callNative(nativeFn, seq, idx, lastResult)
 	}
 
 	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {

@@ -10,8 +10,8 @@ import (
 
 // Set implements the `set` native.
 //
-// Contract: set word value
-// - First argument must be a word (symbol to bind)
+// Contract: set 'word value
+// - First argument must be a lit-word (receives unevaluated word)
 // - Second argument is any value (already evaluated)
 // - Binds word in current frame and returns the value
 func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
@@ -19,8 +19,8 @@ func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 		return value.NoneVal(), arityError("set", 2, len(args))
 	}
 
-	if args[0].Type != value.TypeWord {
-		return value.NoneVal(), typeError("set", "word", args[0])
+	if args[0].Type != value.TypeLitWord {
+		return value.NoneVal(), typeError("set", "lit-word", args[0])
 	}
 
 	symbol, _ := args[0].AsWord()
@@ -36,16 +36,16 @@ func Set(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 // Get implements the `get` native.
 //
-// Contract: get word
-// - Argument must be a word symbol
+// Contract: get 'word
+// - Argument must be a lit-word (receives unevaluated word symbol)
 // - Returns bound value from current frame chain
 func Get(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("get", 1, len(args))
 	}
 
-	if args[0].Type != value.TypeWord {
-		return value.NoneVal(), typeError("get", "word", args[0])
+	if args[0].Type != value.TypeLitWord {
+		return value.NoneVal(), typeError("get", "lit-word", args[0])
 	}
 
 	symbol, _ := args[0].AsWord()

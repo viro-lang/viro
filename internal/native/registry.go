@@ -1475,7 +1475,7 @@ Useful for programmatic access to available functionality.`,
 			// We need to pass a native.Evaluator to Set, but we have value.Evaluator
 			// Create a reverse adapter that converts value.Evaluator back to native.Evaluator
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Set(args, reverseAdapter)
+			result, err := Set(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1492,7 +1492,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Get(args, reverseAdapter)
+			result, err := Get(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1512,7 +1512,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Object(args, reverseAdapter)
+			result, err := Object(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1529,7 +1529,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Context(args, reverseAdapter)
+			result, err := Context(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1547,7 +1547,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Make(args, reverseAdapter)
+			result, err := Make(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1565,7 +1565,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Select(args, reverseAdapter)
+			result, err := Select(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1584,7 +1584,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Put(args, reverseAdapter)
+			result, err := Put(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1602,7 +1602,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Print(args, reverseAdapter)
+			result, err := Print(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1633,7 +1633,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := When(args, reverseAdapter)
+			result, err := When(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1652,7 +1652,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := If(args, reverseAdapter)
+			result, err := If(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1670,7 +1670,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Loop(args, reverseAdapter)
+			result, err := Loop(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1688,7 +1688,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := While(args, reverseAdapter)
+			result, err := While(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1707,7 +1707,7 @@ Useful for programmatic access to available functionality.`,
 		},
 		func(args []value.Value, eval value.Evaluator) (value.Value, error) {
 			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Fn(args, reverseAdapter)
+			result, err := Fn(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -1802,8 +1802,18 @@ func (a evaluatorAdapter) Do_Next(val value.Value) (value.Value, error) {
 
 // nativeEvaluatorAdapter wraps value.Evaluator to implement native.Evaluator.
 // This is the reverse of evaluatorAdapter - converts value.Evaluator (error) back to native.Evaluator (*verror.Error).
+// Special case: if the value.Evaluator is actually an evaluatorAdapter, unwrap it to get the original native.Evaluator.
 type nativeEvaluatorAdapter struct {
 	eval value.Evaluator
+}
+
+func (a *nativeEvaluatorAdapter) unwrap() Evaluator {
+	// If the eval is an evaluatorAdapter, unwrap it to get the original
+	if adapter, ok := a.eval.(evaluatorAdapter); ok {
+		return adapter.eval
+	}
+	// Otherwise, this adapter is the best we can do
+	return a
 }
 
 func (a *nativeEvaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
