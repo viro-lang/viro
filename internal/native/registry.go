@@ -42,6 +42,7 @@ type NativeInfo struct {
 	FuncEval  NativeFuncWithEval // Native needing evaluator (if NeedsEval is true)
 	NeedsEval bool               // True if this native needs evaluator access
 	Arity     int                // Number of arguments expected
+	Infix     bool               // True if this function uses infix notation (consumes lastResult as first arg)
 }
 
 // Registry holds all registered native functions.
@@ -49,22 +50,22 @@ var Registry = make(map[string]*NativeInfo)
 
 func init() {
 	// Register math natives (simple - don't need evaluator)
-	Registry["+"] = &NativeInfo{Func: Add, NeedsEval: false, Arity: 2}
-	Registry["-"] = &NativeInfo{Func: Subtract, NeedsEval: false, Arity: 2}
-	Registry["*"] = &NativeInfo{Func: Multiply, NeedsEval: false, Arity: 2}
-	Registry["/"] = &NativeInfo{Func: Divide, NeedsEval: false, Arity: 2}
+	Registry["+"] = &NativeInfo{Func: Add, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["-"] = &NativeInfo{Func: Subtract, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["*"] = &NativeInfo{Func: Multiply, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["/"] = &NativeInfo{Func: Divide, NeedsEval: false, Arity: 2, Infix: true}
 
 	// Register comparison operators
-	Registry["<"] = &NativeInfo{Func: LessThan, NeedsEval: false, Arity: 2}
-	Registry[">"] = &NativeInfo{Func: GreaterThan, NeedsEval: false, Arity: 2}
-	Registry["<="] = &NativeInfo{Func: LessOrEqual, NeedsEval: false, Arity: 2}
-	Registry[">="] = &NativeInfo{Func: GreaterOrEqual, NeedsEval: false, Arity: 2}
-	Registry["="] = &NativeInfo{Func: Equal, NeedsEval: false, Arity: 2}
-	Registry["<>"] = &NativeInfo{Func: NotEqual, NeedsEval: false, Arity: 2}
+	Registry["<"] = &NativeInfo{Func: LessThan, NeedsEval: false, Arity: 2, Infix: true}
+	Registry[">"] = &NativeInfo{Func: GreaterThan, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["<="] = &NativeInfo{Func: LessOrEqual, NeedsEval: false, Arity: 2, Infix: true}
+	Registry[">="] = &NativeInfo{Func: GreaterOrEqual, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["="] = &NativeInfo{Func: Equal, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["<>"] = &NativeInfo{Func: NotEqual, NeedsEval: false, Arity: 2, Infix: true}
 
 	// Register logic operators
-	Registry["and"] = &NativeInfo{Func: And, NeedsEval: false, Arity: 2}
-	Registry["or"] = &NativeInfo{Func: Or, NeedsEval: false, Arity: 2}
+	Registry["and"] = &NativeInfo{Func: And, NeedsEval: false, Arity: 2, Infix: true}
+	Registry["or"] = &NativeInfo{Func: Or, NeedsEval: false, Arity: 2, Infix: true}
 	Registry["not"] = &NativeInfo{Func: Not, NeedsEval: false, Arity: 1}
 
 	// Register decimal and advanced math natives (Feature 002)

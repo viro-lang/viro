@@ -362,16 +362,16 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), nil
 	}
 
-	var result value.Value
+	var lastResult value.Value = value.NoneVal()
 	var err *verror.Error
 
-	// Use index-based loop to handle set-words that consume next value
+	// Simple loop: evaluate each value, passing lastResult forward
 	for i := 0; i < len(vals); i++ {
 		val := vals[i]
 
 		// Special case: set-word consumes next value
 		if val.Type == value.TypeSetWord {
-			result, err = e.evalSetWord(val, vals, &i)
+			lastResult, err = e.evalSetWord(val, vals, &i)
 			if err != nil {
 				return value.NoneVal(), e.annotateError(err, vals, i)
 			}
@@ -379,13 +379,13 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 		}
 
 		startIdx := i
-		result, err = e.evaluateWithFunctionCall(val, vals, &i)
+		lastResult, err = e.evaluateWithFunctionCall(val, vals, &i, lastResult)
 		if err != nil {
 			return value.NoneVal(), e.annotateError(err, vals, startIdx)
 		}
 	}
 
-	return result, nil
+	return lastResult, nil
 }
 
 // evalParen evaluates the contents of a paren and returns the result.
@@ -413,26 +413,53 @@ func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
 	return e.Do_Blk(block.Elements)
 }
 
-func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []value.Value, idx *int) (value.Value, *verror.Error) {
+func (e *Evaluator) callNative(name string, info *native.NativeInfo, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
 	startIdx := *idx
 	args := make([]value.Value, 0, info.Arity)
-	for j := 0; j < info.Arity; j++ {
-		tokenIdx := *idx + 1 + j
-		if tokenIdx >= len(vals) {
-			err := verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
-			)
-			return value.NoneVal(), e.annotateError(err, vals, startIdx)
+
+	// If this is an infix operator AND we have a lastResult, use it as first argument
+	// Otherwise, treat as prefix function (collect all args normally)
+	useInfix := info.Infix && lastResult.Type != value.TypeNone
+
+	if useInfix {
+		args = append(args, lastResult)
+		// Collect remaining arguments (info.Arity - 1)
+		for j := 1; j < info.Arity; j++ {
+			tokenIdx := *idx + j
+			if tokenIdx >= len(vals) {
+				err := verror.NewScriptError(
+					verror.ErrIDArgCount,
+					[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
+				)
+				return value.NoneVal(), e.annotateError(err, vals, startIdx)
+			}
+			arg, argErr := e.Do_Next(vals[tokenIdx])
+			if argErr != nil {
+				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+			}
+			args = append(args, arg)
 		}
-		arg, argErr := e.Do_Next(vals[tokenIdx])
-		if argErr != nil {
-			return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+		*idx += info.Arity - 1
+	} else {
+		// Prefix mode: collect all arguments normally
+		for j := 0; j < info.Arity; j++ {
+			tokenIdx := *idx + 1 + j
+			if tokenIdx >= len(vals) {
+				err := verror.NewScriptError(
+					verror.ErrIDArgCount,
+					[3]string{name, strconv.Itoa(info.Arity), strconv.Itoa(len(args))},
+				)
+				return value.NoneVal(), e.annotateError(err, vals, startIdx)
+			}
+			arg, argErr := e.Do_Next(vals[tokenIdx])
+			if argErr != nil {
+				return value.NoneVal(), e.annotateError(argErr, vals, tokenIdx)
+			}
+			args = append(args, arg)
 		}
-		args = append(args, arg)
+		*idx += info.Arity
 	}
 
-	*idx += info.Arity
 	result, err := native.Call(info, args, e)
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, startIdx)
@@ -471,7 +498,10 @@ func (e *Evaluator) callNativeFromSlice(name string, info *native.NativeInfo, to
 // If the value is a word referring to a native or user-defined function, this
 // helper dispatches to the appropriate call helper (advancing the index when
 // arguments are consumed). Otherwise it falls back to Do_Next.
-func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value, idx *int) (value.Value, *verror.Error) {
+//
+// lastResult is used for infix operators - if the function is infix, lastResult
+// becomes the first argument.
+func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
 	if val.Type != value.TypeWord {
 		return e.Do_Next(val)
 	}
@@ -482,7 +512,7 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 	}
 
 	if nativeInfo, found := native.Lookup(wordStr); found {
-		return e.callNative(wordStr, nativeInfo, seq, idx)
+		return e.callNative(wordStr, nativeInfo, seq, idx, lastResult)
 	}
 
 	if resolved, found := e.lookup(wordStr); found && resolved.Type == value.TypeFunction {
@@ -730,12 +760,8 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 	*i++
 	nextVal := vals[*i]
 
-	var (
-		result value.Value
-		err    *verror.Error
-	)
-
-	result, err = e.evaluateWithFunctionCall(nextVal, vals, i)
+	// Evaluate with lastResult = none (set-word doesn't use lastResult for infix)
+	result, err := e.evaluateWithFunctionCall(nextVal, vals, i, value.NoneVal())
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}
@@ -1093,7 +1119,7 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 	var result value.Value
 	nextVal := vals[*i]
 
-	result, err = e.evaluateWithFunctionCall(nextVal, vals, i)
+	result, err = e.evaluateWithFunctionCall(nextVal, vals, i, value.NoneVal())
 	if err != nil {
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}
