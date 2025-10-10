@@ -60,14 +60,25 @@ func TestDocumentationCompleteness(t *testing.T) {
 		}
 
 		// Check parameter count matches arity
+		// Arity represents the minimum required parameters.
+		// Optional parameters (refinements) are documented but don't count toward arity.
 		// Special case: ? function has variable arity (0 or 1) with 1 optional param
 		if name == "?" {
 			if len(doc.Parameters) != 1 || !doc.Parameters[0].Optional {
 				t.Errorf("%s: should have exactly 1 optional parameter", name)
 			}
-		} else if len(doc.Parameters) != info.Arity {
-			t.Errorf("%s: parameter count (%d) doesn't match arity (%d)",
-				name, len(doc.Parameters), info.Arity)
+		} else {
+			// Count required (non-optional) parameters
+			requiredCount := 0
+			for _, param := range doc.Parameters {
+				if !param.Optional {
+					requiredCount++
+				}
+			}
+			if requiredCount != info.Arity {
+				t.Errorf("%s: required parameter count (%d) doesn't match arity (%d)",
+					name, requiredCount, info.Arity)
+			}
 		}
 
 		// Check each parameter is complete

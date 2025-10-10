@@ -17,6 +17,7 @@ import (
 // - Window size: 3 expressions before, current (marked), 3 after
 // - Boundary handling: clamps to available elements
 // - Format: "value1 value2 value3 >>> ERROR_HERE <<< value4 value5 value6"
+// - For decimal values, includes magnitude and scale metadata
 func CaptureNear(values []value.Value, index int) string {
 	if len(values) == 0 || index < 0 || index >= len(values) {
 		return ""
@@ -36,20 +37,32 @@ func CaptureNear(values []value.Value, index int) string {
 
 	// Values before error
 	for i := start; i < index; i++ {
-		parts = append(parts, values[i].String())
+		parts = append(parts, formatValueWithMetadata(values[i]))
 	}
 
 	// Error location marker
 	parts = append(parts, ">>>")
-	parts = append(parts, values[index].String())
+	parts = append(parts, formatValueWithMetadata(values[index]))
 	parts = append(parts, "<<<")
 
 	// Values after error
 	for i := index + 1; i < end; i++ {
-		parts = append(parts, values[i].String())
+		parts = append(parts, formatValueWithMetadata(values[i]))
 	}
 
 	return strings.Join(parts, " ")
+}
+
+// formatValueWithMetadata formats a value with type-specific metadata.
+// For decimal values, includes scale information for better diagnostics.
+func formatValueWithMetadata(v value.Value) string {
+	if v.Type == value.TypeDecimal {
+		if dec, ok := v.AsDecimal(); ok && dec != nil {
+			// Include scale metadata for decimal diagnostics
+			return fmt.Sprintf("%s[scale:%d]", dec.String(), dec.Scale)
+		}
+	}
+	return v.String()
 }
 
 // CaptureWhere creates a call stack trace from frame chain.

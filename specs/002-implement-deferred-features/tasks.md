@@ -99,7 +99,7 @@
 - [X] T046 [US1] Register all decimal and math natives in internal/native/registry.go
 - [X] T047 [US1] Add Math error mappings for domain violations (sqrt-negative, log-domain, exp-overflow) in internal/verror/categories.go
 - [X] T047.1 [US1] Add contract test for decimal precision overflow (35+ digit results) raising Math error in test/contract/math_decimal_test.go
-- [ ] T048 [US1] Update error context generation to include decimal metadata (magnitude, scale) in internal/verror/context.go
+- [X] T048 [US1] Update error context generation to include decimal metadata (magnitude, scale) in internal/verror/context.go
 
 ### Integration Tests for User Story 1
 
