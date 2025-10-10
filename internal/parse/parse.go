@@ -29,6 +29,16 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// isInfixWord returns true if the word is an infix operator (REBOL-style)
+func isInfixWord(word string) bool {
+	switch word {
+	case "+", "-", "*", "/", "<", ">", "=", "<=", ">=", "<>", "and", "or", "not":
+		return true
+	default:
+		return false
+	}
+}
+
 // Parse parses a string into a slice of Values.
 // Returns the parsed values and any syntax error encountered.
 func Parse(input string) ([]value.Value, *verror.Error) {
@@ -59,7 +69,6 @@ const (
 	tokDecimal
 	tokString
 	tokWord
-	tokOperator
 	tokSetWord
 	tokGetWord
 	tokLitWord
@@ -269,7 +278,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 
 		// Single-character operators and multi-character operator starts
 		if runes[pos] == '+' || runes[pos] == '*' || runes[pos] == '/' {
-			tokens = append(tokens, token{tokOperator, string(runes[pos]), pos})
+			tokens = append(tokens, token{tokWord, string(runes[pos]), pos})
 			pos++
 			continue
 		}
@@ -281,9 +290,9 @@ func tokenize(input string) ([]token, *verror.Error) {
 			// Check for <= or <>
 			if pos < len(runes) && (runes[pos] == '=' || runes[pos] == '>') {
 				pos++
-				tokens = append(tokens, token{tokOperator, string(runes[start:pos]), start})
+				tokens = append(tokens, token{tokWord, string(runes[start:pos]), start})
 			} else {
-				tokens = append(tokens, token{tokOperator, "<", start})
+				tokens = append(tokens, token{tokWord, "<", start})
 			}
 			continue
 		}
@@ -294,15 +303,15 @@ func tokenize(input string) ([]token, *verror.Error) {
 			// Check for >=
 			if pos < len(runes) && runes[pos] == '=' {
 				pos++
-				tokens = append(tokens, token{tokOperator, ">=", start})
+				tokens = append(tokens, token{tokWord, ">=", start})
 			} else {
-				tokens = append(tokens, token{tokOperator, ">", start})
+				tokens = append(tokens, token{tokWord, ">", start})
 			}
 			continue
 		}
 
 		if runes[pos] == '=' {
-			tokens = append(tokens, token{tokOperator, "=", pos})
+			tokens = append(tokens, token{tokWord, "=", pos})
 			pos++
 			continue
 		}
@@ -310,7 +319,7 @@ func tokenize(input string) ([]token, *verror.Error) {
 		// Handle minus sign (could be negative number or operator)
 		// Negative numbers are already handled above, so here it's an operator
 		if runes[pos] == '-' && (pos+1 >= len(runes) || !unicode.IsDigit(runes[pos+1])) {
-			tokens = append(tokens, token{tokOperator, "-", pos})
+			tokens = append(tokens, token{tokWord, "-", pos})
 			pos++
 			continue
 		}
@@ -371,12 +380,8 @@ func tokenize(input string) ([]token, *verror.Error) {
 				continue
 			}
 
-			// Check if it's an operator
-			if isOperator(word) {
-				tokens = append(tokens, token{tokOperator, word, start})
-			} else {
-				tokens = append(tokens, token{tokWord, word, start})
-			}
+			// All words (including operators) are treated as tokWord
+			tokens = append(tokens, token{tokWord, word, start})
 			continue
 		}
 
@@ -419,16 +424,6 @@ func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_' || r == '?' || r == '!'
 }
 
-func isOperator(word string) bool {
-	operators := map[string]bool{
-		"+": true, "-": true, "*": true, "/": true,
-		"<": true, ">": true, "<=": true, ">=": true,
-		"=": true, "<>": true,
-		"and": true, "or": true, "not": true,
-	}
-	return operators[word]
-}
-
 // parser holds parsing state.
 type parser struct {
 	tokens []token
@@ -464,15 +459,13 @@ func (p *parser) parseExpression() (value.Value, *verror.Error) {
 		return value.NoneVal(), err
 	}
 
-	// Parse operators in left-to-right order
-	for !p.isAtEnd() && p.peek().typ == tokOperator {
+	// Parse infix words (operators) in left-to-right order
+	for !p.isAtEnd() && p.peek().typ == tokWord && isInfixWord(p.peek().val) {
 		op := p.advance()
 		right, err := p.parsePrimary()
 		if err != nil {
 			return value.NoneVal(), err
 		}
-
-		// Build function call: operator word, then arguments
 		left = value.ParenVal([]value.Value{
 			value.WordVal(op.val),
 			left,
@@ -541,10 +534,7 @@ func (p *parser) parsePrimary() (value.Value, *verror.Error) {
 			return value.WordVal(tok.val), nil
 		}
 
-	case tokOperator:
-		// When an operator appears in primary position (like in `(+ 3 4)`),
-		// treat it as a word value, not as an infix operator
-		return value.WordVal(tok.val), nil
+	// usunięto tokOperator, operator to zwykły tokWord
 
 	case tokSetWord:
 		return value.SetWordVal(tok.val), nil
