@@ -102,6 +102,14 @@ func NewREPL() (*REPL, error) {
 
 // NewREPLForTest creates a REPL with injected evaluator and writer for testing purposes.
 func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
+	// Initialize trace/debug sessions for tests (same as NewREPL)
+	// Use os.DevNull to avoid trace output pollution during tests
+	if err := native.InitTrace(os.DevNull, 50); err != nil {
+		// Log error but continue - tests should not fail due to trace init
+		fmt.Fprintf(os.Stderr, "Warning: failed to initialize trace session: %v\n", err)
+	}
+	native.InitDebugger()
+
 	if e == nil {
 		e = eval.NewEvaluator()
 	}

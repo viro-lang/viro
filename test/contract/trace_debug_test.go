@@ -35,15 +35,14 @@ func TestTraceControls(t *testing.T) {
 		{
 			name:       "query trace status with trace?",
 			code:       "trace --on\ntrace?",
-			expectType: value.TypeObject, // Returns object with trace state
+			expectType: value.TypeLogic, // Returns boolean indicating trace state
 			checkFunc: func(t *testing.T, v value.Value) {
-				obj, ok := v.AsObject()
+				enabled, ok := v.AsLogic()
 				if !ok {
-					t.Fatal("expected trace? to return object!")
+					t.Fatal("expected trace? to return boolean!")
 				}
-				// Object should contain enabled, filters, etc.
-				if obj.Manifest.Words == nil {
-					t.Error("expected trace? object to have fields")
+				if !enabled {
+					t.Error("expected trace? to return true when enabled")
 				}
 			},
 			wantErr: false,
@@ -51,15 +50,15 @@ func TestTraceControls(t *testing.T) {
 		{
 			name:       "trace? when disabled",
 			code:       "trace?",
-			expectType: value.TypeObject,
+			expectType: value.TypeLogic,
 			checkFunc: func(t *testing.T, v value.Value) {
-				// Should return object with enabled: false
-				obj, ok := v.AsObject()
+				// Should return false when disabled
+				enabled, ok := v.AsLogic()
 				if !ok {
-					t.Fatal("expected trace? to return object!")
+					t.Fatal("expected trace? to return boolean!")
 				}
-				if obj.Manifest.Words == nil {
-					t.Error("expected trace? object to have fields")
+				if enabled {
+					t.Error("expected trace? to return false when disabled")
 				}
 			},
 			wantErr: false,

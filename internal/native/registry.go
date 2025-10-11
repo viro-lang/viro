@@ -1557,10 +1557,10 @@ and other execution events to a log file. Supports filtering and custom output d
 	fn.Doc = &NativeDoc{
 		Category: "Debug",
 		Summary:  "Queries trace status",
-		Description: `Returns an object with trace status information including enabled state and active filters.`,
+		Description: `Returns a boolean indicating whether tracing is currently enabled.`,
 		Parameters: []ParamDoc{},
-		Returns:    "[object!] Object with enabled field and optional include/exclude filter blocks",
-		Examples:   []string{"trace?  ; => object with enabled: false", "trace --on\ntrace?  ; => object with enabled: true"},
+		Returns:    "[logic!] true if tracing is enabled, false otherwise",
+		Examples:   []string{"trace?  ; => false", "trace --on\ntrace?  ; => true"},
 		SeeAlso:    []string{"trace", "debug"}, Tags: []string{"debug", "trace", "query"},
 	}
 

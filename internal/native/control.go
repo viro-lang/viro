@@ -372,7 +372,7 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 // TraceQuery implements the 'trace?' query native (Feature 002, FR-020).
 //
 // Contract: trace?
-// Returns object with trace state information
+// Returns boolean indicating if tracing is enabled
 //
 // T146: Implements trace? query
 func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
@@ -380,54 +380,13 @@ func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evalu
 		return value.NoneVal(), arityError("trace?", 0, len(args))
 	}
 
-	// Type-assert to access frame operations
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"trace?", "frame-manager-unavailable", ""},
-		)
-	}
-
-	// Prepare object fields and initial values
-	fields := []string{"enabled"}
-	initializers := make(map[string][]value.Value)
-
+	// Return simple boolean indicating trace state
 	if GlobalTraceSession == nil {
-		initializers["enabled"] = []value.Value{value.LogicVal(false)}
-	} else {
-		enabled := GlobalTraceSession.IsEnabled()
-		initializers["enabled"] = []value.Value{value.LogicVal(enabled)}
-
-		// Add filter information if available
-		if enabled {
-			GlobalTraceSession.mu.Lock()
-			filters := GlobalTraceSession.filters
-			GlobalTraceSession.mu.Unlock()
-
-			// Convert filter words to block values
-			if len(filters.IncludeWords) > 0 {
-				fields = append(fields, "include")
-				includeVals := make([]value.Value, len(filters.IncludeWords))
-				for i, word := range filters.IncludeWords {
-					includeVals[i] = value.WordVal(word)
-				}
-				initializers["include"] = []value.Value{value.BlockVal(includeVals)}
-			}
-
-			if len(filters.ExcludeWords) > 0 {
-				fields = append(fields, "exclude")
-				excludeVals := make([]value.Value, len(filters.ExcludeWords))
-				for i, word := range filters.ExcludeWords {
-					excludeVals[i] = value.WordVal(word)
-				}
-				initializers["exclude"] = []value.Value{value.BlockVal(excludeVals)}
-			}
-		}
+		return value.LogicVal(false), nil
 	}
 
-	// Create object with trace state
-	return instantiateObject(mgr, eval, -1, nil, fields, initializers)
+	enabled := GlobalTraceSession.IsEnabled()
+	return value.LogicVal(enabled), nil
 }
 
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).

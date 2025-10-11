@@ -303,14 +303,14 @@
 
 ### Integration Tests for User Story 5
 
-- [ ] T163 [US5] Integration test SC-015: Trace overhead when disabled (<5%) in test/integration/sc015_validation_test.go
-- [ ] T164 [US5] Integration test SC-015: Trace overhead when enabled (<25%) in test/integration/sc015_validation_test.go
-- [ ] T165 [US5] Integration test SC-015: Breakpoint interaction latency (<150ms) in test/integration/sc015_validation_test.go
-- [ ] T166 [US5] Integration test: End-to-end trace session workflow in test/integration/sc015_validation_test.go
-- [ ] T167 [US5] Integration test: Debug session with stepping and inspection in test/integration/sc015_validation_test.go
-- [ ] T167.1 [US5] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to Phase 8
+- [X] T163 [US5] Integration test SC-015: Trace overhead when disabled (<5%) in test/integration/sc015_validation_test.go
+- [X] T164 [US5] Integration test SC-015: Trace overhead when enabled (<25%) in test/integration/sc015_validation_test.go
+- [X] T165 [US5] Integration test SC-015: Breakpoint interaction latency (<150ms) in test/integration/sc015_validation_test.go
+- [X] T166 [US5] Integration test: End-to-end trace session workflow in test/integration/sc015_validation_test.go
+- [X] T167 [US5] Integration test: Debug session with stepping and inspection in test/integration/sc015_validation_test.go
+- [X] T167.1 [US5] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to Phase 8
 
-**Checkpoint**: User Story 5 MOSTLY COMPLETE ⚠️ - Core trace/debug/reflection natives implemented and registered. Missing: T153 (breakpoint integration in evaluator), T154 (REPL debug mode prompt), T163-T167 (SC-015 integration tests).
+**Checkpoint**: User Story 5 MOSTLY COMPLETE ⚠️ - Core trace/debug/reflection natives implemented and registered. SC-015 integration tests completed (T163-T167.1). Feature 001 backward compatibility verified (all tests passing). Missing: T153 (breakpoint integration in evaluator), T154 (REPL debug mode prompt).
 
 ---
 

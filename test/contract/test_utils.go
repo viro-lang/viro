@@ -16,6 +16,10 @@ func Evaluate(src string) (value.Value, *verror.Error) {
 	if native.GlobalTraceSession == nil {
 		_ = native.InitTrace("", 50)
 	}
+	// Disable trace between tests to ensure clean state
+	if native.GlobalTraceSession != nil {
+		native.GlobalTraceSession.Disable()
+	}
 	// Always reset debugger to ensure clean state between tests
 	native.InitDebugger()
 
