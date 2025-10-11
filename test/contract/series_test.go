@@ -3,10 +3,7 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func TestSeries_First(t *testing.T) {
@@ -50,7 +47,7 @@ func TestSeries_First(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -92,7 +89,7 @@ func TestSeries_Last(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "empty string error",
+			name:    "empty string error",	
 			input:   "last \"\"",
 			wantErr: true,
 		},
@@ -105,7 +102,7 @@ func TestSeries_Last(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -169,7 +166,7 @@ str`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -223,7 +220,7 @@ str`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -280,7 +277,7 @@ length? data`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -306,7 +303,7 @@ func TestSeries_Copy(t *testing.T) {
 		want := value.BlockVal([]value.Value{
 			value.IntVal(1), value.IntVal(2), value.IntVal(3),
 		})
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -318,7 +315,7 @@ func TestSeries_Copy(t *testing.T) {
 	t.Run("copy string", func(t *testing.T) {
 		input := "copy \"hello\""
 		want := value.StrVal("hello")
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -332,7 +329,7 @@ func TestSeries_Copy(t *testing.T) {
 		want := value.BlockVal([]value.Value{
 			value.IntVal(1), value.IntVal(2),
 		})
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err == nil {
 			if !evalResult.Equals(want) {
 				t.Fatalf("expected %v, got %v", want, evalResult)
@@ -345,7 +342,7 @@ func TestSeries_Copy(t *testing.T) {
 	t.Run("copy --part string", func(t *testing.T) {
 		input := "copy --part 3 \"abcdef\""
 		want := value.StrVal("abc")
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err == nil {
 			if !evalResult.Equals(want) {
 				t.Fatalf("expected %v, got %v", want, evalResult)
@@ -357,7 +354,7 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy non-series error", func(t *testing.T) {
 		input := "copy 42"
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err == nil {
 			t.Fatalf("expected error but got result %v", evalResult)
 		}
@@ -365,7 +362,7 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part out of range", func(t *testing.T) {
 		input := "copy --part [1 2] 5"
-		evalResult, err := evaluate(input)
+		evalResult, err := Evaluate(input)
 		if err == nil {
 			t.Fatalf("expected error but got result %v", evalResult)
 		}
@@ -424,7 +421,7 @@ func TestSeries_Find(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -443,15 +440,6 @@ func TestSeries_Find(t *testing.T) {
 	}
 }
 
-func evaluate(src string) (value.Value, *verror.Error) {
-	vals, err := parse.Parse(src)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	e := eval.NewEvaluator()
-	return e.Do_Blk(vals)
-}
 
 // T102: remove, remove --part for blocks and strings
 func TestSeries_Remove(t *testing.T) {
@@ -516,7 +504,7 @@ str`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -594,7 +582,7 @@ part`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -675,7 +663,7 @@ str`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evalResult, err := evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
@@ -693,4 +681,3 @@ str`,
 		})
 	}
 }
-
