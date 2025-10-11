@@ -5,4 +5,5 @@ List of things to impelment:
 - support for comments within the parser
 - comprehensive cli interface
 - while should accept logic! or integer! (as it's documentation states)
-- operacje na seriach są implementowane przez switch, a to powinien być dynamic dispatch na typie
+- operations on series are implemented using switch, but this should be dynamic dispatch based on type
+- all series functions should work on ALL series datatypes (blocks, strings, ports etc.)
