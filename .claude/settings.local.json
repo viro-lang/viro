@@ -3,7 +3,8 @@
     "allow": [
       "Bash(go:*)",
       "Bash(./viro:*)",
-      "Bash(echo \"print \"\"Hello from Viro\"\"\nquit\")"
+      "Bash(echo \"print \"\"Hello from Viro\"\"\nquit\")",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)"
     ],
     "deny": [],
     "ask": []
