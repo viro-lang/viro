@@ -374,69 +374,73 @@ func TestSeries_Copy(t *testing.T) {
 
 // T101: find, find --last for blocks and strings
 func TestSeries_Find(t *testing.T) {
-	t.Run("find in block", func(t *testing.T) {
-		input := "find [1 2 3 4] 3"
-		want := value.IntVal(3)
-		evalResult, err := evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
+	tests := []struct {
+		name    string
+		input   string
+		want    value.Value
+		wantErr bool
+	}{
+		{
+			name:  "find in block",
+			input: `find [1 2 3 2 1] 2`,
+			want:  value.IntVal(2),
+		},
+		{
+			name:  "find in string",
+			input: `find "hello world" "o"`,
+			want:  value.IntVal(5),
+		},
+		{
+			name:  "find --last in block",
+			input: `find --last [1 2 3 2 1] 2`,
+			want:  value.IntVal(4),
+		},
+		{
+			name:  "find --last in string",
+			input: `find --last "hello world" "o"`,
+			want:  value.IntVal(8),
+		},
+		{
+			name:  "find not found in block",
+			input: `find [1 2 3] 4`,
+			want:  value.NoneVal(),
+		},
+		{
+			name:  "find not found in string",
+			input: `find "hello" "z"`,
+			want:  value.NoneVal(),
+		},
+		{
+			name:    "find non-series error",
+			input:   "find 42 1",
+			wantErr: true,
+		},
+		{
+			name:    "find string with non-string error",
+			input:   `find "hello" 1`,
+			wantErr: true,
+		},
+	}
 
-	t.Run("find in string", func(t *testing.T) {
-		input := "find \"hello\" \"l\""
-		want := value.StrVal("l")
-		evalResult, err := evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
 
-	t.Run("find --last in block", func(t *testing.T) {
-		input := "find --last [1 2 3 2 1] 2"
-		want := value.IntVal(2)
-		evalResult, err := evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	t.Run("find --last in string", func(t *testing.T) {
-		input := "find --last \"hello\" \"l\""
-		want := value.StrVal("l")
-		evalResult, err := evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("find not found error", func(t *testing.T) {
-		input := "find [1 2 3] 5"
-		evalResult, err := evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-	})
-
-	t.Run("find non-series error", func(t *testing.T) {
-		input := "find 42 1"
-		evalResult, err := evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-	})
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
 }
 
 func evaluate(src string) (value.Value, *verror.Error) {
@@ -447,4 +451,86 @@ func evaluate(src string) (value.Value, *verror.Error) {
 
 	e := eval.NewEvaluator()
 	return e.Do_Blk(vals)
+}
+
+// T102: remove, remove --part for blocks and strings
+func TestSeries_Remove(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    value.Value
+		wantErr bool
+	}{
+		{
+			name: "remove from block",
+			input: `data: [1 2 3 4 5]
+remove data
+data`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(2),
+				value.IntVal(3),
+				value.IntVal(4),
+				value.IntVal(5),
+			}),
+		},
+		{
+			name: "remove from string",
+			input: `str: "hello"
+remove str
+str`,
+			want: value.StrVal("ello"),
+		},
+		{
+			name: "remove --part from block",
+			input: `data: [1 2 3 4 5]
+remove data --part 3
+data`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(4),
+				value.IntVal(5),
+			}),
+		},
+		{
+			name: "remove --part from string",
+			input: `str: "hello"
+remove str --part 2
+str`,
+			want: value.StrVal("llo"),
+		},
+		{
+			name:    "remove from non-series error",
+			input:   "remove 42",
+			wantErr: true,
+		},
+		{
+			name:    "remove --part with non-integer error",
+			input:   `remove [1 2] --part "a"`,
+			wantErr: true,
+		},
+		{
+			name:    "remove --part out of range error",
+			input:   `remove [1 2] --part 3`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
 }

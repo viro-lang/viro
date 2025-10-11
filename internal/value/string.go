@@ -95,6 +95,15 @@ func (s *StringValue) Index() int {
 }
 
 // SetIndex updates current series position (bounds checking by caller).
+
 func (s *StringValue) SetIndex(idx int) {
 	s.index = idx
+}
+
+// Remove removes a specified number of characters from the current position (in-place mutation).
+
+func (s *StringValue) Remove(count int) {
+	if s.index+count <= len(s.runes) {
+		s.runes = append(s.runes[:s.index], s.runes[s.index+count:]...)
+	}
 }

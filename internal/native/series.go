@@ -213,3 +213,128 @@ func emptySeriesError(op string) *verror.Error {
 		[3]string{op, "", ""},
 	)
 }
+
+// Find implements the `find` native for series values.
+//
+// Contract: find series value -> index (1-based) or none
+// Contract: find --last series value -> last index (1-based) or none
+func Find(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError("find", 2, len(args))
+	}
+
+	series := args[0]
+	sought := args[1]
+	lastVal, hasLast := refinements["last"]
+	isLast := hasLast && lastVal.Type == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		if isLast {
+			for i := blk.Length() - 1; i >= 0; i-- {
+				if blk.Elements[i].Equals(sought) {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		} else {
+			for i, v := range blk.Elements {
+				if v.Equals(sought) {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		}
+		return value.NoneVal(), nil
+
+	case value.TypeString:
+		str, _ := series.AsString()
+		soughtStr, ok := sought.AsString()
+		if !ok {
+			return value.NoneVal(), typeError("find", "string", sought)
+		}
+
+		runes := []rune(str.String())
+		soughtRunes := []rune(soughtStr.String())
+
+		if len(soughtRunes) == 0 {
+			return value.NoneVal(), nil // Or error? Let's say none for now.
+		}
+
+		if isLast {
+			for i := len(runes) - len(soughtRunes); i >= 0; i-- {
+				match := true
+				for j := 0; j < len(soughtRunes); j++ {
+					if runes[i+j] != soughtRunes[j] {
+						match = false
+						break
+					}
+				}
+				if match {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		} else {
+			for i := 0; i <= len(runes)-len(soughtRunes); i++ {
+				match := true
+				for j := 0; j < len(soughtRunes); j++ {
+					if runes[i+j] != soughtRunes[j] {
+						match = false
+						break
+					}
+				}
+				if match {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		}
+		return value.NoneVal(), nil
+
+	default:
+		return value.NoneVal(), typeError("find", "series", series)
+	}
+}
+
+// Remove implements the `remove` native for series values.
+//
+// Contract: remove series -> modified series
+// Contract: remove series --part count -> modified series
+func Remove(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+	partVal, hasPart := refinements["part"]
+	hasPart = hasPart && partVal.Type != value.TypeNone
+
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("remove", 1, len(args))
+	}
+
+	series := args[0]
+	count := 1
+
+	if hasPart {
+		if partVal.Type != value.TypeInteger {
+			return value.NoneVal(), typeError("remove --part", "integer", partVal)
+		}
+		count64, _ := partVal.AsInteger()
+		count = int(count64)
+	}
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		if count < 0 || count > blk.Length() {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
+		}
+		blk.SetIndex(0)
+		blk.Remove(count)
+		return series, nil
+	case value.TypeString:
+		str, _ := series.AsString()
+		if count < 0 || count > str.Length() {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
+		}
+		str.SetIndex(0)
+		str.Remove(count)
+		return series, nil
+	default:
+		return value.NoneVal(), typeError("remove", "series", series)
+	}
+}

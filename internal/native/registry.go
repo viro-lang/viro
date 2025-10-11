@@ -764,6 +764,67 @@ Returns an integer representing the length of the series.`,
 		SeeAlso:  []string{"remove", "take", "skip"}, Tags: []string{"series", "copy", "block", "string"},
 	}
 
+	// Rejestracja natywu 'find' dla operacji na seriach
+	Registry["find"] = value.NewNativeFunction(
+		"find",
+		[]value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewParamSpec("value", true),
+			value.NewRefinementSpec("last", false),
+		},
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Find(args, refValues)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = Registry["find"]
+	fn.Doc = &NativeDoc{
+		Category:    "Series",
+		Summary:     "Finds a value in a block or string, returning its 1-based index",
+		Description: `Searches for a value within a series (block or string). Returns the 1-based index of the first occurrence. If the --last refinement is used, it returns the index of the last occurrence. If the value is not found, it returns none.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to search in", Optional: false},
+			{Name: "value", Type: "any-type!", Description: "The value to find", Optional: false},
+			{Name: "--last", Type: "logic!", Description: "Optional flag to find the last occurrence", Optional: true},
+		},
+		Returns:  "[integer! none!] The 1-based index of the value or none if not found",
+		Examples: []string{"find [a b c b a] \"b\"  ; => 2", `find --last [a b c b a] "b"  ; => 4`, `find "hello world" "o"  ; => 5`, `find [1 2 3] 4  ; => none`},
+		SeeAlso:  []string{"copy", "remove", "take"}, Tags: []string{"series", "find", "search", "block", "string"},
+	}
+
+	// Rejestracja natywu 'remove' dla operacji na seriach
+	Registry["remove"] = value.NewNativeFunction(
+		"remove",
+		[]value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewRefinementSpec("part", true),
+		},
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Remove(args, refValues)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = Registry["remove"]
+	fn.Doc = &NativeDoc{
+		Category:    "Series",
+		Summary:     "Removes elements from the head of a series",
+		Description: `Removes one or more elements from the head of a series. The series is modified in place. Use the --part refinement to specify the number of elements to remove.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to modify", Optional: false},
+			{Name: "--part", Type: "integer!", Description: "Number of elements to remove", Optional: true},
+		},
+		Returns:  "[block! string!] The modified series",
+		Examples: []string{`data: [1 2 3]\nremove data  ; => [2 3]`, `str: "hello"\nremove str --part 2  ; => "llo"`},
+		SeeAlso:  []string{"copy", "find", "take"},
+		Tags:     []string{"series", "remove", "mutation"},
+	}
+
 	// Group 6: Data operations (3 functions)
 	// set and get need evaluator, type? doesn't
 	Registry["set"] = value.NewNativeFunction(

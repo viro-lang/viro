@@ -93,10 +93,10 @@ func (b *BlockValue) Insert(val Value) {
 	b.Elements = append(b.Elements[:b.Index], append([]Value{val}, b.Elements[b.Index:]...)...)
 }
 
-// Remove removes element at current position (in-place mutation).
-func (b *BlockValue) Remove() {
-	if b.Index < len(b.Elements) {
-		b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+1:]...)
+// Remove removes a specified number of elements from the current position (in-place mutation).
+func (b *BlockValue) Remove(count int) {
+	if b.Index+count <= len(b.Elements) {
+		b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+count:]...)
 	}
 }
 
