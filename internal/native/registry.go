@@ -735,6 +735,35 @@ Returns an integer representing the length of the series.`,
 		SeeAlso:  []string{"first", "last", "append", "insert"}, Tags: []string{"series", "query", "length", "count"},
 	})
 
+	// Rejestracja natywu 'copy' dla operacji na seriach
+	Registry["copy"] = value.NewNativeFunction(
+		"copy",
+		[]value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewRefinementSpec("part", true),
+		},
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			result, err := Copy(args, refValues)
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn = Registry["copy"]
+	fn.Doc = &NativeDoc{
+		Category:    "Series",
+		Summary:     "Copies a block or string, optionally with --part refinement",
+		Description: `Returns a copy of the given block or string. If --part refinement is provided, copies only the specified part (count of elements/characters). Raises error if out of range.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to copy", Optional: false},
+			{Name: "--part", Type: "integer!", Description: "Optional count of elements/characters to copy", Optional: true},
+		},
+		Returns:  "[block! string!] The copied series or substring",
+		Examples: []string{"copy [1 2 3]  ; => [1 2 3]", `copy "hello" --part 2  ; => "he"`, "copy [a b c] --part 2  ; => [a b]"},
+		SeeAlso:  []string{"remove", "take", "skip"}, Tags: []string{"series", "copy", "block", "string"},
+	}
+
 	// Group 6: Data operations (3 functions)
 	// set and get need evaluator, type? doesn't
 	Registry["set"] = value.NewNativeFunction(

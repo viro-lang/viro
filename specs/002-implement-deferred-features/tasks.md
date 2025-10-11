@@ -210,8 +210,8 @@
 
 ### Contract Tests for User Story 4
 
-- [ ] T100 [US4] Contract test: copy, copy --part for blocks and strings in test/contract/series_test.go
-- [ ] T101 [US4] Contract test: find, find --last in test/contract/series_test.go
+- [X] T100 [US4] Contract test: copy, copy --part for blocks and strings in test/contract/series_test.go
+- [X] T101 [US4] Contract test: find, find --last in test/contract/series_test.go
 - [ ] T102 [US4] Contract test: remove, remove --part in test/contract/series_test.go
 - [ ] T103 [US4] Contract test: skip, take operations in test/contract/series_test.go
 - [ ] T104 [US4] Contract test: sort, reverse on series in test/contract/series_test.go
@@ -225,7 +225,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T111 [P] [US4] Implement `copy` native with --part refinement in internal/native/series.go
+- [X] T111 [P] [US4] Implement `copy` native with --part refinement in internal/native/series.go
 - [ ] T112 [P] [US4] Implement `find` native with --last refinement in internal/native/series.go
 - [ ] T113 [P] [US4] Implement `remove` native with --part refinement in internal/native/series.go
 - [ ] T114 [P] [US4] Implement `skip` and `take` natives in internal/native/series.go

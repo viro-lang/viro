@@ -212,7 +212,6 @@ func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prot
 	obj := value.NewObject(frameIdx, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
-		obj.Parent = prototype.FrameIndex // For backward compatibility
 		mgr.MarkFrameCaptured(prototype.FrameIndex)
 	}
 

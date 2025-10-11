@@ -5,6 +5,65 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// Copy implements the `copy` native for series values.
+//
+// Contract: copy series -> new copy
+// Contract: copy --part series count -> new copy of first count elements/chars
+func Copy(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+	// --part refinement: copy only first N elements/chars
+	partVal, hasPart := refinements["part"]
+	// Check if refinement was actually provided (not just default none)
+	hasPart = hasPart && partVal.Type != value.TypeNone
+	if len(args) < 1 {
+		return value.NoneVal(), arityError("copy", 1, len(args))
+	}
+	series := args[0]
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		if hasPart {
+			if partVal.Type != value.TypeInteger {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count64, ok := partVal.AsInteger()
+			if !ok {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count := int(count64)
+			if count < 0 || count > blk.Length() {
+				return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
+			}
+			elems := make([]value.Value, count)
+			copy(elems, blk.Elements[:count])
+			return value.BlockVal(elems), nil
+		}
+		// Full copy
+		return value.BlockVal(append([]value.Value{}, blk.Elements...)), nil
+	case value.TypeString:
+		str, _ := series.AsString()
+		if hasPart {
+			if partVal.Type != value.TypeInteger {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count64, ok := partVal.AsInteger()
+			if !ok {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count := int(count64)
+			if count < 0 || count > str.Length() {
+				return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "string", "out of range"})
+			}
+			// Użyj metody String() i substring
+			runes := []rune(str.String())
+			return value.StrVal(string(runes[:count])), nil
+		}
+		// Full copy
+		return value.StrVal(str.String()), nil
+	default:
+		return value.NoneVal(), typeError("copy", "series", series)
+	}
+}
+
 // seriesSelector is a function that selects a value from a series.
 // For blocks: receives elements and returns the selected element.
 // For strings: receives the string and returns a character as a value.

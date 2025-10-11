@@ -299,6 +299,146 @@ length? data`,
 	}
 }
 
+// T100: copy, copy --part for blocks and strings
+func TestSeries_Copy(t *testing.T) {
+	t.Run("copy block", func(t *testing.T) {
+		input := "copy [1 2 3]"
+		want := value.BlockVal([]value.Value{
+			value.IntVal(1), value.IntVal(2), value.IntVal(3),
+		})
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy string", func(t *testing.T) {
+		input := "copy \"hello\""
+		want := value.StrVal("hello")
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy --part block", func(t *testing.T) {
+		input := "copy --part 2 [1 2 3 4]"
+		want := value.BlockVal([]value.Value{
+			value.IntVal(1), value.IntVal(2),
+		})
+		evalResult, err := evaluate(input)
+		if err == nil {
+			if !evalResult.Equals(want) {
+				t.Fatalf("expected %v, got %v", want, evalResult)
+			}
+		} else {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("copy --part string", func(t *testing.T) {
+		input := "copy --part 3 \"abcdef\""
+		want := value.StrVal("abc")
+		evalResult, err := evaluate(input)
+		if err == nil {
+			if !evalResult.Equals(want) {
+				t.Fatalf("expected %v, got %v", want, evalResult)
+			}
+		} else {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("copy non-series error", func(t *testing.T) {
+		input := "copy 42"
+		evalResult, err := evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+	})
+
+	t.Run("copy --part out of range", func(t *testing.T) {
+		input := "copy --part [1 2] 5"
+		evalResult, err := evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+	})
+}
+
+// T101: find, find --last for blocks and strings
+func TestSeries_Find(t *testing.T) {
+	t.Run("find in block", func(t *testing.T) {
+		input := "find [1 2 3 4] 3"
+		want := value.IntVal(3)
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("find in string", func(t *testing.T) {
+		input := "find \"hello\" \"l\""
+		want := value.StrVal("l")
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("find --last in block", func(t *testing.T) {
+		input := "find --last [1 2 3 2 1] 2"
+		want := value.IntVal(2)
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("find --last in string", func(t *testing.T) {
+		input := "find --last \"hello\" \"l\""
+		want := value.StrVal("l")
+		evalResult, err := evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("find not found error", func(t *testing.T) {
+		input := "find [1 2 3] 5"
+		evalResult, err := evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+	})
+
+	t.Run("find non-series error", func(t *testing.T) {
+		input := "find 42 1"
+		evalResult, err := evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+	})
+}
+
 func evaluate(src string) (value.Value, *verror.Error) {
 	vals, err := parse.Parse(src)
 	if err != nil {

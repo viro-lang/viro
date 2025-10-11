@@ -465,12 +465,10 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 		if callErr != nil {
 			// Convert error interface back to *verror.Error for annotation
 			var vErr *verror.Error
-			if callErr != nil {
-				if ve, ok := callErr.(*verror.Error); ok {
-					vErr = ve
-				} else {
-					vErr = verror.NewInternalError(callErr.Error(), [3]string{})
-				}
+			if ve, ok := callErr.(*verror.Error); ok {
+				vErr = ve
+			} else {
+				vErr = verror.NewInternalError(callErr.Error(), [3]string{})
 			}
 			return value.NoneVal(), e.annotateError(vErr, vals, startIdx)
 		}
@@ -1061,8 +1059,8 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 		_, found := objFrame.Get(fieldName)
 		if !found {
 			// Check parent chain to see if it's inherited
-			if obj.Parent >= 0 {
-				parentFrame := e.getFrameByIndex(obj.Parent)
+			if obj.ParentProto != nil {
+				parentFrame := e.getFrameByIndex(obj.ParentProto.FrameIndex)
 				if parentFrame != nil {
 					_, found = parentFrame.Get(fieldName)
 				}
@@ -1071,9 +1069,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 			if !found {
 				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
 			}
-		}
-
-		// Bind to object's frame
+		} // Bind to object's frame
 		objFrame.Bind(fieldName, newVal)
 
 	default:
