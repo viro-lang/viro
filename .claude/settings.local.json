@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go:*)",
+      "Bash(./viro:*)",
+      "Bash(echo \"print \"\"Hello from Viro\"\"\nquit\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
