@@ -102,15 +102,17 @@ func TestDocumentationCompleteness(t *testing.T) {
 } // TestDocumentationCategories verifies all functions are in valid categories.
 func TestDocumentationCategories(t *testing.T) {
 	validCategories := map[string]bool{
-		"Math":     true,
-		"Control":  true,
-		"Series":   true,
-		"Data":     true,
-		"Function": true,
-		"I/O":      true,
-		"Ports":    true,
-		"Objects":  true,
-		"Help":     true,
+		"Math":       true,
+		"Control":    true,
+		"Series":     true,
+		"Data":       true,
+		"Function":   true,
+		"I/O":        true,
+		"Ports":      true,
+		"Objects":    true,
+		"Help":       true,
+		"Reflection": true,
+		"Debug":      true,
 	}
 
 	invalidCategories := []string{}

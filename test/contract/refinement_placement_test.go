@@ -33,11 +33,11 @@ func TestRefinementPlacement(t *testing.T) {
 		{
 			name: "refinement between arguments",
 			script: `
-				myfn: fn [a b c --debug] [
-					when debug [print ["Debug:" (a) (b) (c)]]
+				myfn: fn [a b c --test] [
+					when test [print ["Test:" (a) (b) (c)]]
 					a + b + c
 				]
-				myfn 5 --debug 10 15
+				myfn 5 --test 10 15
 			`,
 			expected: "30",
 		},

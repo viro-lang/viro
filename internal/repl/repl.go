@@ -64,6 +64,14 @@ type REPL struct {
 
 // NewREPL creates a new REPL instance.
 func NewREPL() (*REPL, error) {
+	// Initialize trace/debug sessions (Feature 002, T154)
+	// Trace is initialized with default settings (stderr, 50MB max size)
+	// These will be controlled via trace --on/--off and debug --on/--off
+	if err := native.InitTrace("", 50); err != nil {
+		return nil, fmt.Errorf("failed to initialize trace session: %w", err)
+	}
+	native.InitDebugger()
+
 	historyPath := resolveHistoryPath(true)
 	// Create readline instance with prompt
 	rl, err := readline.NewEx(&readline.Config{

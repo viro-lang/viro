@@ -813,6 +813,12 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
 	}
 
+	// Check native registry first (like evalWord does)
+	// Native functions are not stored in frames, so we must check the registry
+	if nativeFn, found := native.Lookup(wordStr); found {
+		return value.FuncVal(nativeFn), nil
+	}
+
 	result, ok := e.Lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})

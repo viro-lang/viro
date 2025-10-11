@@ -69,8 +69,16 @@ const (
 	ErrIDArgCount         = "arg-count"
 	ErrIDEmptySeries      = "empty-series"
 	ErrIDOutOfBounds      = "out-of-bounds"
-	ErrIDNotImplemented   = "not-implemented" // Feature 002: feature not yet implemented
+	ErrIDNotImplemented   = "not-implemented"   // Feature 002: feature not yet implemented
 	ErrIDNotComparable    = "not-comparable"    // sort on mixed types, etc.
+
+	// Feature 002: Reflection errors (T162)
+	ErrIDSpecUnsupported   = "spec-unsupported-type" // spec-of not supported for this type
+	ErrIDNoBody            = "no-body"               // body-of not supported for this type
+	ErrIDSourceUnsupported = "source-unsupported"    // source not supported for this type
+
+	// Feature 002: Debug errors (T162)
+	ErrIDNoSuchBreakpoint = "no-such-breakpoint" // breakpoint ID not found
 
 	// Feature 002: Path evaluation errors (T091)
 	ErrIDInvalidPath      = "invalid-path"           // malformed path expression

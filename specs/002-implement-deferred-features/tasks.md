@@ -264,42 +264,42 @@
 
 ### Contract Tests for User Story 5
 
-- [ ] T131 [US5] Contract test: trace --on/--off/trace? in test/contract/trace_debug_test.go
-- [ ] T132 [US5] Contract test: trace filtering (--only, --exclude) in test/contract/trace_debug_test.go
-- [ ] T133 [US5] Contract test: trace sink configuration (--file, --append) in test/contract/trace_debug_test.go
-- [ ] T134 [US5] Contract test: debug --breakpoint/--remove in test/contract/trace_debug_test.go
-- [ ] T135 [US5] Contract test: debug stepping (--step, --next, --finish, --continue) in test/contract/trace_debug_test.go
-- [ ] T136 [US5] Contract test: debug --locals/--stack in test/contract/trace_debug_test.go
-- [ ] T137 [US5] Contract test: type-of for all value types in test/contract/reflection_test.go
-- [ ] T138 [US5] Contract test: spec-of for functions/objects in test/contract/reflection_test.go
-- [ ] T139 [US5] Contract test: body-of immutability in test/contract/reflection_test.go
-- [ ] T140 [US5] Contract test: words-of/values-of consistency in test/contract/reflection_test.go
-- [ ] T140.1 [US5] **CHECKPOINT**: Run `go test ./test/contract/trace_debug_test.go ./test/contract/reflection_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
+- [X] T131 [US5] Contract test: trace --on/--off/trace? in test/contract/trace_debug_test.go
+- [X] T132 [US5] Contract test: trace filtering (--only, --exclude) in test/contract/trace_debug_test.go
+- [X] T133 [US5] Contract test: trace sink configuration (--file, --append) in test/contract/trace_debug_test.go
+- [X] T134 [US5] Contract test: debug --breakpoint/--remove in test/contract/trace_debug_test.go
+- [X] T135 [US5] Contract test: debug stepping (--step, --next, --finish, --continue) in test/contract/trace_debug_test.go
+- [X] T136 [US5] Contract test: debug --locals/--stack in test/contract/trace_debug_test.go
+- [X] T137 [US5] Contract test: type-of for all value types in test/contract/reflection_test.go
+- [X] T138 [US5] Contract test: spec-of for functions/objects in test/contract/reflection_test.go
+- [X] T139 [US5] Contract test: body-of immutability in test/contract/reflection_test.go
+- [X] T140 [US5] Contract test: words-of/values-of consistency in test/contract/reflection_test.go
+- [X] T140.1 [US5] **CHECKPOINT**: Run `go test ./test/contract/trace_debug_test.go ./test/contract/reflection_test.go` and verify ALL tests FAIL with expected error messages before proceeding to implementation tasks
 
 ### Implementation for User Story 5
 
-- [ ] T141 [US5] Implement trace session management (enable/disable/flush) in internal/native/trace.go
-- [ ] T142 [US5] Implement lumberjack sink configuration (max size 50MB, 5 backups) in internal/native/trace.go
-- [ ] T143 [US5] Implement trace event JSON serialization in internal/native/trace.go
-- [ ] T144 [P] [US5] Implement `trace --on` native with refinements in internal/native/control.go
-- [ ] T145 [P] [US5] Implement `trace --off` native in internal/native/control.go
-- [ ] T146 [P] [US5] Implement `trace?` query native in internal/native/control.go
-- [ ] T147 [US5] Implement Breakpoint management in internal/native/trace.go
-- [ ] T148 [P] [US5] Implement `debug --on/--off` natives in internal/native/control.go
-- [ ] T149 [P] [US5] Implement `debug --breakpoint` and `debug --remove` in internal/native/control.go
-- [ ] T150 [P] [US5] Implement `debug --step/--next/--finish/--continue` in internal/native/control.go
-- [ ] T151 [P] [US5] Implement `debug --locals` (frame snapshot) in internal/native/control.go
-- [ ] T152 [P] [US5] Implement `debug --stack` (call stack retrieval) in internal/native/control.go
+- [X] T141 [US5] Implement trace session management (enable/disable/flush) in internal/native/trace.go
+- [X] T142 [US5] Implement lumberjack sink configuration (max size 50MB, 5 backups) in internal/native/trace.go
+- [X] T143 [US5] Implement trace event JSON serialization in internal/native/trace.go
+- [X] T144 [P] [US5] Implement `trace --on` native with refinements in internal/native/control.go
+- [X] T145 [P] [US5] Implement `trace --off` native in internal/native/control.go
+- [X] T146 [P] [US5] Implement `trace?` query native in internal/native/control.go
+- [X] T147 [US5] Implement Breakpoint management in internal/native/trace.go
+- [X] T148 [P] [US5] Implement `debug --on/--off` natives in internal/native/control.go
+- [X] T149 [P] [US5] Implement `debug --breakpoint` and `debug --remove` in internal/native/control.go
+- [X] T150 [P] [US5] Implement `debug --step/--next/--finish/--continue` in internal/native/control.go
+- [X] T151 [P] [US5] Implement `debug --locals` (frame snapshot) in internal/native/control.go
+- [X] T152 [P] [US5] Implement `debug --stack` (call stack retrieval) in internal/native/control.go
 - [ ] T153 [US5] Integrate breakpoint checks in evaluator dispatch in internal/eval/evaluator.go
 - [ ] T154 [US5] Update REPL prompt to indicate debug mode in cmd/viro/repl.go
-- [ ] T155 [P] [US5] Implement `type-of` native in internal/native/data.go
-- [ ] T156 [P] [US5] Implement `spec-of` native with immutable snapshot in internal/native/data.go
-- [ ] T157 [P] [US5] Implement `body-of` native with deep copy in internal/native/data.go
-- [ ] T158 [P] [US5] Implement `words-of` native in internal/native/data.go
-- [ ] T159 [P] [US5] Implement `values-of` native in internal/native/data.go
-- [ ] T160 [P] [US5] Implement `source` native with formatting in internal/native/data.go
-- [ ] T161 [US5] Register trace, debug, and reflection natives in internal/native/registry.go
-- [ ] T162 [US5] Add Script error mappings (unknown-symbol, no-such-breakpoint, spec-unsupported-type) in internal/verror/categories.go
+- [X] T155 [P] [US5] Implement `type-of` native in internal/native/data.go
+- [X] T156 [P] [US5] Implement `spec-of` native with immutable snapshot in internal/native/data.go
+- [X] T157 [P] [US5] Implement `body-of` native with deep copy in internal/native/data.go
+- [X] T158 [P] [US5] Implement `words-of` native in internal/native/data.go
+- [X] T159 [P] [US5] Implement `values-of` native in internal/native/data.go
+- [X] T160 [P] [US5] Implement `source` native with formatting in internal/native/data.go
+- [X] T161 [US5] Register trace, debug, and reflection natives in internal/native/registry.go
+- [X] T162 [US5] Add Script error mappings (unknown-symbol, no-such-breakpoint, spec-unsupported-type) in internal/verror/categories.go
 
 ### Integration Tests for User Story 5
 
@@ -310,7 +310,7 @@
 - [ ] T167 [US5] Integration test: Debug session with stepping and inspection in test/integration/sc015_validation_test.go
 - [ ] T167.1 [US5] **CHECKPOINT - Backward Compatibility**: Run complete Feature 001 test suite and verify zero regressions before proceeding to Phase 8
 
-**Checkpoint**: User Story 5 complete - observability and reflection fully operational
+**Checkpoint**: User Story 5 MOSTLY COMPLETE ⚠️ - Core trace/debug/reflection natives implemented and registered. Missing: T153 (breakpoint integration in evaluator), T154 (REPL debug mode prompt), T163-T167 (SC-015 integration tests).
 
 ---
 
@@ -318,7 +318,7 @@
 
 **Purpose**: Improvements that affect multiple user stories and finalization
 
-- [ ] T168 [P] Update quickstart.md with Feature 002 examples and validation checklist
+- [X] T168 [P] Update quickstart.md with Feature 002 examples and validation checklist
 - [ ] T169 [P] Update docs/interpreter.md with decimal, object, port, series, trace documentation
 - [ ] T170 [P] Create docs/observability.md documenting trace/debug usage patterns
 - [ ] T171 [P] Create docs/ports-guide.md with sandbox configuration and security considerations

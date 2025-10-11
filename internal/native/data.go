@@ -113,6 +113,11 @@ type frameManager interface {
 	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
 }
 
+// wordLookup interface for natives that need to check word existence.
+type wordLookup interface {
+	Lookup(symbol string) (value.Value, bool)
+}
+
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]value.Value, *verror.Error) {
 	fields := []string{}
 	initializers := make(map[string][]value.Value)

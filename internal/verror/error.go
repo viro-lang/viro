@@ -182,6 +182,11 @@ var messageTemplates = map[string]string{
 	ErrIDConnectionRefused:     "Connection refused: %1",
 	ErrIDUnknownScheme:         "Unknown port scheme: %1",
 
+	// Feature 002: Reflection errors (T162)
+	ErrIDSpecUnsupported:   "spec-of: unsupported type %1",
+	ErrIDNoBody:            "body-of: %1",
+	ErrIDSourceUnsupported: "source: unsupported type %1",
+
 	// Internal errors
 	ErrIDStackOverflow:   "Stack overflow (maximum depth exceeded)",
 	ErrIDOutOfMemory:     "Out of memory",
