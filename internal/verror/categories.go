@@ -70,6 +70,7 @@ const (
 	ErrIDEmptySeries      = "empty-series"
 	ErrIDOutOfBounds      = "out-of-bounds"
 	ErrIDNotImplemented   = "not-implemented" // Feature 002: feature not yet implemented
+	ErrIDNotComparable    = "not-comparable"    // sort on mixed types, etc.
 
 	// Feature 002: Path evaluation errors (T091)
 	ErrIDInvalidPath      = "invalid-path"           // malformed path expression

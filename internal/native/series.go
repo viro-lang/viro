@@ -410,3 +410,58 @@ func Take(args []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), typeError("take", "series", series)
 	}
 }
+
+// Sort implements the `sort` native for series values.
+func Sort(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("sort", 1, len(args))
+	}
+	series := args[0]
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		if blk.Length() == 0 {
+			return series, nil
+		}
+		// Check if all elements are of the same comparable type
+		firstType := blk.Elements[0].Type
+		for _, v := range blk.Elements {
+			if v.Type != firstType || (v.Type != value.TypeInteger && v.Type != value.TypeString) {
+				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
+			}
+		}
+
+		value.SortBlock(blk)
+		return series, nil
+	default:
+		return value.NoneVal(), typeError("sort", "block", series)
+	}
+}
+
+// Reverse implements the `reverse` native for series values.
+func Reverse(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("reverse", 1, len(args))
+	}
+	series := args[0]
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		for i, j := 0, len(blk.Elements)-1; i < j; i, j = i+1, j-1 {
+			blk.Elements[i], blk.Elements[j] = blk.Elements[j], blk.Elements[i]
+		}
+		return series, nil
+	case value.TypeString:
+		str, _ := series.AsString()
+		r := str.Runes()
+		for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
+			r[i], r[j] = r[j], r[i]
+		}
+		str.SetRunes(r)
+		return series, nil
+	default:
+		return value.NoneVal(), typeError("reverse", "series", series)
+	}
+}

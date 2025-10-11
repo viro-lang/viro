@@ -855,6 +855,34 @@ Returns an integer representing the length of the series.`,
 		Tags:     []string{"series", "extraction", "take"},
 	})
 
+	// Rejestracja natywu 'sort' dla operacji na seriach
+	registerSimpleMathFunc("sort", Sort, 1, &NativeDoc{
+		Category:    "Series",
+		Summary:     "Sorts a series in-place",
+		Description: `Sorts a series (block of integers or strings) in-place. The sort is case-sensitive for strings.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block!", Description: "The series to sort", Optional: false},
+		},
+		Returns:  "[block!] The modified series",
+		Examples: []string{`data: [3 1 2]\nsort data  ; => [1 2 3]`},
+		SeeAlso:  []string{"reverse"},
+		Tags:     []string{"series", "sort", "ordering"},
+	})
+
+	// Rejestracja natywu 'reverse' dla operacji na seriach
+	registerSimpleMathFunc("reverse", Reverse, 1, &NativeDoc{
+		Category:    "Series",
+		Summary:     "Reverses a series in-place",
+		Description: `Reverses the order of elements in a series (block or string) in-place.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to reverse", Optional: false},
+		},
+		Returns:  "[block! string!] The modified series",
+		Examples: []string{`data: [1 2 3]\nreverse data  ; => [3 2 1]`},
+		SeeAlso:  []string{"sort"},
+		Tags:     []string{"series", "reverse", "ordering"},
+	})
+
 	// Group 6: Data operations (3 functions)
 	// set and get need evaluator, type? doesn't
 	Registry["set"] = value.NewNativeFunction(

@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -129,4 +130,24 @@ func (b *BlockValue) Empty() bool {
 // For debugging/testing
 func (b *BlockValue) GoString() string {
 	return fmt.Sprintf("Block{Elements: %d, Index: %d}", len(b.Elements), b.Index)
+}
+
+// SortBlock sorts a block in-place.
+func SortBlock(b *BlockValue) {
+	sort.SliceStable(b.Elements, func(i, j int) bool {
+		elemI := b.Elements[i]
+		elemJ := b.Elements[j]
+		switch elemI.Type {
+		case TypeInteger:
+			i, _ := elemI.AsInteger()
+			j, _ := elemJ.AsInteger()
+			return i < j
+		case TypeString:
+			i, _ := elemI.AsString()
+			j, _ := elemJ.AsString()
+			return i.String() < j.String()
+		default:
+			return false
+		}
+	})
 }

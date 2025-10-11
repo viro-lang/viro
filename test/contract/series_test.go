@@ -612,3 +612,85 @@ part`,
 		})
 	}
 }
+
+// T104: sort, reverse on series
+func TestSeries_SortReverse(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    value.Value
+		wantErr bool
+	}{
+		{
+			name: "sort block of integers",
+			input: `data: [3 1 4 1 5 9 2 6]
+sort data
+data`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(1), value.IntVal(1), value.IntVal(2), value.IntVal(3),
+				value.IntVal(4), value.IntVal(5), value.IntVal(6), value.IntVal(9),
+			}),
+		},
+		{
+			name: "sort block of strings",
+			input: `data: ["c" "a" "b"]
+sort data
+data`,
+			want: value.BlockVal([]value.Value{
+				value.StrVal("a"), value.StrVal("b"), value.StrVal("c"),
+			}),
+		},
+		{
+			name: "reverse block",
+			input: `data: [1 2 3]
+reverse data
+data`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(3), value.IntVal(2), value.IntVal(1),
+			}),
+		},
+		{
+			name: "reverse string",
+			input: `str: "hello"
+reverse str
+str`,
+			want: value.StrVal("olleh"),
+		},
+		{
+			name:    "sort non-series error",
+			input:   "sort 42",
+			wantErr: true,
+		},
+		{
+			name:    "reverse non-series error",
+			input:   "reverse 42",
+			wantErr: true,
+		},
+		{
+			name:    "sort mixed types error",
+			input:   "sort [1 \"a\"]",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+

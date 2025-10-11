@@ -99,6 +99,11 @@ func (s *StringValue) Runes() []rune {
 	return s.runes
 }
 
+// SetRunes sets the underlying rune slice of the string.
+func (s *StringValue) SetRunes(r []rune) {
+	s.runes = r
+}
+
 // SetIndex updates current series position (bounds checking by caller).
 
 func (s *StringValue) SetIndex(idx int) {
