@@ -4,7 +4,11 @@
       "Bash(go:*)",
       "Bash(./viro:*)",
       "Bash(echo \"print \"\"Hello from Viro\"\"\nquit\")",
-      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)"
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" ])",
+      "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" -name \"*.md\" -type f)",
+      "Bash(else echo \"NO_CHECKLISTS\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
