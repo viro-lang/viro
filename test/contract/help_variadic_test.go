@@ -4,9 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -28,22 +26,15 @@ func TestHelpVariableArity(t *testing.T) {
 	})
 
 	t.Run("HelpWithNoArgs_ParsedScript_ShouldFail", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
-
 		// In scripts, ? requires an argument (Arity: 1)
 		// This is by design - bare ? is REPL-only shortcut
-		result, parseErr := parse.Parse("?")
-		if parseErr != nil {
-			t.Fatalf("Parse error for '?': %v", parseErr)
-		}
-
-		val, evalErr := evaluator.Do_Blk(result)
-		if evalErr == nil {
+		val, err := Evaluate("?")
+		if err == nil {
 			t.Error("Expected arity error for '?' in script (requires 1 arg), but got none")
 			t.Log("Note: In scripts, use '? topic'. Bare '?' only works in REPL.")
 		} else {
 			// Verify it's an arity error
-			errMsg := evalErr.Error()
+			errMsg := err.Error()
 			if !strings.Contains(errMsg, "argument") && !strings.Contains(errMsg, "arity") {
 				t.Errorf("Error message doesn't mention arity: %v", errMsg)
 			}
@@ -55,17 +46,10 @@ func TestHelpVariableArity(t *testing.T) {
 	})
 
 	t.Run("HelpWithOneArg_ParsedScript", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
-
 		// This should work: ? with one argument
-		result, parseErr := parse.Parse("? append")
-		if parseErr != nil {
-			t.Fatalf("Parse error for '? append': %v", parseErr)
-		}
-
-		val, evalErr := evaluator.Do_Blk(result)
-		if evalErr != nil {
-			t.Fatalf("Eval error for '? append': %v", evalErr)
+		val, err := Evaluate("? append")
+		if err != nil {
+			t.Fatalf("Eval error for '? append': %v", err)
 		}
 
 		if val.Type != value.TypeNone {
@@ -74,21 +58,14 @@ func TestHelpVariableArity(t *testing.T) {
 	})
 
 	t.Run("HelpWithTwoArgs_ShouldError", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
-
 		// This should fail: ? with two arguments
 		// Note: "? append insert" might parse as two separate commands
-		result, parseErr := parse.Parse("? append insert")
-		if parseErr != nil {
-			t.Fatalf("Parse error for '? append insert': %v", parseErr)
-		}
-
-		val, evalErr := evaluator.Do_Blk(result)
-		if evalErr == nil {
+		val, err := Evaluate("? append insert")
+		if err == nil {
 			t.Log("Note: 'insert' may have been evaluated as separate command")
 		} else {
 			// Check that error mentions arity/argument count
-			errMsg := evalErr.Error()
+			errMsg := err.Error()
 			if !strings.Contains(errMsg, "argument") && !strings.Contains(errMsg, "arity") {
 				t.Errorf("Error message doesn't mention arity: %v", errMsg)
 			}
@@ -101,17 +78,10 @@ func TestHelpVariableArity(t *testing.T) {
 	})
 
 	t.Run("HelpInExpression", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
-
 		// Test that ? works in an expression context with proper argument
-		result, parseErr := parse.Parse("print \"Starting help\"  ? math  print \"Done\"")
-		if parseErr != nil {
-			t.Fatalf("Parse error: %v", parseErr)
-		}
-
-		val, evalErr := evaluator.Do_Blk(result)
-		if evalErr != nil {
-			t.Fatalf("Eval error: %v", evalErr)
+		val, err := Evaluate("print \"Starting help\"  ? math  print \"Done\"")
+		if err != nil {
+			t.Fatalf("Eval error: %v", err)
 		}
 
 		if val.Type != value.TypeNone {
@@ -123,17 +93,10 @@ func TestHelpVariableArity(t *testing.T) {
 // TestHelpDocumentationMatchesImplementation verifies documentation is accurate
 func TestHelpDocumentationMatchesImplementation(t *testing.T) {
 	t.Run("ScriptUsageRequiresArgument", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
-
 		// Documentation correctly states that in scripts, ? requires an argument
 		// Examples show: "? math" not just "?"
-		result, parseErr := parse.Parse("?")
-		if parseErr != nil {
-			t.Logf("Parse succeeded, checking eval...")
-		}
-
-		_, evalErr := evaluator.Do_Blk(result)
-		if evalErr == nil {
+		_, err := Evaluate("?")
+		if err == nil {
 			t.Error("Expected arity error for bare '?' in script context")
 			t.Log("Documentation states: 'In scripts, you must provide an argument'")
 		}

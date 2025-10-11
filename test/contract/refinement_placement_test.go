@@ -3,9 +3,6 @@ package contract
 import (
 	"strings"
 	"testing"
-
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
 // TestRefinementPlacement verifies that refinements can appear in any position
@@ -98,15 +95,9 @@ func TestRefinementPlacement(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed, err := parse.Parse(tt.script)
+			result, err := Evaluate(tt.script)
 			if err != nil {
-				t.Fatalf("Parse error: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(parsed)
-			if evalErr != nil {
-				t.Fatalf("Evaluation error: %v", evalErr)
+				t.Fatalf("Evaluation error: %v", err)
 			}
 
 			got := result.String()
@@ -160,18 +151,12 @@ func TestRefinementPlacementErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed, err := parse.Parse(tt.script)
-			if err != nil {
-				t.Fatalf("Parse error: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			_, evalErr := e.Do_Blk(parsed)
-			if evalErr == nil {
+			_, err := Evaluate(tt.script)
+			if err == nil {
 				t.Fatalf("Expected error containing '%s', but got no error", tt.expectError)
 			}
 
-			errMsg := evalErr.Error()
+			errMsg := err.Error()
 			if !strings.Contains(errMsg, tt.expectError) {
 				t.Errorf("Expected error containing '%s', got: %s", tt.expectError, errMsg)
 			}
@@ -193,15 +178,9 @@ func TestInfixWithRefinements(t *testing.T) {
 		5 customAdd --verbose 10
 	`
 
-	parsed, err := parse.Parse(script)
+	result, err := Evaluate(script)
 	if err != nil {
-		t.Fatalf("Parse error: %v", err)
-	}
-
-	e := eval.NewEvaluator()
-	result, evalErr := e.Do_Blk(parsed)
-	if evalErr != nil {
-		t.Fatalf("Evaluation error: %v", evalErr)
+		t.Fatalf("Evaluation error: %v", err)
 	}
 
 	expected := "15"

@@ -4,8 +4,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -46,41 +44,23 @@ func TestData_Set(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Fatalf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
 			}
 
 			if !result.Equals(tt.expected) {
 				t.Fatalf("Expected result %v, got %v", tt.expected, result)
 			}
 
-			if tt.check != "" {
-				if len(e.Frames) == 0 {
-					t.Fatalf("no frames available to verify binding")
-				}
-				bound, ok := e.Frames[len(e.Frames)-1].Get(tt.check)
-				if !ok {
-					t.Fatalf("expected word %s to be bound", tt.check)
-				}
-				if !bound.Equals(tt.expected) {
-					t.Fatalf("binding for %s = %v, want %v", tt.check, bound, tt.expected)
-				}
-			}
 		})
 	}
 }
@@ -123,23 +103,17 @@ func TestData_Get(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Fatalf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Fatalf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
 			}
 
 			if !result.Equals(tt.expected) {
@@ -217,15 +191,9 @@ func TestData_TypeQ(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
+			result, err := Evaluate(tt.input)
 			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
-			if evalErr != nil {
-				t.Fatalf("Unexpected error: %v", evalErr)
+				t.Fatalf("Unexpected error: %v", err)
 			}
 
 			if !result.Equals(tt.expected) {

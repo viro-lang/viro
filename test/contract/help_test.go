@@ -4,9 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -51,15 +49,9 @@ func TestHelpDirectCall(t *testing.T) {
 }
 
 func TestWords(t *testing.T) {
-	evaluator := eval.NewEvaluator()
-	result, parseErr := parse.Parse("words")
-	if parseErr != nil {
-		t.Fatalf("Parse error: %v", parseErr)
-	}
-
-	val, evalErr := evaluator.Do_Blk(result)
-	if evalErr != nil {
-		t.Fatalf("Eval error: %v", evalErr)
+	val, err := Evaluate("words")
+	if err != nil {
+		t.Fatalf("Eval error: %v", err)
 	}
 
 	if val.Type != value.TypeBlock {

@@ -14,17 +14,6 @@ import (
 // Contract tests validate FR-009 through FR-011 requirements
 // These tests follow TDD: they MUST FAIL initially before implementation
 
-// Helper function to evaluate Viro code
-func evalObjectScript(src string) (value.Value, *verror.Error) {
-	vals, err := parse.Parse(src)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	e := eval.NewEvaluator()
-	return e.Do_Blk(vals)
-}
-
 func evalObjectScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.Error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
@@ -320,7 +309,7 @@ func TestPathReadTraversal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := evalObjectScript(tt.code)
+			result, err := Evaluate(tt.code)
 
 			if tt.wantErr {
 				if err == nil {
@@ -509,7 +498,7 @@ func TestPathIndexing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := evalObjectScript(tt.code)
+			result, err := Evaluate(tt.code)
 
 			if tt.wantErr {
 				if err == nil {
@@ -577,7 +566,7 @@ func TestParentPrototype(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := evalObjectScript(tt.code)
+			result, err := Evaluate(tt.code)
 
 			if tt.wantErr {
 				if err == nil {
@@ -629,7 +618,7 @@ func TestMakePrototypeErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := evalObjectScript(tt.code)
+			_, err := Evaluate(tt.code)
 			if err == nil {
 				t.Fatalf("expected error but got none")
 			}
@@ -682,7 +671,7 @@ func TestPathErrorHandling(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := evalObjectScript(tt.code)
+			_, err := Evaluate(tt.code)
 
 			if err == nil {
 				t.Fatal("expected error but got none")

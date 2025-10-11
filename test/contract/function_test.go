@@ -11,7 +11,7 @@ import (
 
 func TestFunction_Definition(t *testing.T) {
 	t.Run("captures parameters and body", func(t *testing.T) {
-		result, err := evalScript("fn [name --title [] --verbose] [(print name)]")
+		result, err := Evaluate("fn [name --title [] --verbose] [(print name)]")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -53,7 +53,7 @@ func TestFunction_Definition(t *testing.T) {
 		}
 
 		for _, src := range cases {
-			if _, err := evalScript(src); err == nil {
+			if _, err := Evaluate(src); err == nil {
 				t.Fatalf("expected error for %q", src)
 			}
 		}
@@ -88,7 +88,7 @@ func TestFunction_Call(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := evalScript(tt.input)
+			result, err := Evaluate(tt.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -209,7 +209,7 @@ second`
 }
 
 func TestFunction_Closure(t *testing.T) {
-	result, err := evalScript(`make-adder: fn [x] [
+	result, err := Evaluate(`make-adder: fn [x] [
     fn [y] [
         (+ x y)
     ]
@@ -226,7 +226,7 @@ add5 7`)
 }
 
 func TestFunction_Recursion(t *testing.T) {
-	result, err := evalScript(`fact: fn [n] [
+	result, err := Evaluate(`fact: fn [n] [
     if (= n 0) [1] [
         (* n (fact (- n 1)))
     ]
@@ -239,16 +239,6 @@ fact 5`)
 	if !result.Equals(value.IntVal(120)) {
 		t.Fatalf("expected factorial 120, got %v", result)
 	}
-}
-
-func evalScript(src string) (value.Value, *verror.Error) {
-	vals, err := parse.Parse(src)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	e := eval.NewEvaluator()
-	return e.Do_Blk(vals)
 }
 
 func evalScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.Error) {

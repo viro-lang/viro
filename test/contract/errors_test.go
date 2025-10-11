@@ -4,26 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
-	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func evaluateString(t *testing.T, e *eval.Evaluator, input string) (value.Value, *verror.Error) {
-	t.Helper()
-
-	vals, err := parse.Parse(input)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	return e.Do_Blk(vals)
-}
-
 func TestErrors_UndefinedWord(t *testing.T) {
-	e := eval.NewEvaluator()
-	_, err := evaluateString(t, e, "missing")
+	_, err := Evaluate("missing")
 
 	if err == nil {
 		t.Fatalf("expected error but got none")
@@ -51,8 +37,7 @@ func TestErrors_UndefinedWord(t *testing.T) {
 }
 
 func TestErrors_DivideByZero(t *testing.T) {
-	e := eval.NewEvaluator()
-	_, err := evaluateString(t, e, "10 / 0")
+	_, err := Evaluate("10 / 0")
 
 	if err == nil {
 		t.Fatalf("expected error but got none")
@@ -80,8 +65,7 @@ func TestErrors_DivideByZero(t *testing.T) {
 }
 
 func TestErrors_TypeMismatch(t *testing.T) {
-	e := eval.NewEvaluator()
-	_, err := evaluateString(t, e, "first 42")
+	_, err := Evaluate("first 42")
 
 	if err == nil {
 		t.Fatalf("expected error but got none")
@@ -110,8 +94,7 @@ func TestErrors_TypeMismatch(t *testing.T) {
 }
 
 func TestErrors_MathTypeMismatch(t *testing.T) {
-	e := eval.NewEvaluator()
-	_, err := evaluateString(t, e, "10 + \"oops\"")
+	_, err := Evaluate("10 + \"oops\"")
 
 	if err == nil {
 		t.Fatalf("expected error but got none")
@@ -140,13 +123,8 @@ func TestErrors_MathTypeMismatch(t *testing.T) {
 }
 
 func TestErrors_ArgumentCount(t *testing.T) {
-	e := eval.NewEvaluator()
+	_, err := Evaluate("square: fn [n] [n * n]\nsquare")
 
-	if _, err := evaluateString(t, e, "square: fn [n] [n * n]"); err != nil {
-		t.Fatalf("function definition failed: %v", err)
-	}
-
-	_, err := evaluateString(t, e, "square")
 	if err == nil {
 		t.Fatalf("expected error but got none")
 	}
@@ -174,17 +152,11 @@ func TestErrors_ArgumentCount(t *testing.T) {
 }
 
 func TestErrors_CallStackPropagation(t *testing.T) {
-	e := eval.NewEvaluator()
+	script := `inner: fn [y] [y + missing]
+outer: fn [n] [inner n]
+outer 5`
 
-	if _, err := evaluateString(t, e, "inner: fn [y] [y + missing]"); err != nil {
-		t.Fatalf("inner definition failed: %v", err)
-	}
-
-	if _, err := evaluateString(t, e, "outer: fn [n] [inner n]"); err != nil {
-		t.Fatalf("outer definition failed: %v", err)
-	}
-
-	_, err := evaluateString(t, e, "outer 5")
+	_, err := Evaluate(script)
 	if err == nil {
 		t.Fatalf("expected error but got none")
 	}

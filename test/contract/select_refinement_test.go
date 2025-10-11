@@ -2,27 +2,12 @@ package contract
 
 import (
 	"testing"
-
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/parse"
-	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
-
-func evaluateStringForSelect(t *testing.T, e *eval.Evaluator, input string) (value.Value, *verror.Error) {
-	vals, parseErr := parse.Parse(input)
-	if parseErr != nil {
-		return value.NoneVal(), parseErr
-	}
-	return e.Do_Blk(vals)
-}
 
 // TestSelectWithDefaultRefinement tests the --default refinement for select native.
 // This ensures that refinements are properly passed from evaluator to native functions
 // after the unification of native and user function invocation.
 func TestSelectWithDefaultRefinement(t *testing.T) {
-	e := eval.NewEvaluator()
-
 	tests := []struct {
 		name     string
 		script   string
@@ -75,7 +60,7 @@ func TestSelectWithDefaultRefinement(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := evaluateStringForSelect(t, e, tt.script)
+			result, err := Evaluate(tt.script)
 
 			if tt.isError {
 				if err == nil {

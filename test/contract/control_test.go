@@ -4,8 +4,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -55,23 +53,17 @@ func TestControlFlow_When(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -129,23 +121,17 @@ func TestControlFlow_If(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -196,23 +182,17 @@ func TestControlFlow_Loop(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -229,15 +209,9 @@ func TestControlFlow_LoopWithCounter(t *testing.T) {
 loop 5 [count: (+ count 1)]
 count`
 
-	vals, err := parse.Parse(input)
+	result, err := Evaluate(input)
 	if err != nil {
-		t.Fatalf("Parse failed: %v", err)
-	}
-
-	e := eval.NewEvaluator()
-	result, evalErr := e.Do_Blk(vals)
-	if evalErr != nil {
-		t.Fatalf("Unexpected error: %v", evalErr)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	expected := value.IntVal(5)
@@ -277,23 +251,17 @@ while [(< n 3)] [n: (+ n 1)]`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, err := Evaluate(tt.input)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error but got none")
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -345,15 +313,9 @@ func TestControlFlow_TruthyConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
+			result, err := Evaluate(tt.input)
 			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -410,15 +372,9 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := parse.Parse(tt.input)
+			result, err := Evaluate(tt.input)
 			if err != nil {
-				t.Fatalf("Parse failed: %v", err)
-			}
-
-			e := eval.NewEvaluator()
-			result, evalErr := e.Do_Blk(vals)
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 

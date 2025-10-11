@@ -3,9 +3,7 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -192,15 +190,8 @@ func TestLeftToRightEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Parse expression
-			values, err := parse.Parse(tt.expr)
-			if err != nil {
-				t.Fatalf("Parse(%s) error: %v", tt.expr, err)
-			}
-
-			// Evaluate parsed values
-			e := eval.NewEvaluator()
-			result, err := e.Do_Blk(values)
+			// Evaluate expression
+			result, err := Evaluate(tt.expr)
 			if err != nil {
 				t.Fatalf("Eval(%s) error: %v", tt.expr, err)
 			}
