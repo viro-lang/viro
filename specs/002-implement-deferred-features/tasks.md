@@ -320,8 +320,8 @@
 
 - [X] T168 [P] Update quickstart.md with Feature 002 examples and validation checklist
 - [ ] T169 [P] Update docs/interpreter.md with decimal, object, port, series, trace documentation
-- [ ] T170 [P] Create docs/observability.md documenting trace/debug usage patterns
-- [ ] T171 [P] Create docs/ports-guide.md with sandbox configuration and security considerations
+- [X] T170 [P] Create docs/observability.md documenting trace/debug usage patterns
+- [X] T171 [P] Create docs/ports-guide.md with sandbox configuration and security considerations
 - [ ] T172 [P] Update RELEASE_NOTES.md with Feature 002 capabilities summary
 - [ ] T173 Integration test SC-016: Backward compatibility regression suite (all Feature 001 tests pass) in test/integration/sc016_validation_test.go
 - [ ] T174 [P] Integration test SC-017: Decimal precision corpus validation in test/integration/sc017_validation_test.go
@@ -329,9 +329,9 @@
 - [ ] T176 [P] Integration test SC-019: Object and path integration scenarios in test/integration/sc019_validation_test.go
 - [~] T177 [P] ~~Integration test SC-020: Parse dialect validation corpus in test/integration/sc020_validation_test.go~~ **DEFERRED**
 - [ ] T178 Run quickstart.md validation from specs/002-implement-deferred-features/quickstart.md
-- [ ] T179 [P] Code review: Constitution compliance check using docs/constitution-compliance.md checklist
-- [ ] T180 [P] Code review: Security audit for sandbox, TLS, and trace file handling
-- [ ] T181 Performance profiling and optimization pass (target: SC-001 through SC-005 metrics)
+- [X] T179 [P] Code review: Constitution compliance check using docs/constitution-compliance.md checklist
+- [X] T180 [P] Code review: Security audit for sandbox, TLS, and trace file handling
+- [X] T181 Performance profiling and optimization pass (target: SC-001 through SC-005 metrics)
 - [ ] T182 Final integration test sweep across all success criteria (SC-011 through SC-020)
 
 ---
