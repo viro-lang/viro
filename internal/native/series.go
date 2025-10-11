@@ -338,3 +338,75 @@ func Remove(args []value.Value, refinements map[string]value.Value) (value.Value
 		return value.NoneVal(), typeError("remove", "series", series)
 	}
 }
+
+// Skip implements the `skip` native for series values.
+func Skip(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError("skip", 2, len(args))
+	}
+	series, countVal := args[0], args[1]
+	if countVal.Type != value.TypeInteger {
+		return value.NoneVal(), typeError("skip", "integer", countVal)
+	}
+	count64, _ := countVal.AsInteger()
+	count := int(count64)
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		newIndex := blk.GetIndex() + count
+		if newIndex < 0 || newIndex > blk.Length() {
+			newIndex = blk.Length()
+		}
+		blk.SetIndex(newIndex)
+		return series, nil
+	case value.TypeString:
+		str, _ := series.AsString()
+		newIndex := str.Index() + count
+		if newIndex < 0 || newIndex > str.Length() {
+			newIndex = str.Length()
+		}
+		str.SetIndex(newIndex)
+		return series, nil
+	default:
+		return value.NoneVal(), typeError("skip", "series", series)
+	}
+}
+
+// Take implements the `take` native for series values.
+func Take(args []value.Value) (value.Value, *verror.Error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError("take", 2, len(args))
+	}
+	series, countVal := args[0], args[1]
+	if countVal.Type != value.TypeInteger {
+		return value.NoneVal(), typeError("take", "integer", countVal)
+	}
+	count64, _ := countVal.AsInteger()
+	count := int(count64)
+
+	switch series.Type {
+	case value.TypeBlock:
+		blk, _ := series.AsBlock()
+		start := blk.GetIndex()
+		end := start + count
+		if end > blk.Length() {
+			end = blk.Length()
+		}
+		newElements := blk.Elements[start:end]
+		blk.SetIndex(end)
+		return value.BlockVal(newElements), nil
+	case value.TypeString:
+		str, _ := series.AsString()
+		start := str.Index()
+		end := start + count
+		if end > str.Length() {
+			end = str.Length()
+		}
+		newRunes := str.Runes()[start:end]
+		str.SetIndex(end)
+		return value.StrVal(string(newRunes)), nil
+	default:
+		return value.NoneVal(), typeError("take", "series", series)
+	}
+}

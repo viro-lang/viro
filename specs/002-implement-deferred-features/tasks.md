@@ -213,7 +213,7 @@
 - [X] T100 [US4] Contract test: copy, copy --part for blocks and strings in test/contract/series_test.go
 - [X] T101 [US4] Contract test: find, find --last in test/contract/series_test.go
 - [X] T102 [US4] Contract test: remove, remove --part in test/contract/series_test.go
-- [ ] T103 [US4] Contract test: skip, take operations in test/contract/series_test.go
+- [X] T103 [US4] Contract test: skip, take operations in test/contract/series_test.go
 - [ ] T104 [US4] Contract test: sort, reverse on series in test/contract/series_test.go
 - [ ] T105 [US4] Contract test: parse literal matching in test/contract/parse_test.go
 - [ ] T106 [US4] Contract test: parse quantifiers (some, any, opt) in test/contract/parse_test.go
@@ -228,7 +228,7 @@
 - [X] T111 [P] [US4] Implement `copy` native with --part refinement in internal/native/series.go
 - [X] T112 [P] [US4] Implement `find` native with --last refinement in internal/native/series.go
 - [X] T113 [P] [US4] Implement `remove` native with --part refinement in internal/native/series.go
-- [ ] T114 [P] [US4] Implement `skip` and `take` natives in internal/native/series.go
+- [X] T114 [P] [US4] Implement `skip` and `take` natives in internal/native/series.go
 - [ ] T115 [P] [US4] Implement `sort` and `reverse` natives in internal/native/series.go
 - [ ] T116 [US4] Create internal/parse/dialect.go for parse dialect engine
 - [ ] T117 [US4] Implement ParseRule and ParseState structs in internal/parse/dialect.go

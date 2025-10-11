@@ -94,6 +94,11 @@ func (s *StringValue) Index() int {
 	return s.index
 }
 
+// Runes returns the underlying rune slice of the string.
+func (s *StringValue) Runes() []rune {
+	return s.runes
+}
+
 // SetIndex updates current series position (bounds checking by caller).
 
 func (s *StringValue) SetIndex(idx int) {

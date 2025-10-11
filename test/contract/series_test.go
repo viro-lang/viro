@@ -534,3 +534,81 @@ str`,
 		})
 	}
 }
+
+// T103: skip, take operations
+func TestSeries_SkipTake(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    value.Value
+		wantErr bool
+	}{
+		{
+			name: "skip and take block",
+			input: `data: [1 2 3 4 5]
+skip data 2
+take data 2`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(3),
+				value.IntVal(4),
+			}),
+		},
+		{
+			name: "skip and take string",
+			input: `str: "hello"
+skip str 1
+take str 3`,
+			want: value.StrVal("ell"),
+		},
+		{
+			name: "take returns a new series",
+			input: `data: [1 2 3]
+part: take data 2
+part`,
+			want: value.BlockVal([]value.Value{
+				value.IntVal(1),
+				value.IntVal(2),
+			}),
+		},
+		{
+			name:    "skip non-series error",
+			input:   "skip 42 1",
+			wantErr: true,
+		},
+		{
+			name:    "take non-series error",
+			input:   "take 42 1",
+			wantErr: true,
+		},
+		{
+			name:    "skip with non-integer error",
+			input:   `skip [1 2] "a"`,
+			wantErr: true,
+		},
+		{
+			name:    "take with non-integer error",
+			input:   `take [1 2] "a"`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}

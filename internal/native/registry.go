@@ -825,6 +825,36 @@ Returns an integer representing the length of the series.`,
 		Tags:     []string{"series", "remove", "mutation"},
 	}
 
+	// Rejestracja natywu 'skip' dla operacji na seriach
+	registerSimpleMathFunc("skip", Skip, 2, &NativeDoc{
+		Category:    "Series",
+		Summary:     "Moves the current position in a series forward",
+		Description: `Moves the current position (index) in a series forward by a specified number of elements. The series is modified in place.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to modify", Optional: false},
+			{Name: "count", Type: "integer!", Description: "Number of elements to skip", Optional: false},
+		},
+		Returns:  "[block! string!] The modified series",
+		Examples: []string{`data: [1 2 3 4 5]\nskip data 2  ; => [1 2 3 4 5] (index is now at 3rd element)`},
+		SeeAlso:  []string{"take", "remove"},
+		Tags:     []string{"series", "navigation", "skip"},
+	})
+
+	// Rejestracja natywu 'take' dla operacji na seriach
+	registerSimpleMathFunc("take", Take, 2, &NativeDoc{
+		Category:    "Series",
+		Summary:     "Takes a number of elements from the current position in a series",
+		Description: `Returns a new series containing a specified number of elements from the current position in the original series. The index of the original series is advanced by the number of elements taken.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to take from", Optional: false},
+			{Name: "count", Type: "integer!", Description: "Number of elements to take", Optional: false},
+		},
+		Returns:  "[block! string!] A new series with the taken elements",
+		Examples: []string{`data: [1 2 3 4 5]\ntake data 2  ; => [1 2]`},
+		SeeAlso:  []string{"skip", "remove"},
+		Tags:     []string{"series", "extraction", "take"},
+	})
+
 	// Group 6: Data operations (3 functions)
 	// set and get need evaluator, type? doesn't
 	Registry["set"] = value.NewNativeFunction(
