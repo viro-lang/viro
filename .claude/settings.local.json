@@ -17,7 +17,8 @@
       "Bash(gofmt:*)",
       "Read(///**)",
       "Bash(awk:*)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(/tmp/viro:*)"
     ],
     "deny": [],
     "ask": []
