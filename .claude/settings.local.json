@@ -14,7 +14,9 @@
       "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" ])",
       "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" -name \"*.md\" -type f)",
       "Bash(tee:*)",
-      "Bash(gofmt:*)"
+      "Bash(gofmt:*)",
+      "Read(///**)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []
