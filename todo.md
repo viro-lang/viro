@@ -11,3 +11,4 @@ List of things to impelment:
 - operations on series are implemented using switch, but this should be dynamic dispatch based on type (possible to extend from viro)
 - all series functions should work on ALL series datatypes (blocks, strings, ports etc.)
 - '=' should work for everything - not only numbers
+- make debugging step by step actually work

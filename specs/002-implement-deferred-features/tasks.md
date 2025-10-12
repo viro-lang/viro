@@ -290,8 +290,8 @@
 - [X] T150 [P] [US5] Implement `debug --step/--next/--finish/--continue` in internal/native/control.go
 - [X] T151 [P] [US5] Implement `debug --locals` (frame snapshot) in internal/native/control.go
 - [X] T152 [P] [US5] Implement `debug --stack` (call stack retrieval) in internal/native/control.go
-- [ ] T153 [US5] Integrate breakpoint checks in evaluator dispatch in internal/eval/evaluator.go
-- [ ] T154 [US5] Update REPL prompt to indicate debug mode in cmd/viro/repl.go
+- [X] T153 [US5] Integrate breakpoint checks in evaluator dispatch in internal/eval/evaluator.go
+- [X] T154 [US5] Update REPL prompt to indicate debug mode in cmd/viro/repl.go
 - [X] T155 [P] [US5] Implement `type-of` native in internal/native/data.go
 - [X] T156 [P] [US5] Implement `spec-of` native with immutable snapshot in internal/native/data.go
 - [X] T157 [P] [US5] Implement `body-of` native with deep copy in internal/native/data.go

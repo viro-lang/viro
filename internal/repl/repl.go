@@ -38,6 +38,7 @@ import (
 
 const (
 	primaryPrompt      = ">> "
+	debugPrompt        = "[debug] >> "
 	continuationPrompt = "... "
 	historyEnvVar      = "VIRO_HISTORY_FILE"
 	historyFileName    = ".viro_history"
@@ -146,7 +147,7 @@ func (r *REPL) Run() error {
 
 	// Print welcome message
 	r.printWelcome()
-	r.setPrompt(primaryPrompt)
+	r.setPrompt(r.getCurrentPrompt())
 
 	// Main loop
 	for {
@@ -233,7 +234,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 
 		r.awaitingCont = false
 		if interactive {
-			r.setPrompt(primaryPrompt)
+			r.setPrompt(r.getCurrentPrompt())
 		}
 		r.pendingLines = nil
 		r.recordHistory(joined)
@@ -243,7 +244,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 
 	r.awaitingCont = false
 	if interactive {
-		r.setPrompt(primaryPrompt)
+		r.setPrompt(r.getCurrentPrompt())
 	}
 	r.pendingLines = nil
 	r.recordHistory(joined)
@@ -399,6 +400,20 @@ func (r *REPL) setPrompt(prompt string) {
 	r.rl.SetPrompt(prompt)
 }
 
+// getCurrentPrompt returns the appropriate prompt based on debugger state (T154)
+func (r *REPL) getCurrentPrompt() string {
+	if r == nil {
+		return primaryPrompt
+	}
+
+	// Check if debugger is in active mode (breakpoints or stepping)
+	if native.GlobalDebugger != nil && native.GlobalDebugger.Mode() != native.DebugModeOff {
+		return debugPrompt
+	}
+
+	return primaryPrompt
+}
+
 func (r *REPL) evalParsedValues(values []value.Value) {
 	result, err := r.evaluator.Do_Blk(values)
 	if err != nil {
@@ -419,7 +434,7 @@ func (r *REPL) handleExit(interactive bool) {
 	r.awaitingCont = false
 	r.shouldContinue = false
 	if interactive {
-		r.setPrompt(primaryPrompt)
+		r.setPrompt(r.getCurrentPrompt())
 	}
 	fmt.Fprintln(r.out, "Goodbye!")
 }
@@ -431,7 +446,7 @@ func (r *REPL) handleInterrupt(interactive bool) {
 	r.pendingLines = nil
 	r.awaitingCont = false
 	if interactive {
-		r.setPrompt(primaryPrompt)
+		r.setPrompt(r.getCurrentPrompt())
 	}
 	r.shouldContinue = true
 	fmt.Fprintln(r.out, "^C")

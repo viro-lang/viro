@@ -157,6 +157,24 @@ func evalParenDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Erro
 
 // evalWordDispatch handles word evaluation
 func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	// Check for breakpoints before evaluating word (T153)
+	if native.GlobalDebugger != nil {
+		wordStr, ok := val.AsWord()
+		if ok && native.GlobalDebugger.HasBreakpoint(wordStr) {
+			// Breakpoint hit - for now, just continue evaluation
+			// REPL integration will handle pause/inspect in future work
+			// Emit trace event if tracing is enabled
+			if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
+				native.GlobalTraceSession.Emit(native.TraceEvent{
+					Timestamp: time.Now(),
+					Word:      "debug",
+					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
+					Duration:  0,
+					Depth:     len(e.callStack),
+				})
+			}
+		}
+	}
 	return e.evalWord(val)
 }
 
