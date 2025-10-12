@@ -280,7 +280,7 @@ These tasks must complete before ANY user story implementation can begin.
 
 ---
 
-### T010: [US1] [TEST] Write contract test for nested scope shadowing
+### ✅ T010: [US1] [TEST] Write contract test for nested scope shadowing
 
 **Goal**: Test that nested scopes follow lexical scoping rules
 
@@ -301,9 +301,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Duration**: 20 min
 
+**Status**: ✅ COMPLETED - TestNestedScopeShadowing added with 5 test cases
+
 ---
 
-### T011: [US1] [IMPL] Remove native.Lookup() from evalWord
+### ✅ T011: [US1] [IMPL] Remove native.Lookup() from evalWord
 
 **Goal**: Eliminate special-case native check in word evaluation
 
@@ -334,9 +336,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Reference**: contracts/lookup.md, data-model.md Word Lookup Resolution
 
+**Status**: ✅ COMPLETED - native.Lookup() removed from evalWord, using frame chain only
+
 ---
 
-### T012: [US1] [IMPL] Remove native.Lookup() from evalGetWord
+### ✅ T012: [US1] [IMPL] Remove native.Lookup() from evalGetWord
 
 **Goal**: Unify get-word evaluation to use frame chain
 
@@ -357,9 +361,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Dependencies**: T011
 
+**Status**: ✅ COMPLETED - native.Lookup() removed from evalGetWord
+
 ---
 
-### T013: [US1] [IMPL] Remove native.Lookup() from evaluateWithFunctionCall
+### ✅ T013: [US1] [IMPL] Remove native.Lookup() from evaluateWithFunctionCall
 
 **Goal**: Unify function call dispatch to use frame chain
 
@@ -384,9 +390,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Reference**: contracts/lookup.md Modified Call Sites
 
+**Status**: ✅ COMPLETED - Unified lookup path, native.Lookup() removed
+
 ---
 
-### T014: [US1] [TEST] Verify all existing tests still pass
+### ✅ T014: [US1] [TEST] Verify all existing tests still pass
 
 **Goal**: Confirm backward compatibility maintained
 
@@ -407,6 +415,8 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Dependencies**: T013
 
+**Status**: ✅ COMPLETED - All tests pass! Added missing series natives (copy, find, remove, skip, take, sort, reverse)
+
 ---
 
 ### ✅ **CHECKPOINT 2**: User Story 1 Complete
@@ -417,8 +427,13 @@ These tasks must complete before ANY user story implementation can begin.
 - ✅ Nested scoping follows lexical rules (innermost wins)
 - ✅ All existing tests pass without modification
 - ✅ SC-001: Functions with `--debug` refinement work correctly
+- ✅ All native.Lookup() calls removed from evaluator (evalWord, evalGetWord, evaluateWithFunctionCall)
+- ✅ Frame-based lookup working for all natives
+- ✅ Test suite: 100% passing (internal/native, test/contract, test/integration)
 
 **Deliverable**: Independent, testable increment - developers can now freely use native names in local contexts
+
+**Date Completed**: 2025-10-12
 
 ---
 
@@ -798,7 +813,7 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Steps**:
 1. Modify all 6 `register_*.go` files
-2. Remove or comment out `Registry[name] = fn` assignments
+2. Remove `Registry[name] = fn` assignments
 3. Keep only `rootFrame.Bind(name, value.FuncVal(fn))` calls
 4. Verify tests still pass (confirms evaluator uses frames only)
 
