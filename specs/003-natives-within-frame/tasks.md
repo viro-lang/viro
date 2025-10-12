@@ -250,7 +250,7 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Independent Test**: Function with `--debug` refinement works without conflicting with native `debug`
 
-### T009: [US1] [TEST] Write contract test for refinement name collision resolution
+### ✅ T009: [US1] [TEST] Write contract test for refinement name collision resolution
 
 **Goal**: Test that refinements can use native names without errors
 
@@ -275,6 +275,8 @@ These tasks must complete before ANY user story implementation can begin.
 **Duration**: 30 min
 
 **Reference**: spec.md User Story 1, quickstart.md Test 1
+
+**Status**: ✅ COMPLETED - Tests created, showing expected TDD failures
 
 ---
 

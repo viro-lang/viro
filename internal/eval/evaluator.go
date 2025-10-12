@@ -529,12 +529,6 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	// Check native registry first
-	if nativeFn, found := native.Lookup(wordStr); found {
-		return e.invokeFunction(nativeFn, seq, idx, lastResult)
-	}
-
-	// Check user-defined functions
 	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
 		return e.invokeFunction(fn, seq, idx, lastResult)
@@ -758,12 +752,6 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
 	}
 
-	// Check if it's a native function - if so, return the word itself
-	// (it will be called when it appears in function position)
-	if _, ok := native.Lookup(wordStr); ok {
-		return val, nil // Return the word itself, not evaluated yet
-	}
-
 	result, ok := e.Lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
@@ -839,12 +827,6 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 	wordStr, ok := val.AsWord()
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
-	}
-
-	// Check native registry first (like evalWord does)
-	// Native functions are not stored in frames, so we must check the registry
-	if nativeFn, found := native.Lookup(wordStr); found {
-		return value.FuncVal(nativeFn), nil
 	}
 
 	result, ok := e.Lookup(wordStr)

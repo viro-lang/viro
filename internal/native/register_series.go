@@ -135,4 +135,149 @@ Returns an integer representing the length of the series.`,
 		Examples: []string{"length? [1 2 3 4]  ; => 4", `length? "hello"  ; => 5`, "length? []  ; => 0"},
 		SeeAlso:  []string{"first", "last", "append", "insert"}, Tags: []string{"series", "query", "length", "count"},
 	})
+	registerSimpleSeriesFunc("skip", Skip, 2, &NativeDoc{
+		Category: "Series",
+		Summary:  "Skips n elements in a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to skip from"},
+			{Name: "n", Type: "integer!", Description: "Number of elements to skip"},
+		},
+		Returns:  "[block! string!] Series with first n elements removed",
+		Examples: []string{"skip [1 2 3 4] 2  ; => [3 4]"},
+		SeeAlso:  []string{"take", "first", "last"},
+		Tags:     []string{"series"},
+	})
+	registerSimpleSeriesFunc("take", Take, 2, &NativeDoc{
+		Category: "Series",
+		Summary:  "Takes n elements from a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to take from"},
+			{Name: "n", Type: "integer!", Description: "Number of elements to take"},
+		},
+		Returns:  "[block! string!] Series with first n elements",
+		Examples: []string{"take [1 2 3 4] 2  ; => [1 2]"},
+		SeeAlso:  []string{"skip", "first", "last"},
+		Tags:     []string{"series"},
+	})
+	registerSimpleSeriesFunc("sort", Sort, 1, &NativeDoc{
+		Category: "Series",
+		Summary:  "Sorts a series in place",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to sort"},
+		},
+		Returns:  "[block! string!] The sorted series",
+		Examples: []string{"sort [3 1 2]  ; => [1 2 3]"},
+		SeeAlso:  []string{"reverse"},
+		Tags:     []string{"series"},
+	})
+	registerSimpleSeriesFunc("reverse", Reverse, 1, &NativeDoc{
+		Category: "Series",
+		Summary:  "Reverses a series in place",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to reverse"},
+		},
+		Returns:  "[block! string!] The reversed series",
+		Examples: []string{"reverse [1 2 3]  ; => [3 2 1]"},
+		SeeAlso:  []string{"sort"},
+		Tags:     []string{"series"},
+	})
+
+	// Functions with refinements need special handling
+	// Copy function
+	{
+		params := []value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewRefinementSpec("part", true),
+		}
+		fn := value.NewNativeFunction(
+			"copy",
+			params,
+			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+				result, err := Copy(args, refValues)
+				if err == nil {
+					return result, nil
+				}
+				return result, err
+			},
+		)
+		fn.Doc = &NativeDoc{
+			Category: "Series",
+			Summary:  "Copies a series",
+			Parameters: []ParamDoc{
+				{Name: "series", Type: "block! string!", Description: "The series to copy"},
+				{Name: "--part", Type: "integer!", Description: "Copy only first N elements", Optional: true},
+			},
+			Returns:  "[block! string!] A copy of the series",
+			Examples: []string{"copy [1 2 3]  ; => [1 2 3]"},
+			SeeAlso:  []string{"append", "insert"},
+			Tags:     []string{"series"},
+		}
+		registerAndBind("copy", fn)
+	}
+
+	// Find function
+	{
+		params := []value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewParamSpec("value", true),
+			value.NewRefinementSpec("last", false),
+		}
+		fn := value.NewNativeFunction(
+			"find",
+			params,
+			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+				result, err := Find(args, refValues)
+				if err == nil {
+					return result, nil
+				}
+				return result, err
+			},
+		)
+		fn.Doc = &NativeDoc{
+			Category: "Series",
+			Summary:  "Finds a value in a series",
+			Parameters: []ParamDoc{
+				{Name: "series", Type: "block! string!", Description: "The series to search"},
+				{Name: "value", Type: "any-type!", Description: "The value to find"},
+				{Name: "--last", Type: "", Description: "Find last occurrence instead of first", Optional: true},
+			},
+			Returns:  "[block! string! none!] Series from found position or none",
+			Examples: []string{"find [1 2 3] 2  ; => [2 3]"},
+			SeeAlso:  []string{"append", "insert"},
+			Tags:     []string{"series"},
+		}
+		registerAndBind("find", fn)
+	}
+
+	// Remove function
+	{
+		params := []value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewRefinementSpec("part", true),
+		}
+		fn := value.NewNativeFunction(
+			"remove",
+			params,
+			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+				result, err := Remove(args, refValues)
+				if err == nil {
+					return result, nil
+				}
+				return result, err
+			},
+		)
+		fn.Doc = &NativeDoc{
+			Category: "Series",
+			Summary:  "Removes elements from a series",
+			Parameters: []ParamDoc{
+				{Name: "series", Type: "block! string!", Description: "The series to remove from"},
+				{Name: "--part", Type: "integer!", Description: "Remove n elements", Optional: true},
+			},
+			Returns:  "[block! string!] The modified series",
+			Examples: []string{"remove [1 2 3]  ; => [2 3]", "remove --part 2 [1 2 3]  ; => [3]"},
+			SeeAlso:  []string{"append", "insert"},
+			Tags:     []string{"series"},
+		}
+		registerAndBind("remove", fn)
+	}
 }
