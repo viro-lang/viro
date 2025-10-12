@@ -1,11 +1,30 @@
 package native
 
 import (
+	"os"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
+
+// TestMain sets up the native Registry before running tests
+func TestMain(m *testing.M) {
+	// Create a temporary frame to register natives
+	tempFrame := frame.NewFrameWithCapacity(frame.FrameClosure, -1, 80)
+
+	// Register all natives to populate the Registry
+	RegisterMathNatives(tempFrame)
+	RegisterSeriesNatives(tempFrame)
+	RegisterDataNatives(tempFrame)
+	RegisterIONatives(tempFrame)
+	RegisterControlNatives(tempFrame)
+	RegisterHelpNatives(tempFrame)
+
+	// Run tests
+	os.Exit(m.Run())
+}
 
 // mockEvaluator is a simple mock implementation of the Evaluator interface for testing.
 type mockEvaluator struct{}

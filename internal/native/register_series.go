@@ -25,11 +25,11 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 			panic(fmt.Sprintf("RegisterSeriesNatives: duplicate registration of function '%s'", name))
 		}
 
-		// Add to global Registry for backward compatibility
-		Registry[name] = fn
-
 		// Bind to root frame
 		rootFrame.Bind(name, value.FuncVal(fn))
+
+		// TEMPORARY: Also populate deprecated Registry for help system
+		Registry[name] = fn
 
 		// Mark as registered
 		registered[name] = true

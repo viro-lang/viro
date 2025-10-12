@@ -43,7 +43,7 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 			}
 		}
 
-		Registry[name] = value.NewNativeFunction(
+		fn := value.NewNativeFunction(
 			name,
 			params,
 			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
@@ -54,15 +54,18 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 				return result, err
 			},
 		)
-		fn := Registry[name]
 		fn.Doc = doc
 
 		// Bind to root frame
 		rootFrame.Bind(name, value.FuncVal(fn))
+
+		// TEMPORARY: Also populate deprecated Registry for help system compatibility
+		// TODO: Update help system to use root frame instead of Registry
+		Registry[name] = fn
 	}
 
 	// Group 12: Help system (2 functions)
-	Registry["?"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"?",
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
@@ -75,7 +78,6 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 			return result, err
 		},
 	)
-	fn = Registry["?"]
 	fn.Doc = &NativeDoc{
 		Category: "Help",
 		Summary:  "Displays help for functions or lists functions in a category",
@@ -95,6 +97,8 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("?", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["?"] = fn
 
 	registerSimpleMathFunc("words", Words, 0, &NativeDoc{
 		Category: "Help",
@@ -107,12 +111,9 @@ Useful for programmatic access to available functionality.`,
 		Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
 		SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
 	})
-	// Bind words to root frame
-	fn = Registry["words"]
-	rootFrame.Bind("words", value.FuncVal(fn))
 
 	// Group 13: Trace/Debug/Reflection (9 functions - Feature 002, FR-020 to FR-022)
-	Registry["trace"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"trace",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -131,7 +132,6 @@ Useful for programmatic access to available functionality.`,
 			return result, err
 		},
 	)
-	fn = Registry["trace"]
 	fn.Doc = &NativeDoc{
 		Category: "Debug",
 		Summary:  "Controls execution tracing",
@@ -151,8 +151,10 @@ and other execution events to a log file. Supports filtering and custom output d
 	}
 	// Bind to root frame
 	rootFrame.Bind("trace", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["trace"] = fn
 
-	Registry["trace?"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"trace?",
 		[]value.ParamSpec{},
 		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
@@ -164,7 +166,6 @@ and other execution events to a log file. Supports filtering and custom output d
 			return result, err
 		},
 	)
-	fn = Registry["trace?"]
 	fn.Doc = &NativeDoc{
 		Category:    "Debug",
 		Summary:     "Queries trace status",
@@ -176,8 +177,10 @@ and other execution events to a log file. Supports filtering and custom output d
 	}
 	// Bind to root frame
 	rootFrame.Bind("trace?", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["trace?"] = fn
 
-	Registry["debug"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"debug",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -200,7 +203,6 @@ and other execution events to a log file. Supports filtering and custom output d
 			return result, err
 		},
 	)
-	fn = Registry["debug"]
 	fn.Doc = &NativeDoc{
 		Category: "Debug",
 		Summary:  "Controls the interactive debugger",
@@ -230,6 +232,8 @@ with stepping commands. Inspect state with --locals and --stack.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("debug", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["debug"] = fn
 
 	registerSimpleMathFunc("type-of", TypeOf, 1, &NativeDoc{
 		Category: "Reflection",
@@ -243,9 +247,6 @@ Type names follow the pattern 'type!' (e.g., integer!, string!, block!).`,
 		Examples: []string{"type-of 42  ; => integer!", `type-of "hello"  ; => string!`, "type-of [1 2 3]  ; => block!"},
 		SeeAlso:  []string{"type?", "spec-of", "body-of"}, Tags: []string{"reflection", "type", "introspection"},
 	})
-	// Bind to root frame
-	fn = Registry["type-of"]
-	rootFrame.Bind("type-of", value.FuncVal(fn))
 
 	registerSimpleMathFunc("spec-of", SpecOf, 1, &NativeDoc{
 		Category: "Reflection",
@@ -260,9 +261,6 @@ returns the field names and type hints.`,
 		Examples: []string{"square: fn [x] [x * x]\nspec-of :square  ; => [x]", "obj: object [name: \"Alice\"]\nspec-of obj  ; => [name]"},
 		SeeAlso:  []string{"body-of", "type-of", "words-of"}, Tags: []string{"reflection", "spec", "introspection"},
 	})
-	// Bind to root frame
-	fn = Registry["spec-of"]
-	rootFrame.Bind("spec-of", value.FuncVal(fn))
 
 	registerSimpleMathFunc("body-of", BodyOf, 1, &NativeDoc{
 		Category: "Reflection",
@@ -277,11 +275,8 @@ returns a block of set-word/value pairs.`,
 		Examples: []string{"square: fn [x] [x * x]\nbody-of :square  ; => [x * x]", "obj: object [x: 10]\nbody-of obj  ; => [x: 10]"},
 		SeeAlso:  []string{"spec-of", "type-of", "source"}, Tags: []string{"reflection", "body", "introspection"},
 	})
-	// Bind to root frame
-	fn = Registry["body-of"]
-	rootFrame.Bind("body-of", value.FuncVal(fn))
 
-	Registry["words-of"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"words-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
@@ -295,7 +290,6 @@ returns a block of set-word/value pairs.`,
 			return result, err
 		},
 	)
-	fn = Registry["words-of"]
 	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns the field names of an object",
@@ -310,8 +304,10 @@ the object's manifest. Returns an immutable block of words.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("words-of", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["words-of"] = fn
 
-	Registry["values-of"] = value.NewNativeFunction(
+	fn = value.NewNativeFunction(
 		"values-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
@@ -325,7 +321,6 @@ the object's manifest. Returns an immutable block of words.`,
 			return result, err
 		},
 	)
-	fn = Registry["values-of"]
 	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns the field values of an object",
@@ -340,6 +335,8 @@ manifest and corresponds to words-of. Returns deep copies to prevent mutation.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("values-of", value.FuncVal(fn))
+	// TEMPORARY: Also populate deprecated Registry for help system
+	Registry["values-of"] = fn
 
 	registerSimpleMathFunc("source", Source, 1, &NativeDoc{
 		Category: "Reflection",
@@ -354,7 +351,4 @@ returns the object definition with field names.`,
 		Examples: []string{"square: fn [x] [x * x]\nsource :square  ; => \"fn [x] [x * x]\"", "obj: object [x: 10]\nsource obj  ; => \"object [x]\""},
 		SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
 	})
-	// Bind to root frame
-	fn = Registry["source"]
-	rootFrame.Bind("source", value.FuncVal(fn))
 }

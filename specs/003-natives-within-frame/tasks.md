@@ -731,7 +731,7 @@ These tasks must complete before ANY user story implementation can begin.
 
 ---
 
-### T025: [POLISH] Benchmark evaluator construction performance
+### ✅ T025: [POLISH] Benchmark evaluator construction performance
 
 **Goal**: Verify construction time <1ms
 
@@ -753,9 +753,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Reference**: plan.md Performance Goals
 
+**Status**: ✅ COMPLETED - Construction time: ~26µs (0.026ms), well under 1ms target
+
 ---
 
-### T026: [POLISH] [P] Benchmark word lookup performance (native)
+### ✅ T026: [POLISH] [P] Benchmark word lookup performance (native)
 
 **Goal**: Verify native lookup performance acceptable
 
