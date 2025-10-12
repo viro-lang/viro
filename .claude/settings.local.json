@@ -16,7 +16,8 @@
       "Bash(tee:*)",
       "Bash(gofmt:*)",
       "Read(///**)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Read(//private/tmp/**)"
     ],
     "deny": [],
     "ask": []
