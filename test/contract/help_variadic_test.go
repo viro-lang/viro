@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -15,7 +16,8 @@ import (
 func TestHelpVariableArity(t *testing.T) {
 	t.Run("HelpWithNoArgs_DirectCall", func(t *testing.T) {
 		// Direct call to Help() with no args should work - shows categories
-		result, err := native.Help([]value.Value{})
+		e := eval.NewEvaluator()
+		result, err := native.Help([]value.Value{}, e)
 		if err != nil {
 			t.Fatalf("Direct call Help() with no args failed: %v", err)
 		}
@@ -104,7 +106,8 @@ func TestHelpDocumentationMatchesImplementation(t *testing.T) {
 
 	t.Run("DirectCallSupportsNoArgs", func(t *testing.T) {
 		// The Help function itself supports 0 args (for REPL shortcut)
-		result, err := native.Help([]value.Value{})
+		e := eval.NewEvaluator()
+		result, err := native.Help([]value.Value{}, e)
 		if err != nil {
 			t.Errorf("Direct Help() call with 0 args should work: %v", err)
 		}

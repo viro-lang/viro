@@ -58,10 +58,6 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 
 		// Bind to root frame
 		rootFrame.Bind(name, value.FuncVal(fn))
-
-		// TEMPORARY: Also populate deprecated Registry for help system compatibility
-		// TODO: Update help system to use root frame instead of Registry
-		Registry[name] = fn
 	}
 
 	// Group 12: Help system (2 functions)
@@ -71,7 +67,8 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
 		},
 		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			result, err := Help(args)
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Help(args, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil
 			}
@@ -97,10 +94,20 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("?", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["?"] = fn
 
-	registerSimpleMathFunc("words", Words, 0, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"words",
+		[]value.ParamSpec{},
+		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{eval}
+			result, err := Words(args, reverseAdapter.unwrap())
+			if err == nil {
+				return result, nil
+			}
+			return result, err
+		},
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Help",
 		Summary:  "Lists all available native function names",
 		Description: `Returns a block containing all native function names as words.
@@ -110,7 +117,9 @@ Useful for programmatic access to available functionality.`,
 		Returns:    "[block!] A block containing all function names as words",
 		Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
 		SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
-	})
+	}
+	// Bind to root frame
+	rootFrame.Bind("words", value.FuncVal(fn))
 
 	// Group 13: Trace/Debug/Reflection (9 functions - Feature 002, FR-020 to FR-022)
 	fn = value.NewNativeFunction(
@@ -151,8 +160,6 @@ and other execution events to a log file. Supports filtering and custom output d
 	}
 	// Bind to root frame
 	rootFrame.Bind("trace", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["trace"] = fn
 
 	fn = value.NewNativeFunction(
 		"trace?",
@@ -177,8 +184,6 @@ and other execution events to a log file. Supports filtering and custom output d
 	}
 	// Bind to root frame
 	rootFrame.Bind("trace?", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["trace?"] = fn
 
 	fn = value.NewNativeFunction(
 		"debug",
@@ -232,8 +237,6 @@ with stepping commands. Inspect state with --locals and --stack.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("debug", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["debug"] = fn
 
 	registerSimpleMathFunc("type-of", TypeOf, 1, &NativeDoc{
 		Category: "Reflection",
@@ -304,8 +307,6 @@ the object's manifest. Returns an immutable block of words.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("words-of", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["words-of"] = fn
 
 	fn = value.NewNativeFunction(
 		"values-of",
@@ -335,8 +336,6 @@ manifest and corresponds to words-of. Returns deep copies to prevent mutation.`,
 	}
 	// Bind to root frame
 	rootFrame.Bind("values-of", value.FuncVal(fn))
-	// TEMPORARY: Also populate deprecated Registry for help system
-	Registry["values-of"] = fn
 
 	registerSimpleMathFunc("source", Source, 1, &NativeDoc{
 		Category: "Reflection",

@@ -34,9 +34,6 @@ func RegisterControlNatives(rootFrame *frame.Frame) {
 		// Bind to root frame
 		rootFrame.Bind(name, value.FuncVal(fn))
 
-		// TEMPORARY: Also populate deprecated Registry for help system
-		Registry[name] = fn
-
 		// Mark as registered
 		registered[name] = true
 	}

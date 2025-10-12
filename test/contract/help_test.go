@@ -4,15 +4,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 func TestHelpDirectCall(t *testing.T) {
 	// Test calling Help function directly (bypasses parser arity checking)
+	e := eval.NewEvaluator()
 
 	// Test with no arguments - should show category list
-	val, err := native.Help([]value.Value{})
+	val, err := native.Help([]value.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with no args failed: %v", err)
 	}
@@ -21,7 +23,7 @@ func TestHelpDirectCall(t *testing.T) {
 	}
 
 	// Test with function name
-	val, err = native.Help([]value.Value{value.WordVal("append")})
+	val, err = native.Help([]value.Value{value.WordVal("append")}, e)
 	if err != nil {
 		t.Fatalf("Help with 'append' failed: %v", err)
 	}
@@ -30,7 +32,7 @@ func TestHelpDirectCall(t *testing.T) {
 	}
 
 	// Test with category name
-	val, err = native.Help([]value.Value{value.WordVal("math")})
+	val, err = native.Help([]value.Value{value.WordVal("math")}, e)
 	if err != nil {
 		t.Fatalf("Help with 'math' failed: %v", err)
 	}
@@ -39,7 +41,7 @@ func TestHelpDirectCall(t *testing.T) {
 	}
 
 	// Test with operator
-	val, err = native.Help([]value.Value{value.WordVal("+")})
+	val, err = native.Help([]value.Value{value.WordVal("+")}, e)
 	if err != nil {
 		t.Fatalf("Help with '+' failed: %v", err)
 	}
@@ -85,7 +87,8 @@ func TestWords(t *testing.T) {
 
 func TestWordsDirectCall(t *testing.T) {
 	// Test direct call to Words function
-	val, err := native.Words([]value.Value{})
+	e := eval.NewEvaluator()
+	val, err := native.Words([]value.Value{}, e)
 	if err != nil {
 		t.Fatalf("Words failed: %v", err)
 	}
@@ -105,9 +108,19 @@ func TestWordsDirectCall(t *testing.T) {
 }
 
 func TestHelpFunctionExists(t *testing.T) {
-	fn, found := native.Lookup("?")
+	// Create evaluator to access root frame
+	e := eval.NewEvaluator()
+	rootFrame := e.GetFrameByIndex(0)
+
+	// Look up the ? function from the root frame
+	fnValue, found := rootFrame.Get("?")
 	if !found {
-		t.Fatal("? function not found in native.Registry")
+		t.Fatal("? function not found in root frame")
+	}
+
+	fn, ok := fnValue.AsFunction()
+	if !ok {
+		t.Fatal("? value is not a function")
 	}
 
 	if fn.Native == nil {
@@ -124,7 +137,21 @@ func TestHelpFunctionExists(t *testing.T) {
 }
 
 func TestHelpFormatterOutput(t *testing.T) {
-	output := native.FormatCategoryList(native.Registry)
+	// Create evaluator and build registry from root frame
+	e := eval.NewEvaluator()
+	rootFrame := e.GetFrameByIndex(0)
+
+	// Build registry map from root frame
+	registry := make(map[string]*value.FunctionValue)
+	for _, binding := range rootFrame.GetAll() {
+		if binding.Value.Type == value.TypeFunction {
+			if fn, ok := binding.Value.AsFunction(); ok {
+				registry[binding.Symbol] = fn
+			}
+		}
+	}
+
+	output := native.FormatCategoryList(registry)
 
 	if !strings.Contains(output, "Available categories") {
 		t.Error("FormatCategoryList missing 'Available categories' header")
@@ -140,9 +167,19 @@ func TestHelpFormatterOutput(t *testing.T) {
 }
 
 func TestHelpFunctionDetail(t *testing.T) {
-	fn, found := native.Lookup("+")
+	// Create evaluator to access root frame
+	e := eval.NewEvaluator()
+	rootFrame := e.GetFrameByIndex(0)
+
+	// Look up the + function from the root frame
+	fnValue, found := rootFrame.Get("+")
 	if !found {
-		t.Fatal("+ function not found")
+		t.Fatal("+ function not found in root frame")
+	}
+
+	fn, ok := fnValue.AsFunction()
+	if !ok {
+		t.Fatal("+ value is not a function")
 	}
 
 	output := native.FormatHelp("+", fn.Doc)

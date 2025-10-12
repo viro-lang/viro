@@ -1,6 +1,6 @@
 // Package native provides built-in native functions for the Viro interpreter.
 //
-// Native functions are implemented in Go and registered in the global Registry.
+// Native functions are implemented in Go and registered in the root frame (frame index 0).
 // They are invoked by the evaluator when a function value with native type
 // is called.
 //
@@ -12,7 +12,7 @@
 //   - Function: fn (function definition)
 //   - I/O: print, input
 //
-// All native functions are unified under the FunctionValue type and stored in the Registry.
+// All native functions are unified under the FunctionValue type and stored in the root frame.
 package native
 
 import (
@@ -38,18 +38,7 @@ import (
 type Evaluator interface {
 	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
 	Do_Next(val value.Value) (value.Value, *verror.Error)
-}
-
-// Registry holds all registered native functions as FunctionValue instances.
-// DEPRECATED: This is kept temporarily for backward compatibility with help system.
-// Native functions are now stored in the root frame. This will be removed in a future version.
-var Registry = make(map[string]*value.FunctionValue)
-
-// Lookup finds a native function by name in the Registry.
-// Returns the function value and true if found, nil and false otherwise.
-func Lookup(name string) (*value.FunctionValue, bool) {
-	fn, ok := Registry[name]
-	return fn, ok
+	GetFrameByIndex(idx int) *frame.Frame
 }
 
 // Call invokes a native function (FunctionValue) with the given arguments, refinements, and evaluator.
@@ -85,6 +74,10 @@ func (a evaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, error) {
 func (a evaluatorAdapter) Do_Next(val value.Value) (value.Value, error) {
 	result, err := a.eval.Do_Next(val)
 	return result, err // *verror.Error implements error interface
+}
+
+func (a evaluatorAdapter) GetFrameByIndex(idx int) *frame.Frame {
+	return a.eval.GetFrameByIndex(idx)
 }
 
 // nativeEvaluatorAdapter wraps value.Evaluator to implement native.Evaluator.

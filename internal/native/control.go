@@ -443,8 +443,9 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 		}
 
 		// Validate word exists in current context
-		// Check both native registry and user-defined words
-		_, isNative := Lookup(word)
+		// Check both native registry (in root frame) and user-defined words
+		rootFrame := eval.GetFrameByIndex(0)
+		_, isNative := rootFrame.Get(word)
 		var isUserDefined bool
 		if lookup, ok := eval.(wordLookup); ok {
 			_, isUserDefined = lookup.Lookup(word)

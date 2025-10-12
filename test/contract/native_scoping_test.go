@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -376,20 +375,3 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 	}
 }
 
-// Helper function to verify that a native function exists in the registry
-// This is used during the transition phase to ensure backward compatibility
-func TestNativeRegistryPopulated(t *testing.T) {
-	// This test verifies Phase 1 behavior: registry is still populated
-	// It will be removed in Phase 3 when registry is deleted
-
-	nativeNames := []string{"+", "-", "*", "/", "print", "type?", "fn", "if", "debug"}
-	for _, name := range nativeNames {
-		fn, found := native.Lookup(name)
-		if !found {
-			t.Errorf("native '%s' should be in registry", name)
-		}
-		if fn == nil {
-			t.Errorf("native '%s' should have non-nil function", name)
-		}
-	}
-}

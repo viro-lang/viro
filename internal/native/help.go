@@ -4,9 +4,24 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
+
+// buildRegistryFromFrame builds a registry map from all function values in a frame.
+// This is used by the help system to access native functions from the root frame.
+func buildRegistryFromFrame(f *frame.Frame) map[string]*value.FunctionValue {
+	registry := make(map[string]*value.FunctionValue)
+	for _, binding := range f.GetAll() {
+		if binding.Value.Type == value.TypeFunction {
+			if fn, ok := binding.Value.AsFunction(); ok {
+				registry[binding.Symbol] = fn
+			}
+		}
+	}
+	return registry
+}
 
 // Help displays documentation for a function or category.
 // USAGE: ? [word]  (optional argument)
@@ -17,15 +32,19 @@ import (
 // With one arg: shows function help or category listing
 //
 // NOTE: This function does NOT evaluate its argument, so it accepts word literals.
-func Help(args []value.Value) (value.Value, *verror.Error) {
+func Help(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	// Handle 0 or 1 arguments
 	if len(args) > 1 {
 		return value.NoneVal(), arityError("?", 1, len(args))
 	}
 
+	// Build registry from root frame
+	rootFrame := eval.GetFrameByIndex(0)
+	registry := buildRegistryFromFrame(rootFrame)
+
 	// No arguments - show category list
 	if len(args) == 0 {
-		fmt.Print(FormatCategoryList(Registry))
+		fmt.Print(FormatCategoryList(registry))
 		return value.NoneVal(), nil
 	}
 
@@ -43,7 +62,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Try to find the function in the registry
-	if fn, ok := Registry[lookupName]; ok {
+	if fn, ok := registry[lookupName]; ok {
 		// Found a function - show detailed help
 		if fn.Doc != nil {
 			fmt.Print(FormatHelp(lookupName, fn.Doc))
@@ -54,7 +73,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Not a function - maybe it's a category?
-	output := FormatFunctionList(lookupName, Registry)
+	output := FormatFunctionList(lookupName, registry)
 	if !strings.Contains(output, "not found") {
 		// It's a valid category
 		fmt.Print(output)
@@ -62,7 +81,7 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 	}
 
 	// Not found - suggest similar functions
-	similar := FindSimilar(lookupName, Registry, 5)
+	similar := FindSimilar(lookupName, registry, 5)
 	if len(similar) > 0 {
 		fmt.Printf("\n'%s' not found.\n", lookupName)
 		fmt.Printf("Did you mean: %s?\n\n", strings.Join(similar, ", "))
@@ -76,13 +95,17 @@ func Help(args []value.Value) (value.Value, *verror.Error) {
 // Words lists all available function names.
 // USAGE: words
 // Returns: block of words (function names)
-func Words(args []value.Value) (value.Value, *verror.Error) {
+func Words(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("words", 0, len(args))
 	}
 
-	names := make([]value.Value, 0, len(Registry))
-	for name := range Registry {
+	// Build registry from root frame
+	rootFrame := eval.GetFrameByIndex(0)
+	registry := buildRegistryFromFrame(rootFrame)
+
+	names := make([]value.Value, 0, len(registry))
+	for name := range registry {
 		names = append(names, value.WordVal(name))
 	}
 
