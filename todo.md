@@ -1,6 +1,10 @@
 
 List of things to impelment:
 
+- pliki `register_*` do rejestrowania funkcji natywnych wszystkie definiują swoje funkcje pomocnicze do rejestrowania
+  warto to wyciągnąć do wspólnego kodu
+- extend help system for user-defined functions
+
 - merge branch to main, upload to github
 - register native functions within the root frame and drop special native fns handling
 - mold i form functions (print should use form)
