@@ -8,7 +8,9 @@
       "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" ])",
       "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" -name \"*.md\" -type f)",
       "Bash(else echo \"NO_CHECKLISTS\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)"
     ],
     "deny": [],
     "ask": []
