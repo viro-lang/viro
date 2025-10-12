@@ -58,7 +58,8 @@ type Evaluator struct {
 
 // NewEvaluator creates a new evaluation engine with an empty stack.
 func NewEvaluator() *Evaluator {
-	global := frame.NewFrame(frame.FrameClosure, -1)
+	// Create root frame with capacity for ~80 natives
+	global := frame.NewFrameWithCapacity(frame.FrameClosure, -1, 80)
 	global.Name = "(top level)"
 	global.Index = 0
 	e := &Evaluator{
@@ -69,6 +70,15 @@ func NewEvaluator() *Evaluator {
 		callStack:  []string{"(top level)"},
 	}
 	e.captured[0] = true
+
+	// Register all native functions in root frame
+	native.RegisterMathNatives(global)
+	native.RegisterSeriesNatives(global)
+	native.RegisterDataNatives(global)
+	native.RegisterIONatives(global)
+	native.RegisterControlNatives(global)
+	native.RegisterHelpNatives(global)
+
 	return e
 }
 

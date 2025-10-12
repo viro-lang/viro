@@ -32,7 +32,7 @@ Tasks are grouped into phases:
 
 ## Phase 1: Setup & Preparation
 
-### T001: [SETUP] Verify existing test suite baseline
+### ✅ T001: [SETUP] Verify existing test suite baseline
 
 **Goal**: Establish baseline test results before any changes
 
@@ -51,13 +51,15 @@ Tasks are grouped into phases:
 
 **Duration**: 15 min
 
+**Status**: ✅ COMPLETED - All tests pass (baseline established)
+
 ---
 
 ## Phase 2: Foundational Tasks (Blocking Prerequisites)
 
 These tasks must complete before ANY user story implementation can begin.
 
-### T002: [FOUNDATION] Create native registration category files (Math)
+### ✅ T002: [FOUNDATION] Create native registration category files (Math)
 
 **Goal**: Extract math native registrations from registry.go into dedicated file
 
@@ -81,9 +83,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Reference**: contracts/frame.md, research.md D1
 
+**Status**: ✅ COMPLETED - 29 math natives registered (register_math.go created, 671 LOC)
+
 ---
 
-### T003: [FOUNDATION] [P] Create native registration category files (Series)
+### ✅ T003: [FOUNDATION] [P] Create native registration category files (Series)
 
 **Goal**: Extract series native registrations into dedicated file
 
@@ -105,9 +109,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Parallel with**: T004, T005, T006, T007
 
+**Status**: ✅ COMPLETED - 5 series natives registered (register_series.go created, 146 LOC)
+
 ---
 
-### T004: [FOUNDATION] [P] Create native registration category files (Data)
+### ✅ T004: [FOUNDATION] [P] Create native registration category files (Data)
 
 **Goal**: Extract data/object native registrations
 
@@ -123,9 +129,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Parallel with**: T003, T005, T006, T007
 
+**Status**: ✅ COMPLETED - 8 data natives registered (register_data.go created, 321 LOC)
+
 ---
 
-### T005: [FOUNDATION] [P] Create native registration category files (I/O)
+### ✅ T005: [FOUNDATION] [P] Create native registration category files (I/O)
 
 **Goal**: Extract I/O and port native registrations
 
@@ -141,9 +149,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Parallel with**: T003, T004, T006, T007
 
+**Status**: ✅ COMPLETED - 10 I/O natives registered (register_io.go created, 232 LOC)
+
 ---
 
-### T006: [FOUNDATION] [P] Create native registration category files (Control)
+### ✅ T006: [FOUNDATION] [P] Create native registration category files (Control)
 
 **Goal**: Extract control flow native registrations
 
@@ -159,9 +169,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Parallel with**: T003, T004, T005, T007
 
+**Status**: ✅ COMPLETED - 5 control natives registered (register_control.go created, 209 LOC)
+
 ---
 
-### T007: [FOUNDATION] [P] Create native registration category files (Help)
+### ✅ T007: [FOUNDATION] [P] Create native registration category files (Help)
 
 **Goal**: Extract help and observability native registrations
 
@@ -177,9 +189,11 @@ These tasks must complete before ANY user story implementation can begin.
 
 **Parallel with**: T003, T004, T005, T006
 
+**Status**: ✅ COMPLETED - 11 help natives registered (register_help.go created, 367 LOC)
+
 ---
 
-### T008: [FOUNDATION] Modify NewEvaluator to register natives in root frame
+### ✅ T008: [FOUNDATION] Modify NewEvaluator to register natives in root frame
 
 **Goal**: Add native registration calls to evaluator construction
 
@@ -212,6 +226,8 @@ These tasks must complete before ANY user story implementation can begin.
 **Dependencies**: T002, T003, T004, T005, T006, T007
 
 **Reference**: contracts/evaluator.md, data-model.md state machine
+
+**Status**: ✅ COMPLETED - NewEvaluator modified to call all 6 registration functions
 
 ---
 
