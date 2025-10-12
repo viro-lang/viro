@@ -442,16 +442,12 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 			return value.NoneVal(), typeError("debug --breakpoint", "word", val)
 		}
 
-		// Validate word exists in current context
-		// Check both native registry (in root frame) and user-defined words
-		rootFrame := eval.GetFrameByIndex(0)
-		_, isNative := rootFrame.Get(word)
-		var isUserDefined bool
+		// Validate word exists in current context (lookup covers all scopes)
+		var found bool
 		if lookup, ok := eval.(wordLookup); ok {
-			_, isUserDefined = lookup.Lookup(word)
+			_, found = lookup.Lookup(word)
 		}
-
-		if !isNative && !isUserDefined {
+		if !found {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDNoValue,
 				[3]string{"cannot set breakpoint on unknown word", word, ""},
