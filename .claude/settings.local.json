@@ -10,7 +10,10 @@
       "Bash(else echo \"NO_CHECKLISTS\")",
       "Bash(fi)",
       "Bash(.specify/scripts/bash/setup-plan.sh:*)",
-      "Bash(.specify/scripts/bash/update-agent-context.sh:*)"
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" ])",
+      "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" -name \"*.md\" -type f)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []
