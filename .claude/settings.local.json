@@ -8,7 +8,18 @@
       "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" ])",
       "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/002-implement-deferred-features/checklists\" -name \"*.md\" -type f)",
       "Bash(else echo \"NO_CHECKLISTS\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" ])",
+      "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/003-natives-within-frame/checklists\" -name \"*.md\" -type f)",
+      "Bash(tee:*)",
+      "Bash(gofmt:*)",
+      "Read(///**)",
+      "Bash(awk:*)",
+      "Read(//private/tmp/**)",
+      "Bash(/tmp/viro:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

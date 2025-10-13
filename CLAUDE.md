@@ -106,8 +106,12 @@ type Value struct {
 
 ### Native Function System
 
-Native functions are registered in `internal/native/Registry` map. Each function:
+Native functions are stored in the **root frame** (frame index 0) and resolved via standard lexical scoping. This enables:
+- User code to shadow natives with local bindings
+- Consistent word resolution strategy (no special cases)
+- Standard frame chain traversal for all lookups
 
+Each native function:
 1. Has a `FunctionValue` with parameter specs and implementation
 2. Parameters marked as `Eval: true` are evaluated before call, `false` passed raw
 3. Refinements supported: `--flag` (boolean) or `--option []` (value)
@@ -117,7 +121,18 @@ Native functions are registered in `internal/native/Registry` map. Each function
 1. Define contract in `specs/*/contracts/*.md`
 2. Write test in `test/contract/*_test.go`
 3. Implement in `internal/native/*.go`
-4. Register in `internal/native/registry.go` init()
+4. Add to appropriate `internal/native/register_*.go` file (Math, Series, Data, I/O, Control, or Help)
+5. Call `registerAndBind(name, fn)` within the registration function
+
+**Registration files** (organized by category):
+- `register_math.go` - Math operations (+, -, *, /, comparison, logic, trigonometry)
+- `register_series.go` - Series operations (first, last, append, insert, length?, etc.)
+- `register_data.go` - Data manipulation (set, get, type?, object, clone, etc.)
+- `register_io.go` - I/O operations (print, input, file operations)
+- `register_control.go` - Control flow (if, when, loop, while, fn)
+- `register_help.go` - Help and reflection (?, words, type-of, spec-of, debug, trace)
+
+**Note**: `native.Registry` still exists for backward compatibility with the help system, but the evaluator uses frame-based lookup exclusively
 
 ### Evaluator Interface
 
@@ -224,9 +239,10 @@ Always consult specs before implementing.
 1. **Operator precedence**: There is NONE. Everything is left-to-right: `2 + 3 * 4` = 20, not 14
 2. **Blocks vs Parens**: `[1 + 2]` stores block, `(1 + 2)` evaluates to 3
 3. **Local scoping**: Function words are LOCAL by default, don't modify globals accidentally
-4. **Index-based refs**: Never store frame/stack pointers, always use indices
-5. **Test coverage**: Every code change MUST have test coverage (enforced in Copilot instructions)
-6. **No real network calls in tests**: Use mocked/stubbed servers on 127.0.0.1 only
+4. **Native shadowing**: You CAN shadow native functions with local bindings (e.g., define local `print` or use `--debug` refinement)
+5. **Index-based refs**: Never store frame/stack pointers, always use indices
+6. **Test coverage**: Every code change MUST have test coverage (enforced in Copilot instructions)
+7. **No real network calls in tests**: Use mocked/stubbed servers on 127.0.0.1 only
 
 ## Version and Dependencies
 

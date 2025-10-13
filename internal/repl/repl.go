@@ -29,9 +29,11 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -68,10 +70,10 @@ func NewREPL() (*REPL, error) {
 	// Initialize trace/debug sessions (Feature 002, T154)
 	// Trace is initialized with default settings (stderr, 50MB max size)
 	// These will be controlled via trace --on/--off and debug --on/--off
-	if err := native.InitTrace("", 50); err != nil {
+	if err := trace.InitTrace("", 50); err != nil {
 		return nil, fmt.Errorf("failed to initialize trace session: %w", err)
 	}
-	native.InitDebugger()
+	debug.InitDebugger()
 
 	historyPath := resolveHistoryPath(true)
 	// Create readline instance with prompt
@@ -105,11 +107,11 @@ func NewREPL() (*REPL, error) {
 func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 	// Initialize trace/debug sessions for tests (same as NewREPL)
 	// Use os.DevNull to avoid trace output pollution during tests
-	if err := native.InitTrace(os.DevNull, 50); err != nil {
+	if err := trace.InitTrace(os.DevNull, 50); err != nil {
 		// Log error but continue - tests should not fail due to trace init
 		fmt.Fprintf(os.Stderr, "Warning: failed to initialize trace session: %v\n", err)
 	}
-	native.InitDebugger()
+	debug.InitDebugger()
 
 	if e == nil {
 		e = eval.NewEvaluator()
@@ -407,7 +409,7 @@ func (r *REPL) getCurrentPrompt() string {
 	}
 
 	// Check if debugger is in active mode (breakpoints or stepping)
-	if native.GlobalDebugger != nil && native.GlobalDebugger.Mode() != native.DebugModeOff {
+	if debug.GlobalDebugger != nil && debug.GlobalDebugger.Mode() != debug.DebugModeOff {
 		return debugPrompt
 	}
 
@@ -596,14 +598,14 @@ func (r *REPL) handleHelpShortcut() {
 	rOut, wOut, err := os.Pipe()
 	if err != nil {
 		// Fallback: call Help normally if pipe creation fails
-		_, _ = native.Help([]value.Value{})
+		_, _ = native.Help([]value.Value{}, r.evaluator)
 		return
 	}
 
 	os.Stdout = wOut
 
 	// Call Help function directly with no arguments to show categories
-	result, helpErr := native.Help([]value.Value{})
+	result, helpErr := native.Help([]value.Value{}, r.evaluator)
 
 	// Restore stdout immediately
 	wOut.Close()

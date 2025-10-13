@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -404,12 +405,12 @@ func OpenPort(spec string, opts map[string]value.Value) (value.Value, error) {
 	// Open the port
 	ctx := context.Background()
 	if err := driver.Open(ctx, spec); err != nil {
-		TracePortError(scheme, spec, err)
+		trace.TracePortError(scheme, spec, err)
 		return value.NoneVal(), err
 	}
 
 	port.State = value.PortOpen
-	TracePortOpen(scheme, spec)
+	trace.TracePortOpen(scheme, spec)
 	return value.PortVal(port), nil
 }
 
@@ -425,12 +426,12 @@ func ClosePort(portVal value.Value) error {
 	}
 
 	if err := port.Driver.Close(); err != nil {
-		TracePortError(port.Scheme, port.Spec, err)
+		trace.TracePortError(port.Scheme, port.Spec, err)
 		return err
 	}
 
 	port.State = value.PortClosed
-	TracePortClose(port.Scheme, port.Spec)
+	trace.TracePortClose(port.Scheme, port.Spec)
 	return nil
 }
 
@@ -459,13 +460,13 @@ func ReadPort(spec string, opts map[string]value.Value) (value.Value, error) {
 			break
 		}
 		if err != nil {
-			TracePortError(port.Scheme, spec, err)
+			trace.TracePortError(port.Scheme, spec, err)
 			ClosePort(portVal)
 			return value.NoneVal(), err
 		}
 	}
 
-	TracePortRead(port.Scheme, spec, totalBytes)
+	trace.TracePortRead(port.Scheme, spec, totalBytes)
 	ClosePort(portVal)
 	return value.StrVal(result.String()), nil
 }
@@ -514,16 +515,16 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 
 		file, err := os.OpenFile(resolved, flags, 0644)
 		if err != nil {
-			TracePortError("file", spec, err)
+			trace.TracePortError("file", spec, err)
 			return err
 		}
 		defer file.Close()
 
 		_, err = file.WriteString(content)
 		if err != nil {
-			TracePortError("file", spec, err)
+			trace.TracePortError("file", spec, err)
 		} else {
-			TracePortWrite("file", spec, len(content))
+			trace.TracePortWrite("file", spec, len(content))
 		}
 		return err
 	}
@@ -535,16 +536,16 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 
 	portVal, err := OpenPort(spec, opts)
 	if err != nil {
-		TracePortError("network", spec, err)
+		trace.TracePortError("network", spec, err)
 		return err
 	}
 
 	port, _ := portVal.AsPort()
 	_, err = port.Driver.Write([]byte(content))
 	if err != nil {
-		TracePortError(port.Scheme, spec, err)
+		trace.TracePortError(port.Scheme, spec, err)
 	} else {
-		TracePortWrite(port.Scheme, spec, len(content))
+		trace.TracePortWrite(port.Scheme, spec, len(content))
 	}
 	ClosePort(portVal)
 	return err

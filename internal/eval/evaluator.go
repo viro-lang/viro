@@ -37,9 +37,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/stack"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -58,7 +60,8 @@ type Evaluator struct {
 
 // NewEvaluator creates a new evaluation engine with an empty stack.
 func NewEvaluator() *Evaluator {
-	global := frame.NewFrame(frame.FrameClosure, -1)
+	// Create root frame with capacity for ~80 natives
+	global := frame.NewFrameWithCapacity(frame.FrameClosure, -1, 80)
 	global.Name = "(top level)"
 	global.Index = 0
 	e := &Evaluator{
@@ -69,6 +72,15 @@ func NewEvaluator() *Evaluator {
 		callStack:  []string{"(top level)"},
 	}
 	e.captured[0] = true
+
+	// Register all native functions in root frame
+	native.RegisterMathNatives(global)
+	native.RegisterSeriesNatives(global)
+	native.RegisterDataNatives(global)
+	native.RegisterIONatives(global)
+	native.RegisterControlNatives(global)
+	native.RegisterHelpNatives(global)
+
 	return e
 }
 
@@ -158,14 +170,14 @@ func evalParenDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Erro
 // evalWordDispatch handles word evaluation
 func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
 	// Check for breakpoints before evaluating word (T153)
-	if native.GlobalDebugger != nil {
+	if debug.GlobalDebugger != nil {
 		wordStr, ok := val.AsWord()
-		if ok && native.GlobalDebugger.HasBreakpoint(wordStr) {
+		if ok && debug.GlobalDebugger.HasBreakpoint(wordStr) {
 			// Breakpoint hit - for now, just continue evaluation
 			// REPL integration will handle pause/inspect in future work
 			// Emit trace event if tracing is enabled
-			if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
-				native.GlobalTraceSession.Emit(native.TraceEvent{
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				trace.GlobalTraceSession.Emit(trace.TraceEvent{
 					Timestamp: time.Now(),
 					Word:      "debug",
 					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
@@ -346,7 +358,7 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	// Per FR-015: emit trace events when tracing is enabled
 	var traceStart time.Time
 	var traceWord string
-	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
 		traceStart = time.Now()
 		if val.Type.IsWord() {
 			if w, ok := val.AsWord(); ok {
@@ -366,9 +378,9 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	result, err := evalFn(e, val)
 
 	// Emit trace event if tracing is enabled
-	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() && traceWord != "" {
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
 		duration := time.Since(traceStart)
-		native.GlobalTraceSession.Emit(native.TraceEvent{
+		trace.GlobalTraceSession.Emit(trace.TraceEvent{
 			Timestamp: traceStart,
 			Value:     result.String(),
 			Word:      traceWord,
@@ -519,12 +531,6 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	// Check native registry first
-	if nativeFn, found := native.Lookup(wordStr); found {
-		return e.invokeFunction(nativeFn, seq, idx, lastResult)
-	}
-
-	// Check user-defined functions
 	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
 		return e.invokeFunction(fn, seq, idx, lastResult)
@@ -748,12 +754,6 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
 	}
 
-	// Check if it's a native function - if so, return the word itself
-	// (it will be called when it appears in function position)
-	if _, ok := native.Lookup(wordStr); ok {
-		return val, nil // Return the word itself, not evaluated yet
-	}
-
 	result, ok := e.Lookup(wordStr)
 	if !ok {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
@@ -829,12 +829,6 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 	wordStr, ok := val.AsWord()
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
-	}
-
-	// Check native registry first (like evalWord does)
-	// Native functions are not stored in frames, so we must check the registry
-	if nativeFn, found := native.Lookup(wordStr); found {
-		return value.FuncVal(nativeFn), nil
 	}
 
 	result, ok := e.Lookup(wordStr)
