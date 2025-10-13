@@ -272,18 +272,6 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.evalParsedValues(values)
 }
 
-// evalAndPrint parses, evaluates, and displays the result of an input line.
-func (r *REPL) evalAndPrint(input string) {
-	// Parse
-	values, err := parse.Parse(input)
-	if err != nil {
-		r.printError(err)
-		return
-	}
-
-	r.evalParsedValues(values)
-}
-
 // formatValue formats a value for display in the REPL.
 func (r *REPL) formatValue(v value.Value) string {
 	switch v.Type {
