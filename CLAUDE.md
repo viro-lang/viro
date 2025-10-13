@@ -134,6 +134,43 @@ Each native function:
 
 **Note**: `native.Registry` still exists for backward compatibility with the help system, but the evaluator uses frame-based lookup exclusively
 
+### Action System (Feature 004: Dynamic Function Invocation)
+
+**Actions** are polymorphic functions that dispatch to type-specific implementations based on the first argument's type. This enables REBOL-style series operations where `first [1 2 3]` and `first "hello"` both work correctly.
+
+**Architecture**:
+- **TypeRegistry**: Global map from `ValueType` → `*Frame` storing type frames
+- **Type Frames**: Regular frames containing type-specific implementations, stored in TypeRegistry (not on stack)
+  - Parent = 0 (root frame index)
+  - Index = -1 (not in frameStore)
+  - Contains type-specific function implementations
+- **Actions**: Values of type `TypeAction` stored in root frame like functions
+  - Contain: Name and ParamSpec only
+  - Dispatch at runtime: action name + first arg type → type frame → function
+
+**Dispatch Flow**:
+1. Action invoked: `first [1 2 3]`
+2. First argument evaluated → type is `TypeBlock`
+3. Look up `TypeBlock` in `frame.TypeRegistry` → get block type frame
+4. Look up `"first"` in block type frame → get block-specific first function
+5. Invoke function with arguments
+
+**Adding type-specific implementations**:
+1. Create implementations in `internal/native/series_block.go`, `series_string.go`, etc.
+2. Register into type frames using `RegisterActionImpl(TypeBlock, "first", funcImpl)`
+3. Create action value using `CreateAction("first", paramSpec)`
+4. Bind action to root frame in `register_series.go`
+
+**Error handling**:
+- `action-no-impl`: Type has no type frame or type frame doesn't have this action
+- `arg-count`: Wrong number of arguments
+- Type-specific errors: Handled by individual implementations
+
+**Extensibility**:
+- New types can register via `frame.RegisterTypeFrame(typ, frame)`
+- Dispatch logic treats all types uniformly (no special cases)
+- Type frames use standard frame mechanism (Words/Values arrays)
+
 ### Evaluator Interface
 
 Two parallel interfaces exist due to import cycle constraints:

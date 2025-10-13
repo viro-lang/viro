@@ -40,8 +40,8 @@ func InitTypeFrames() {
 // createTypeFrame creates a type frame with standard configuration.
 func createTypeFrame(typeName string) *Frame {
 	frame := NewFrame(FrameFunctionArgs, 0) // Parent = 0 (root frame)
-	frame.Index = -1                         // Not in frameStore
-	frame.Name = typeName                    // For diagnostics
+	frame.Index = -1                        // Not in frameStore
+	frame.Name = typeName                   // For diagnostics
 	return frame
 }
 
@@ -58,6 +58,23 @@ func GetTypeFrame(typ value.ValueType) (*Frame, bool) {
 // The frame must have:
 // - Parent = 0 (root frame)
 // - Index = -1 (not in frameStore)
+//
+// Example usage for a hypothetical custom type:
+//
+//	// 1. Create a type frame
+//	customFrame := frame.NewFrame(frame.FrameFunctionArgs, 0)
+//	customFrame.Index = -1
+//	customFrame.Name = "custom-type!"
+//
+//	// 2. Add type-specific implementations
+//	customFrame.Bind("first", value.FuncVal(customFirstImpl))
+//	customFrame.Bind("last", value.FuncVal(customLastImpl))
+//
+//	// 3. Register the type frame
+//	frame.RegisterTypeFrame(value.TypeCustom, customFrame)
+//
+//	// 4. Actions will now dispatch to custom types automatically
+//	// first custom-value  ; → calls customFirstImpl
 //
 // Feature: 004-dynamic-function-invocation (extensibility)
 func RegisterTypeFrame(typ value.ValueType, frame *Frame) {
