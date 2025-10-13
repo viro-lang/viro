@@ -304,3 +304,7 @@ Always consult specs before implementing.
 - `002-implement-deferred-features` - Current active development (Phase 2)
 
 Always check which branch you're on before making changes. Feature branches follow pattern `NNN-feature-name` where NNN is the spec number.
+
+## Zasady generowania kodu
+
+- Nie pisz komentarzy w kodzie; wszystkie wyjaśnienia i dokumentacja powinny być poza blokami kodu.
