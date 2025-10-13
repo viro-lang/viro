@@ -18,7 +18,8 @@
       "Read(///**)",
       "Bash(awk:*)",
       "Read(//private/tmp/**)",
-      "Bash(/tmp/viro:*)"
+      "Bash(/tmp/viro:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
