@@ -501,16 +501,9 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 	// Dispatch based on function type
 	if fn.Type == value.FuncNative {
 		// Native functions receive both positional args and refinement values
-		result, callErr := native.Call(fn, posArgs, refValues, e)
+		result, callErr := e.callNative(fn, posArgs, refValues)
 		if callErr != nil {
-			// Convert error interface back to *verror.Error for annotation
-			var vErr *verror.Error
-			if ve, ok := callErr.(*verror.Error); ok {
-				vErr = ve
-			} else {
-				vErr = verror.NewInternalError(callErr.Error(), [3]string{})
-			}
-			return value.NoneVal(), e.annotateError(vErr, vals, startIdx)
+			return value.NoneVal(), e.annotateError(callErr, vals, startIdx)
 		}
 		return result, nil
 	}
@@ -521,6 +514,70 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 		return value.NoneVal(), execErr
 	}
 	return result, nil
+}
+
+// callNative invokes a native function with the given arguments and refinements.
+func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []value.Value, refValues map[string]value.Value) (value.Value, *verror.Error) {
+	if fn.Type != value.FuncNative {
+		return value.NoneVal(), verror.NewInternalError("callNative expects native function", [3]string{})
+	}
+
+	// Create an adapter to bridge Evaluator (returns *verror.Error)
+	// to value.Evaluator (returns error)
+	adapter := evaluatorAdapter{e}
+	result, err := fn.Native(posArgs, refValues, adapter)
+
+	// Convert error back to *verror.Error
+	if err == nil {
+		return result, nil
+	}
+	if verr, ok := err.(*verror.Error); ok {
+		return result, verr
+	}
+	return value.NoneVal(), verror.NewInternalError(err.Error(), [3]string{})
+}
+
+// evaluatorAdapter wraps Evaluator to implement value.Evaluator.
+// This bridges the difference in return types (*verror.Error vs error).
+// It also implements frameManager and other interfaces needed by native functions.
+type evaluatorAdapter struct {
+	eval *Evaluator
+}
+
+func (a evaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, error) {
+	result, err := a.eval.Do_Blk(vals)
+	return result, err // *verror.Error implements error interface
+}
+
+func (a evaluatorAdapter) Do_Next(val value.Value) (value.Value, error) {
+	result, err := a.eval.Do_Next(val)
+	return result, err // *verror.Error implements error interface
+}
+
+func (a evaluatorAdapter) GetFrameByIndex(idx int) *frame.Frame {
+	return a.eval.GetFrameByIndex(idx)
+}
+
+// Frame management methods required by native functions (especially object)
+func (a evaluatorAdapter) RegisterFrame(f *frame.Frame) int {
+	return a.eval.RegisterFrame(f)
+}
+
+func (a evaluatorAdapter) MarkFrameCaptured(idx int) {
+	a.eval.MarkFrameCaptured(idx)
+}
+
+func (a evaluatorAdapter) PushFrameContext(f *frame.Frame) int {
+	return a.eval.PushFrameContext(f)
+}
+
+func (a evaluatorAdapter) PopFrameContext() {
+	a.eval.PopFrameContext()
+}
+
+// Lookup method required by some native functions
+func (a evaluatorAdapter) Lookup(symbol string) (value.Value, bool) {
+	return a.eval.Lookup(symbol)
 }
 
 // invokeAction is the action invocation handler that performs type-based dispatch.

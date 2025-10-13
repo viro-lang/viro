@@ -3,7 +3,6 @@ package eval
 
 import (
 	"github.com/marcin-radoszewski/viro/internal/frame"
-	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -71,16 +70,9 @@ func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Va
 	}
 
 	// Call the native function directly with arguments and refinements
-	result, callErr := native.Call(fn, posArgs, refValues, e)
+	result, callErr := e.callNative(fn, posArgs, refValues)
 	if callErr != nil {
-		// Convert error interface back to *verror.Error
-		var vErr *verror.Error
-		if ve, ok := callErr.(*verror.Error); ok {
-			vErr = ve
-		} else {
-			vErr = verror.NewInternalError(callErr.Error(), [3]string{})
-		}
-		return value.NoneVal(), vErr
+		return value.NoneVal(), callErr
 	}
 
 	return result, nil
