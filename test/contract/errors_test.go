@@ -75,13 +75,8 @@ func TestErrors_TypeMismatch(t *testing.T) {
 		t.Fatalf("expected script error, got %v", err.Category)
 	}
 
-	if err.ID != verror.ErrIDTypeMismatch {
-		t.Fatalf("expected type-mismatch error, got %s", err.ID)
-	}
-
-	expectedMessage := "Type mismatch for 'first': expected series, got integer"
-	if err.Message != expectedMessage {
-		t.Fatalf("unexpected message: %s", err.Message)
+	if err.ID != verror.ErrIDActionNoImpl {
+		t.Fatalf("expected action-no-impl error, got %s", err.ID)
 	}
 
 	if !strings.Contains(err.Near, "first") || !strings.Contains(err.Near, "42") {

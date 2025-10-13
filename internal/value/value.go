@@ -47,7 +47,7 @@ func (v Value) String() string {
 		return fmt.Sprintf("%d", v.Payload.(int64))
 	case TypeString:
 		if str, ok := v.Payload.(*StringValue); ok {
-			return str.String()
+			return fmt.Sprintf(`"%s"`, str.String())
 		}
 		return fmt.Sprintf(`"%v"`, v.Payload)
 	case TypeWord:

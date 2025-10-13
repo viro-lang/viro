@@ -9,6 +9,61 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// init registers type-specific series implementations into type frames.
+// This runs before RegisterSeriesNatives is called, preparing type frames
+// for action dispatch.
+//
+// Feature: 004-dynamic-function-invocation
+func init() {
+	// This will run after frame.InitTypeFrames() is called in NewEvaluator
+	// We can't directly register here because type frames might not be initialized yet
+	// Instead, we'll do registration lazily in RegisterSeriesNatives
+}
+
+// registerSeriesTypeImpls registers type-specific implementations into type frames.
+// Called by RegisterSeriesNatives after type frames are initialized.
+//
+// Feature: 004-dynamic-function-invocation
+func registerSeriesTypeImpls() {
+	// Helper to create native function wrappers
+	wrapNative := func(name string, impl func([]value.Value, map[string]value.Value, Evaluator) (value.Value, *verror.Error)) *value.FunctionValue {
+		params := []value.ParamSpec{
+			value.NewParamSpec("series", true),
+		}
+		if name == "append" || name == "insert" {
+			params = append(params, value.NewParamSpec("value", true))
+		}
+
+		return value.NewNativeFunction(
+			name,
+			params,
+			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+				// Adapter from value.Evaluator to native.Evaluator
+				adapter := &nativeEvaluatorAdapter{eval: eval}
+				result, err := impl(args, refValues, adapter.unwrap())
+				if err == nil {
+					return result, nil
+				}
+				return result, err
+			},
+		)
+	}
+
+	// Register block-specific implementations
+	RegisterActionImpl(value.TypeBlock, "first", wrapNative("first", BlockFirst))
+	RegisterActionImpl(value.TypeBlock, "last", wrapNative("last", BlockLast))
+	RegisterActionImpl(value.TypeBlock, "append", wrapNative("append", BlockAppend))
+	RegisterActionImpl(value.TypeBlock, "insert", wrapNative("insert", BlockInsert))
+	RegisterActionImpl(value.TypeBlock, "length?", wrapNative("length?", BlockLength))
+
+	// Register string-specific implementations
+	RegisterActionImpl(value.TypeString, "first", wrapNative("first", StringFirst))
+	RegisterActionImpl(value.TypeString, "last", wrapNative("last", StringLast))
+	RegisterActionImpl(value.TypeString, "append", wrapNative("append", StringAppend))
+	RegisterActionImpl(value.TypeString, "insert", wrapNative("insert", StringInsert))
+	RegisterActionImpl(value.TypeString, "length?", wrapNative("length?", StringLength))
+}
+
 // RegisterSeriesNatives registers all series-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
@@ -16,17 +71,17 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function
-	registerAndBind := func(name string, fn *value.FunctionValue) {
-		if fn == nil {
-			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil function for '%s'", name))
+	// Helper function to register and bind a native function or action
+	registerAndBind := func(name string, val value.Value) {
+		if val.Type == value.TypeNone {
+			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil value for '%s'", name))
 		}
 		if registered[name] {
-			panic(fmt.Sprintf("RegisterSeriesNatives: duplicate registration of function '%s'", name))
+			panic(fmt.Sprintf("RegisterSeriesNatives: duplicate registration of '%s'", name))
 		}
 
 		// Bind to root frame
-		rootFrame.Bind(name, value.FuncVal(fn))
+		rootFrame.Bind(name, val)
 
 		// Mark as registered
 		registered[name] = true
@@ -66,72 +121,41 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 			},
 		)
 		fn.Doc = doc
-		registerAndBind(name, fn)
+		registerAndBind(name, value.FuncVal(fn))
 	}
 
-	// ===== Group 5: Series operations (5 functions) =====
-	registerSimpleSeriesFunc("first", First, 1, &NativeDoc{
-		Category: "Series",
-		Summary:  "Returns the first element of a series",
-		Description: `Gets the first element of a block or string. Raises an error if the series is empty.
-For strings, returns the first character as a string.`,
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to get the first element from", Optional: false},
-		},
-		Returns:  "[any-type!] The first element of the series",
-		Examples: []string{"first [1 2 3]  ; => 1", `first "hello"  ; => "h"`, "first [[a b] c]  ; => [a b]"},
-		SeeAlso:  []string{"last", "length?", "append", "insert"}, Tags: []string{"series", "access", "first"},
-	})
-	registerSimpleSeriesFunc("last", Last, 1, &NativeDoc{
-		Category: "Series",
-		Summary:  "Returns the last element of a series",
-		Description: `Gets the last element of a block or string. Raises an error if the series is empty.
-For strings, returns the last character as a string.`,
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to get the last element from", Optional: false},
-		},
-		Returns:  "[any-type!] The last element of the series",
-		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`, "last [[a b] c]  ; => c"},
-		SeeAlso:  []string{"first", "length?", "append", "insert"}, Tags: []string{"series", "access", "last"},
-	})
-	registerSimpleSeriesFunc("append", Append, 2, &NativeDoc{
-		Category: "Series",
-		Summary:  "Appends a value to the end of a series",
-		Description: `Adds a value to the end of a block or string, modifying the series in place.
-Returns the modified series. For strings, the value is converted to a string before appending.`,
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to append to (modified in place)", Optional: false},
-			{Name: "value", Type: "any-type!", Description: "The value to append", Optional: false},
-		},
-		Returns:  "[block! string!] The modified series",
-		Examples: []string{"data: [1 2 3]\nappend data 4  ; => [1 2 3 4]", `text: "hello"\nappend text " world"  ; => "hello world"`},
-		SeeAlso:  []string{"insert", "first", "last", "length?"}, Tags: []string{"series", "modification", "append"},
-	})
-	registerSimpleSeriesFunc("insert", Insert, 2, &NativeDoc{
-		Category: "Series",
-		Summary:  "Inserts a value at the beginning of a series",
-		Description: `Adds a value to the start of a block or string, modifying the series in place.
-Returns the modified series. For strings, the value is converted to a string before inserting.`,
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to insert into (modified in place)", Optional: false},
-			{Name: "value", Type: "any-type!", Description: "The value to insert", Optional: false},
-		},
-		Returns:  "[block! string!] The modified series",
-		Examples: []string{"data: [2 3 4]\ninsert data 1  ; => [1 2 3 4]", `text: "world"\ninsert text "hello "  ; => "hello world"`},
-		SeeAlso:  []string{"append", "first", "last", "length?"}, Tags: []string{"series", "modification", "insert"},
-	})
-	registerSimpleSeriesFunc("length?", LengthQ, 1, &NativeDoc{
-		Category: "Series",
-		Summary:  "Returns the number of elements in a series",
-		Description: `Counts the elements in a block or characters in a string.
-Returns an integer representing the length of the series.`,
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to measure", Optional: false},
-		},
-		Returns:  "[integer!] The number of elements in the series",
-		Examples: []string{"length? [1 2 3 4]  ; => 4", `length? "hello"  ; => 5`, "length? []  ; => 0"},
-		SeeAlso:  []string{"first", "last", "append", "insert"}, Tags: []string{"series", "query", "length", "count"},
-	})
+	// Register type-specific implementations into type frames
+	registerSeriesTypeImpls()
+
+	// ===== Group 5: Series operations (5 actions) =====
+	// These are now actions that dispatch to type-specific implementations
+
+	// first - action
+	registerAndBind("first", CreateAction("first", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}))
+
+	// last - action
+	registerAndBind("last", CreateAction("last", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}))
+
+	// append - action
+	registerAndBind("append", CreateAction("append", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}))
+
+	// insert - action
+	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}))
+
+	// length? - action
+	registerAndBind("length?", CreateAction("length?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}))
 	registerSimpleSeriesFunc("skip", Skip, 2, &NativeDoc{
 		Category: "Series",
 		Summary:  "Skips n elements in a series",
@@ -209,7 +233,7 @@ Returns an integer representing the length of the series.`,
 			SeeAlso:  []string{"append", "insert"},
 			Tags:     []string{"series"},
 		}
-		registerAndBind("copy", fn)
+		registerAndBind("copy", value.FuncVal(fn))
 	}
 
 	// Find function
@@ -243,7 +267,7 @@ Returns an integer representing the length of the series.`,
 			SeeAlso:  []string{"append", "insert"},
 			Tags:     []string{"series"},
 		}
-		registerAndBind("find", fn)
+		registerAndBind("find", value.FuncVal(fn))
 	}
 
 	// Remove function
@@ -275,6 +299,6 @@ Returns an integer representing the length of the series.`,
 			SeeAlso:  []string{"append", "insert"},
 			Tags:     []string{"series"},
 		}
-		registerAndBind("remove", fn)
+		registerAndBind("remove", value.FuncVal(fn))
 	}
 }
