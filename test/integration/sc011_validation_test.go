@@ -5,14 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestSC011_DecimalArithmetic validates Feature 002 - User Story 1
 // Success Criteria SC-011: Decimal arithmetic operations maintain precision
 func TestSC011_DecimalArithmetic(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

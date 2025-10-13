@@ -5,12 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func TestUS5_ErrorScenarios(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

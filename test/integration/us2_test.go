@@ -54,7 +54,7 @@ func runScript(t *testing.T, e *eval.Evaluator, script string) (value.Value, *ve
 }
 
 func TestUS2_ControlFlowScenarios(t *testing.T) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	output, result, err := captureEvalOutput(t, e, "when true [print \"yes\"]")
 	if err != nil {

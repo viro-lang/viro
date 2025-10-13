@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -13,7 +12,7 @@ import (
 // REPL session remains stable for continuous operation exceeding 1000 evaluation
 // cycles without memory leaks or crashes
 func TestSC002_MemoryStability(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

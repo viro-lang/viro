@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -16,7 +15,7 @@ func TestUS6_CommandHistoryAndPersistence(t *testing.T) {
 	historyFile := filepath.Join(tempDir, "history.txt")
 	t.Setenv("VIRO_HISTORY_FILE", historyFile)
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -57,7 +56,7 @@ func TestUS6_CommandHistoryAndPersistence(t *testing.T) {
 	}
 
 	var out2 bytes.Buffer
-	loop2 := repl.NewREPLForTest(eval.NewEvaluator(), &out2)
+	loop2 := repl.NewREPLForTest(NewTestEvaluator(), &out2)
 	hist2 := loop2.HistoryEntries()
 	if len(hist2) != len(commands) {
 		t.Fatalf("expected %d entries loaded into new REPL, got %d", len(commands), len(hist2))
@@ -70,7 +69,7 @@ func TestUS6_CommandHistoryAndPersistence(t *testing.T) {
 }
 
 func TestUS6_MultiLineContinuation(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -111,7 +110,7 @@ func TestUS6_MultiLineContinuation(t *testing.T) {
 }
 
 func TestUS6_HistoryNavigation(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -149,7 +148,7 @@ func TestUS6_HistoryNavigation(t *testing.T) {
 }
 
 func TestUS6_ExitAndInterrupt(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

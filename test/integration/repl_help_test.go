@@ -5,13 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestREPL_HelpShortcut tests the special REPL-only '?' command without arguments
 func TestREPL_HelpShortcut(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -42,7 +41,7 @@ func TestREPL_HelpShortcut(t *testing.T) {
 // Note: ? with argument goes through parser and Help prints to os.Stdout
 // which cannot be easily redirected in tests, so we just verify no errors
 func TestREPL_HelpWithArgument(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -60,7 +59,7 @@ func TestREPL_HelpWithArgument(t *testing.T) {
 
 // TestREPL_HelpAfterError tests that help works after errors
 func TestREPL_HelpAfterError(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -86,7 +85,7 @@ func TestREPL_HelpAfterError(t *testing.T) {
 // Note: Most '? arg' calls print to os.Stdout, not captured in tests
 // We verify no errors occur and REPL continues working
 func TestREPL_HelpIntegration(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -153,7 +152,7 @@ func TestREPL_HelpIntegration(t *testing.T) {
 // TestREPL_HelpVsScriptBehavior documents the difference
 func TestREPL_HelpVsScriptBehavior(t *testing.T) {
 	t.Run("REPL_BareQuestionMark", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
+		evaluator := NewTestEvaluator()
 		var out bytes.Buffer
 		loop := repl.NewREPLForTest(evaluator, &out)
 

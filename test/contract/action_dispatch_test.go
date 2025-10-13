@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -45,7 +44,7 @@ func TestActionDispatchBasics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.input)
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
@@ -80,7 +79,7 @@ func TestActionDispatchBasics(t *testing.T) {
 // TestActionShadowing tests that local bindings can shadow actions.
 // Contract: action-dispatch.md Test 8
 func TestActionShadowing(t *testing.T) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	// Shadow the action with a local function
 	input := `
@@ -107,7 +106,7 @@ func TestActionShadowing(t *testing.T) {
 // TestActionMultipleArguments tests actions with multiple parameters.
 // Contract: action-dispatch.md Test 3
 func TestActionMultipleArguments(t *testing.T) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	input := `
 		b: [1 2]
@@ -147,7 +146,7 @@ func TestActionMultipleArguments(t *testing.T) {
 // Contract: User Story 2 - T042
 func TestTypeRegistryExtensibility(t *testing.T) {
 	// Initialize evaluator to set up type registry
-	_ = eval.NewEvaluator()
+	_ = NewTestEvaluator()
 
 	// Verify TypeRegistry exists and contains expected types
 	if frame.TypeRegistry == nil {
@@ -191,7 +190,7 @@ func TestTypeFrameRegistration(t *testing.T) {
 	// This test validates that the architecture supports adding new types
 	// without modifying core dispatch logic
 
-	_ = eval.NewEvaluator()
+	_ = NewTestEvaluator()
 
 	// Verify that multiple types are registered
 	expectedTypes := []value.ValueType{

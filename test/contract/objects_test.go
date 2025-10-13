@@ -20,7 +20,7 @@ func evalObjectScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *v
 		return nil, value.NoneVal(), err
 	}
 
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	result, evalErr := e.Do_Blk(vals)
 	return e, result, evalErr
 }

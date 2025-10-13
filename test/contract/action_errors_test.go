@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
@@ -51,7 +50,7 @@ func TestActionNoImpl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.input)
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
@@ -112,7 +111,7 @@ func TestActionWrongArity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.input)
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
@@ -165,7 +164,7 @@ func TestActionEmptySeries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.input)
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
@@ -218,7 +217,7 @@ func TestActionTypeMismatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.input)
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)

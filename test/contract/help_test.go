@@ -4,14 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 func TestHelpDirectCall(t *testing.T) {
 	// Test calling Help function directly (bypasses parser arity checking)
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	// Test with no arguments - should show category list
 	val, err := native.Help([]value.Value{}, e)
@@ -87,7 +86,7 @@ func TestWords(t *testing.T) {
 
 func TestWordsDirectCall(t *testing.T) {
 	// Test direct call to Words function
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	val, err := native.Words([]value.Value{}, e)
 	if err != nil {
 		t.Fatalf("Words failed: %v", err)
@@ -109,7 +108,7 @@ func TestWordsDirectCall(t *testing.T) {
 
 func TestHelpFunctionExists(t *testing.T) {
 	// Create evaluator to access root frame
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
 	// Look up the ? function from the root frame
@@ -138,7 +137,7 @@ func TestHelpFunctionExists(t *testing.T) {
 
 func TestHelpFormatterOutput(t *testing.T) {
 	// Create evaluator and build registry from root frame
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
 	// Build registry map from root frame
@@ -168,7 +167,7 @@ func TestHelpFormatterOutput(t *testing.T) {
 
 func TestHelpFunctionDetail(t *testing.T) {
 	// Create evaluator to access root frame
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
 	// Look up the + function from the root frame

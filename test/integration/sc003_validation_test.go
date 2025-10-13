@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -17,7 +16,7 @@ import (
 // This is a structural validation - we verify error messages contain required
 // information. Actual user testing would require manual validation.
 func TestSC003_ErrorMessageUsability(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

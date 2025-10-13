@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -85,7 +84,7 @@ func TestIO_Print(t *testing.T) {
 				t.Fatalf("Parse failed: %v", perr)
 			}
 
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			captured, result, evalErr := captureStdout(t, func() (value.Value, error) {
 				val, derr := e.Do_Blk(vals)
@@ -153,7 +152,7 @@ func TestIO_Input(t *testing.T) {
 			}
 			os.Stdin = r
 
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 			result, evalErr := e.Do_Blk(vals)
 
 			if err := r.Close(); err != nil {

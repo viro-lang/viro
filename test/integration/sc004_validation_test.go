@@ -5,14 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestSC004_RecursionDepth validates success criterion SC-004:
 // Users can define and call recursive functions up to depth of 100 without stack overflow
 func TestSC004_RecursionDepth(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

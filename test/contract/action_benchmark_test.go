@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
@@ -11,7 +10,7 @@ import (
 // compared to direct native function calls.
 // Contract: Phase 6 - T060
 func BenchmarkActionDispatch(b *testing.B) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	// Parse once, evaluate many times
 	tokens, err := parse.Parse("first [1 2 3 4 5]")
@@ -30,7 +29,7 @@ func BenchmarkActionDispatch(b *testing.B) {
 
 // BenchmarkActionDispatchString measures dispatch overhead for string operations.
 func BenchmarkActionDispatchString(b *testing.B) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	tokens, err := parse.Parse(`first "hello world"`)
 	if err != nil {
@@ -48,7 +47,7 @@ func BenchmarkActionDispatchString(b *testing.B) {
 
 // BenchmarkActionAppend measures append action performance.
 func BenchmarkActionAppend(b *testing.B) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	// Setup: Create a block variable
 	setupTokens, err := parse.Parse("b: [1 2 3]")
@@ -77,7 +76,7 @@ func BenchmarkActionAppend(b *testing.B) {
 
 // BenchmarkActionLength measures length? action performance.
 func BenchmarkActionLength(b *testing.B) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	tokens, err := parse.Parse("length? [1 2 3 4 5 6 7 8 9 10]")
 	if err != nil {
@@ -95,7 +94,7 @@ func BenchmarkActionLength(b *testing.B) {
 
 // BenchmarkTypeFrameLookup measures the overhead of type frame lookup alone.
 func BenchmarkTypeFrameLookup(b *testing.B) {
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	// Parse multiple action calls to test dispatch overhead
 	tokens, err := parse.Parse(`

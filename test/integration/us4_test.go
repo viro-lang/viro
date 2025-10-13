@@ -5,12 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func TestUS4_FunctionDefinitionsAndCalls(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -40,7 +39,7 @@ func TestUS4_FunctionDefinitionsAndCalls(t *testing.T) {
 }
 
 func TestUS4_LocalScopingAndRefinements(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -86,7 +85,7 @@ func TestUS4_LocalScopingAndRefinements(t *testing.T) {
 }
 
 func TestUS4_ClosuresRecursionAndErrors(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

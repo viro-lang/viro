@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -17,7 +16,7 @@ func evalLine(t *testing.T, loop *repl.REPL, out *bytes.Buffer, input string) st
 }
 
 func TestUS1_BasicExpressions(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

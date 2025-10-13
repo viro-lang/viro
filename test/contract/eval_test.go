@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -62,7 +61,7 @@ func TestLiteralEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			result, err := e.Do_Next(tt.input)
 
@@ -122,7 +121,7 @@ func TestBlockEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			result, err := e.Do_Next(tt.input)
 
@@ -173,7 +172,7 @@ func TestParenEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			result, err := e.Do_Next(tt.input)
 
@@ -218,7 +217,7 @@ func TestWordEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			// Set up frame if needed
 			if tt.setupWord != "" {
@@ -272,7 +271,7 @@ func TestSetWordEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			// Evaluate sequence (set-word will bind the next value)
 			result, err := e.Do_Blk(tt.sequence)

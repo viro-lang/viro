@@ -247,7 +247,7 @@ func evalScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.
 		return nil, value.NoneVal(), err
 	}
 
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 	result, evalErr := e.Do_Blk(vals)
 	return e, result, evalErr
 }

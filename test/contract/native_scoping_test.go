@@ -3,9 +3,9 @@ package contract_test
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/test/contract"
 )
 
 // T009: Test that refinements can use native names without errors
@@ -65,7 +65,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := contract.NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.code)
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
@@ -168,7 +168,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := contract.NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.code)
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
@@ -297,7 +297,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := contract.NewTestEvaluator()
 			tokens, parseErr := parse.Parse(tt.code)
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
@@ -326,7 +326,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 // This test should pass initially (with registry), then fail when we remove native.Lookup(),
 // then pass again after we implement frame-based lookup
 func TestNativeFunctionsAccessible(t *testing.T) {
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 
 	// Test that we can call native functions directly
 	tests := []struct {

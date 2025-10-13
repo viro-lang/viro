@@ -19,7 +19,7 @@ func TestPortNativesInREPL(t *testing.T) {
 	}
 	native.SandboxRoot = tmpDir
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

@@ -3,7 +3,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -20,7 +19,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 		b.Fatalf("parse failed: %v", err)
 	}
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 
 	warmResult, err := evaluator.Do_Blk(values)
 	if err != nil {
@@ -67,7 +66,7 @@ total
 		b.Fatalf("parse failed: %v", err)
 	}
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 
 	warmResult, err := evaluator.Do_Blk(values)
 	if err != nil {

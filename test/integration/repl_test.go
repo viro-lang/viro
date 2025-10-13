@@ -7,12 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func TestREPL_ErrorRecovery(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -43,7 +42,7 @@ func TestREPL_ErrorRecovery(t *testing.T) {
 }
 
 func TestREPL_StatePreservedAfterError(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -77,7 +76,7 @@ func TestREPL_StatePreservedAfterError(t *testing.T) {
 }
 
 func TestREPL_CommandHistory(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -147,7 +146,7 @@ func TestREPL_CommandHistory(t *testing.T) {
 }
 
 func TestREPL_MultiLineInput(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -189,7 +188,7 @@ func TestREPL_MultiLineInput(t *testing.T) {
 }
 
 func TestREPL_ExitCommands(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -221,7 +220,7 @@ func TestREPL_ExitCommands(t *testing.T) {
 }
 
 func TestREPL_CtrlCInterrupt(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -256,7 +255,7 @@ func TestREPL_HistoryPersistence(t *testing.T) {
 	historyFile := filepath.Join(tempDir, "history.txt")
 	t.Setenv("VIRO_HISTORY_FILE", historyFile)
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -281,7 +280,7 @@ func TestREPL_HistoryPersistence(t *testing.T) {
 	}
 
 	var out2 bytes.Buffer
-	loop2 := repl.NewREPLForTest(eval.NewEvaluator(), &out2)
+	loop2 := repl.NewREPLForTest(NewTestEvaluator(), &out2)
 	history := loop2.HistoryEntries()
 	if len(history) != len(want) {
 		t.Fatalf("expected %d entries loaded from history, got %d", len(want), len(history))

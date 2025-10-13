@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -13,7 +12,7 @@ import (
 // Users can evaluate at least 20 different expression types correctly
 // (literals, arithmetic, comparisons, control flow, series operations, function calls)
 func TestSC001_ExpressionTypesCoverage(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

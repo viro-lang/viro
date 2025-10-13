@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
@@ -16,7 +15,7 @@ func TestObjectFieldIsolation(t *testing.T) {
 		t.Fatalf("parse error: %v", err)
 	}
 
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
 	_, evalErr := e.Do_Blk(values)
 	if evalErr != nil {

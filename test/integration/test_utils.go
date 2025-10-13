@@ -1,4 +1,4 @@
-package contract
+package integration
 
 import (
 	"os"
@@ -6,12 +6,13 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
-	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
-	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// NewTestEvaluator creates a fully configured evaluator for testing.
+// It initializes trace/debug sessions and registers all native functions.
+// Use this instead of NewTestEvaluator() directly in tests to ensure
+// consistent setup and proper native registration.
 func NewTestEvaluator() *eval.Evaluator {
 	// Initialize trace/debug sessions for test isolation
 	// Use os.DevNull to avoid trace output pollution during tests
@@ -39,15 +40,4 @@ func NewTestEvaluator() *eval.Evaluator {
 	native.RegisterHelpNatives(rootFrame)
 
 	return e
-}
-
-// Evaluate is a helper function to evaluate Viro code in tests.
-func Evaluate(src string) (value.Value, *verror.Error) {
-	vals, err := parse.Parse(src)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	e := NewTestEvaluator()
-	return e.Do_Blk(vals)
 }

@@ -3,8 +3,8 @@ package contract_test
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/test/contract"
 )
 
 func TestUserFunctionEvalFalse(t *testing.T) {
@@ -16,7 +16,7 @@ func TestUserFunctionEvalFalse(t *testing.T) {
 		x: 42
 		result: get-raw x
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -47,7 +47,7 @@ func TestUserFunctionMixedEval(t *testing.T) {
 		]
 		result: type-check (2 + 2) (3 + 3)
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func TestNativeIfEvalArgs(t *testing.T) {
 		result: if (x > 5) [x: 1] [x: 2]
 		final: x
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +112,7 @@ func TestRefinementsAlwaysEvaluated(t *testing.T) {
 		result1: test-fn 1 2 --flag x
 		result2: test-fn 1 2 --flag y
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +145,7 @@ func TestLitWordRefinementError(t *testing.T) {
 	code := `
 		quote-ref: fn ['--invalid] []
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		// If parser rejects it, that's also acceptable
@@ -166,7 +166,7 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 		result: f word
 		type? result
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -190,7 +190,7 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 		result: inc inc inc inc 1
 		result
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
@@ -216,7 +216,7 @@ func TestTypeQueryLitWordArgument(t *testing.T) {
 		f: fn ['w] [w]
 		type? f word
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
