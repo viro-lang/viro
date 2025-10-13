@@ -88,8 +88,18 @@ func NewREPL() (*REPL, error) {
 		return nil, err
 	}
 
+	evaluator := eval.NewEvaluator()
+
+	rootFrame := evaluator.GetFrameByIndex(0)
+	native.RegisterMathNatives(rootFrame)
+	native.RegisterSeriesNatives(rootFrame)
+	native.RegisterDataNatives(rootFrame)
+	native.RegisterIONatives(rootFrame)
+	native.RegisterControlNatives(rootFrame)
+	native.RegisterHelpNatives(rootFrame)
+
 	repl := &REPL{
-		evaluator:      eval.NewEvaluator(),
+		evaluator:      evaluator,
 		rl:             rl,
 		out:            os.Stdout,
 		history:        []string{},
@@ -119,6 +129,15 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 	if out == nil {
 		out = io.Discard
 	}
+
+	rootFrame := e.GetFrameByIndex(0)
+	native.RegisterMathNatives(rootFrame)
+	native.RegisterSeriesNatives(rootFrame)
+	native.RegisterDataNatives(rootFrame)
+	native.RegisterIONatives(rootFrame)
+	native.RegisterControlNatives(rootFrame)
+	native.RegisterHelpNatives(rootFrame)
+
 	historyPath := resolveHistoryPath(false)
 	repl := &REPL{
 		evaluator:      e,

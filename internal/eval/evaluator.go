@@ -39,7 +39,6 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/frame"
-	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/stack"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -75,14 +74,6 @@ func NewEvaluator() *Evaluator {
 
 	// Initialize type frames for action dispatch (Feature 004)
 	frame.InitTypeFrames()
-
-	// Register all native functions in root frame
-	native.RegisterMathNatives(global)
-	native.RegisterSeriesNatives(global)
-	native.RegisterDataNatives(global)
-	native.RegisterIONatives(global)
-	native.RegisterControlNatives(global)
-	native.RegisterHelpNatives(global)
 
 	return e
 }
