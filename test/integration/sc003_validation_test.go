@@ -60,7 +60,7 @@ func TestSC003_ErrorMessageUsability(t *testing.T) {
 	}
 
 	passedTests := 0
-	
+
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
 			out.Reset()
@@ -112,10 +112,10 @@ func TestSC003_ErrorMessageUsability(t *testing.T) {
 
 		// Should have clear structure
 		checks := map[string]bool{
-			"Has error marker (*)":       strings.Contains(errorOutput, "*"),
-			"Has category":                strings.Contains(errorOutput, "Error"),
-			"Has descriptive message":     len(errorOutput) > 20,
-			"Not just error code":         !strings.Contains(errorOutput, "Error 300") && strings.Contains(errorOutput, "Division"),
+			"Has error marker (*)":    strings.Contains(errorOutput, "*"),
+			"Has category":            strings.Contains(errorOutput, "Error"),
+			"Has descriptive message": len(errorOutput) > 20,
+			"Not just error code":     !strings.Contains(errorOutput, "Error 300") && strings.Contains(errorOutput, "Division"),
 		}
 
 		allPassed := true

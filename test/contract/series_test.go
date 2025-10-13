@@ -89,7 +89,7 @@ func TestSeries_Last(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "empty string error",	
+			name:    "empty string error",
 			input:   "last \"\"",
 			wantErr: true,
 		},
@@ -439,7 +439,6 @@ func TestSeries_Find(t *testing.T) {
 		})
 	}
 }
-
 
 // T102: remove, remove --part for blocks and strings
 func TestSeries_Remove(t *testing.T) {

@@ -374,4 +374,3 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 		}
 	}
 }
-

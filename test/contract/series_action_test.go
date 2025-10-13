@@ -136,13 +136,13 @@ func TestActionAppend(t *testing.T) {
 		errID   string
 	}{
 		// Block tests
-		{name: "append int to block", input: "b: [1 2]; append b 3; b", want: "[1 2 3]"},
-		{name: "append to empty block", input: "b: []; append b 'a'; b", want: `[a]`},
-		{name: "append block to block", input: "b: [1]; append b [2 3]; b", want: "[1 [2 3]]"},
+		{name: "append int to block", input: "b: [1 2]\nappend b 3\nb", want: "[1 2 3]"},
+		{name: "append to empty block", input: "b: []\nappend b 'a\nb", want: `[a]`},
+		{name: "append block to block", input: "b: [1]\nappend b [2 3]\nb", want: "[1 [2 3]]"},
 
 		// String tests
-		{name: "append string to string", input: `s: "hel"; append s "lo"; s`, want: `"hello"`},
-		{name: "append to empty string", input: `s: ""; append s "a"; s`, want: `"a"`},
+		{name: "append string to string", input: "s: \"hel\"\nappend s \"lo\"\ns", want: `"hello"`},
+		{name: "append to empty string", input: "s: \"\"\nappend s \"a\"\ns", want: `"a"`},
 		{name: "string type mismatch", input: `append "test" 42`, wantErr: true, errID: "type-mismatch"},
 
 		// Error cases
@@ -194,13 +194,13 @@ func TestActionInsert(t *testing.T) {
 		errID   string
 	}{
 		// Block tests
-		{name: "insert int at beginning", input: "b: [2 3]; insert b 1; b", want: "[1 2 3]"},
-		{name: "insert into empty block", input: "b: []; insert b 'a'; b", want: `[a]`},
-		{name: "insert block at beginning", input: "b: [3]; insert b [1 2]; b", want: "[[1 2] 3]"},
+		{name: "insert int at beginning", input: "b: [2 3]\ninsert b 1\nb", want: "[1 2 3]"},
+		{name: "insert into empty block", input: "b: []\ninsert b 'a\nb", want: `[a]`},
+		{name: "insert block at beginning", input: "b: [3]\ninsert b [1 2]\nb", want: "[[1 2] 3]"},
 
 		// String tests
-		{name: "insert string at beginning", input: `s: "orld"; insert s "W"; s`, want: `"World"`},
-		{name: "insert into empty string", input: `s: ""; insert s "a"; s`, want: `"a"`},
+		{name: "insert string at beginning", input: "s: \"orld\"\ninsert s \"W\"\ns", want: `"World"`},
+		{name: "insert into empty string", input: "s: \"\"\ninsert s \"a\"\ns", want: `"a"`},
 		{name: "string type mismatch", input: `insert "test" 42`, wantErr: true, errID: "type-mismatch"},
 
 		// Error cases

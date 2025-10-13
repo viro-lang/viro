@@ -47,13 +47,13 @@ func TestSelectWithDefaultRefinement(t *testing.T) {
 		{
 			name:     "select from block with default",
 			script:   "data: ['name \"Alice\" 'age 30]\nselect data 'name",
-			expected: "Alice",
+			expected: `"Alice"`, // String values include quotes in String() output
 			isError:  false,
 		},
 		{
 			name:     "select missing key from block with default",
 			script:   "data: ['name \"Alice\" 'age 30]\nselect data 'city --default \"Unknown\"",
-			expected: "Unknown",
+			expected: `"Unknown"`, // String values include quotes in String() output
 			isError:  false,
 		},
 	}
