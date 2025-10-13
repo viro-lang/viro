@@ -20,7 +20,10 @@
       "Read(//private/tmp/**)",
       "Bash(/tmp/viro:*)",
       "Bash(find:*)",
-      "Bash(.specify/scripts/bash/create-new-feature.sh:*)"
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/004-dynamic-function-invocation/checklists\" ])",
+      "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/004-dynamic-function-invocation/checklists\" -name \"*.md\" -type f)",
+      "Bash(git rev-parse:*)"
     ],
     "deny": [],
     "ask": []
