@@ -22,7 +22,7 @@ type DecimalValue struct {
 // NewDecimal creates a DecimalValue with default context (34-digit precision, half-even rounding).
 func NewDecimal(magnitude *decimal.Big, scale int16) *DecimalValue {
 	ctx := decimal.Context{
-		Precision:   34, // decimal128 target per FR-001
+		Precision:    34,                    // decimal128 target per FR-001
 		RoundingMode: decimal.ToNearestEven, // Banker's rounding per FR-003
 	}
 	return &DecimalValue{

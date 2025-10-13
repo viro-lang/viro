@@ -120,4 +120,3 @@ func BenchmarkMixedIntegerDecimalMultiply(b *testing.B) {
 	args := []value.Value{i, d}
 	benchmarkMathOp(b, native.Multiply, args)
 }
-

@@ -9,10 +9,10 @@ import (
 // TestDecimalLiteralParsing validates T033/T034: decimal literal parsing
 func TestDecimalLiteralParsing(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       string
-		wantType    value.ValueType
-		wantString  string
+		name       string
+		input      string
+		wantType   value.ValueType
+		wantString string
 	}{
 		{
 			name:       "Integer literal",

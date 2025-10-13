@@ -17,10 +17,10 @@ import (
 //
 // Per FR-007: unified abstraction with open/close/read/write/query operations
 type Port struct {
-	Scheme  string      // "file", "tcp", "http", "https"
-	Spec    string      // Original port specification (URL/path)
-	Driver  PortDriver  // Scheme-specific implementation
-	State   PortState   // Current lifecycle state
+	Scheme  string         // "file", "tcp", "http", "https"
+	Spec    string         // Original port specification (URL/path)
+	Driver  PortDriver     // Scheme-specific implementation
+	State   PortState      // Current lifecycle state
 	Timeout *time.Duration // Optional timeout (nil = OS default)
 }
 
@@ -29,8 +29,8 @@ type PortState int
 
 const (
 	PortClosed PortState = iota // Initial/final state
-	PortOpen                     // Ready for I/O operations
-	PortError                    // Error state (requires close/reopen)
+	PortOpen                    // Ready for I/O operations
+	PortError                   // Error state (requires close/reopen)
 )
 
 func (s PortState) String() string {
