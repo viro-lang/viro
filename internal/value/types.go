@@ -20,6 +20,7 @@ const (
 	TypeBlock                     // Series of values (deferred evaluation)
 	TypeParen                     // Series of values (immediate evaluation)
 	TypeFunction                  // Executable function (native or user-defined)
+	TypeAction                    // Polymorphic function (type-based dispatch)
 
 	// Feature 002: Deferred Language Capabilities
 	TypeDecimal  // IEEE 754 decimal128 high-precision decimal
@@ -54,6 +55,8 @@ func (t ValueType) String() string {
 		return "paren"
 	case TypeFunction:
 		return "function"
+	case TypeAction:
+		return "action"
 	case TypeDecimal:
 		return "decimal"
 	case TypeObject:

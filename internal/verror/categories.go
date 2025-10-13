@@ -71,6 +71,7 @@ const (
 	ErrIDOutOfBounds      = "out-of-bounds"
 	ErrIDNotImplemented   = "not-implemented"   // Feature 002: feature not yet implemented
 	ErrIDNotComparable    = "not-comparable"    // sort on mixed types, etc.
+	ErrIDActionNoImpl     = "action-no-impl"    // Feature 004: action not defined for type
 
 	// Feature 002: Reflection errors (T162)
 	ErrIDSpecUnsupported   = "spec-unsupported-type" // spec-of not supported for this type

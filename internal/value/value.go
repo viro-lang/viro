@@ -73,6 +73,11 @@ func (v Value) String() string {
 			return fn.String()
 		}
 		return "function"
+	case TypeAction:
+		if action, ok := v.Payload.(*ActionValue); ok {
+			return action.String()
+		}
+		return "action"
 	case TypeDecimal:
 		if dec, ok := v.Payload.(*DecimalValue); ok {
 			return dec.String()
@@ -138,6 +143,9 @@ func (v Value) Equals(other Value) bool {
 	case TypeFunction:
 		// Functions compared by identity (pointer equality)
 		return v.Payload == other.Payload
+	case TypeAction:
+		// Actions compared by identity (pointer equality)
+		return v.Payload == other.Payload
 	default:
 		return false
 	}
@@ -202,6 +210,11 @@ func FuncVal(fn *FunctionValue) Value {
 	return Value{Type: TypeFunction, Payload: fn}
 }
 
+// ActionVal creates an action value.
+func ActionVal(action *ActionValue) Value {
+	return Value{Type: TypeAction, Payload: action}
+}
+
 // DatatypeVal creates a datatype value (e.g., object!, integer!).
 func DatatypeVal(name string) Value {
 	return Value{Type: TypeDatatype, Payload: name}
@@ -262,6 +275,15 @@ func (v Value) AsFunction() (*FunctionValue, bool) {
 	}
 	fn, ok := v.Payload.(*FunctionValue)
 	return fn, ok
+}
+
+// AsAction extracts ActionValue if value is TypeAction.
+func (v Value) AsAction() (*ActionValue, bool) {
+	if v.Type != TypeAction {
+		return nil, false
+	}
+	action, ok := v.Payload.(*ActionValue)
+	return action, ok
 }
 
 // AsDatatype extracts datatype name if value is TypeDatatype.

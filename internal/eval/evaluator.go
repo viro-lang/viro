@@ -73,6 +73,9 @@ func NewEvaluator() *Evaluator {
 	}
 	e.captured[0] = true
 
+	// Initialize type frames for action dispatch (Feature 004)
+	frame.InitTypeFrames()
+
 	// Register all native functions in root frame
 	native.RegisterMathNatives(global)
 	native.RegisterSeriesNatives(global)
@@ -138,6 +141,7 @@ func init() {
 		value.TypeDatatype: evalLiteral,
 		value.TypeBlock:    evalBlock,
 		value.TypeFunction: evalFunction,
+		value.TypeAction:   evalAction,
 		value.TypeParen:    evalParenDispatch,
 		value.TypeWord:     evalWordDispatch,
 		value.TypeSetWord:  evalSetWordDispatch,
@@ -159,6 +163,12 @@ func evalBlock(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
 
 // evalFunction handles function evaluation (returns self)
 func evalFunction(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+	return val, nil
+}
+
+// evalAction handles action evaluation (returns self)
+// Actions are first-class values like functions
+func evalAction(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
 	return val, nil
 }
 
@@ -513,6 +523,42 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 	return result, nil
 }
 
+// invokeAction is the action invocation handler that performs type-based dispatch.
+// It collects arguments (like invokeFunction) and then dispatches to the type-specific implementation.
+func (e *Evaluator) invokeAction(action *value.ActionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
+	startIdx := *idx
+	name := action.Name
+
+	// Push call stack entry
+	e.pushCall(name)
+	defer e.popCall()
+
+	// Create a temporary FunctionValue with action's param specs for argument collection
+	// This allows us to reuse collectFunctionArgsWithInfix logic
+	tmpFn := &value.FunctionValue{
+		Name:   name,
+		Params: action.ParamSpec,
+		Infix:  false, // Actions don't support infix
+	}
+
+	// Collect arguments using same logic as functions
+	tokens := vals[*idx+1:]
+	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(tmpFn, tokens, lastResult)
+	if err != nil {
+		return value.NoneVal(), e.annotateError(err, vals, startIdx)
+	}
+
+	*idx += consumed
+
+	// Now dispatch to type-specific implementation
+	result, dispatchErr := e.DispatchAction(action, posArgs, refValues)
+	if dispatchErr != nil {
+		return value.NoneVal(), e.annotateError(dispatchErr, vals, startIdx)
+	}
+
+	return result, nil
+}
+
 // evaluateWithFunctionCall resolves a value that might represent a callable.
 //
 // If the value is a word referring to a native or user-defined function, this
@@ -531,9 +577,21 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 		return e.Do_Next(val)
 	}
 
-	if resolved, found := e.Lookup(wordStr); found && resolved.Type == value.TypeFunction {
+	resolved, found := e.Lookup(wordStr)
+	if !found {
+		return e.Do_Next(val)
+	}
+
+	// Handle functions
+	if resolved.Type == value.TypeFunction {
 		fn, _ := resolved.AsFunction()
 		return e.invokeFunction(fn, seq, idx, lastResult)
+	}
+
+	// Handle actions
+	if resolved.Type == value.TypeAction {
+		action, _ := resolved.AsAction()
+		return e.invokeAction(action, seq, idx, lastResult)
 	}
 
 	return e.Do_Next(val)
