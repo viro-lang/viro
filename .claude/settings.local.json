@@ -19,7 +19,8 @@
       "Bash(awk:*)",
       "Read(//private/tmp/**)",
       "Bash(/tmp/viro:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)"
     ],
     "deny": [],
     "ask": []
