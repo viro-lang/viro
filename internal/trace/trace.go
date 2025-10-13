@@ -1,4 +1,14 @@
-package native
+// Package trace provides tracing and observability infrastructure for Viro.
+//
+// This package manages trace event collection and output, supporting:
+// - Structured event emission (JSON format)
+// - Filtering by word patterns
+// - File and stderr output with rotation
+// - Port lifecycle tracing
+// - Object operation tracing
+//
+// Per Feature 002 FR-015: Tracing system with structured events.
+package trace
 
 import (
 	"encoding/json"
@@ -144,125 +154,6 @@ func (ts *TraceSession) Close() error {
 		return ts.logger.Close()
 	}
 	return nil
-}
-
-// Debugger manages breakpoint state and stepping control (Feature 002).
-// Per FR-016: supports breakpoint, remove, step, continue, stack, locals commands.
-type Debugger struct {
-	mu          sync.Mutex
-	breakpoints map[string]int // word -> breakpoint ID
-	nextID      int
-	mode        DebugMode
-	stepping    bool
-}
-
-// DebugMode controls debugger behavior.
-type DebugMode int
-
-const (
-	DebugModeOff      DebugMode = iota // Debugger disabled
-	DebugModeActive                    // Breakpoints active
-	DebugModeStepping                  // Single-stepping mode
-)
-
-func (m DebugMode) String() string {
-	switch m {
-	case DebugModeOff:
-		return "off"
-	case DebugModeActive:
-		return "active"
-	case DebugModeStepping:
-		return "stepping"
-	default:
-		return "unknown"
-	}
-}
-
-// GlobalDebugger is the active debugger instance (singleton).
-var GlobalDebugger *Debugger
-
-// InitDebugger initializes the global debugger.
-func InitDebugger() {
-	GlobalDebugger = &Debugger{
-		breakpoints: make(map[string]int),
-		nextID:      1,
-		mode:        DebugModeOff,
-		stepping:    false,
-	}
-}
-
-// SetBreakpoint adds a breakpoint on the given word.
-func (d *Debugger) SetBreakpoint(word string) int {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	id := d.nextID
-	d.nextID++
-	d.breakpoints[word] = id
-	d.mode = DebugModeActive
-	return id
-}
-
-// RemoveBreakpoint removes a breakpoint by word.
-func (d *Debugger) RemoveBreakpoint(word string) bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	if _, exists := d.breakpoints[word]; exists {
-		delete(d.breakpoints, word)
-		if len(d.breakpoints) == 0 && !d.stepping {
-			d.mode = DebugModeOff
-		}
-		return true
-	}
-	return false
-}
-
-// HasBreakpoint returns true if a breakpoint is set on the word.
-func (d *Debugger) HasBreakpoint(word string) bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	_, exists := d.breakpoints[word]
-	return exists
-}
-
-// EnableStepping activates single-step mode.
-func (d *Debugger) EnableStepping() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.mode = DebugModeStepping
-	d.stepping = true
-}
-
-// DisableStepping deactivates single-step mode.
-func (d *Debugger) DisableStepping() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	d.stepping = false
-	if len(d.breakpoints) == 0 {
-		d.mode = DebugModeOff
-	} else {
-		d.mode = DebugModeActive
-	}
-}
-
-// IsStepping returns true if single-step mode is active.
-func (d *Debugger) IsStepping() bool {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.stepping
-}
-
-// Mode returns the current debugger mode.
-func (d *Debugger) Mode() DebugMode {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	return d.mode
 }
 
 // Port lifecycle trace event helpers (T076)

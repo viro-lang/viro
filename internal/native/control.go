@@ -5,6 +5,8 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/debug"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -274,21 +276,21 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 
 	if hasOff {
 		// Disable tracing
-		if GlobalTraceSession != nil {
-			GlobalTraceSession.Disable()
+		if trace.GlobalTraceSession != nil {
+			trace.GlobalTraceSession.Disable()
 		}
 		return value.NoneVal(), nil
 	}
 
 	// Handle --on case
-	if GlobalTraceSession == nil {
+	if trace.GlobalTraceSession == nil {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"trace session not initialized", "", ""},
 		)
 	}
 
-	filters := TraceFilters{}
+	filters := trace.TraceFilters{}
 
 	// Handle --only refinement
 	if onlyVal, ok := refValues["only"]; ok && onlyVal.Type != value.TypeNone {
@@ -365,7 +367,7 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 		}
 	}
 
-	GlobalTraceSession.Enable(filters)
+	trace.GlobalTraceSession.Enable(filters)
 	return value.NoneVal(), nil
 }
 
@@ -381,11 +383,11 @@ func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evalu
 	}
 
 	// Return simple boolean indicating trace state
-	if GlobalTraceSession == nil {
+	if trace.GlobalTraceSession == nil {
 		return value.LogicVal(false), nil
 	}
 
-	enabled := GlobalTraceSession.IsEnabled()
+	enabled := trace.GlobalTraceSession.IsEnabled()
 	return value.LogicVal(enabled), nil
 }
 
@@ -397,7 +399,7 @@ func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evalu
 //
 // T148-T152: Implements debug commands
 func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
-	if GlobalDebugger == nil {
+	if debug.GlobalDebugger == nil {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"debugger not initialized", "", ""},
@@ -407,25 +409,19 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 	// Check which refinement is present
 	if val, ok := refValues["on"]; ok && ToTruthy(val) {
 		// Enable debugger
-		GlobalDebugger.mu.Lock()
-		GlobalDebugger.mode = DebugModeActive
-		GlobalDebugger.mu.Unlock()
+		debug.GlobalDebugger.Enable()
 		return value.NoneVal(), nil
 	}
 
 	if val, ok := refValues["off"]; ok && ToTruthy(val) {
 		// Disable debugger
-		GlobalDebugger.mu.Lock()
-		GlobalDebugger.mode = DebugModeOff
-		GlobalDebugger.breakpoints = make(map[string]int)
-		GlobalDebugger.stepping = false
-		GlobalDebugger.mu.Unlock()
+		debug.GlobalDebugger.Disable()
 		return value.NoneVal(), nil
 	}
 
 	// For all other operations, debugger must be enabled
 	// Check before processing any other refinement
-	if GlobalDebugger.Mode() == DebugModeOff {
+	if debug.GlobalDebugger.Mode() == debug.DebugModeOff {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"debugger not enabled - use debug --on first", "", ""},
@@ -454,7 +450,7 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 			)
 		}
 
-		id := GlobalDebugger.SetBreakpoint(word)
+		id := debug.GlobalDebugger.SetBreakpoint(word)
 		return value.IntVal(int64(id)), nil
 	}
 
@@ -466,16 +462,7 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 		}
 
 		// Find and remove breakpoint by ID
-		found := false
-		GlobalDebugger.mu.Lock()
-		for word, bpID := range GlobalDebugger.breakpoints {
-			if int64(bpID) == id {
-				delete(GlobalDebugger.breakpoints, word)
-				found = true
-				break
-			}
-		}
-		GlobalDebugger.mu.Unlock()
+		found := debug.GlobalDebugger.RemoveBreakpointByID(id)
 
 		if !found {
 			return value.NoneVal(), verror.NewScriptError(
@@ -487,22 +474,22 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 	}
 
 	if val, ok := refValues["step"]; ok && ToTruthy(val) {
-		GlobalDebugger.EnableStepping()
+		debug.GlobalDebugger.EnableStepping()
 		return value.NoneVal(), nil
 	}
 
 	if val, ok := refValues["next"]; ok && ToTruthy(val) {
-		GlobalDebugger.EnableStepping()
+		debug.GlobalDebugger.EnableStepping()
 		return value.NoneVal(), nil
 	}
 
 	if val, ok := refValues["finish"]; ok && ToTruthy(val) {
-		GlobalDebugger.DisableStepping()
+		debug.GlobalDebugger.DisableStepping()
 		return value.NoneVal(), nil
 	}
 
 	if val, ok := refValues["continue"]; ok && ToTruthy(val) {
-		GlobalDebugger.DisableStepping()
+		debug.GlobalDebugger.DisableStepping()
 		return value.NoneVal(), nil
 	}
 

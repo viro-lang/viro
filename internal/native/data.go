@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/frame"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -221,7 +222,7 @@ func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prot
 	}
 
 	// Emit trace event for object creation (Feature 002, T097)
-	TraceObjectCreate(frameIdx, len(fields))
+	trace.TraceObjectCreate(frameIdx, len(fields))
 
 	return value.ObjectVal(obj), nil
 }
@@ -457,7 +458,7 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 
 		// Try to get the field value
 		if result, found := objFrame.Get(fieldName); found {
-			TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
+			trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
 			return result, nil
 		}
 
@@ -467,7 +468,7 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 			parentFrame := mgr.GetFrameByIndex(current.FrameIndex)
 			if parentFrame != nil {
 				if result, found := parentFrame.Get(fieldName); found {
-					TraceObjectFieldRead(current.FrameIndex, fieldName, true)
+					trace.TraceObjectFieldRead(current.FrameIndex, fieldName, true)
 					return result, nil
 				}
 			}
@@ -475,7 +476,7 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 		}
 
 		// Field not found - return default or none (not an error)
-		TraceObjectFieldRead(obj.FrameIndex, fieldName, false)
+		trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, false)
 		if hasDefault {
 			return defaultVal, nil
 		}
@@ -602,7 +603,7 @@ func Put(args []value.Value, refValues map[string]value.Value, eval Evaluator) (
 	objFrame.Set(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
-	TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())
+	trace.TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())
 
 	return newVal, nil
 }

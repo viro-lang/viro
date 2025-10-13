@@ -37,9 +37,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/stack"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -168,14 +170,14 @@ func evalParenDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Erro
 // evalWordDispatch handles word evaluation
 func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
 	// Check for breakpoints before evaluating word (T153)
-	if native.GlobalDebugger != nil {
+	if debug.GlobalDebugger != nil {
 		wordStr, ok := val.AsWord()
-		if ok && native.GlobalDebugger.HasBreakpoint(wordStr) {
+		if ok && debug.GlobalDebugger.HasBreakpoint(wordStr) {
 			// Breakpoint hit - for now, just continue evaluation
 			// REPL integration will handle pause/inspect in future work
 			// Emit trace event if tracing is enabled
-			if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
-				native.GlobalTraceSession.Emit(native.TraceEvent{
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				trace.GlobalTraceSession.Emit(trace.TraceEvent{
 					Timestamp: time.Now(),
 					Word:      "debug",
 					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
@@ -356,7 +358,7 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	// Per FR-015: emit trace events when tracing is enabled
 	var traceStart time.Time
 	var traceWord string
-	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() {
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
 		traceStart = time.Now()
 		if val.Type.IsWord() {
 			if w, ok := val.AsWord(); ok {
@@ -376,9 +378,9 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 	result, err := evalFn(e, val)
 
 	// Emit trace event if tracing is enabled
-	if native.GlobalTraceSession != nil && native.GlobalTraceSession.IsEnabled() && traceWord != "" {
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
 		duration := time.Since(traceStart)
-		native.GlobalTraceSession.Emit(native.TraceEvent{
+		trace.GlobalTraceSession.Emit(trace.TraceEvent{
 			Timestamp: traceStart,
 			Value:     result.String(),
 			Word:      traceWord,
