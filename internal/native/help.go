@@ -5,13 +5,12 @@ import (
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // buildRegistryFromFrame builds a registry map from all function values in a frame.
 // This is used by the help system to access native functions from the root frame.
-func buildRegistryFromFrame(f *frame.Frame) map[string]*value.FunctionValue {
+func buildRegistryFromFrame(f core.Frame) map[string]*value.FunctionValue {
 	registry := make(map[string]*value.FunctionValue)
 	for _, binding := range f.GetAll() {
 		if binding.Value.GetType() == value.TypeFunction {
