@@ -20,58 +20,13 @@ func RegisterHelpNatives(rootFrame core.Frame) {
 
 	var fn *value.FunctionValue
 
-	// Helper function to wrap simple math/reflection functions
-	registerSimpleMathFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
-		// Extract parameter names from existing documentation
-		params := make([]value.ParamSpec, arity)
-
-		if doc != nil && len(doc.Parameters) == arity {
-			// Use parameter names from documentation
-			for i := range arity {
-				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
-			}
-		} else {
-			// Fallback to generic names if documentation is missing or mismatched
-			paramNames := []string{"value", "left", "right", "base", "exponent"}
-			for i := range arity {
-				if i < len(paramNames) {
-					params[i] = value.NewParamSpec(paramNames[i], true)
-				} else {
-					params[i] = value.NewParamSpec("arg", true)
-				}
-			}
-		}
-
-		fn := NewNativeFunction(
-			name,
-			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
-		)
-		fn.Doc = doc
-
-		// Bind to root frame
-		rootFrame.Bind(name, value.FuncVal(fn))
-	}
-
 	// Group 12: Help system (2 functions)
 	fn = value.NewNativeFunction(
 		"?",
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Help(args, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Help,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Help",
@@ -96,13 +51,7 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 	fn = value.NewNativeFunction(
 		"words",
 		[]value.ParamSpec{},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Words(args, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Words,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Help",
@@ -214,7 +163,14 @@ with stepping commands. Inspect state with --locals and --stack.`,
 	// Bind to root frame
 	rootFrame.Bind("debug", value.FuncVal(fn))
 
-	registerSimpleMathFunc("type-of", TypeOf, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"type-of",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		TypeOf,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns the type name of a value",
 		Description: `Returns a word representing the canonical type name of any value.
@@ -225,9 +181,18 @@ Type names follow the pattern 'type!' (e.g., integer!, string!, block!).`,
 		Returns:  "[word!] The type name as a word",
 		Examples: []string{"type-of 42  ; => integer!", `type-of "hello"  ; => string!`, "type-of [1 2 3]  ; => block!"},
 		SeeAlso:  []string{"type?", "spec-of", "body-of"}, Tags: []string{"reflection", "type", "introspection"},
-	})
+	}
+	// Bind to root frame
+	rootFrame.Bind("type-of", value.FuncVal(fn))
 
-	registerSimpleMathFunc("spec-of", SpecOf, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"spec-of",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		SpecOf,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns the specification of a function or object",
 		Description: `Extracts the specification (parameter list or field definitions) from a function or object.
@@ -239,9 +204,18 @@ returns the field names and type hints.`,
 		Returns:  "[block!] The specification as a block",
 		Examples: []string{"square: fn [x] [x * x]\nspec-of :square  ; => [x]", "obj: object [name: \"Alice\"]\nspec-of obj  ; => [name]"},
 		SeeAlso:  []string{"body-of", "type-of", "words-of"}, Tags: []string{"reflection", "spec", "introspection"},
-	})
+	}
+	// Bind to root frame
+	rootFrame.Bind("spec-of", value.FuncVal(fn))
 
-	registerSimpleMathFunc("body-of", BodyOf, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"body-of",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		BodyOf,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns the body of a function or object",
 		Description: `Extracts the body block from a function or object. Returns an immutable deep copy
@@ -253,7 +227,9 @@ returns a block of set-word/value pairs.`,
 		Returns:  "[block!] The body as a block",
 		Examples: []string{"square: fn [x] [x * x]\nbody-of :square  ; => [x * x]", "obj: object [x: 10]\nbody-of obj  ; => [x: 10]"},
 		SeeAlso:  []string{"spec-of", "type-of", "source"}, Tags: []string{"reflection", "body", "introspection"},
-	})
+	}
+	// Bind to root frame
+	rootFrame.Bind("body-of", value.FuncVal(fn))
 
 	fn = value.NewNativeFunction(
 		"words-of",
@@ -299,7 +275,14 @@ manifest and corresponds to words-of. Returns deep copies to prevent mutation.`,
 	// Bind to root frame
 	rootFrame.Bind("values-of", value.FuncVal(fn))
 
-	registerSimpleMathFunc("source", Source, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"source",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Source,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Reflection",
 		Summary:  "Returns formatted source code for a function or object",
 		Description: `Reconstructs a readable source code representation of a function or object.
@@ -311,5 +294,7 @@ returns the object definition with field names.`,
 		Returns:  "[string!] The formatted source code",
 		Examples: []string{"square: fn [x] [x * x]\nsource :square  ; => \"fn [x] [x * x]\"", "obj: object [x: 10]\nsource obj  ; => \"object [x]\""},
 		SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
-	})
+	}
+	// Bind to root frame
+	rootFrame.Bind("source", value.FuncVal(fn))
 }

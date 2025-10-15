@@ -31,43 +31,6 @@ func RegisterDataNatives(rootFrame core.Frame) {
 		registered[name] = true
 	}
 
-	// Helper function to wrap simple data functions
-	registerSimpleDataFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
-		// Extract parameter names from existing documentation
-		params := make([]value.ParamSpec, arity)
-
-		if doc != nil && len(doc.Parameters) == arity {
-			// Use parameter names from documentation
-			for i := range arity {
-				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
-			}
-		} else {
-			// Fallback to generic names if documentation is missing or mismatched
-			paramNames := []string{"value", "word", "spec"}
-			for i := range arity {
-				if i < len(paramNames) {
-					params[i] = value.NewParamSpec(paramNames[i], true)
-				} else {
-					params[i] = value.NewParamSpec("arg", true)
-				}
-			}
-		}
-
-		fn := value.NewNativeFunction(
-			name,
-			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
-		)
-		fn.Doc = doc
-		registerAndBind(name, fn)
-	}
-
 	// ===== Group 6: Data operations (3 functions) =====
 	// set and get need evaluator, type? doesn't
 	fn := value.NewNativeFunction(
@@ -122,7 +85,14 @@ The word is not evaluated. Raises an error if the word is not bound to a value.`
 	}
 	registerAndBind("get", fn)
 
-	registerSimpleDataFunc("type?", TypeQ, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"type?",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		TypeQ,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Data",
 		Summary:  "Returns the type of a value",
 		Description: `Returns a word representing the type of the given value.
@@ -133,7 +103,8 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		Returns:  "[word!] A word representing the value's type",
 		Examples: []string{"type? 42  ; => integer!", `type? "hello"  ; => string!`, "type? [1 2 3]  ; => block!", "type? :print  ; => function!"},
 		SeeAlso:  []string{"set", "get"}, Tags: []string{"data", "type", "introspection", "reflection"},
-	})
+	}
+	registerAndBind("type?", fn)
 
 	// ===== Group 7: Object operations (5 functions - all need evaluator) =====
 	fn = value.NewNativeFunction(

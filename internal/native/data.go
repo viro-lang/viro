@@ -57,7 +57,7 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 // TypeQ implements the `type?` native.
 //
 // Contract: type? value -> word representing type name
-func TypeQ(args []core.Value) (core.Value, error) {
+func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("type?", 1, len(args))
 	}

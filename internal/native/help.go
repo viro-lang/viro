@@ -31,7 +31,7 @@ func buildRegistryFromFrame(f core.Frame) map[string]*value.FunctionValue {
 // With one arg: shows function help or category listing
 //
 // NOTE: This function does NOT evaluate its argument, so it accepts word literals.
-func Help(args []core.Value, eval core.Evaluator) (core.Value, error) {
+func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// Handle 0 or 1 arguments
 	if len(args) > 1 {
 		return value.NoneVal(), arityError("?", 1, len(args))
@@ -94,7 +94,7 @@ func Help(args []core.Value, eval core.Evaluator) (core.Value, error) {
 // Words lists all available function names.
 // USAGE: words
 // Returns: block of words (function names)
-func Words(args []core.Value, eval core.Evaluator) (core.Value, error) {
+func Words(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("words", 0, len(args))
 	}

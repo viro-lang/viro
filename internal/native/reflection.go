@@ -17,7 +17,7 @@ import (
 // Contract: type-of value -> word! representing type name
 // Returns canonical type name as word (e.g., integer!, string!, object!)
 // For functions, distinguishes between native! and function! based on FunctionValue.Type
-func TypeOf(args []core.Value) (core.Value, error) {
+func TypeOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("type-of", 1, len(args))
 	}
@@ -43,7 +43,7 @@ func TypeOf(args []core.Value) (core.Value, error) {
 // Contract: spec-of value -> block! copy of specification
 // Supports: function!, native!, object!
 // Returns immutable copy of specification block
-func SpecOf(args []core.Value) (core.Value, error) {
+func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("spec-of", 1, len(args))
 	}
@@ -88,7 +88,7 @@ func SpecOf(args []core.Value) (core.Value, error) {
 // Supports: function!, object!
 // Returns deep copy to prevent mutation of original
 // Native functions return an error as they have no accessible body
-func BodyOf(args []core.Value) (core.Value, error) {
+func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("body-of", 1, len(args))
 	}
@@ -210,7 +210,7 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 // Contract: source value -> string! formatted source
 // Supports: function!, native!, object!
 // Returns formatted string representation
-func Source(args []core.Value) (core.Value, error) {
+func Source(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("source", 1, len(args))
 	}
