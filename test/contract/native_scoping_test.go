@@ -3,6 +3,7 @@ package contract_test
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/test/contract"
@@ -14,7 +15,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -83,7 +84,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !result.Equals(tt.expected) {
+			if !value.Equals(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
@@ -95,7 +96,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -186,7 +187,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !result.Equals(tt.expected) {
+			if !value.Equals(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
@@ -198,7 +199,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -315,7 +316,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !result.Equals(tt.expected) {
+			if !value.Equals(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
@@ -332,7 +333,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 	}{
 		{"math add", "3 + 4", value.IntVal(7)},
 		{"math multiply", "5 * 6", value.IntVal(30)},
@@ -350,7 +351,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !result.Equals(tt.expected) {
+			if !value.Equals(result, tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
@@ -369,8 +370,8 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 		if !found {
 			t.Errorf("native '%s' should be in root frame", name)
 		}
-		if val.Type != value.TypeFunction {
-			t.Errorf("native '%s' should be a function, got type %v", name, val.Type)
+		if val.GetType() != value.TypeFunction {
+			t.Errorf("native '%s' should be a function, got type %v", name, value.TypeToString(val.GetType()))
 		}
 	}
 }

@@ -4,48 +4,44 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 func TestHelpDirectCall(t *testing.T) {
-	// Test calling Help function directly (bypasses parser arity checking)
 	e := NewTestEvaluator()
 
-	// Test with no arguments - should show category list
-	val, err := native.Help([]value.Value{}, e)
+	val, err := native.Help([]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with no args failed: %v", err)
 	}
-	if val.Type != value.TypeNone {
-		t.Errorf("Expected none!, got %v", val.Type)
+	if val.GetType() != value.TypeNone {
+		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	// Test with function name
-	val, err = native.Help([]value.Value{value.WordVal("append")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("append")}, e)
 	if err != nil {
 		t.Fatalf("Help with 'append' failed: %v", err)
 	}
-	if val.Type != value.TypeNone {
-		t.Errorf("Expected none!, got %v", val.Type)
+	if val.GetType() != value.TypeNone {
+		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	// Test with category name
-	val, err = native.Help([]value.Value{value.WordVal("math")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("math")}, e)
 	if err != nil {
 		t.Fatalf("Help with 'math' failed: %v", err)
 	}
-	if val.Type != value.TypeNone {
-		t.Errorf("Expected none!, got %v", val.Type)
+	if val.GetType() != value.TypeNone {
+		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	// Test with operator
-	val, err = native.Help([]value.Value{value.WordVal("+")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("+")}, e)
 	if err != nil {
 		t.Fatalf("Help with '+' failed: %v", err)
 	}
-	if val.Type != value.TypeNone {
-		t.Errorf("Expected none!, got %v", val.Type)
+	if val.GetType() != value.TypeNone {
+		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 }
 
@@ -55,24 +51,24 @@ func TestWords(t *testing.T) {
 		t.Fatalf("Eval error: %v", err)
 	}
 
-	if val.Type != value.TypeBlock {
-		t.Fatalf("Expected block!, got %v", val.Type)
+	if val.GetType() != value.TypeBlock {
+		t.Fatalf("Expected block!, got %v", val.GetType())
 	}
 
-	block, ok := val.AsBlock()
+	block, ok := value.AsBlock(val)
 	if !ok {
 		t.Fatal("Failed to convert to BlockValue")
 	}
 
 	for i, elem := range block.Elements {
-		if elem.Type != value.TypeWord {
-			t.Errorf("Element %d: expected word!, got %v", i, elem.Type)
+		if elem.GetType() != value.TypeWord {
+			t.Errorf("Element %d: expected word!, got %v", i, elem.GetType())
 		}
 	}
 
 	names := make(map[string]bool)
 	for _, elem := range block.Elements {
-		word, _ := elem.AsWord()
+		word, _ := value.AsWord(elem)
 		names[word] = true
 	}
 
@@ -85,18 +81,17 @@ func TestWords(t *testing.T) {
 }
 
 func TestWordsDirectCall(t *testing.T) {
-	// Test direct call to Words function
 	e := NewTestEvaluator()
-	val, err := native.Words([]value.Value{}, e)
+	val, err := native.Words([]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Words failed: %v", err)
 	}
 
-	if val.Type != value.TypeBlock {
-		t.Fatalf("Expected block!, got %v", val.Type)
+	if val.GetType() != value.TypeBlock {
+		t.Fatalf("Expected block!, got %v", val.GetType())
 	}
 
-	block, ok := val.AsBlock()
+	block, ok := value.AsBlock(val)
 	if !ok {
 		t.Fatal("Failed to convert to BlockValue")
 	}
@@ -107,17 +102,15 @@ func TestWordsDirectCall(t *testing.T) {
 }
 
 func TestHelpFunctionExists(t *testing.T) {
-	// Create evaluator to access root frame
 	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
-	// Look up the ? function from the root frame
 	fnValue, found := rootFrame.Get("?")
 	if !found {
 		t.Fatal("? function not found in root frame")
 	}
 
-	fn, ok := fnValue.AsFunction()
+	fn, ok := value.AsFunction(fnValue)
 	if !ok {
 		t.Fatal("? value is not a function")
 	}
@@ -136,15 +129,13 @@ func TestHelpFunctionExists(t *testing.T) {
 }
 
 func TestHelpFormatterOutput(t *testing.T) {
-	// Create evaluator and build registry from root frame
 	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
-	// Build registry map from root frame
 	registry := make(map[string]*value.FunctionValue)
 	for _, binding := range rootFrame.GetAll() {
-		if binding.Value.Type == value.TypeFunction {
-			if fn, ok := binding.Value.AsFunction(); ok {
+		if binding.Value.GetType() == value.TypeFunction {
+			if fn, ok := value.AsFunction(binding.Value); ok {
 				registry[binding.Symbol] = fn
 			}
 		}
@@ -166,17 +157,15 @@ func TestHelpFormatterOutput(t *testing.T) {
 }
 
 func TestHelpFunctionDetail(t *testing.T) {
-	// Create evaluator to access root frame
 	e := NewTestEvaluator()
 	rootFrame := e.GetFrameByIndex(0)
 
-	// Look up the + function from the root frame
 	fnValue, found := rootFrame.Get("+")
 	if !found {
 		t.Fatal("+ function not found in root frame")
 	}
 
-	fn, ok := fnValue.AsFunction()
+	fn, ok := value.AsFunction(fnValue)
 	if !ok {
 		t.Fatal("+ value is not a function")
 	}

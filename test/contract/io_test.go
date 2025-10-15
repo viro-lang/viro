@@ -6,12 +6,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // captureStdout redirects stdout during fn execution and returns captured output.
-func captureStdout(t *testing.T, fn func() (value.Value, error)) (string, value.Value, error) {
+func captureStdout(t *testing.T, fn func() (core.Value, error)) (string, core.Value, error) {
 	t.Helper()
 
 	oldStdout := os.Stdout
@@ -86,7 +87,7 @@ func TestIO_Print(t *testing.T) {
 
 			e := NewTestEvaluator()
 
-			captured, result, evalErr := captureStdout(t, func() (value.Value, error) {
+			captured, result, evalErr := captureStdout(t, func() (core.Value, error) {
 				val, derr := e.Do_Blk(vals)
 				if derr != nil {
 					return value.NoneVal(), derr
@@ -113,7 +114,7 @@ func TestIO_Input(t *testing.T) {
 	tests := []struct {
 		name     string
 		provided string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "simple word",

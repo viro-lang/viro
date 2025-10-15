@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestActionNoImpl tests the action-no-impl error when an action is called
@@ -62,14 +63,16 @@ func TestActionNoImpl(t *testing.T) {
 				t.Fatal("Expected error but got nil")
 			}
 
-			if evalErr.ID != tt.wantErrID {
-				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, evalErr.ID)
+			vErr, ok := evalErr.(*verror.Error)
+			if !ok {
+				t.Fatalf("Expected *verror.Error, got %T", evalErr)
 			}
 
-			// Verify error message contains action name
-			// Note: We can't check exact message format as it's implementation detail,
-			// but we verify the action name is mentioned
-			t.Logf("Error message: %s", evalErr.Error())
+			if vErr.ID != tt.wantErrID {
+				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, vErr.ID)
+			}
+
+			t.Logf("Error message: %s", vErr.Error())
 		})
 	}
 }
@@ -123,11 +126,16 @@ func TestActionWrongArity(t *testing.T) {
 				t.Fatal("Expected error but got nil")
 			}
 
-			if evalErr.ID != tt.wantErrID {
-				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, evalErr.ID)
+			vErr, ok := evalErr.(*verror.Error)
+			if !ok {
+				t.Fatalf("Expected *verror.Error, got %T", evalErr)
 			}
 
-			t.Logf("Error message: %s", evalErr.Error())
+			if vErr.ID != tt.wantErrID {
+				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, vErr.ID)
+			}
+
+			t.Logf("Error message: %s", vErr.Error())
 		})
 	}
 }
@@ -176,11 +184,16 @@ func TestActionEmptySeries(t *testing.T) {
 				t.Fatal("Expected error but got nil")
 			}
 
-			if evalErr.ID != tt.wantErrID {
-				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, evalErr.ID)
+			vErr, ok := evalErr.(*verror.Error)
+			if !ok {
+				t.Fatalf("Expected *verror.Error, got %T", evalErr)
 			}
 
-			t.Logf("Error message: %s", evalErr.Error())
+			if vErr.ID != tt.wantErrID {
+				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, vErr.ID)
+			}
+
+			t.Logf("Error message: %s", vErr.Error())
 		})
 	}
 }
@@ -229,11 +242,16 @@ func TestActionTypeMismatch(t *testing.T) {
 				t.Fatal("Expected error but got nil")
 			}
 
-			if evalErr.ID != tt.wantErrID {
-				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, evalErr.ID)
+			vErr, ok := evalErr.(*verror.Error)
+			if !ok {
+				t.Fatalf("Expected *verror.Error, got %T", evalErr)
 			}
 
-			t.Logf("Error message: %s", evalErr.Error())
+			if vErr.ID != tt.wantErrID {
+				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, vErr.ID)
+			}
+
+			t.Logf("Error message: %s", vErr.Error())
 		})
 	}
 }
