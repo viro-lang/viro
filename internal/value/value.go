@@ -116,7 +116,7 @@ func (v Value) String() string {
 		}
 		return "datatype!"
 	default:
-		return fmt.Sprintf("<%s>", v.Type)
+		return fmt.Sprintf("<%s>", TypeToString(v.Type))
 	}
 }
 
