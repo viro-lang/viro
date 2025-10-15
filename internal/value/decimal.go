@@ -2,6 +2,7 @@ package value
 
 import (
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // DecimalValue represents high-precision decimal floating point values (Feature 002).
@@ -50,10 +51,10 @@ func DecimalVal(magnitude *decimal.Big, scale int16) Value {
 }
 
 // AsDecimal extracts the DecimalValue from a Value, or returns nil if wrong type.
-func (v Value) AsDecimal() (*DecimalValue, bool) {
-	if v.Type != TypeDecimal {
+func AsDecimal(v core.Value) (*DecimalValue, bool) {
+	if v.GetType() != TypeDecimal {
 		return nil, false
 	}
-	dec, ok := v.Payload.(*DecimalValue)
+	dec, ok := v.GetPayload().(*DecimalValue)
 	return dec, ok
 }
