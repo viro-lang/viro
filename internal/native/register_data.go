@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // RegisterDataNatives registers all data and object-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
-func RegisterDataNatives(rootFrame *frame.Frame) {
+func RegisterDataNatives(rootFrame core.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 

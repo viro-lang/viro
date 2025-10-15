@@ -2,7 +2,6 @@ package native
 
 import (
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -14,7 +13,7 @@ import (
 // - Panics if function value creation fails (critical error)
 //
 // Note: This function also populates the legacy Registry map for backward compatibility during Phase 1 migration.
-func RegisterHelpNatives(rootFrame *frame.Frame) {
+func RegisterHelpNatives(rootFrame core.Frame) {
 	if rootFrame == nil {
 		panic("RegisterHelpNatives: rootFrame is nil")
 	}

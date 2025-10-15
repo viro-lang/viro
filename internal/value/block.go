@@ -86,12 +86,12 @@ func (b *BlockValue) Length() int {
 }
 
 // Append adds a value to the end (in-place mutation).
-func (b *BlockValue) Append(val Value) {
+func (b *BlockValue) Append(val core.Value) {
 	b.Elements = append(b.Elements, val)
 }
 
 // Insert adds a value at current position (in-place mutation).
-func (b *BlockValue) Insert(val Value) {
+func (b *BlockValue) Insert(val core.Value) {
 	// Insert at current index, shifting remaining elements right
 	b.Elements = append(b.Elements[:b.Index], append([]core.Value{val}, b.Elements[b.Index:]...)...)
 }
@@ -141,13 +141,13 @@ func SortBlock(b *BlockValue) {
 		elemJ := b.Elements[j]
 		switch elemI.GetType() {
 		case TypeInteger:
-			i, _ := AsInteger(elemI)
-			j, _ := AsInteger(elemJ)
-			return i < j
+			iVal, _ := AsInteger(elemI)
+			jVal, _ := AsInteger(elemJ)
+			return iVal < jVal
 		case TypeString:
-			i, _ := AsString(elemI)
-			j, _ := AsString(elemJ)
-			return i.String() < j.String()
+			iVal, _ := AsString(elemI)
+			jVal, _ := AsString(elemJ)
+			return iVal.String() < jVal.String()
 		default:
 			return false
 		}

@@ -25,6 +25,7 @@ import (
 	"unicode"
 
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -41,14 +42,14 @@ func isInfixWord(word string) bool {
 
 // Parse parses a string into a slice of Values.
 // Returns the parsed values and any syntax error encountered.
-func Parse(input string) ([]value.Value, *verror.Error) {
+func Parse(input string) ([]core.Value, error) {
 	tokens, err := tokenize(input)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(tokens) == 0 {
-		return []value.Value{}, nil
+		return []core.Value{}, nil
 	}
 
 	p := &parser{tokens: tokens, pos: 0, source: input}
@@ -80,7 +81,7 @@ const (
 	tokEOF
 )
 
-func makeSyntaxError(input string, pos int, id string, args [3]string) *verror.Error {
+func makeSyntaxError(input string, pos int, id string, args [3]string) error {
 	err := verror.NewSyntaxError(id, args)
 	if input != "" {
 		err.SetNear(snippetAround(input, pos))
@@ -118,7 +119,7 @@ func snippetAround(input string, pos int) string {
 }
 
 // tokenize converts input string into tokens.
-func tokenize(input string) ([]token, *verror.Error) {
+func tokenize(input string) ([]token, error) {
 	var tokens []token
 	runes := []rune(input)
 	pos := 0
@@ -431,13 +432,13 @@ type parser struct {
 	source string
 }
 
-func (p *parser) syntaxError(pos int, id string, args [3]string) *verror.Error {
+func (p *parser) syntaxError(pos int, id string, args [3]string) error {
 	return makeSyntaxError(p.source, pos, id, args)
 }
 
 // parseSequence parses a sequence of values (top level or within block/paren).
-func (p *parser) parseSequence() ([]value.Value, *verror.Error) {
-	var values []value.Value
+func (p *parser) parseSequence() ([]core.Value, error) {
+	var values []core.Value
 
 	for !p.isAtEnd() && p.peek().typ != tokRBracket && p.peek().typ != tokRParen {
 		val, err := p.parseExpression()
@@ -453,7 +454,7 @@ func (p *parser) parseSequence() ([]value.Value, *verror.Error) {
 // parseExpression parses an expression with simple left-to-right evaluation.
 // This matches REBOL's evaluation model: no operator precedence.
 // Example: 3 + 4 * 2 → ((+ 3 4) * 2) → (7 * 2) → 14
-func (p *parser) parseExpression() (value.Value, *verror.Error) {
+func (p *parser) parseExpression() (core.Value, error) {
 	left, err := p.parsePrimary()
 	if err != nil {
 		return value.NoneVal(), err
@@ -466,7 +467,7 @@ func (p *parser) parseExpression() (value.Value, *verror.Error) {
 		if err != nil {
 			return value.NoneVal(), err
 		}
-		left = value.ParenVal([]value.Value{
+		left = value.ParenVal([]core.Value{
 			value.WordVal(op.val),
 			left,
 			right,
@@ -477,7 +478,7 @@ func (p *parser) parseExpression() (value.Value, *verror.Error) {
 }
 
 // parsePrimary parses a primary expression (literal, word, block, paren, etc.).
-func (p *parser) parsePrimary() (value.Value, *verror.Error) {
+func (p *parser) parsePrimary() (core.Value, error) {
 	if p.isAtEnd() {
 		return value.NoneVal(), p.syntaxError(len([]rune(p.source)), verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
 	}
@@ -626,17 +627,17 @@ func (p *parser) isAtEnd() bool {
 
 // ParseEval is a convenience function that parses and returns a single expression.
 // Used by REPL for single-line evaluation.
-func ParseEval(input string) ([]value.Value, *verror.Error) {
+func ParseEval(input string) ([]core.Value, error) {
 	return Parse(input)
 }
 
 // Format formats a value back to string (for debugging/display).
-func Format(val value.Value) string {
-	switch val.Type {
+func Format(val core.Value) string {
+	switch val.GetType() {
 	case value.TypeNone:
 		return "none"
 	case value.TypeLogic:
-		if logic, ok := val.AsLogic(); ok {
+		if logic, ok := value.AsLogic(val); ok {
 			if logic {
 				return "true"
 			}
@@ -644,37 +645,37 @@ func Format(val value.Value) string {
 		}
 		return "logic"
 	case value.TypeInteger:
-		if num, ok := val.AsInteger(); ok {
+		if num, ok := value.AsInteger(val); ok {
 			return fmt.Sprintf("%d", num)
 		}
 		return "integer"
 	case value.TypeString:
-		if str, ok := val.AsString(); ok {
+		if str, ok := value.AsString(val); ok {
 			return fmt.Sprintf("\"%s\"", str.String())
 		}
 		return "string"
 	case value.TypeWord:
-		if word, ok := val.AsWord(); ok {
+		if word, ok := value.AsWord(val); ok {
 			return word
 		}
 		return "word"
 	case value.TypeSetWord:
-		if word, ok := val.AsWord(); ok {
+		if word, ok := value.AsWord(val); ok {
 			return word + ":"
 		}
 		return "set-word"
 	case value.TypeGetWord:
-		if word, ok := val.AsWord(); ok {
+		if word, ok := value.AsWord(val); ok {
 			return ":" + word
 		}
 		return "get-word"
 	case value.TypeLitWord:
-		if word, ok := val.AsWord(); ok {
+		if word, ok := value.AsWord(val); ok {
 			return "'" + word
 		}
 		return "lit-word"
 	case value.TypeBlock:
-		if block, ok := val.AsBlock(); ok {
+		if block, ok := value.AsBlock(val); ok {
 			var parts []string
 			for _, elem := range block.Elements {
 				parts = append(parts, Format(elem))
@@ -683,7 +684,7 @@ func Format(val value.Value) string {
 		}
 		return "block"
 	case value.TypeParen:
-		if block, ok := val.AsBlock(); ok {
+		if block, ok := value.AsBlock(val); ok {
 			var parts []string
 			for _, elem := range block.Elements {
 				parts = append(parts, Format(elem))
@@ -694,7 +695,7 @@ func Format(val value.Value) string {
 	case value.TypeFunction:
 		return "function"
 	case value.TypePath:
-		if path, ok := val.AsPath(); ok {
+		if path, ok := value.AsPath(val); ok {
 			return path.String()
 		}
 		return "path"

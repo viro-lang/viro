@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // RegisterMathNatives registers all math-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
-func RegisterMathNatives(rootFrame *frame.Frame) {
+func RegisterMathNatives(rootFrame core.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 

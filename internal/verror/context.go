@@ -58,7 +58,7 @@ func CaptureNear(values []core.Value, index int) string {
 // For decimal values, includes scale information for better diagnostics.
 func formatValueWithMetadata(v core.Value) string {
 	if v.GetType() == value.TypeDecimal {
-		if dec, ok := v.AsDecimal(); ok && dec != nil {
+		if dec, ok := value.AsDecimal(v); ok && dec != nil {
 			// Include scale metadata for decimal diagnostics
 			return fmt.Sprintf("%s[scale:%d]", dec.String(), dec.Scale)
 		}

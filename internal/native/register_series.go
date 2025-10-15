@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -65,7 +64,7 @@ func registerSeriesTypeImpls() {
 // RegisterSeriesNatives registers all series-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
-func RegisterSeriesNatives(rootFrame *frame.Frame) {
+func RegisterSeriesNatives(rootFrame core.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 

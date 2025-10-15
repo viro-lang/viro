@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -19,7 +18,7 @@ import (
 //   - Any function creation fails
 //
 // This is intentional fail-fast behavior for critical initialization errors.
-func RegisterControlNatives(rootFrame *frame.Frame) {
+func RegisterControlNatives(rootFrame core.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
