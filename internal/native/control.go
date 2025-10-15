@@ -7,7 +7,6 @@ package native
 import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -250,7 +249,7 @@ func ToTruthy(val core.Value) bool {
 //
 // T144: Implements trace --on with refinements
 // T145: Implements trace --off
-func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// Check for --on or --off refinement
 	hasOn := false
 	hasOff := false
@@ -295,56 +294,56 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 	filters := trace.TraceFilters{}
 
 	// Handle --only refinement
-	if onlyVal, ok := refValues["only"]; ok && onlyVal.Type != value.TypeNone {
-		if onlyVal.Type != value.TypeBlock {
+	if onlyVal, ok := refValues["only"]; ok && onlyVal.GetType() != value.TypeNone {
+		if onlyVal.GetType() != value.TypeBlock {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--only requires block of words", "", ""},
 			)
 		}
-		onlyBlk, _ := onlyVal.AsBlock()
+		onlyBlk, _ := value.AsBlock(onlyVal)
 		for _, elem := range onlyBlk.Elements {
-			if elem.Type != value.TypeWord {
+			if elem.GetType() != value.TypeWord {
 				return value.NoneVal(), verror.NewScriptError(
 					verror.ErrIDTypeMismatch,
 					[3]string{"--only block must contain only words", "", ""},
 				)
 			}
-			word, _ := elem.AsWord()
+			word, _ := value.AsWord(elem)
 			filters.IncludeWords = append(filters.IncludeWords, word)
 		}
 	}
 
 	// Handle --exclude refinement
-	if excludeVal, ok := refValues["exclude"]; ok && excludeVal.Type != value.TypeNone {
-		if excludeVal.Type != value.TypeBlock {
+	if excludeVal, ok := refValues["exclude"]; ok && excludeVal.GetType() != value.TypeNone {
+		if excludeVal.GetType() != value.TypeBlock {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--exclude requires block of words", "", ""},
 			)
 		}
-		excludeBlk, _ := excludeVal.AsBlock()
+		excludeBlk, _ := value.AsBlock(excludeVal)
 		for _, elem := range excludeBlk.Elements {
-			if elem.Type != value.TypeWord {
+			if elem.GetType() != value.TypeWord {
 				return value.NoneVal(), verror.NewScriptError(
 					verror.ErrIDTypeMismatch,
 					[3]string{"--exclude block must contain only words", "", ""},
 				)
 			}
-			word, _ := elem.AsWord()
+			word, _ := value.AsWord(elem)
 			filters.ExcludeWords = append(filters.ExcludeWords, word)
 		}
 	}
 
 	// Handle --file refinement with sandbox validation
-	if fileVal, ok := refValues["file"]; ok && fileVal.Type != value.TypeNone {
-		if fileVal.Type != value.TypeString {
+	if fileVal, ok := refValues["file"]; ok && fileVal.GetType() != value.TypeNone {
+		if fileVal.GetType() != value.TypeString {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--file requires string path", "", ""},
 			)
 		}
-		fileStr, _ := fileVal.AsString()
+		fileStr, _ := value.AsString(fileVal)
 		filePath := fileStr.String()
 
 		// Validate path is within sandbox
@@ -361,7 +360,7 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 		// Full implementation deferred until trace session supports dynamic reconfiguration
 	} // Handle --append refinement (validates file must also be provided)
 	if appendVal, ok := refValues["append"]; ok && ToTruthy(appendVal) {
-		if _, hasFile := refValues["file"]; !hasFile || refValues["file"].Type == value.TypeNone {
+		if _, hasFile := refValues["file"]; !hasFile || refValues["file"].GetType() == value.TypeNone {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDInvalidOperation,
 				[3]string{"--append requires --file to be specified", "", ""},
@@ -379,7 +378,7 @@ func Trace(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 // Returns boolean indicating if tracing is enabled
 //
 // T146: Implements trace? query
-func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("trace?", 0, len(args))
 	}
@@ -400,7 +399,7 @@ func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evalu
 //	--step | --next | --finish | --continue | --locals | --stack
 //
 // T148-T152: Implements debug commands
-func Debug(args []value.Value, refValues map[string]value.Value, eval eval.Evaluator) (value.Value, *verror.Error) {
+func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if debug.GlobalDebugger == nil {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
@@ -430,12 +429,12 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval eval.Evalu
 		)
 	}
 
-	if val, ok := refValues["breakpoint"]; ok && val.Type != value.TypeNone {
+	if val, ok := refValues["breakpoint"]; ok && val.GetType() != value.TypeNone {
 		// Set breakpoint on word (accepts lit-word, get-word, or word)
 		var word string
-		switch val.Type {
+		switch val.GetType() {
 		case value.TypeLitWord, value.TypeGetWord, value.TypeWord:
-			word, _ = val.AsWord()
+			word, _ = value.AsWord(val)
 		default:
 			return value.NoneVal(), typeError("debug --breakpoint", "word", val)
 		}
@@ -454,9 +453,9 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval eval.Evalu
 		return value.IntVal(int64(id)), nil
 	}
 
-	if val, ok := refValues["remove"]; ok && val.Type != value.TypeNone {
+	if val, ok := refValues["remove"]; ok && val.GetType() != value.TypeNone {
 		// Remove breakpoint by ID
-		id, ok := val.AsInteger()
+		id, ok := value.AsInteger(val)
 		if !ok {
 			return value.NoneVal(), typeError("debug --remove", "integer ID", val)
 		}
@@ -496,14 +495,14 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval eval.Evalu
 	if val, ok := refValues["locals"]; ok && ToTruthy(val) {
 		// Create empty object for now (TODO: populate with actual locals)
 		fields := []string{}
-		initializers := make(map[string][]value.Value)
+		initializers := make(map[string][]core.Value)
 		return instantiateObject(eval, -1, nil, fields, initializers)
 	}
 
 	if val, ok := refValues["stack"]; ok && ToTruthy(val) {
 		// Return block with call stack entries
 		// For now, return empty block
-		return value.BlockVal([]value.Value{}), nil
+		return value.BlockVal([]core.Value{}), nil
 	}
 
 	return value.NoneVal(), verror.NewScriptError(
