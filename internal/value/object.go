@@ -25,15 +25,15 @@ type ObjectInstance struct {
 
 // ObjectManifest describes the fields exposed by an object.
 type ObjectManifest struct {
-	Words []string    // Published field names (case-sensitive)
-	Types []ValueType // Optional type hints (TypeNone = any type allowed)
+	Words []string         // Published field names (case-sensitive)
+	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewObject creates an ObjectInstance with the given frame and field manifest.
-func NewObject(frameIndex int, words []string, types []ValueType) *ObjectInstance {
+func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectInstance {
 	if types == nil {
 		// Default to TypeNone (any type) for all fields
-		types = make([]ValueType, len(words))
+		types = make([]core.ValueType, len(words))
 	}
 	return &ObjectInstance{
 		FrameIndex:  frameIndex,
