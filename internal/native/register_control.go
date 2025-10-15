@@ -33,7 +33,7 @@ func RegisterControlNatives(rootFrame *frame.Frame) {
 		}
 
 		// Bind to root frame
-		rootFrame.Bind(name, fn)
+		rootFrame.Bind(name, value.FuncVal(fn))
 
 		// Mark as registered
 		registered[name] = true

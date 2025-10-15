@@ -4,9 +4,9 @@ package native
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // RegisterDataNatives registers all data and object-related native functions to the root frame.
@@ -33,7 +33,7 @@ func RegisterDataNatives(rootFrame *frame.Frame) {
 	}
 
 	// Helper function to wrap simple data functions
-	registerSimpleDataFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleDataFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -57,7 +57,7 @@ func RegisterDataNatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
@@ -77,11 +77,10 @@ func RegisterDataNatives(rootFrame *frame.Frame) {
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			// We need to pass a native.Evaluator to Set, but we have value.Evaluator
-			// Create a reverse adapter that converts value.Evaluator back to native.Evaluator
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Set(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			// We need to pass a native.Evaluator to Set, but we have core.Evaluator
+			// Create a reverse adapter that converts core.Evaluator back to native.Evaluator
+			result, err := Set(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -108,9 +107,8 @@ The word is not evaluated; the value is evaluated before assignment. Returns the
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Get(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Get(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -150,9 +148,8 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Object(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Object(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -179,9 +176,8 @@ Returns the newly created object.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Context(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Context(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -209,9 +205,8 @@ and all word definitions become fields of the context.`,
 			value.NewParamSpec("parent", true), // evaluated
 			value.NewParamSpec("spec", false),  // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Make(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Make(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -241,9 +236,8 @@ new or overriding field definitions. The new object shares the parent's fields b
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
 			value.NewRefinementSpec("default", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Select(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Select(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -280,9 +274,8 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
 			value.NewParamSpec("value", true),  // evaluated
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Put(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Put(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
