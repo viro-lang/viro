@@ -3,6 +3,7 @@ package native
 import (
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -61,47 +62,8 @@ func TypeQ(args []value.Value) (value.Value, *verror.Error) {
 		return value.NoneVal(), arityError("type?", 1, len(args))
 	}
 
-	typeName := typeNameFor(args[0].Type)
+	typeName := value.TypeToString(args[0].Type)
 	return value.WordVal(typeName), nil
-}
-
-func typeNameFor(t value.ValueType) string {
-	switch t {
-	case value.TypeInteger:
-		return "integer!"
-	case value.TypeString:
-		return "string!"
-	case value.TypeLogic:
-		return "logic!"
-	case value.TypeNone:
-		return "none!"
-	case value.TypeBlock:
-		return "block!"
-	case value.TypeWord:
-		return "word!"
-	case value.TypeSetWord:
-		return "set-word!"
-	case value.TypeGetWord:
-		return "get-word!"
-	case value.TypeLitWord:
-		return "lit-word!"
-	case value.TypeFunction:
-		return "function!"
-	case value.TypeParen:
-		return "paren!"
-	case value.TypeDecimal:
-		return "decimal!"
-	case value.TypeObject:
-		return "object!"
-	case value.TypePort:
-		return "port!"
-	case value.TypePath:
-		return "path!"
-	case value.TypeDatatype:
-		return "datatype!"
-	default:
-		return "unknown!"
-	}
 }
 
 // frameManager interface for object natives to access frame operations.
@@ -195,19 +157,19 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 	return fields, initializers, nil
 }
 
-func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]value.Value) (value.Value, *verror.Error) {
+func instantiateObject(eval eval.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]value.Value) (value.Value, *verror.Error) {
 	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
-	frameIdx := mgr.RegisterFrame(objFrame)
-	mgr.MarkFrameCaptured(frameIdx)
+	frameIdx := eval.RegisterFrame(objFrame)
+	eval.MarkFrameCaptured(frameIdx)
 
-	mgr.PushFrameContext(objFrame)
-	defer mgr.PopFrameContext()
+	eval.PushFrameContext(objFrame)
+	defer eval.PopFrameContext()
 
 	for _, field := range fields {
 		initVals := initializers[field]
 
-		evaled, err := mgr.Do_Blk(initVals)
+		evaled, err := eval.Do_Blk(initVals)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -218,7 +180,7 @@ func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prot
 	obj := value.NewObject(frameIdx, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
-		mgr.MarkFrameCaptured(prototype.FrameIndex)
+		eval.MarkFrameCaptured(prototype.FrameIndex)
 	}
 
 	// Emit trace event for object creation (Feature 002, T097)
@@ -244,7 +206,7 @@ func isReservedField(name string) bool {
 //     [word: value] for explicit initialization
 //   - Returns object! instance with dedicated frame
 //   - Evaluates initializers in object's context
-func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Object(args []value.Value, refValues map[string]value.Value, eval eval.Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("object", 1, len(args))
 	}
@@ -255,27 +217,15 @@ func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator
 
 	spec, _ := args[0].AsBlock()
 
-	// Type-assert to access frame management
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"object", "frame-manager-unavailable", ""},
-		)
-	}
-
 	fields, initializers, err := buildObjectSpec("object", spec)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
 	// Create object frame with parent set to current frame
-	parentIdx := 0 // Global frame as parent
-	if provider, ok := eval.(frameProvider); ok {
-		parentIdx = provider.CurrentFrameIndex()
-	}
+	parentIdx := eval.CurrentFrameIndex() // Global frame as parent
 
-	return instantiateObject(mgr, eval, parentIdx, nil, fields, initializers)
+	return instantiateObject(eval, parentIdx, nil, fields, initializers)
 }
 
 // Context implements the `context` native.
@@ -284,7 +234,7 @@ func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator
 // - Alias for object but with isolated scope (no parent frame)
 // - spec: block describing fields and optional initial values
 // - Returns object! instance with isolated frame
-func Context(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Context(args []value.Value, refValues map[string]value.Value, eval eval.Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("context", 1, len(args))
 	}
@@ -295,21 +245,12 @@ func Context(args []value.Value, refValues map[string]value.Value, eval Evaluato
 
 	spec, _ := args[0].AsBlock()
 
-	// Type-assert to access frame management
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"context", "frame-manager-unavailable", ""},
-		)
-	}
-
 	fields, initializers, err := buildObjectSpec("context", spec)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
-	return instantiateObject(mgr, eval, -1, nil, fields, initializers)
+	return instantiateObject(eval, -1, nil, fields, initializers)
 }
 
 // Make implements the `make` native supporting object prototypes.
@@ -318,7 +259,7 @@ func Context(args []value.Value, refValues map[string]value.Value, eval Evaluato
 // - When target is word "object!" create new base object (prototype = none)
 // - When target is object value (or word resolving to object), use it as prototype
 // - Spec must be block describing fields/initializers (same as object)
-func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Make(args []value.Value, refValues map[string]value.Value, eval eval.Evaluator) (value.Value, *verror.Error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("make", 2, len(args))
 	}
@@ -331,14 +272,6 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	specBlock, ok := specVal.AsBlock()
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("make spec missing block payload", [3]string{})
-	}
-
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"make", "frame-manager-unavailable", ""},
-		)
 	}
 
 	fields, initializers, err := buildObjectSpec("make", specBlock)
@@ -393,12 +326,8 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	}
 
 instantiate:
-	parentIdx := 0
-	if provider, ok := eval.(frameProvider); ok {
-		parentIdx = provider.CurrentFrameIndex()
-	}
-
-	return instantiateObject(mgr, eval, parentIdx, prototype, fields, initializers)
+	parentIdx := eval.CurrentFrameIndex()
+	return instantiateObject(eval, parentIdx, prototype, fields, initializers)
 }
 
 // Select implements the `select` native for object field lookup with default.

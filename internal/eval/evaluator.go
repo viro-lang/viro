@@ -37,6 +37,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/stack"
@@ -51,8 +52,8 @@ import (
 // Stack holds both data and frames in a unified structure.
 type Evaluator struct {
 	Stack      *stack.Stack
-	Frames     []*frame.Frame
-	frameStore []*frame.Frame
+	Frames     []core.Frame
+	frameStore []core.Frame
 	captured   map[int]bool
 	callStack  []string
 }
@@ -65,8 +66,8 @@ func NewEvaluator() *Evaluator {
 	global.Index = 0
 	e := &Evaluator{
 		Stack:      stack.NewStack(1024),
-		Frames:     []*frame.Frame{global},
-		frameStore: []*frame.Frame{global},
+		Frames:     []core.Frame{global},
+		frameStore: []core.Frame{global},
 		captured:   make(map[int]bool),
 		callStack:  []string{"(top level)"},
 	}
@@ -78,21 +79,25 @@ func NewEvaluator() *Evaluator {
 	return e
 }
 
+func (e *Evaluator) Callstack() []string {
+	return e.callStack
+}
+
 // currentFrame returns the active frame (top of frame stack).
-func (e *Evaluator) currentFrame() *frame.Frame {
+func (e *Evaluator) currentFrame() core.Frame {
 	if len(e.Frames) == 0 {
 		return nil
 	}
 	return e.Frames[len(e.Frames)-1]
 }
 
-func (e *Evaluator) pushFrame(f *frame.Frame) int {
-	idx := f.Index
+func (e *Evaluator) pushFrame(f core.Frame) int {
+	idx := f.GetIndex()
 	if idx < 0 {
 		// Frame not yet in frameStore, add it
 		idx = len(e.frameStore)
 		e.frameStore = append(e.frameStore, f)
-		f.Index = idx
+		f.SetIndex(idx)
 	}
 	e.Frames = append(e.Frames, f)
 	return idx
@@ -103,25 +108,18 @@ func (e *Evaluator) currentFrameIndex() int {
 		return -1
 	}
 	current := e.Frames[len(e.Frames)-1]
-	return current.Index
-}
-
-func (e *Evaluator) getFrameByIndex(idx int) *frame.Frame {
-	if idx < 0 || idx >= len(e.frameStore) {
-		return nil
-	}
-	return e.frameStore[idx]
+	return current.GetIndex()
 }
 
 // evalFunc is a type-specific evaluation function
-type evalFunc func(*Evaluator, value.Value) (value.Value, *verror.Error)
+type evalFunc func(core.Evaluator, core.Value) (core.Value, error)
 
 // evalDispatch maps value types to their evaluation functions.
 // Initialized at package load time.
-var evalDispatch map[value.ValueType]evalFunc
+var evalDispatch map[core.ValueType]evalFunc
 
 func init() {
-	evalDispatch = map[value.ValueType]evalFunc{
+	evalDispatch = map[core.ValueType]evalFunc{
 		value.TypeInteger:  evalLiteral,
 		value.TypeString:   evalLiteral,
 		value.TypeLogic:    evalLiteral,
@@ -143,36 +141,41 @@ func init() {
 }
 
 // evalLiteral handles all literal types that evaluate to themselves
-func evalLiteral(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+func evalLiteral(e core.Evaluator, val core.Value) (core.Value, error) {
 	return val, nil
 }
 
 // evalBlock handles block evaluation (deferred - returns self)
-func evalBlock(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+func evalBlock(e core.Evaluator, val core.Value) (core.Value, error) {
 	return val, nil
 }
 
 // evalFunction handles function evaluation (returns self)
-func evalFunction(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+func evalFunction(e core.Evaluator, val core.Value) (core.Value, error) {
 	return val, nil
 }
 
 // evalAction handles action evaluation (returns self)
 // Actions are first-class values like functions
-func evalAction(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+func evalAction(e core.Evaluator, val core.Value) (core.Value, error) {
 	return val, nil
 }
 
 // evalParenDispatch handles paren evaluation
-func evalParenDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
-	return e.evalParen(val)
+func evalParenDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
+	block, ok := value.AsBlock(val)
+	if !ok {
+		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
+	}
+
+	return e.Do_Blk(block.Elements)
 }
 
 // evalWordDispatch handles word evaluation
-func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
+func evalWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
 	// Check for breakpoints before evaluating word (T153)
 	if debug.GlobalDebugger != nil {
-		wordStr, ok := val.AsWord()
+		wordStr, ok := value.AsWord(val)
 		if ok && debug.GlobalDebugger.HasBreakpoint(wordStr) {
 			// Breakpoint hit - for now, just continue evaluation
 			// REPL integration will handle pause/inspect in future work
@@ -183,34 +186,34 @@ func evalWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error
 					Word:      "debug",
 					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
 					Duration:  0,
-					Depth:     len(e.callStack),
+					Depth:     len(e.Callstack()),
 				})
 			}
 		}
 	}
-	return e.evalWord(val)
+	return evalWord(e, val)
 }
 
 // evalSetWordDispatch handles set-word evaluation (error in isolation)
-func evalSetWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
-	wordStr, _ := val.AsWord()
+func evalSetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
+	wordStr, _ := value.AsWord(val)
 	return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
 }
 
 // evalGetWordDispatch handles get-word evaluation
-func evalGetWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
-	return e.evalGetWord(val)
+func evalGetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
+	return evalGetWord(e, val)
 }
 
 // evalLitWordDispatch handles lit-word evaluation
 // Lit-word ('word) evaluates to the corresponding word (word)
-func evalLitWordDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
-	return value.WordVal(val.Payload.(string)), nil
+func evalLitWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
+	return value.WordVal(val.GetPayload().(string)), nil
 }
 
 // evalPathDispatch handles path evaluation
-func evalPathDispatch(e *Evaluator, val value.Value) (value.Value, *verror.Error) {
-	return e.evalPath(val)
+func evalPathDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
+	return evalPath(e, val)
 }
 
 // popFrame removes the active frame and returns its store index.
@@ -220,13 +223,12 @@ func (e *Evaluator) popFrame() int {
 	}
 	frm := e.Frames[len(e.Frames)-1]
 	e.Frames = e.Frames[:len(e.Frames)-1]
-	idx := frm.Index
+	idx := frm.GetIndex()
 	if !e.captured[idx] {
 		// Release non-captured frames for GC by clearing store entry
 		e.frameStore[idx] = nil
-		frm.Index = -1
-	} else if frm.Type != frame.FrameClosure {
-		frm.Type = frame.FrameClosure
+	} else if frm.GetType() != frame.FrameClosure {
+		frm.ChangeType(frame.FrameClosure)
 	}
 	return idx
 }
@@ -256,17 +258,20 @@ func (e *Evaluator) captureCallStack() []string {
 	return where
 }
 
-func (e *Evaluator) annotateError(err *verror.Error, vals []value.Value, idx int) *verror.Error {
+func (e *Evaluator) annotateError(err error, vals []core.Value, idx int) error {
 	if err == nil {
 		return nil
 	}
-	if idx >= 0 && idx < len(vals) && err.Near == "" {
-		err.SetNear(verror.CaptureNear(vals, idx))
-	}
-	if len(err.Where) == 0 {
-		where := e.captureCallStack()
-		if len(where) > 0 {
-			err.SetWhere(where)
+	// TODO: VERIFY that this works
+	if verr, ok := err.(*verror.Error); ok {
+		if idx >= 0 && idx < len(vals) && verr.Near == "" {
+			verr.SetNear(verror.CaptureNear(vals, idx))
+		}
+		if len(verr.Where) == 0 {
+			where := e.captureCallStack()
+			if len(where) > 0 {
+				verr.SetWhere(where)
+			}
 		}
 	}
 	return err
@@ -295,30 +300,41 @@ func (e *Evaluator) CurrentFrameIndex() int {
 // Feature 002: Used by object native to register object frames.
 // NOTE: This does NOT push the frame onto the active frame stack (e.Frames).
 // Use PushFrameContext to make it active.
-func (e *Evaluator) RegisterFrame(f *frame.Frame) int {
+func (e *Evaluator) RegisterFrame(f core.Frame) int {
 	// Check if frame is already registered
-	if f.Index >= 0 {
-		return f.Index
+	if f.GetIndex() >= 0 {
+		return f.GetIndex()
 	}
 
 	// Add to store
 	idx := len(e.frameStore)
 	e.frameStore = append(e.frameStore, f)
-	f.Index = idx
+	f.SetIndex(idx)
 	return idx
 }
 
 // GetFrameByIndex retrieves a frame from the store by its index.
 // Feature 002: Used by path traversal to access object frames.
-func (e *Evaluator) GetFrameByIndex(idx int) *frame.Frame {
-	return e.getFrameByIndex(idx)
+func (e *Evaluator) GetFrameByIndex(idx int) core.Frame {
+	if idx < 0 || idx >= len(e.frameStore) {
+		return nil
+	}
+	return e.frameStore[idx]
 }
 
 // PushFrameContext temporarily makes a frame the active context for evaluation.
 // Feature 002: Used by object native to evaluate initializers in object context.
 // Returns the frame index.
-func (e *Evaluator) PushFrameContext(f *frame.Frame) int {
-	return e.pushFrame(f)
+func (e *Evaluator) PushFrameContext(f core.Frame) int {
+	idx := f.GetIndex()
+	if idx < 0 {
+		// Frame not yet in frameStore, add it
+		idx = len(e.frameStore)
+		e.frameStore = append(e.frameStore, f)
+		f.SetIndex(idx)
+	}
+	e.Frames = append(e.Frames, f)
+	return idx
 }
 
 // PopFrameContext removes the active frame context.
@@ -328,16 +344,16 @@ func (e *Evaluator) PopFrameContext() {
 }
 
 // lookup searches for a word through the active frame chain.
-func (e *Evaluator) Lookup(symbol string) (value.Value, bool) {
+func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	frame := e.currentFrame()
 	for frame != nil {
 		if val, ok := frame.Get(symbol); ok {
 			return val, true
 		}
-		if frame.Parent == -1 {
+		if frame.GetParent() == -1 {
 			break
 		}
-		frame = e.getFrameByIndex(frame.Parent)
+		frame = e.GetFrameByIndex(frame.GetParent())
 	}
 	return value.NoneVal(), false
 }
@@ -354,22 +370,22 @@ func (e *Evaluator) Lookup(symbol string) (value.Value, bool) {
 // - Lit-words ('word): Return word as-is
 //
 // Returns the evaluated value and any error encountered.
-func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) Do_Next(val core.Value) (core.Value, error) {
 	// Trace instrumentation (Feature 002, T025)
 	// Per FR-015: emit trace events when tracing is enabled
 	var traceStart time.Time
 	var traceWord string
 	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
 		traceStart = time.Now()
-		if val.Type.IsWord() {
-			if w, ok := val.AsWord(); ok {
+		if value.IsWord(val.GetType()) {
+			if w, ok := value.AsWord(val); ok {
 				traceWord = w
 			}
 		}
 	}
 
 	// Type-based dispatch using dispatch table
-	evalFn, found := evalDispatch[val.Type]
+	evalFn, found := evalDispatch[val.GetType()]
 	if !found {
 		result := value.NoneVal()
 		err := verror.NewInternalError("unknown value type in Do_Next", [3]string{})
@@ -399,20 +415,20 @@ func (e *Evaluator) Do_Next(val value.Value) (value.Value, *verror.Error) {
 // Returns the last result, or none if block is empty.
 //
 // Special handling for set-words: evaluates next value and binds result.
-func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) Do_Blk(vals []core.Value) (core.Value, error) {
 	if len(vals) == 0 {
 		return value.NoneVal(), nil
 	}
 
-	var lastResult value.Value = value.NoneVal()
-	var err *verror.Error
+	var lastResult core.Value = value.NoneVal()
+	var err error
 
 	// Simple loop: evaluate each value, passing lastResult forward
 	for i := 0; i < len(vals); i++ {
 		val := vals[i]
 
 		// Special case: set-word consumes next value
-		if val.Type == value.TypeSetWord {
+		if val.GetType() == value.TypeSetWord {
 			lastResult, err = e.evalSetWord(val, vals, &i)
 			if err != nil {
 				return value.NoneVal(), e.annotateError(err, vals, i)
@@ -435,7 +451,7 @@ func (e *Evaluator) Do_Blk(vals []value.Value) (value.Value, *verror.Error) {
 // next position to continue reading from. This mirrors the Lua evaluator's
 // eval_expr helper used when collecting function arguments and refinement
 // values.
-func (e *Evaluator) evalExpressionFromTokens(tokens []value.Value, pos int, lastResult value.Value) (value.Value, int, *verror.Error) {
+func (e *Evaluator) evalExpressionFromTokens(tokens []core.Value, pos int, lastResult core.Value) (core.Value, int, error) {
 	if pos >= len(tokens) {
 		return value.NoneVal(), pos, verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
 	}
@@ -443,7 +459,7 @@ func (e *Evaluator) evalExpressionFromTokens(tokens []value.Value, pos int, last
 	idx := pos
 	current := tokens[idx]
 
-	if current.Type == value.TypeSetWord {
+	if current.GetType() == value.TypeSetWord {
 		result, err := e.evalSetWord(current, tokens, &idx)
 		if err != nil {
 			return value.NoneVal(), pos, err
@@ -459,20 +475,9 @@ func (e *Evaluator) evalExpressionFromTokens(tokens []value.Value, pos int, last
 	return result, idx + 1, nil
 }
 
-// evalParen evaluates the contents of a paren and returns the result.
-// Special handling: if paren starts with a word that's a native, treat it as a function call.
-func (e *Evaluator) evalParen(val value.Value) (value.Value, *verror.Error) {
-	block, ok := val.AsBlock()
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
-	}
-
-	return e.Do_Blk(block.Elements)
-}
-
 // invokeFunction is the unified function invocation handler for both native and user-defined functions.
 // It collects arguments (with infix and refinement support) and dispatches to the appropriate execution path.
-func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
 	startIdx := *idx
 	name := functionDisplayName(fn)
 
@@ -508,15 +513,14 @@ func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []value.Value, 
 }
 
 // callNative invokes a native function with the given arguments and refinements.
-func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []value.Value, refValues map[string]value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) (core.Value, error) {
 	if fn.Type != value.FuncNative {
 		return value.NoneVal(), verror.NewInternalError("callNative expects native function", [3]string{})
 	}
 
 	// Create an adapter to bridge Evaluator (returns *verror.Error)
 	// to value.Evaluator (returns error)
-	adapter := evaluatorAdapter{e}
-	result, err := fn.Native(posArgs, refValues, adapter)
+	result, err := fn.Native(posArgs, refValues, e)
 
 	// Convert error back to *verror.Error
 	if err == nil {
@@ -535,22 +539,22 @@ type evaluatorAdapter struct {
 	eval *Evaluator
 }
 
-func (a evaluatorAdapter) Do_Blk(vals []value.Value) (value.Value, error) {
+func (a evaluatorAdapter) Do_Blk(vals []core.Value) (core.Value, error) {
 	result, err := a.eval.Do_Blk(vals)
 	return result, err // *verror.Error implements error interface
 }
 
-func (a evaluatorAdapter) Do_Next(val value.Value) (value.Value, error) {
+func (a evaluatorAdapter) Do_Next(val core.Value) (core.Value, error) {
 	result, err := a.eval.Do_Next(val)
 	return result, err // *verror.Error implements error interface
 }
 
-func (a evaluatorAdapter) GetFrameByIndex(idx int) *frame.Frame {
+func (a evaluatorAdapter) GetFrameByIndex(idx int) core.Frame {
 	return a.eval.GetFrameByIndex(idx)
 }
 
 // Frame management methods required by native functions (especially object)
-func (a evaluatorAdapter) RegisterFrame(f *frame.Frame) int {
+func (a evaluatorAdapter) RegisterFrame(f core.Frame) int {
 	return a.eval.RegisterFrame(f)
 }
 
@@ -558,7 +562,7 @@ func (a evaluatorAdapter) MarkFrameCaptured(idx int) {
 	a.eval.MarkFrameCaptured(idx)
 }
 
-func (a evaluatorAdapter) PushFrameContext(f *frame.Frame) int {
+func (a evaluatorAdapter) PushFrameContext(f core.Frame) int {
 	return a.eval.PushFrameContext(f)
 }
 
@@ -567,13 +571,13 @@ func (a evaluatorAdapter) PopFrameContext() {
 }
 
 // Lookup method required by some native functions
-func (a evaluatorAdapter) Lookup(symbol string) (value.Value, bool) {
+func (a evaluatorAdapter) Lookup(symbol string) (core.Value, bool) {
 	return a.eval.Lookup(symbol)
 }
 
 // invokeAction is the action invocation handler that performs type-based dispatch.
 // It collects arguments (like invokeFunction) and then dispatches to the type-specific implementation.
-func (e *Evaluator) invokeAction(action *value.ActionValue, vals []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) invokeAction(action *value.ActionValue, vals []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
 	startIdx := *idx
 	name := action.Name
 
@@ -615,12 +619,12 @@ func (e *Evaluator) invokeAction(action *value.ActionValue, vals []value.Value, 
 //
 // lastResult is used for infix operators - if the function is infix, lastResult
 // becomes the first argument.
-func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value, idx *int, lastResult value.Value) (value.Value, *verror.Error) {
-	if val.Type != value.TypeWord {
+func (e *Evaluator) evaluateWithFunctionCall(val core.Value, seq []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
+	if val.GetType() != value.TypeWord {
 		return e.Do_Next(val)
 	}
 
-	wordStr, ok := val.AsWord()
+	wordStr, ok := value.AsWord(val)
 	if !ok {
 		return e.Do_Next(val)
 	}
@@ -631,14 +635,14 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 	}
 
 	// Handle functions
-	if resolved.Type == value.TypeFunction {
-		fn, _ := resolved.AsFunction()
+	if resolved.GetType() == value.TypeFunction {
+		fn, _ := value.AsFunction(resolved)
 		return e.invokeFunction(fn, seq, idx, lastResult)
 	}
 
 	// Handle actions
-	if resolved.Type == value.TypeAction {
-		action, _ := resolved.AsAction()
+	if resolved.GetType() == value.TypeAction {
+		action, _ := value.AsAction(resolved)
 		return e.invokeAction(action, seq, idx, lastResult)
 	}
 
@@ -647,11 +651,11 @@ func (e *Evaluator) evaluateWithFunctionCall(val value.Value, seq []value.Value,
 
 // isRefinement checks if a value is a refinement (word starting with "--")
 // Corresponds to is_refinement in Lua implementation
-func isRefinement(val value.Value) bool {
-	if val.Type != value.TypeWord {
+func isRefinement(val core.Value) bool {
+	if val.GetType() != value.TypeWord {
 		return false
 	}
-	wordStr, ok := val.AsWord()
+	wordStr, ok := value.AsWord(val)
 	if !ok {
 		return false
 	}
@@ -668,14 +672,14 @@ func isRefinement(val value.Value) bool {
 // Modifies refValues map in-place with found refinements.
 func (e *Evaluator) readRefinements(
 	fn *value.FunctionValue,
-	tokens []value.Value,
+	tokens []core.Value,
 	pos int,
 	refSpecs map[string]value.ParamSpec,
-	refValues map[string]value.Value,
+	refValues map[string]core.Value,
 	refProvided map[string]bool,
-) (int, *verror.Error) {
+) (int, error) {
 	for pos < len(tokens) && isRefinement(tokens[pos]) {
-		wordStr, _ := tokens[pos].AsWord()
+		wordStr, _ := value.AsWord(tokens[pos])
 		refName := strings.TrimPrefix(wordStr, "--")
 
 		spec, exists := refSpecs[refName]
@@ -723,13 +727,13 @@ func (e *Evaluator) readRefinements(
 //
 // If fn.Infix is true AND lastResult is not none, lastResult becomes the first argument.
 // This matches the Lua behavior: if fn.infix then table.insert(args, last_value)
-func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens []value.Value, lastResult value.Value) ([]value.Value, map[string]value.Value, int, *verror.Error) {
+func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens []core.Value, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
 	displayName := functionDisplayName(fn)
 
 	// Separate positional params from refinements
 	positional := make([]value.ParamSpec, 0, len(fn.Params))
 	refSpecs := make(map[string]value.ParamSpec)
-	refValues := make(map[string]value.Value)
+	refValues := make(map[string]core.Value)
 	refProvided := make(map[string]bool)
 
 	for _, spec := range fn.Params {
@@ -746,12 +750,12 @@ func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens
 		positional = append(positional, spec)
 	}
 
-	posArgs := make([]value.Value, len(positional))
+	posArgs := make([]core.Value, len(positional))
 	pos := 0
 	paramIndex := 0
 
 	// Infix handling (like Lua: if fn.infix then add last_value as first arg)
-	useInfix := fn.Infix && lastResult.Type != value.TypeNone
+	useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
 	if useInfix {
 		if len(positional) == 0 {
 			return nil, nil, 0, verror.NewScriptError(
@@ -783,7 +787,7 @@ func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens
 		}
 
 		// Read the argument (eval or raw, based on paramSpec.Eval)
-		var arg value.Value
+		var arg core.Value
 		if paramSpec.Eval {
 			var nextPos int
 			arg, nextPos, err = e.evalExpressionFromTokens(tokens, pos, value.NoneVal())
@@ -811,7 +815,7 @@ func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens
 	return posArgs, refValues, pos, nil
 }
 
-func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) (core.Value, error) {
 	parent := fn.Parent
 	if parent == -1 {
 		parent = 0
@@ -854,8 +858,8 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []value.Val
 }
 
 // evalWord looks up a word in the current frame and evaluates the result.
-func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
-	wordStr, ok := val.AsWord()
+func evalWord(e core.Evaluator, val core.Value) (core.Value, error) {
+	wordStr, ok := value.AsWord(val)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
 	}
@@ -879,9 +883,9 @@ func (e *Evaluator) evalWord(val value.Value) (value.Value, *verror.Error) {
 // - val: The set-word value (contains word symbol)
 // - vals: The full sequence of values being evaluated
 // - i: Pointer to current index (will be advanced to skip consumed value)
-func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (value.Value, *verror.Error) {
+func (e *Evaluator) evalSetWord(val core.Value, vals []core.Value, i *int) (core.Value, error) {
 	// Extract word symbol from set-word
-	wordStr, ok := val.AsWord()
+	wordStr, ok := value.AsWord(val)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("set-word value does not contain string", [3]string{})
 	}
@@ -912,8 +916,8 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 		return value.NoneVal(), e.annotateError(err, vals, *i)
 	}
 
-	if result.Type == value.TypeFunction {
-		if fnVal, ok := result.AsFunction(); ok && fnVal.Name == "" {
+	if result.GetType() == value.TypeFunction {
+		if fnVal, ok := value.AsFunction(result); ok && fnVal.Name == "" {
 			fnVal.Name = wordStr
 		}
 	}
@@ -931,8 +935,9 @@ func (e *Evaluator) evalSetWord(val value.Value, vals []value.Value, i *int) (va
 // - Get-Word: Look up Symbol in Binding frame, return without evaluation
 //
 // This is the difference from regular word evaluation which re-evaluates the result.
-func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
-	wordStr, ok := val.AsWord()
+
+func evalGetWord(e core.Evaluator, val core.Value) (core.Value, error) {
+	wordStr, ok := value.AsWord(val)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
 	}
@@ -949,7 +954,7 @@ func (e *Evaluator) evalGetWord(val value.Value) (value.Value, *verror.Error) {
 // pathTraversal represents a path resolution result with intermediate values
 type pathTraversal struct {
 	segments []value.PathSegment // original segments from path expression
-	values   []value.Value       // resolved values at each level (includes base)
+	values   []core.Value        // resolved values at each level (includes base)
 }
 
 // traversePath performs path segment resolution, optionally stopping before the last segment.
@@ -962,19 +967,19 @@ type pathTraversal struct {
 // Returns:
 //   - pathTraversal with segments and resolved values at each level
 //   - error if traversal fails (no-value, none-path, type mismatch, out of range)
-func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool) (*pathTraversal, *verror.Error) {
+func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast bool) (*pathTraversal, error) {
 	if len(path.Segments) == 0 {
 		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
 	}
 
 	tr := &pathTraversal{
 		segments: path.Segments,
-		values:   make([]value.Value, 0, len(path.Segments)),
+		values:   make([]core.Value, 0, len(path.Segments)),
 	}
 
 	// Resolve base (first segment)
 	firstSeg := path.Segments[0]
-	var base value.Value
+	var base core.Value
 
 	if firstSeg.Type == value.PathSegmentWord {
 		wordStr, ok := firstSeg.Value.(string)
@@ -1011,25 +1016,25 @@ func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool
 		current := tr.values[len(tr.values)-1]
 
 		// Check for none mid-path
-		if current.Type == value.TypeNone {
+		if current.GetType() == value.TypeNone {
 			return nil, verror.NewScriptError(verror.ErrIDNonePath, [3]string{})
 		}
 
 		switch seg.Type {
 		case value.PathSegmentWord:
 			// Object field access
-			if current.Type != value.TypeObject {
-				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{current.Type.String(), "", ""})
+			if current.GetType() != value.TypeObject {
+				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{value.TypeToString(current.GetType()), "", ""})
 			}
 
-			obj, _ := current.AsObject()
+			obj, _ := value.AsObject(current)
 			fieldName, ok := seg.Value.(string)
 			if !ok {
 				return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
 			}
 
 			// Look up field in object's frame
-			objFrame := e.getFrameByIndex(obj.FrameIndex)
+			objFrame := e.GetFrameByIndex(obj.FrameIndex)
 			if objFrame == nil {
 				return nil, verror.NewInternalError("object frame not found", [3]string{})
 			}
@@ -1039,7 +1044,7 @@ func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool
 				// Check parent prototype chain
 				currentProto := obj.ParentProto
 				for currentProto != nil && !found {
-					protoFrame := e.getFrameByIndex(currentProto.FrameIndex)
+					protoFrame := e.GetFrameByIndex(currentProto.FrameIndex)
 					if protoFrame == nil {
 						break
 					}
@@ -1066,16 +1071,16 @@ func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool
 				return nil, verror.NewInternalError("index segment does not contain int64", [3]string{})
 			}
 
-			if current.Type == value.TypeBlock {
-				block, _ := current.AsBlock()
+			if current.GetType() == value.TypeBlock {
+				block, _ := value.AsBlock(current)
 				// 1-based indexing
 				if index < 1 || index > int64(len(block.Elements)) {
 					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for block of length %d", index, len(block.Elements)), "", ""})
 				}
 				tr.values = append(tr.values, block.Elements[index-1])
 
-			} else if current.Type == value.TypeString {
-				str, _ := current.AsString()
+			} else if current.GetType() == value.TypeString {
+				str, _ := value.AsString(current)
 				runes := []rune(str.String())
 				if index < 1 || index > int64(len(runes)) {
 					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for string of length %d", index, len(runes)), "", ""})
@@ -1097,7 +1102,7 @@ func (e *Evaluator) traversePath(path *value.PathExpression, stopBeforeLast bool
 
 // parsePathString converts a dot-separated path string into a PathExpression.
 // Used by evalSetPath to leverage the centralized traversePath logic.
-func parsePathString(pathStr string) (*value.PathExpression, *verror.Error) {
+func parsePathString(pathStr string) (*value.PathExpression, error) {
 	parts := strings.Split(pathStr, ".")
 	if len(parts) < 2 {
 		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
@@ -1125,7 +1130,7 @@ func parsePathString(pathStr string) (*value.PathExpression, *verror.Error) {
 
 // assignToPathTarget performs the final assignment operation after path traversal.
 // This handles assignment to object fields or block elements.
-func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pathStr string) (value.Value, *verror.Error) {
+func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pathStr string) (core.Value, error) {
 	if len(tr.segments) < 2 {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
 	}
@@ -1140,7 +1145,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 	}
 
 	// Check if container can be mutated
-	if container.Type == value.TypeNone {
+	if container.GetType() == value.TypeNone {
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot assign to none value", "", ""})
 	}
 
@@ -1152,11 +1157,11 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 			return value.NoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
 		}
 
-		if container.Type != value.TypeBlock {
+		if container.GetType() != value.TypeBlock {
 			return value.NoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
 		}
 
-		block, _ := container.AsBlock()
+		block, _ := value.AsBlock(container)
 		if index < 1 || index > int64(len(block.Elements)) {
 			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range", index), "", ""})
 		}
@@ -1169,12 +1174,12 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 			return value.NoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
 		}
 
-		if container.Type != value.TypeObject {
+		if container.GetType() != value.TypeObject {
 			return value.NoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
 		}
 
-		obj, _ := container.AsObject()
-		objFrame := e.getFrameByIndex(obj.FrameIndex)
+		obj, _ := value.AsObject(container)
+		objFrame := e.GetFrameByIndex(obj.FrameIndex)
 		if objFrame == nil {
 			return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
 		}
@@ -1184,7 +1189,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 		if !found {
 			// Check parent chain to see if it's inherited
 			if obj.ParentProto != nil {
-				parentFrame := e.getFrameByIndex(obj.ParentProto.FrameIndex)
+				parentFrame := e.GetFrameByIndex(obj.ParentProto.FrameIndex)
 				if parentFrame != nil {
 					_, found = parentFrame.Get(fieldName)
 				}
@@ -1219,19 +1224,19 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal value.Value, pa
 // - no-such-field: object field not found
 // - index-out-of-range: block/string index invalid
 // - path-type-mismatch: path applied to unsupported type
-func (e *Evaluator) evalPath(val value.Value) (value.Value, *verror.Error) {
-
-	if val.Type != value.TypePath {
-		return value.NoneVal(), verror.NewInternalError("evalPath called with non-path type", [3]string{val.Type.String(), "", ""})
+func evalPath(e core.Evaluator, val core.Value) (core.Value, error) {
+	if val.GetType() != value.TypePath {
+		typeString := value.TypeToString(val.GetType())
+		return value.NoneVal(), verror.NewInternalError("evalPath called with non-path type", [3]string{typeString, "", ""})
 	}
 
-	path, ok := val.AsPath()
+	path, ok := value.AsPath(val)
 	if !ok {
-		return value.NoneVal(), verror.NewInternalError("path value does not contain PathExpression - payload type mismatch", [3]string{fmt.Sprintf("payload=%T", val.Payload), "", ""})
+		return value.NoneVal(), verror.NewInternalError("path value does not contain PathExpression - payload type mismatch", [3]string{fmt.Sprintf("payload=%T", val.GetPayload()), "", ""})
 	}
 
 	// Use centralized traversal logic for full path resolution
-	tr, err := e.traversePath(path, false)
+	tr, err := traversePath(e, path, false)
 	if err != nil {
 		return value.NoneVal(), err
 	}
@@ -1247,7 +1252,7 @@ func (e *Evaluator) evalPath(val value.Value) (value.Value, *verror.Error) {
 // - Traverse to penultimate segment
 // - Update final segment in target container (object frame or block)
 // - Error if attempting to assign to literal or immutable target
-func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (value.Value, *verror.Error) {
+func (e *Evaluator) evalSetPath(pathStr string, vals []core.Value, i *int) (core.Value, error) {
 	// Parse path string into PathExpression
 	path, err := parsePathString(pathStr)
 	if err != nil {
@@ -1260,7 +1265,7 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-path without value", "", ""})
 	}
 
-	var result value.Value
+	var result core.Value
 	nextVal := vals[*i]
 
 	result, err = e.evaluateWithFunctionCall(nextVal, vals, i, value.NoneVal())
@@ -1269,7 +1274,7 @@ func (e *Evaluator) evalSetPath(pathStr string, vals []value.Value, i *int) (val
 	}
 
 	// Use centralized traversal to reach the penultimate container
-	tr, err := e.traversePath(path, true)
+	tr, err := traversePath(e, path, true)
 	if err != nil {
 		return value.NoneVal(), err
 	}

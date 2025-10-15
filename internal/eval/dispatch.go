@@ -2,6 +2,7 @@
 package eval
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -18,7 +19,7 @@ import (
 // Returns the result of the type-specific function or an error.
 //
 // Feature: 004-dynamic-function-invocation
-func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Value, refValues map[string]value.Value) (value.Value, *verror.Error) {
+func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []core.Value, refValues map[string]core.Value) (core.Value, error) {
 	// Validate we have at least one argument (the dispatch argument)
 	if len(posArgs) == 0 {
 		return value.NoneVal(), verror.NewScriptError(
@@ -28,7 +29,7 @@ func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Va
 	}
 
 	// Get the type of the first argument (dispatch type)
-	firstArgType := posArgs[0].Type
+	firstArgType := posArgs[0].GetType()
 
 	// Look up type frame in global TypeRegistry
 	typeFrame, found := frame.GetTypeFrame(firstArgType)
@@ -36,7 +37,7 @@ func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Va
 		// Type has no type frame - no implementations registered
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDActionNoImpl,
-			[3]string{action.Name, firstArgType.String(), ""},
+			[3]string{action.Name, value.TypeToString(firstArgType), ""},
 		)
 	}
 
@@ -46,17 +47,18 @@ func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Va
 		// Type frame exists but doesn't have this action
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDActionNoImpl,
-			[3]string{action.Name, firstArgType.String(), ""},
+			[3]string{action.Name, value.TypeToString(firstArgType), ""},
 		)
 	}
 
 	// Extract function from value
-	fn, ok := funcVal.AsFunction()
+
+	fn, ok := value.AsFunction(funcVal)
 	if !ok {
 		// Internal error: type frame contains non-function value
 		return value.NoneVal(), verror.NewInternalError(
 			"action-frame-corrupt",
-			[3]string{action.Name, firstArgType.String(), "type frame binding is not a function"},
+			[3]string{action.Name, value.TypeToString(firstArgType), "type frame binding is not a function"},
 		)
 	}
 
@@ -65,7 +67,7 @@ func (e *Evaluator) DispatchAction(action *value.ActionValue, posArgs []value.Va
 	if fn.Type != value.FuncNative {
 		return value.NoneVal(), verror.NewInternalError(
 			"action-frame-corrupt",
-			[3]string{action.Name, firstArgType.String(), "type frame contains non-native function"},
+			[3]string{action.Name, value.TypeToString(firstArgType), "type frame contains non-native function"},
 		)
 	}
 

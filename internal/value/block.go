@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // BlockValue represents an ordered sequence of values.
@@ -15,14 +17,14 @@ import (
 // - Parens evaluate their contents immediately
 // - Both share the same underlying structure
 type BlockValue struct {
-	Elements []Value // ordered value sequence
-	Index    int     // current series position (0-based)
+	Elements []core.Value // ordered value sequence
+	Index    int          // current series position (0-based)
 }
 
 // NewBlockValue creates a BlockValue with given elements.
-func NewBlockValue(elements []Value) *BlockValue {
+func NewBlockValue(elements []core.Value) *BlockValue {
 	if elements == nil {
-		elements = []Value{}
+		elements = []core.Value{}
 	}
 	return &BlockValue{
 		Elements: elements,
@@ -64,17 +66,17 @@ func (b *BlockValue) Equals(other *BlockValue) bool {
 // Series operations (contracts/series.md)
 
 // First returns the first element (error if empty handled by caller).
-func (b *BlockValue) First() Value {
+func (b *BlockValue) First() core.Value {
 	return b.Elements[0]
 }
 
 // Last returns the last element (error if empty handled by caller).
-func (b *BlockValue) Last() Value {
+func (b *BlockValue) Last() core.Value {
 	return b.Elements[len(b.Elements)-1]
 }
 
 // At returns element at index (bounds checking by caller).
-func (b *BlockValue) At(index int) Value {
+func (b *BlockValue) At(index int) core.Value {
 	return b.Elements[index]
 }
 
@@ -91,7 +93,7 @@ func (b *BlockValue) Append(val Value) {
 // Insert adds a value at current position (in-place mutation).
 func (b *BlockValue) Insert(val Value) {
 	// Insert at current index, shifting remaining elements right
-	b.Elements = append(b.Elements[:b.Index], append([]Value{val}, b.Elements[b.Index:]...)...)
+	b.Elements = append(b.Elements[:b.Index], append([]core.Value{val}, b.Elements[b.Index:]...)...)
 }
 
 // Remove removes a specified number of elements from the current position (in-place mutation).
@@ -114,7 +116,7 @@ func (b *BlockValue) SetIndex(idx int) {
 // Clone creates a shallow copy of the block.
 // Elements are shared (not deep cloned).
 func (b *BlockValue) Clone() *BlockValue {
-	elemsCopy := make([]Value, len(b.Elements))
+	elemsCopy := make([]core.Value, len(b.Elements))
 	copy(elemsCopy, b.Elements)
 	return &BlockValue{
 		Elements: elemsCopy,

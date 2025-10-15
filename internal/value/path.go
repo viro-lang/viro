@@ -1,6 +1,10 @@
 package value
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
+)
 
 // PathExpression represents a path during evaluation (Feature 002).
 //
@@ -12,7 +16,7 @@ import "fmt"
 // Note: TypePath is transient and should not persist outside evaluation context
 type PathExpression struct {
 	Segments []PathSegment // Path components (e.g., "user", "address", "city")
-	Base     Value         // Starting value for traversal
+	Base     core.Value    // Starting value for traversal
 }
 
 // PathSegment represents a single step in a path traversal.
@@ -44,7 +48,7 @@ func (t PathSegmentType) String() string {
 }
 
 // NewPath creates a PathExpression with the given segments and base value.
-func NewPath(segments []PathSegment, base Value) *PathExpression {
+func NewPath(segments []PathSegment, base core.Value) *PathExpression {
 	return &PathExpression{
 		Segments: segments,
 		Base:     base,
@@ -83,10 +87,10 @@ func PathVal(path *PathExpression) Value {
 }
 
 // AsPath extracts the PathExpression from a Value, or returns nil if wrong type.
-func (v Value) AsPath() (*PathExpression, bool) {
-	if v.Type != TypePath {
+func AsPath(v core.Value) (*PathExpression, bool) {
+	if v.GetType() != TypePath {
 		return nil, false
 	}
-	path, ok := v.Payload.(*PathExpression)
+	path, ok := v.GetPayload().(*PathExpression)
 	return path, ok
 }

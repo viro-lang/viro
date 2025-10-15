@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -575,7 +576,7 @@ func QueryPort(portVal value.Value) (value.Value, error) {
 		Parent:     -1,
 		Manifest: value.ObjectManifest{
 			Words: make([]string, 0, len(metadata)),
-			Types: make([]value.ValueType, 0, len(metadata)),
+			Types: make([]core.ValueType, 0, len(metadata)),
 		},
 	}
 

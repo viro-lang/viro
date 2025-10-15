@@ -43,7 +43,7 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 			}
 		}
 
-		fn := value.NewNativeFunction(
+		fn := NewNativeFunction(
 			name,
 			params,
 			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
@@ -199,8 +199,8 @@ and other execution events to a log file. Supports filtering and custom output d
 			value.NewRefinementSpec("locals", false),
 			value.NewRefinementSpec("stack", false),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
+		func(args []value.Value, refValues map[string]value.Value, evaluator value.Evaluator) (value.Value, error) {
+			reverseAdapter := &nativeEvaluatorAdapter{evaluator}
 			result, err := Debug(args, refValues, reverseAdapter.unwrap())
 			if err == nil {
 				return result, nil

@@ -1,6 +1,10 @@
 package value
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
+)
 
 // ObjectInstance represents an object with frame-based field storage (Feature 002).
 //
@@ -59,10 +63,10 @@ func ObjectVal(obj *ObjectInstance) Value {
 }
 
 // AsObject extracts the ObjectInstance from a Value, or returns nil if wrong type.
-func (v Value) AsObject() (*ObjectInstance, bool) {
-	if v.Type != TypeObject {
+func AsObject(v core.Value) (*ObjectInstance, bool) {
+	if v.GetType() != TypeObject {
 		return nil, false
 	}
-	obj, ok := v.Payload.(*ObjectInstance)
+	obj, ok := v.GetPayload().(*ObjectInstance)
 	return obj, ok
 }

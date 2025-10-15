@@ -5,7 +5,9 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -19,7 +21,7 @@ import (
 // - If falsy: returns none without evaluating block
 //
 // This is a special native that needs access to evaluator to evaluate blocks.
-func When(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("when", 2, len(args))
 	}
@@ -28,7 +30,7 @@ func When(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	condition := args[0]
 
 	// Second argument must be a block (NOT evaluated yet)
-	if args[1].Type != value.TypeBlock {
+	if args[1].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("when", "block", args[1])
 	}
 
@@ -38,7 +40,7 @@ func When(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 
 	if isTruthy {
 		// Evaluate the block
-		block, _ := args[1].AsBlock()
+		block, _ := value.AsBlock(args[1])
 		return eval.Do_Blk(block.Elements)
 	}
 
@@ -53,7 +55,7 @@ func When(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 // - If truthy: evaluates true-block and returns result
 // - If falsy: evaluates false-block and returns result
 // - Both blocks required (error if missing)
-func If(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
 		return value.NoneVal(), arityError("if", 3, len(args))
 	}
@@ -62,12 +64,12 @@ func If(args []value.Value, refValues map[string]value.Value, eval Evaluator) (v
 	condition := args[0]
 
 	// Second argument must be a block (true branch)
-	if args[1].Type != value.TypeBlock {
+	if args[1].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("if", "block for true branch", args[1])
 	}
 
 	// Third argument must be a block (false branch)
-	if args[2].Type != value.TypeBlock {
+	if args[2].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("if", "block for false branch", args[2])
 	}
 
@@ -76,12 +78,12 @@ func If(args []value.Value, refValues map[string]value.Value, eval Evaluator) (v
 
 	if isTruthy {
 		// Evaluate true-block
-		block, _ := args[1].AsBlock()
+		block, _ := value.AsBlock(args[1])
 		return eval.Do_Blk(block.Elements)
 	}
 
 	// Evaluate false-block
-	block, _ := args[2].AsBlock()
+	block, _ := value.AsBlock(args[2])
 	return eval.Do_Blk(block.Elements)
 }
 
@@ -91,13 +93,13 @@ func If(args []value.Value, refValues map[string]value.Value, eval Evaluator) (v
 // - Count must be a non-negative integer
 // - Executes block count times
 // - Returns result of last iteration, or none if count is 0
-func Loop(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("loop", 2, len(args))
 	}
 
 	// First argument must be an integer
-	count, ok := args[0].AsInteger()
+	count, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), typeError("loop", "integer for count", args[0])
 	}
@@ -111,11 +113,11 @@ func Loop(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	}
 
 	// Second argument must be a block
-	if args[1].Type != value.TypeBlock {
+	if args[1].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("loop", "block for body", args[1])
 	}
 
-	block, _ := args[1].AsBlock()
+	block, _ := value.AsBlock(args[1])
 
 	// If count is 0, return none without executing
 	if count == 0 {
@@ -123,8 +125,8 @@ func Loop(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	}
 
 	// Execute block count times
-	var result value.Value
-	var err *verror.Error
+	var result core.Value
+	var err error
 	for i := int64(0); i < count; i++ {
 		result, err = eval.Do_Blk(block.Elements)
 		if err != nil {
@@ -142,23 +144,23 @@ func Loop(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 // - Body must be a block
 // - Loops while condition evaluates to truthy
 // - Returns result of last iteration, or none if never executed
-func While(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("while", 2, len(args))
 	}
 
 	// First argument must be a block (condition)
-	if args[0].Type != value.TypeBlock {
+	if args[0].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("while", "block for condition", args[0])
 	}
 
 	// Second argument must be a block (body)
-	if args[1].Type != value.TypeBlock {
+	if args[1].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("while", "block for body", args[1])
 	}
 
-	conditionBlock, _ := args[0].AsBlock()
-	bodyBlock, _ := args[1].AsBlock()
+	conditionBlock, _ := value.AsBlock(args[0])
+	bodyBlock, _ := value.AsBlock(args[1])
 
 	result := value.NoneVal()
 
@@ -196,18 +198,18 @@ func While(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 // - Creating blocks with computed values
 // - String interpolation patterns
 // - Building data structures dynamically
-func Reduce(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("reduce", 1, len(args))
 	}
 
 	// Argument must be a block
-	if args[0].Type != value.TypeBlock {
+	if args[0].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("reduce", "block", args[0])
 	}
 
-	block, _ := args[0].AsBlock()
-	reducedElements := make([]value.Value, len(block.Elements))
+	block, _ := value.AsBlock(args[0])
+	reducedElements := make([]core.Value, len(block.Elements))
 
 	// Evaluate each element in the block
 	for i, elem := range block.Elements {
@@ -227,12 +229,12 @@ func Reduce(args []value.Value, refValues map[string]value.Value, eval Evaluator
 // - none → false
 // - false (logic value) → false
 // - All other values → true (including 0, "", [])
-func ToTruthy(val value.Value) bool {
-	switch val.Type {
+func ToTruthy(val core.Value) bool {
+	switch val.GetType() {
 	case value.TypeNone:
 		return false
 	case value.TypeLogic:
-		b, _ := val.AsLogic()
+		b, _ := value.AsLogic(val)
 		return b
 	default:
 		// All other values are truthy (including 0, "", [])
@@ -398,7 +400,7 @@ func TraceQuery(args []value.Value, refValues map[string]value.Value, eval Evalu
 //	--step | --next | --finish | --continue | --locals | --stack
 //
 // T148-T152: Implements debug commands
-func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Debug(args []value.Value, refValues map[string]value.Value, eval eval.Evaluator) (value.Value, *verror.Error) {
 	if debug.GlobalDebugger == nil {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
@@ -440,9 +442,7 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 
 		// Validate word exists in current context (lookup covers all scopes)
 		var found bool
-		if lookup, ok := eval.(wordLookup); ok {
-			_, found = lookup.Lookup(word)
-		}
+		_, found = eval.Lookup(word)
 		if !found {
 			return value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDNoValue,
@@ -494,21 +494,10 @@ func Debug(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 	}
 
 	if val, ok := refValues["locals"]; ok && ToTruthy(val) {
-		// Return object with local bindings from current frame
-		// This requires access to the evaluator's current frame
-		// For now, return empty object
-		mgr, ok := eval.(frameManager)
-		if !ok {
-			return value.NoneVal(), verror.NewInternalError(
-				"internal-error",
-				[3]string{"debug --locals", "frame-manager-unavailable", ""},
-			)
-		}
-
 		// Create empty object for now (TODO: populate with actual locals)
 		fields := []string{}
 		initializers := make(map[string][]value.Value)
-		return instantiateObject(mgr, eval, -1, nil, fields, initializers)
+		return instantiateObject(eval, -1, nil, fields, initializers)
 	}
 
 	if val, ok := refValues["stack"]; ok && ToTruthy(val) {

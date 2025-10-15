@@ -1,6 +1,7 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -14,15 +15,15 @@ func arityError(name string, expected, actual int) *verror.Error {
 }
 
 // typeError returns a script error indicating a type mismatch for a native argument.
-func typeError(name, expectedType string, actual value.Value) *verror.Error {
+func typeError(name, expectedType string, actual core.Value) error {
 	return verror.NewScriptError(
 		verror.ErrIDTypeMismatch,
-		[3]string{name, expectedType, actual.Type.String()},
+		[3]string{name, expectedType, value.TypeToString(actual.GetType())},
 	)
 }
 
 // mathTypeError is a convenience wrapper for integer expectations in math natives.
-func mathTypeError(name string, actual value.Value) *verror.Error {
+func mathTypeError(name string, actual core.Value) error {
 	return typeError(name, "integer", actual)
 }
 

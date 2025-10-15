@@ -2,6 +2,7 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -32,12 +33,12 @@ func CreateAction(name string, params []value.ParamSpec) value.Value {
 // The function is bound into the type frame so it can be resolved during dispatch.
 //
 // Feature: 004-dynamic-function-invocation
-func RegisterActionImpl(typ value.ValueType, actionName string, fn *value.FunctionValue) {
+func RegisterActionImpl(typ core.ValueType, actionName string, fn *value.FunctionValue) {
 	// Get the type frame for this value type
 	typeFrame, found := frame.GetTypeFrame(typ)
 	if !found {
 		// Internal error: type frame should exist (created by InitTypeFrames)
-		panic("RegisterActionImpl: type frame not found for " + typ.String())
+		panic("RegisterActionImpl: type frame not found for " + value.TypeToString(typ))
 	}
 
 	// Bind the function into the type frame

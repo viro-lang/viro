@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -18,7 +19,7 @@ import (
 // - Boundary handling: clamps to available elements
 // - Format: "value1 value2 value3 >>> ERROR_HERE <<< value4 value5 value6"
 // - For decimal values, includes magnitude and scale metadata
-func CaptureNear(values []value.Value, index int) string {
+func CaptureNear(values []core.Value, index int) string {
 	if len(values) == 0 || index < 0 || index >= len(values) {
 		return ""
 	}
@@ -55,8 +56,8 @@ func CaptureNear(values []value.Value, index int) string {
 
 // formatValueWithMetadata formats a value with type-specific metadata.
 // For decimal values, includes scale information for better diagnostics.
-func formatValueWithMetadata(v value.Value) string {
-	if v.Type == value.TypeDecimal {
+func formatValueWithMetadata(v core.Value) string {
+	if v.GetType() == value.TypeDecimal {
 		if dec, ok := v.AsDecimal(); ok && dec != nil {
 			// Include scale metadata for decimal diagnostics
 			return fmt.Sprintf("%s[scale:%d]", dec.String(), dec.Scale)
