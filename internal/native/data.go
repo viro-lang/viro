@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -158,7 +157,7 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 	return fields, initializers, nil
 }
 
-func instantiateObject(eval eval.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
+func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
 	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
 	frameIdx := eval.RegisterFrame(objFrame)
@@ -207,7 +206,7 @@ func isReservedField(name string) bool {
 //     [word: value] for explicit initialization
 //   - Returns object! instance with dedicated frame
 //   - Evaluates initializers in object's context
-func Object(args []core.Value, refValues map[string]core.Value, eval eval.Evaluator) (core.Value, error) {
+func Object(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("object", 1, len(args))
 	}
@@ -235,7 +234,7 @@ func Object(args []core.Value, refValues map[string]core.Value, eval eval.Evalua
 // - Alias for object but with isolated scope (no parent frame)
 // - spec: block describing fields and optional initial values
 // - Returns object! instance with isolated frame
-func Context(args []core.Value, refValues map[string]core.Value, eval eval.Evaluator) (core.Value, error) {
+func Context(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("context", 1, len(args))
 	}
@@ -260,7 +259,7 @@ func Context(args []core.Value, refValues map[string]core.Value, eval eval.Evalu
 // - When target is word "object!" create new base object (prototype = none)
 // - When target is object value (or word resolving to object), use it as prototype
 // - Spec must be block describing fields/initializers (same as object)
-func Make(args []core.Value, refValues map[string]core.Value, eval eval.Evaluator) (core.Value, error) {
+func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("make", 2, len(args))
 	}

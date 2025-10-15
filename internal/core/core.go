@@ -38,6 +38,7 @@ type Frame interface {
 type Evaluator interface {
 	CurrentFrameIndex() int
 	RegisterFrame(frame Frame) int
+	MarkFrameCaptured(idx int)
 	GetFrameByIndex(idx int) Frame
 	PushFrameContext(frame Frame) int
 	PopFrameContext()
