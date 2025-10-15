@@ -3,6 +3,7 @@ package native
 import (
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -21,17 +22,17 @@ type frameProvider interface {
 // - Parameters block defines positional parameters and refinements
 // - Body block captures function code (stored as block value)
 // - Returns a user-defined function with captured lexical parent
-func Fn(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("fn", 2, len(args))
 	}
 
 	paramsVal := args[0]
-	if paramsVal.Type != value.TypeBlock {
+	if paramsVal.GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("fn parameters", "block", paramsVal)
 	}
 
-	paramsBlock, ok := paramsVal.AsBlock()
+	paramsBlock, ok := value.AsBlock(paramsVal)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("fn parameters missing block payload", [3]string{})
 	}
@@ -42,11 +43,11 @@ func Fn(args []value.Value, refValues map[string]value.Value, eval Evaluator) (v
 	}
 
 	bodyVal := args[1]
-	if bodyVal.Type != value.TypeBlock {
+	if bodyVal.GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("fn body", "block", bodyVal)
 	}
 
-	bodyBlock, ok := bodyVal.AsBlock()
+	bodyBlock, ok := value.AsBlock(bodyVal)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("fn body missing block payload", [3]string{})
 	}
@@ -66,7 +67,7 @@ func Fn(args []value.Value, refValues map[string]value.Value, eval Evaluator) (v
 	return value.FuncVal(fnValue), nil
 }
 
-func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error) {
+func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 	specs := make([]value.ParamSpec, 0, len(block.Elements))
 	seen := make(map[string]struct{})
 
@@ -76,15 +77,15 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 		paramName := ""
 
 		// Obsługa lit-wordów
-		if elem.Type == value.TypeLitWord {
-			wordStr, ok := elem.AsWord()
+		if elem.GetType() == value.TypeLitWord {
+			wordStr, ok := value.AsWord(elem)
 			if !ok {
 				return nil, invalidParamSpecError(elem.String())
 			}
 			eval = false
 			paramName = wordStr
-		} else if elem.Type == value.TypeWord {
-			wordStr, ok := elem.AsWord()
+		} else if elem.GetType() == value.TypeWord {
+			wordStr, ok := value.AsWord(elem)
 			if !ok {
 				return nil, invalidParamSpecError(elem.String())
 			}
@@ -115,7 +116,7 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, *verror.Error)
 			seen[name] = struct{}{}
 
 			takesValue := false
-			if i+1 < len(block.Elements) && block.Elements[i+1].Type == value.TypeBlock {
+			if i+1 < len(block.Elements) && block.Elements[i+1].GetType() == value.TypeBlock {
 				takesValue = true
 				i++ // Skip metadata block (type/docstring)
 			}
