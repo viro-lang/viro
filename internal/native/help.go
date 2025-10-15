@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // buildRegistryFromFrame builds a registry map from all function values in a frame.
@@ -14,8 +14,8 @@ import (
 func buildRegistryFromFrame(f *frame.Frame) map[string]*value.FunctionValue {
 	registry := make(map[string]*value.FunctionValue)
 	for _, binding := range f.GetAll() {
-		if binding.Value.Type == value.TypeFunction {
-			if fn, ok := binding.Value.AsFunction(); ok {
+		if binding.Value.GetType() == value.TypeFunction {
+			if fn, ok := value.AsFunction(binding.Value); ok {
 				registry[binding.Symbol] = fn
 			}
 		}
@@ -32,7 +32,7 @@ func buildRegistryFromFrame(f *frame.Frame) map[string]*value.FunctionValue {
 // With one arg: shows function help or category listing
 //
 // NOTE: This function does NOT evaluate its argument, so it accepts word literals.
-func Help(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Help(args []core.Value, eval core.Evaluator) (core.Value, error) {
 	// Handle 0 or 1 arguments
 	if len(args) > 1 {
 		return value.NoneVal(), arityError("?", 1, len(args))
@@ -53,9 +53,9 @@ func Help(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 
 	// Get the word name to look up
 	var lookupName string
-	if sym, ok := arg.AsWord(); ok {
+	if sym, ok := value.AsWord(arg); ok {
 		lookupName = sym
-	} else if str, ok := arg.AsString(); ok {
+	} else if str, ok := value.AsString(arg); ok {
 		lookupName = str.String()
 	} else {
 		return value.NoneVal(), typeError("?", "word or string", arg)
@@ -95,7 +95,7 @@ func Help(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 // Words lists all available function names.
 // USAGE: words
 // Returns: block of words (function names)
-func Words(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Words(args []core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("words", 0, len(args))
 	}
@@ -104,7 +104,7 @@ func Words(args []value.Value, eval Evaluator) (value.Value, *verror.Error) {
 	rootFrame := eval.GetFrameByIndex(0)
 	registry := buildRegistryFromFrame(rootFrame)
 
-	names := make([]value.Value, 0, len(registry))
+	names := make([]core.Value, 0, len(registry))
 	for name := range registry {
 		names = append(names, value.WordVal(name))
 	}
