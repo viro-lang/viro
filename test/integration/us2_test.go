@@ -5,13 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func captureEvalOutput(t *testing.T, e *eval.Evaluator, script string) (string, value.Value, *verror.Error) {
+func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, core.Value, error) {
 	t.Helper()
 
 	oldStdout := os.Stdout
@@ -44,7 +43,7 @@ func captureEvalOutput(t *testing.T, e *eval.Evaluator, script string) (string, 
 	return string(data), result, evalErr
 }
 
-func runScript(t *testing.T, e *eval.Evaluator, script string) (value.Value, *verror.Error) {
+func runScript(t *testing.T, e core.Evaluator, script string) (core.Value, error) {
 	t.Helper()
 	vals, parseErr := parse.Parse(script)
 	if parseErr != nil {
