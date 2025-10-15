@@ -6,6 +6,7 @@ package native
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -32,7 +33,7 @@ func RegisterControlNatives(rootFrame *frame.Frame) {
 		}
 
 		// Bind to root frame
-		rootFrame.Bind(name, value.FuncVal(fn))
+		rootFrame.Bind(name, fn)
 
 		// Mark as registered
 		registered[name] = true
@@ -45,9 +46,8 @@ func RegisterControlNatives(rootFrame *frame.Frame) {
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := When(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := When(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -76,9 +76,8 @@ the result of the body block. If the condition is false, returns none. This is a
 			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
 			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := If(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := If(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -108,9 +107,8 @@ This is a two-branch conditional (if-then-else).`,
 			value.NewParamSpec("count", true), // evaluated
 			value.NewParamSpec("body", false), // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Loop(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Loop(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -138,9 +136,8 @@ The count must be a non-negative integer. Returns the result of the last iterati
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := While(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := While(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -170,9 +167,8 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 			value.NewParamSpec("params", false), // NOT evaluated (block)
 			value.NewParamSpec("body", false),   // NOT evaluated (block)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Fn(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Fn(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}

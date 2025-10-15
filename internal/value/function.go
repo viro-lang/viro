@@ -175,3 +175,12 @@ func (f *FunctionValue) GetRefinement(name string) *ParamSpec {
 	}
 	return nil
 }
+
+func (f *FunctionValue) Equals(other core.Value) bool {
+	if other.GetType() == TypeFunction {
+		// TODO: fix the equals implementation
+		return other.GetPayload() == f
+
+	}
+	return false
+}
