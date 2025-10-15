@@ -114,10 +114,7 @@ func (s *Stack) Reserve(n int) {
 	needed := s.Top + n
 	if needed > cap(s.Data) {
 		// Grow capacity
-		newCap := cap(s.Data) * 2
-		if newCap < needed {
-			newCap = needed
-		}
+		newCap := max(cap(s.Data)*2, needed)
 		newData := make([]core.Value, len(s.Data), newCap)
 		copy(newData, s.Data)
 		s.Data = newData

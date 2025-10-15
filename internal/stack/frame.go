@@ -43,7 +43,7 @@ func (s *Stack) NewFrame(fn *value.FunctionValue, argCount int) int {
 	s.Push(value.FuncVal(fn))                   // Function metadata
 
 	// Push placeholder none values for arguments (caller will set)
-	for i := 0; i < argCount; i++ {
+	for range argCount {
 		s.Push(value.NoneVal())
 	}
 

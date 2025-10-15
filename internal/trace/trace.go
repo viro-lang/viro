@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -112,22 +113,14 @@ func (ts *TraceSession) Emit(event TraceEvent) {
 
 	// Apply filters
 	if len(ts.filters.IncludeWords) > 0 {
-		found := false
-		for _, w := range ts.filters.IncludeWords {
-			if event.Word == w {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(ts.filters.IncludeWords, event.Word)
 		if !found {
 			return
 		}
 	}
 
-	for _, w := range ts.filters.ExcludeWords {
-		if event.Word == w {
-			return
-		}
+	if slices.Contains(ts.filters.ExcludeWords, event.Word) {
+		return
 	}
 
 	if ts.filters.MinDuration > 0 && time.Duration(event.Duration) < ts.filters.MinDuration {

@@ -264,7 +264,7 @@ func Find(args []core.Value, refinements map[string]core.Value) (core.Value, err
 		if isLast {
 			for i := len(runes) - len(soughtRunes); i >= 0; i-- {
 				match := true
-				for j := 0; j < len(soughtRunes); j++ {
+				for j := range soughtRunes {
 					if runes[i+j] != soughtRunes[j] {
 						match = false
 						break
@@ -277,7 +277,7 @@ func Find(args []core.Value, refinements map[string]core.Value) (core.Value, err
 		} else {
 			for i := 0; i <= len(runes)-len(soughtRunes); i++ {
 				match := true
-				for j := 0; j < len(soughtRunes); j++ {
+				for j := range soughtRunes {
 					if runes[i+j] != soughtRunes[j] {
 						match = false
 						break
@@ -390,20 +390,14 @@ func Take(args []core.Value) (core.Value, error) {
 	case value.TypeBlock:
 		blk, _ := value.AsBlock(series)
 		start := blk.GetIndex()
-		end := start + count
-		if end > blk.Length() {
-			end = blk.Length()
-		}
+		end := min(start+count, blk.Length())
 		newElements := blk.Elements[start:end]
 		blk.SetIndex(end)
 		return value.BlockVal(newElements), nil
 	case value.TypeString:
 		str, _ := value.AsString(series)
 		start := str.Index()
-		end := start + count
-		if end > str.Length() {
-			end = str.Length()
-		}
+		end := min(start+count, str.Length())
 		newRunes := str.Runes()[start:end]
 		str.SetIndex(end)
 		return value.StrVal(string(newRunes)), nil

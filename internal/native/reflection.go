@@ -182,17 +182,8 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	obj, _ := value.AsObject(val)
 
-	// Type-assert to access frame operations
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"values-of", "frame-manager-unavailable", ""},
-		)
-	}
-
 	// Get object's frame
-	objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
 	if objFrame == nil {
 		return value.NoneVal(), verror.NewInternalError(
 			"internal-error",

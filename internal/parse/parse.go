@@ -101,20 +101,11 @@ func snippetAround(input string, pos int) string {
 		pos = 0
 	}
 	if pos >= len(runes) {
-		pos = len(runes) - 1
-		if pos < 0 {
-			pos = 0
-		}
+		pos = max(len(runes)-1, 0)
 	}
 	window := 12
-	start := pos - window
-	if start < 0 {
-		start = 0
-	}
-	end := pos + window + 1
-	if end > len(runes) {
-		end = len(runes)
-	}
+	start := max(pos-window, 0)
+	end := min(pos+window+1, len(runes))
 	return string(runes[start:end])
 }
 

@@ -3,6 +3,7 @@ package parse
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -11,7 +12,7 @@ func TestPathTokenization(t *testing.T) {
 	tests := []struct {
 		name      string
 		input     string
-		wantType  value.ValueType
+		wantType  core.ValueType
 		wantSegs  int
 		checkPath func(*testing.T, *value.PathExpression)
 	}{
@@ -100,11 +101,11 @@ func TestPathTokenization(t *testing.T) {
 			}
 
 			val := vals[0]
-			if val.Type != tt.wantType {
-				t.Fatalf("Expected type %s, got %s", tt.wantType, val.Type)
+			if val.GetType() != tt.wantType {
+				t.Fatalf("Expected type %s, got %s", value.TypeToString(tt.wantType), value.TypeToString(val.GetType()))
 			}
 
-			path, ok := val.AsPath()
+			path, ok := value.AsPath(val)
 			if !ok {
 				t.Fatalf("Failed to extract path from value")
 			}
@@ -121,72 +122,72 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		check func(*testing.T, []value.Value)
+		check func(*testing.T, []core.Value)
 	}{
 		{
 			name:  "set-word followed by word",
 			input: "name: \"Alice\"",
-			check: func(t *testing.T, vals []value.Value) {
+			check: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 2 {
 					t.Fatalf("Expected 2 values, got %d", len(vals))
 				}
-				if vals[0].Type != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", vals[0].Type)
+				if vals[0].GetType() != value.TypeSetWord {
+					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				if vals[1].Type != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", vals[1].Type)
+				if vals[1].GetType() != value.TypeString {
+					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
 				}
 			},
 		},
 		{
 			name:  "path followed by set-word",
 			input: "obj.name user: \"Bob\"",
-			check: func(t *testing.T, vals []value.Value) {
+			check: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 3 {
 					t.Fatalf("Expected 3 values, got %d", len(vals))
 				}
-				if vals[0].Type != value.TypePath {
-					t.Errorf("Expected TypePath, got %s", vals[0].Type)
+				if vals[0].GetType() != value.TypePath {
+					t.Errorf("Expected TypePath, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				if vals[1].Type != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", vals[1].Type)
+				if vals[1].GetType() != value.TypeSetWord {
+					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[1].GetType()))
 				}
-				if vals[2].Type != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", vals[2].Type)
+				if vals[2].GetType() != value.TypeString {
+					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[2].GetType()))
 				}
 			},
 		},
 		{
 			name:  "set-path (path used for assignment)",
 			input: "obj.name: \"Alice\"",
-			check: func(t *testing.T, vals []value.Value) {
+			check: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 2 {
 					t.Fatalf("Expected 2 values, got %d: %v", len(vals), vals)
 				}
-				if vals[0].Type != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord for set-path, got %s", vals[0].Type)
+				if vals[0].GetType() != value.TypeSetWord {
+					t.Errorf("Expected TypeSetWord for set-path, got %s", value.TypeToString(vals[0].GetType()))
 				}
 				// The set-word should contain the full path string
-				word, ok := vals[0].AsWord()
+				word, ok := value.AsWord(vals[0])
 				if !ok || word != "obj.name" {
 					t.Errorf("Expected set-word to be 'obj.name', got %q", word)
 				}
-				if vals[1].Type != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", vals[1].Type)
+				if vals[1].GetType() != value.TypeString {
+					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
 				}
 			},
 		},
 		{
 			name:  "nested set-path",
 			input: "user.address.city: \"Portland\"",
-			check: func(t *testing.T, vals []value.Value) {
+			check: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 2 {
 					t.Fatalf("Expected 2 values, got %d", len(vals))
 				}
-				if vals[0].Type != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", vals[0].Type)
+				if vals[0].GetType() != value.TypeSetWord {
+					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := vals[0].AsWord()
+				word, ok := value.AsWord(vals[0])
 				if !ok || word != "user.address.city" {
 					t.Errorf("Expected set-word to be 'user.address.city', got %q", word)
 				}

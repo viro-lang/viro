@@ -3,6 +3,7 @@ package parse
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -11,7 +12,7 @@ func TestDecimalLiteralParsing(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
-		wantType   value.ValueType
+		wantType   core.ValueType
 		wantString string
 	}{
 		{
@@ -82,8 +83,8 @@ func TestDecimalLiteralParsing(t *testing.T) {
 			}
 
 			val := vals[0]
-			if val.Type != tt.wantType {
-				t.Errorf("Expected type %s, got %s", tt.wantType, val.Type)
+			if val.GetType() != tt.wantType {
+				t.Errorf("Expected type %s, got %s", value.TypeToString(tt.wantType), value.TypeToString(val.GetType()))
 			}
 
 			// Note: We check Contains instead of exact match because decimal
@@ -91,7 +92,7 @@ func TestDecimalLiteralParsing(t *testing.T) {
 			valStr := val.String()
 			if tt.wantType == value.TypeDecimal {
 				// For decimals, just verify it's a decimal type
-				if _, ok := val.AsDecimal(); !ok {
+				if _, ok := value.AsDecimal(val); !ok {
 					t.Errorf("Expected decimal value, got %v", val)
 				}
 			} else {

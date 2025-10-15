@@ -27,13 +27,13 @@ func RegisterHelpNatives(rootFrame core.Frame) {
 
 		if doc != nil && len(doc.Parameters) == arity {
 			// Use parameter names from documentation
-			for i := 0; i < arity; i++ {
+			for i := range arity {
 				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
 			}
 		} else {
 			// Fallback to generic names if documentation is missing or mismatched
 			paramNames := []string{"value", "left", "right", "base", "exponent"}
-			for i := 0; i < arity; i++ {
+			for i := range arity {
 				if i < len(paramNames) {
 					params[i] = value.NewParamSpec(paramNames[i], true)
 				} else {

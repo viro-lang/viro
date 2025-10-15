@@ -126,7 +126,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	// Execute block count times
 	var result core.Value
 	var err error
-	for i := int64(0); i < count; i++ {
+	for range count {
 		result, err = eval.Do_Blk(block.Elements)
 		if err != nil {
 			return value.NoneVal(), err

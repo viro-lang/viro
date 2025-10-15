@@ -66,21 +66,6 @@ func TypeQ(args []core.Value) (core.Value, error) {
 	return value.WordVal(typeName), nil
 }
 
-// frameManager interface for object natives to access frame operations.
-type frameManager interface {
-	RegisterFrame(f *frame.Frame) int
-	GetFrameByIndex(idx int) *frame.Frame
-	MarkFrameCaptured(idx int)
-	PushFrameContext(f *frame.Frame) int
-	PopFrameContext()
-	Do_Blk(vals []core.Value) (core.Value, error)
-}
-
-// wordLookup interface for natives that need to check word existence.
-type wordLookup interface {
-	Lookup(symbol string) (core.Value, bool)
-}
-
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
 	fields := []string{}
 	initializers := make(map[string][]core.Value)
@@ -367,17 +352,8 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	if targetVal.GetType() == value.TypeObject {
 		obj, _ := value.AsObject(targetVal)
 
-		// Type-assert to access frame operations
-		mgr, ok := eval.(frameManager)
-		if !ok {
-			return value.NoneVal(), verror.NewInternalError(
-				"internal-error",
-				[3]string{"select", "frame-manager-unavailable", ""},
-			)
-		}
-
 		// Look up field in object's frame
-		objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+		objFrame := eval.GetFrameByIndex(obj.FrameIndex)
 		if objFrame == nil {
 			return value.NoneVal(), verror.NewInternalError(
 				"internal-error",
@@ -394,7 +370,7 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		// Check parent prototype chain
 		current := obj.ParentProto
 		for current != nil {
-			parentFrame := mgr.GetFrameByIndex(current.FrameIndex)
+			parentFrame := eval.GetFrameByIndex(current.FrameIndex)
 			if parentFrame != nil {
 				if result, found := parentFrame.Get(fieldName); found {
 					trace.TraceObjectFieldRead(current.FrameIndex, fieldName, true)
@@ -484,17 +460,8 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	obj, _ := value.AsObject(targetVal)
 
-	// Type-assert to access frame operations
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"put", "frame-manager-unavailable", ""},
-		)
-	}
-
 	// Get object's frame
-	objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
 	if objFrame == nil {
 		return value.NoneVal(), verror.NewInternalError(
 			"internal-error",
