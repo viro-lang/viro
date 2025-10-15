@@ -139,14 +139,14 @@ func SortBlock(b *BlockValue) {
 	sort.SliceStable(b.Elements, func(i, j int) bool {
 		elemI := b.Elements[i]
 		elemJ := b.Elements[j]
-		switch elemI.Type {
+		switch elemI.GetType() {
 		case TypeInteger:
-			i, _ := elemI.AsInteger()
-			j, _ := elemJ.AsInteger()
+			i, _ := AsInteger(elemI)
+			j, _ := AsInteger(elemJ)
 			return i < j
 		case TypeString:
-			i, _ := elemI.AsString()
-			j, _ := elemJ.AsString()
+			i, _ := AsString(elemI)
+			j, _ := AsString(elemJ)
 			return i.String() < j.String()
 		default:
 			return false
