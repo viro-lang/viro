@@ -12,7 +12,7 @@ import (
 )
 
 // Decimal constructor native - creates decimal from integer, decimal, or string
-func DecimalConstructor(args []core.Value) (core.Value, error) {
+func DecimalConstructor(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("decimal-constructor-arity", [3]string{"1", "", ""})
 	}
@@ -66,13 +66,13 @@ func findDecimalPoint(s string) int {
 }
 
 // Pow computes base^exponent for decimal values
-func Pow(args []core.Value) (core.Value, error) {
+func Pow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), verror.NewMathError("pow-arity", [3]string{"2", "", ""})
 	}
 
-	base := promoteToDecimal(args[0])
-	exp := promoteToDecimal(args[1])
+	base := promoteToDecimal(args[0], nil, nil)
+	exp := promoteToDecimal(args[1], nil, nil)
 
 	if base == nil || exp == nil {
 		return value.NoneVal(), verror.NewMathError("pow-invalid-type", [3]string{value.TypeToString(args[0].GetType()), value.TypeToString(args[1].GetType()), ""})
@@ -91,12 +91,12 @@ func Pow(args []core.Value) (core.Value, error) {
 }
 
 // Sqrt computes square root of a decimal value
-func Sqrt(args []core.Value) (core.Value, error) {
+func Sqrt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("sqrt-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("sqrt-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -114,12 +114,12 @@ func Sqrt(args []core.Value) (core.Value, error) {
 }
 
 // Exp computes e^x for decimal values
-func Exp(args []core.Value) (core.Value, error) {
+func Exp(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("exp-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("exp-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -137,12 +137,12 @@ func Exp(args []core.Value) (core.Value, error) {
 }
 
 // Log computes natural logarithm for decimal values
-func Log(args []core.Value) (core.Value, error) {
+func Log(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("log-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("log-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -160,12 +160,12 @@ func Log(args []core.Value) (core.Value, error) {
 }
 
 // Log10 computes base-10 logarithm for decimal values
-func Log10(args []core.Value) (core.Value, error) {
+func Log10(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("log-10-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("log-10-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -183,12 +183,12 @@ func Log10(args []core.Value) (core.Value, error) {
 }
 
 // Sin computes sine for decimal values (input in radians)
-func Sin(args []core.Value) (core.Value, error) {
+func Sin(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("sin-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("sin-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -202,12 +202,12 @@ func Sin(args []core.Value) (core.Value, error) {
 }
 
 // Cos computes cosine for decimal values (input in radians)
-func Cos(args []core.Value) (core.Value, error) {
+func Cos(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("cos-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("cos-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -221,12 +221,12 @@ func Cos(args []core.Value) (core.Value, error) {
 }
 
 // Tan computes tangent for decimal values (input in radians)
-func Tan(args []core.Value) (core.Value, error) {
+func Tan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("tan-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("tan-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -240,12 +240,12 @@ func Tan(args []core.Value) (core.Value, error) {
 }
 
 // Asin computes arcsine for decimal values (result in radians)
-func Asin(args []core.Value) (core.Value, error) {
+func Asin(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("asin-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("asin-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -262,12 +262,12 @@ func Asin(args []core.Value) (core.Value, error) {
 }
 
 // Acos computes arccosine for decimal values (result in radians)
-func Acos(args []core.Value) (core.Value, error) {
+func Acos(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("acos-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("acos-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -284,12 +284,12 @@ func Acos(args []core.Value) (core.Value, error) {
 }
 
 // Atan computes arctangent for decimal values (result in radians)
-func Atan(args []core.Value) (core.Value, error) {
+func Atan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("atan-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("atan-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -302,12 +302,12 @@ func Atan(args []core.Value) (core.Value, error) {
 }
 
 // Round rounds a decimal to specified places with optional rounding mode
-func Round(args []core.Value) (core.Value, error) {
+func Round(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 1 || len(args) > 3 {
 		return value.NoneVal(), verror.NewMathError("round-arity", [3]string{"1-3", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("round-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -330,12 +330,12 @@ func Round(args []core.Value) (core.Value, error) {
 }
 
 // Ceil returns the smallest integer >= the decimal value
-func Ceil(args []core.Value) (core.Value, error) {
+func Ceil(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("ceil-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("ceil-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -348,12 +348,12 @@ func Ceil(args []core.Value) (core.Value, error) {
 }
 
 // Floor returns the largest integer <= the decimal value
-func Floor(args []core.Value) (core.Value, error) {
+func Floor(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("floor-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("floor-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -366,12 +366,12 @@ func Floor(args []core.Value) (core.Value, error) {
 }
 
 // Truncate returns the integer part of a decimal value
-func Truncate(args []core.Value) (core.Value, error) {
+func Truncate(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), verror.NewMathError("truncate-arity", [3]string{"1", "", ""})
 	}
 
-	val := promoteToDecimal(args[0])
+	val := promoteToDecimal(args[0], nil, nil)
 	if val == nil {
 		return value.NoneVal(), verror.NewMathError("truncate-invalid-type", [3]string{value.TypeToString(args[0].GetType()), "", ""})
 	}
@@ -384,7 +384,7 @@ func Truncate(args []core.Value) (core.Value, error) {
 }
 
 // promoteToDecimal converts integer or decimal values to *decimal.Big
-func promoteToDecimal(v core.Value) *decimal.Big {
+func promoteToDecimal(v core.Value, _ map[string]core.Value, _ core.Evaluator) *decimal.Big {
 	switch v.GetType() {
 	case value.TypeDecimal:
 		if dec, ok := value.AsDecimal(v); ok && dec != nil {

@@ -54,8 +54,8 @@ func mathOp(name string, args []core.Value, intFn intOp, decFn decimalOp) (core.
 
 // decimalMathOp handles decimal arithmetic with promotion.
 func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, error) {
-	aVal := promoteToDecimal(a)
-	bVal := promoteToDecimal(b)
+	aVal := promoteToDecimal(a, nil, nil)
+	bVal := promoteToDecimal(b, nil, nil)
 	if aVal == nil || bVal == nil {
 		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
@@ -78,7 +78,7 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 // - Arguments can be integers or decimals
 // - Returns arithmetic sum with type promotion (integer + decimal → decimal)
 // - Detects overflow
-func Add(args []core.Value) (core.Value, error) {
+func Add(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return mathOp("+", args,
 		func(a, b int64) (int64, bool) {
 			// Check for overflow
@@ -103,7 +103,7 @@ func Add(args []core.Value) (core.Value, error) {
 // - Arguments can be integers or decimals
 // - Returns arithmetic difference (value1 - value2) with type promotion
 // - Detects overflow
-func Subtract(args []core.Value) (core.Value, error) {
+func Subtract(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return mathOp("-", args,
 		func(a, b int64) (int64, bool) {
 			// Check for overflow
@@ -129,7 +129,7 @@ func Subtract(args []core.Value) (core.Value, error) {
 // - Arguments can be integers or decimals
 // - Returns arithmetic product with type promotion
 // - Detects overflow
-func Multiply(args []core.Value) (core.Value, error) {
+func Multiply(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return mathOp("*", args,
 		func(a, b int64) (int64, bool) {
 			// Special cases: a == 0 or b == 0 (no overflow)
@@ -164,7 +164,7 @@ func Multiply(args []core.Value) (core.Value, error) {
 // - Both arguments must be integers
 // - Returns arithmetic quotient (truncated toward zero)
 // - Division by zero is an error
-func Divide(args []core.Value) (core.Value, error) {
+func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// Special handling for division by zero in integer case
 	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
 		if b, ok := value.AsInteger(args[1]); ok && b == 0 {
@@ -190,7 +190,7 @@ func Divide(args []core.Value) (core.Value, error) {
 // Contract: < value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 < value2, false otherwise
-func LessThan(args []core.Value) (core.Value, error) {
+func LessThan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<", 2, len(args))
 	}
@@ -213,7 +213,7 @@ func LessThan(args []core.Value) (core.Value, error) {
 // Contract: > value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 > value2, false otherwise
-func GreaterThan(args []core.Value) (core.Value, error) {
+func GreaterThan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError(">", 2, len(args))
 	}
@@ -236,7 +236,7 @@ func GreaterThan(args []core.Value) (core.Value, error) {
 // Contract: <= value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 <= value2, false otherwise
-func LessOrEqual(args []core.Value) (core.Value, error) {
+func LessOrEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<=", 2, len(args))
 	}
@@ -259,7 +259,7 @@ func LessOrEqual(args []core.Value) (core.Value, error) {
 // Contract: >= value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 >= value2, false otherwise
-func GreaterOrEqual(args []core.Value) (core.Value, error) {
+func GreaterOrEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError(">=", 2, len(args))
 	}
@@ -282,7 +282,7 @@ func GreaterOrEqual(args []core.Value) (core.Value, error) {
 // Contract: = value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 == value2, false otherwise
-func Equal(args []core.Value) (core.Value, error) {
+func Equal(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("=", 2, len(args))
 	}
@@ -305,7 +305,7 @@ func Equal(args []core.Value) (core.Value, error) {
 // Contract: <> value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 != value2, false otherwise
-func NotEqual(args []core.Value) (core.Value, error) {
+func NotEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<>", 2, len(args))
 	}
@@ -329,7 +329,7 @@ func NotEqual(args []core.Value) (core.Value, error) {
 // - Both arguments evaluated to logic (truthy conversion)
 // - Returns true if both are truthy, false otherwise
 // - Truthy: none/false → false, all others → true
-func And(args []core.Value) (core.Value, error) {
+func And(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("and", 2, len(args))
 	}
@@ -347,7 +347,7 @@ func And(args []core.Value) (core.Value, error) {
 // - Both arguments evaluated to logic (truthy conversion)
 // - Returns true if either is truthy, false if both falsy
 // - Truthy: none/false → false, all others → true
-func Or(args []core.Value) (core.Value, error) {
+func Or(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("or", 2, len(args))
 	}
@@ -365,7 +365,7 @@ func Or(args []core.Value) (core.Value, error) {
 // - Argument evaluated to logic (truthy conversion)
 // - Returns negation: true if falsy, false if truthy
 // - Truthy: none/false → false, all others → true
-func Not(args []core.Value) (core.Value, error) {
+func Not(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("not", 1, len(args))
 	}

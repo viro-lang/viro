@@ -2,6 +2,8 @@ package core
 
 type ValueType uint8
 
+type NativeFunc func(args []Value, refValues map[string]Value, eval Evaluator) (Value, error)
+
 type Value interface {
 	GetType() ValueType
 	GetPayload() any

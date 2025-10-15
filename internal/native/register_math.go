@@ -38,13 +38,7 @@ func RegisterMathNatives(rootFrame core.Frame) {
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Add(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		And,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -69,13 +63,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Subtract(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Subtract,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -100,13 +88,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Multiply(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Multiply,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -131,13 +113,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Divide(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Divide,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -163,13 +139,7 @@ Raises an error if dividing by zero.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := LessThan(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		LessThan,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -193,13 +163,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := GreaterThan(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		GreaterThan,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -223,13 +187,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := LessOrEqual(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		LessOrEqual,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -253,13 +211,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := GreaterOrEqual(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		GreaterOrEqual,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -283,13 +235,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Equal(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Equal,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -313,13 +259,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values are equ
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := NotEqual(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		NotEqual,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -344,13 +284,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values differ.
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := And(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		And,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -374,13 +308,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Or(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Or,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{
@@ -403,13 +331,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Not(args)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Not,
 	)
 	fn.Infix = false
 	fn.Doc = &NativeDoc{
@@ -427,44 +349,15 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 	registerAndBind("not", fn)
 
 	// ===== Group 4: Advanced math functions (16 functions) =====
-	// Helper function to wrap simple math functions
-	registerSimpleMathFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
-		// Extract parameter names from existing documentation
-		params := make([]value.ParamSpec, arity)
 
-		if doc != nil && len(doc.Parameters) == arity {
-			// Use parameter names from documentation
-			for i := range arity {
-				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
-			}
-		} else {
-			// Fallback to generic names if documentation is missing or mismatched
-			paramNames := []string{"value", "left", "right", "base", "exponent"}
-			for i := range arity {
-				if i < len(paramNames) {
-					params[i] = value.NewParamSpec(paramNames[i], true)
-				} else {
-					params[i] = value.NewParamSpec("arg", true)
-				}
-			}
-		}
-
-		fn := value.NewNativeFunction(
-			name,
-			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
-		)
-		fn.Doc = doc
-		registerAndBind(name, fn)
-	}
-
-	registerSimpleMathFunc("decimal", DecimalConstructor, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"decimal",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		DecimalConstructor,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Converts a value to high-precision decimal",
 		Description: `Converts an integer or string to a decimal value with arbitrary precision.
@@ -475,8 +368,17 @@ Useful for financial calculations and when standard floating-point arithmetic is
 		Returns:  "[decimal!] The decimal representation of the input value",
 		Examples: []string{`decimal 42  ; => 42.0`, `decimal "3.14159265358979323846"  ; => 3.14159265358979323846`},
 		SeeAlso:  []string{"pow", "sqrt"}, Tags: []string{"conversion", "decimal", "precision"},
-	})
-	registerSimpleMathFunc("pow", Pow, 2, &NativeDoc{
+	}
+	registerAndBind("decimal", fn)
+	fn = value.NewNativeFunction(
+		"pow",
+		[]value.ParamSpec{
+			value.NewParamSpec("base", true),
+			value.NewParamSpec("exponent", true),
+		},
+		Pow,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Raises a number to a power",
 		Description: `Calculates base raised to the exponent power (base^exponent).
@@ -488,8 +390,16 @@ Always returns a decimal for precision. Supports negative exponents for fraction
 		Returns:  "[decimal!] The result of base^exponent",
 		Examples: []string{"pow 2 8  ; => 256.0", "pow 10 -2  ; => 0.01", "pow 2.5 2  ; => 6.25"},
 		SeeAlso:  []string{"sqrt", "exp", "*"}, Tags: []string{"math", "power", "exponent"},
-	})
-	registerSimpleMathFunc("sqrt", Sqrt, 1, &NativeDoc{
+	}
+	registerAndBind("pow", fn)
+	fn = value.NewNativeFunction(
+		"sqrt",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Sqrt,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the square root of a number",
 		Description: `Returns the square root of a number. Always returns a decimal for precision.
@@ -500,8 +410,16 @@ Raises an error if the input is negative.`,
 		Returns:  "[decimal!] The square root of the input",
 		Examples: []string{"sqrt 16  ; => 4.0", "sqrt 2  ; => 1.414213562373095", "sqrt 0  ; => 0.0"},
 		SeeAlso:  []string{"pow", "exp"}, Tags: []string{"math", "root", "square"},
-	})
-	registerSimpleMathFunc("exp", Exp, 1, &NativeDoc{
+	}
+	registerAndBind("sqrt", fn)
+	fn = value.NewNativeFunction(
+		"exp",
+		[]value.ParamSpec{
+			value.NewParamSpec("exponent", true),
+		},
+		Exp,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates e raised to a power",
 		Description: `Returns e (Euler's number, approximately 2.71828) raised to the given power.
@@ -512,8 +430,16 @@ Useful for exponential growth calculations and mathematical analysis.`,
 		Returns:  "[decimal!] The value of e^exponent",
 		Examples: []string{"exp 0  ; => 1.0", "exp 1  ; => 2.718281828459045", "exp 2  ; => 7.38905609893065"},
 		SeeAlso:  []string{"log", "pow"}, Tags: []string{"math", "exponential", "euler"},
-	})
-	registerSimpleMathFunc("log", Log, 1, &NativeDoc{
+	}
+	registerAndBind("exp", fn)
+	fn = value.NewNativeFunction(
+		"log",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Log,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the natural logarithm (base e)",
 		Description: `Returns the natural logarithm (ln) of a number, which is the logarithm to base e.
@@ -524,8 +450,16 @@ The input must be positive. This is the inverse of the exp function.`,
 		Returns:  "[decimal!] The natural logarithm of the input",
 		Examples: []string{"log 1  ; => 0.0", "log 2.718281828459045  ; => 1.0", "log 10  ; => 2.302585092994046"},
 		SeeAlso:  []string{"exp", "log-10", "pow"}, Tags: []string{"math", "logarithm", "natural"},
-	})
-	registerSimpleMathFunc("log-10", Log10, 1, &NativeDoc{
+	}
+	registerAndBind("log", fn)
+	fn = value.NewNativeFunction(
+		"log-10",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Log10,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the base-10 logarithm",
 		Description: `Returns the logarithm to base 10 of a number. The input must be positive.
@@ -536,8 +470,16 @@ Useful for scientific calculations and order-of-magnitude estimations.`,
 		Returns:  "[decimal!] The base-10 logarithm of the input",
 		Examples: []string{"log-10 1  ; => 0.0", "log-10 10  ; => 1.0", "log-10 100  ; => 2.0", "log-10 1000  ; => 3.0"},
 		SeeAlso:  []string{"log", "exp", "pow"}, Tags: []string{"math", "logarithm", "base10"},
-	})
-	registerSimpleMathFunc("sin", Sin, 1, &NativeDoc{
+	}
+	registerAndBind("log-10", fn)
+	fn = value.NewNativeFunction(
+		"sin",
+		[]value.ParamSpec{
+			value.NewParamSpec("angle", true),
+		},
+		Sin,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the sine of an angle",
 		Description: `Returns the sine of an angle given in radians.
@@ -548,8 +490,16 @@ Use multiplication by pi/180 to convert from degrees to radians.`,
 		Returns:  "[decimal!] The sine of the angle",
 		Examples: []string{"sin 0  ; => 0.0", "sin 1.5707963267948966  ; => 1.0 (pi/2)", "sin 3.141592653589793  ; => 0.0 (pi)"},
 		SeeAlso:  []string{"cos", "tan", "asin"}, Tags: []string{"math", "trigonometry", "sine"},
-	})
-	registerSimpleMathFunc("cos", Cos, 1, &NativeDoc{
+	}
+	registerAndBind("sin", fn)
+	fn = value.NewNativeFunction(
+		"cos",
+		[]value.ParamSpec{
+			value.NewParamSpec("angle", true),
+		},
+		Cos,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the cosine of an angle",
 		Description: `Returns the cosine of an angle given in radians.
@@ -560,8 +510,16 @@ Use multiplication by pi/180 to convert from degrees to radians.`,
 		Returns:  "[decimal!] The cosine of the angle",
 		Examples: []string{"cos 0  ; => 1.0", "cos 1.5707963267948966  ; => 0.0 (pi/2)", "cos 3.141592653589793  ; => -1.0 (pi)"},
 		SeeAlso:  []string{"sin", "tan", "acos"}, Tags: []string{"math", "trigonometry", "cosine"},
-	})
-	registerSimpleMathFunc("tan", Tan, 1, &NativeDoc{
+	}
+	registerAndBind("cos", fn)
+	fn = value.NewNativeFunction(
+		"tan",
+		[]value.ParamSpec{
+			value.NewParamSpec("angle", true),
+		},
+		Tan,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the tangent of an angle",
 		Description: `Returns the tangent of an angle given in radians.
@@ -572,8 +530,16 @@ Use multiplication by pi/180 to convert from degrees to radians.`,
 		Returns:  "[decimal!] The tangent of the angle",
 		Examples: []string{"tan 0  ; => 0.0", "tan 0.7853981633974483  ; => 1.0 (pi/4)"},
 		SeeAlso:  []string{"sin", "cos", "atan"}, Tags: []string{"math", "trigonometry", "tangent"},
-	})
-	registerSimpleMathFunc("asin", Asin, 1, &NativeDoc{
+	}
+	registerAndBind("tan", fn)
+	fn = value.NewNativeFunction(
+		"asin",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Asin,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the arcsine (inverse sine) of a value",
 		Description: `Returns the angle in radians whose sine is the given value.
@@ -584,8 +550,16 @@ The input must be between -1 and 1 (inclusive). Result is in range [-pi/2, pi/2]
 		Returns:  "[decimal!] The angle in radians",
 		Examples: []string{"asin 0  ; => 0.0", "asin 1  ; => 1.5707963267948966 (pi/2)", "asin -1  ; => -1.5707963267948966 (-pi/2)"},
 		SeeAlso:  []string{"sin", "acos", "atan"}, Tags: []string{"math", "trigonometry", "arcsine", "inverse"},
-	})
-	registerSimpleMathFunc("acos", Acos, 1, &NativeDoc{
+	}
+	registerAndBind("asin", fn)
+	fn = value.NewNativeFunction(
+		"acos",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Acos,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the arccosine (inverse cosine) of a value",
 		Description: `Returns the angle in radians whose cosine is the given value.
@@ -596,8 +570,16 @@ The input must be between -1 and 1 (inclusive). Result is in range [0, pi].`,
 		Returns:  "[decimal!] The angle in radians",
 		Examples: []string{"acos 1  ; => 0.0", "acos 0  ; => 1.5707963267948966 (pi/2)", "acos -1  ; => 3.141592653589793 (pi)"},
 		SeeAlso:  []string{"cos", "asin", "atan"}, Tags: []string{"math", "trigonometry", "arccosine", "inverse"},
-	})
-	registerSimpleMathFunc("atan", Atan, 1, &NativeDoc{
+	}
+	registerAndBind("acos", fn)
+	fn = value.NewNativeFunction(
+		"atan",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Atan,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Calculates the arctangent (inverse tangent) of a value",
 		Description: `Returns the angle in radians whose tangent is the given value.
@@ -608,8 +590,16 @@ Accepts any real number as input. Result is in range (-pi/2, pi/2).`,
 		Returns:  "[decimal!] The angle in radians",
 		Examples: []string{"atan 0  ; => 0.0", "atan 1  ; => 0.7853981633974483 (pi/4)", "atan -1  ; => -0.7853981633974483 (-pi/4)"},
 		SeeAlso:  []string{"tan", "asin", "acos"}, Tags: []string{"math", "trigonometry", "arctangent", "inverse"},
-	})
-	registerSimpleMathFunc("round", Round, 1, &NativeDoc{
+	}
+	registerAndBind("atan", fn)
+	fn = value.NewNativeFunction(
+		"round",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Round,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Rounds a number to the nearest integer",
 		Description: `Rounds a decimal number to the nearest integer using standard rounding rules
@@ -620,8 +610,16 @@ Accepts any real number as input. Result is in range (-pi/2, pi/2).`,
 		Returns:  "[integer!] The rounded integer value",
 		Examples: []string{"round 3.2  ; => 3", "round 3.7  ; => 4", "round 3.5  ; => 4", "round -2.5  ; => -2"},
 		SeeAlso:  []string{"ceil", "floor", "truncate"}, Tags: []string{"math", "rounding"},
-	})
-	registerSimpleMathFunc("ceil", Ceil, 1, &NativeDoc{
+	}
+	registerAndBind("round", fn)
+	fn = value.NewNativeFunction(
+		"ceil",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Ceil,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Rounds a number up to the nearest integer",
 		Description: `Returns the smallest integer greater than or equal to the input (ceiling function).
@@ -632,8 +630,16 @@ Always rounds upward, even for negative numbers.`,
 		Returns:  "[integer!] The ceiling value",
 		Examples: []string{"ceil 3.1  ; => 4", "ceil 3.9  ; => 4", "ceil -2.1  ; => -2", "ceil 5  ; => 5"},
 		SeeAlso:  []string{"floor", "round", "truncate"}, Tags: []string{"math", "rounding", "ceiling"},
-	})
-	registerSimpleMathFunc("floor", Floor, 1, &NativeDoc{
+	}
+	registerAndBind("ceil", fn)
+	fn = value.NewNativeFunction(
+		"floor",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Floor,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Rounds a number down to the nearest integer",
 		Description: `Returns the largest integer less than or equal to the input (floor function).
@@ -644,8 +650,16 @@ Always rounds downward, even for negative numbers.`,
 		Returns:  "[integer!] The floor value",
 		Examples: []string{"floor 3.1  ; => 3", "floor 3.9  ; => 3", "floor -2.1  ; => -3", "floor 5  ; => 5"},
 		SeeAlso:  []string{"ceil", "round", "truncate"}, Tags: []string{"math", "rounding", "floor"},
-	})
-	registerSimpleMathFunc("truncate", Truncate, 1, &NativeDoc{
+	}
+	registerAndBind("floor", fn)
+	fn = value.NewNativeFunction(
+		"truncate",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Truncate,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Math",
 		Summary:  "Truncates a number toward zero",
 		Description: `Removes the fractional part of a number, rounding toward zero.
@@ -656,5 +670,6 @@ For positive numbers, behaves like floor; for negative numbers, behaves like cei
 		Returns:  "[integer!] The truncated integer value",
 		Examples: []string{"truncate 3.7  ; => 3", "truncate -3.7  ; => -3", "truncate 5  ; => 5"},
 		SeeAlso:  []string{"floor", "ceil", "round"}, Tags: []string{"math", "rounding", "truncate"},
-	})
+	}
+	registerAndBind("truncate", fn)
 }
