@@ -1,9 +1,9 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // RegisterHelpNatives registers all help, debug, and reflection native functions into the root frame.
@@ -22,7 +22,7 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 	var fn *value.FunctionValue
 
 	// Helper function to wrap simple math/reflection functions
-	registerSimpleMathFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleMathFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -46,7 +46,7 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 		fn := NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
@@ -66,9 +66,8 @@ func RegisterHelpNatives(rootFrame *frame.Frame) {
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Help(args, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Help(args, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -98,9 +97,8 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 	fn = value.NewNativeFunction(
 		"words",
 		[]value.ParamSpec{},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Words(args, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Words(args, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -132,9 +130,8 @@ Useful for programmatic access to available functionality.`,
 			value.NewRefinementSpec("file", true),
 			value.NewRefinementSpec("append", false),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Trace(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Trace(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -164,9 +161,8 @@ and other execution events to a log file. Supports filtering and custom output d
 	fn = value.NewNativeFunction(
 		"trace?",
 		[]value.ParamSpec{},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := TraceQuery(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := TraceQuery(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -199,9 +195,8 @@ and other execution events to a log file. Supports filtering and custom output d
 			value.NewRefinementSpec("locals", false),
 			value.NewRefinementSpec("stack", false),
 		},
-		func(args []value.Value, refValues map[string]value.Value, evaluator value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{evaluator}
-			result, err := Debug(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, evaluator core.Evaluator) (core.Value, error) {
+			result, err := Debug(args, refValues, evaluator)
 			if err == nil {
 				return result, nil
 			}
@@ -284,9 +279,8 @@ returns a block of set-word/value pairs.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := WordsOf(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := WordsOf(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
@@ -313,9 +307,8 @@ the object's manifest. Returns an immutable block of words.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := ValuesOf(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := ValuesOf(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}
