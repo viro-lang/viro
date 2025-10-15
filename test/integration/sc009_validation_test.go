@@ -70,7 +70,7 @@ func TestSC009_StackExpansionPerformance(t *testing.T) {
 	// Verify all values are correct
 	for i := largeCount - 1; i >= 0; i-- {
 		val := s.Pop()
-		if num, ok := val.AsInteger(); !ok || num != int64(i) {
+		if num, ok := value.AsInteger(val); !ok || num != int64(i) {
 			t.Fatalf("Expected %d, got %v", i, val)
 		}
 	}
