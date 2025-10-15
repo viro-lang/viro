@@ -53,21 +53,21 @@ func TestActionDispatchBasics(t *testing.T) {
 			}
 
 			result, err := e.Do_Blk(tokens)
-			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 

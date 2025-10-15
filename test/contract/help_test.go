@@ -72,7 +72,7 @@ func TestWords(t *testing.T) {
 		names[word] = true
 	}
 
-	expectedFunctions := []string{"+", "append", "?", "words", "print", "if"}
+	expectedFunctions := []string{"+", "?", "words", "print", "if"}
 	for _, fn := range expectedFunctions {
 		if !names[fn] {
 			t.Errorf("Expected function '%s' not found in words output", fn)

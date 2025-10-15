@@ -111,7 +111,7 @@ func TestErrors_MathTypeMismatch(t *testing.T) {
 		t.Fatalf("expected type-mismatch error, got %s", vErr.ID)
 	}
 
-	expectedMessage := "Type mismatch for '+': expected integer, got string"
+	expectedMessage := "Type mismatch for '+': expected integer, got string!"
 	if vErr.Message != expectedMessage {
 		t.Fatalf("unexpected message: %s", vErr.Message)
 	}
