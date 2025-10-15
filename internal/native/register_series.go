@@ -4,9 +4,9 @@ package native
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // init registers type-specific series implementations into type frames.
@@ -26,7 +26,7 @@ func init() {
 // Feature: 004-dynamic-function-invocation
 func registerSeriesTypeImpls() {
 	// Helper to create native function wrappers
-	wrapNative := func(name string, impl func([]value.Value, map[string]value.Value, Evaluator) (value.Value, *verror.Error)) *value.FunctionValue {
+	wrapNative := func(name string, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error)) *value.FunctionValue {
 		params := []value.ParamSpec{
 			value.NewParamSpec("series", true),
 		}
@@ -37,10 +37,8 @@ func registerSeriesTypeImpls() {
 		return value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-				// Adapter from value.Evaluator to native.Evaluator
-				adapter := &nativeEvaluatorAdapter{eval: eval}
-				result, err := impl(args, refValues, adapter.unwrap())
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+				result, err := impl(args, refValues, eval)
 				if err == nil {
 					return result, nil
 				}
@@ -72,8 +70,8 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 	registered := make(map[string]bool)
 
 	// Helper function to register and bind a native function or action
-	registerAndBind := func(name string, val value.Value) {
-		if val.Type == value.TypeNone {
+	registerAndBind := func(name string, val core.Value) {
+		if TypeOf(val) == value.TypeNone {
 			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil value for '%s'", name))
 		}
 		if registered[name] {
@@ -88,7 +86,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 	}
 
 	// Helper function to wrap simple series functions
-	registerSimpleSeriesFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleSeriesFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -112,7 +110,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
@@ -213,7 +211,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			"copy",
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := Copy(args, refValues)
 				if err == nil {
 					return result, nil
@@ -246,7 +244,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			"find",
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := Find(args, refValues)
 				if err == nil {
 					return result, nil
@@ -279,7 +277,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			"remove",
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := Remove(args, refValues)
 				if err == nil {
 					return result, nil
