@@ -4,3 +4,4 @@ change each direct usage of `Evaluator` to `core.Evaluator`.
 change each `*verror.Error` to `error`. Do not remove the `verror` package import and do NOT replace error creating code (like `verror.NewScriptErrror(...)`) since it implements the `error` interface and will work.
 update casts like `val.AsBlock()` to updated form `value.AsBlock(val)`
 when there is something like `val.GetType().toString()` you can use `value.TypeToString(val.GetType())`
+when you encounter function `typeNameFor(val.GetType())` rewrite it to use the `value.TypeToString(val.GetType())`
