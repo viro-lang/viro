@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -21,23 +22,23 @@ type decimalOp func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big
 
 // mathOp provides a generic template for binary arithmetic operations.
 // It handles type checking, decimal promotion, and overflow detection.
-func mathOp(name string, args []value.Value, intFn intOp, decFn decimalOp) (value.Value, *verror.Error) {
+func mathOp(name string, args []core.Value, intFn intOp, decFn decimalOp) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError(name, 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
-	if args[0].Type == value.TypeDecimal || args[1].Type == value.TypeDecimal {
+	if args[0].GetType() == value.TypeDecimal || args[1].GetType() == value.TypeDecimal {
 		return decimalMathOp(name, args[0], args[1], decFn)
 	}
 
 	// Integer arithmetic
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError(name, args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError(name, args[1])
 	}
@@ -52,11 +53,11 @@ func mathOp(name string, args []value.Value, intFn intOp, decFn decimalOp) (valu
 }
 
 // decimalMathOp handles decimal arithmetic with promotion.
-func decimalMathOp(name string, a, b value.Value, decFn decimalOp) (value.Value, *verror.Error) {
+func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, error) {
 	aVal := promoteToDecimal(a)
 	bVal := promoteToDecimal(b)
 	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{a.Type.String(), b.Type.String(), ""})
+		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
 
 	// Check for division by zero if the operation might divide
@@ -77,7 +78,7 @@ func decimalMathOp(name string, a, b value.Value, decFn decimalOp) (value.Value,
 // - Arguments can be integers or decimals
 // - Returns arithmetic sum with type promotion (integer + decimal → decimal)
 // - Detects overflow
-func Add(args []value.Value) (value.Value, *verror.Error) {
+func Add(args []core.Value) (core.Value, error) {
 	return mathOp("+", args,
 		func(a, b int64) (int64, bool) {
 			// Check for overflow
@@ -102,7 +103,7 @@ func Add(args []value.Value) (value.Value, *verror.Error) {
 // - Arguments can be integers or decimals
 // - Returns arithmetic difference (value1 - value2) with type promotion
 // - Detects overflow
-func Subtract(args []value.Value) (value.Value, *verror.Error) {
+func Subtract(args []core.Value) (core.Value, error) {
 	return mathOp("-", args,
 		func(a, b int64) (int64, bool) {
 			// Check for overflow
@@ -128,7 +129,7 @@ func Subtract(args []value.Value) (value.Value, *verror.Error) {
 // - Arguments can be integers or decimals
 // - Returns arithmetic product with type promotion
 // - Detects overflow
-func Multiply(args []value.Value) (value.Value, *verror.Error) {
+func Multiply(args []core.Value) (core.Value, error) {
 	return mathOp("*", args,
 		func(a, b int64) (int64, bool) {
 			// Special cases: a == 0 or b == 0 (no overflow)
@@ -163,10 +164,10 @@ func Multiply(args []value.Value) (value.Value, *verror.Error) {
 // - Both arguments must be integers
 // - Returns arithmetic quotient (truncated toward zero)
 // - Division by zero is an error
-func Divide(args []value.Value) (value.Value, *verror.Error) {
+func Divide(args []core.Value) (core.Value, error) {
 	// Special handling for division by zero in integer case
-	if len(args) == 2 && args[0].Type != value.TypeDecimal && args[1].Type != value.TypeDecimal {
-		if b, ok := args[1].AsInteger(); ok && b == 0 {
+	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
+		if b, ok := value.AsInteger(args[1]); ok && b == 0 {
 			return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 		}
 	}
@@ -189,17 +190,17 @@ func Divide(args []value.Value) (value.Value, *verror.Error) {
 // Contract: < value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 < value2, false otherwise
-func LessThan(args []value.Value) (value.Value, *verror.Error) {
+func LessThan(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<", args[1])
 	}
@@ -212,17 +213,17 @@ func LessThan(args []value.Value) (value.Value, *verror.Error) {
 // Contract: > value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 > value2, false otherwise
-func GreaterThan(args []value.Value) (value.Value, *verror.Error) {
+func GreaterThan(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError(">", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError(">", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError(">", args[1])
 	}
@@ -235,17 +236,17 @@ func GreaterThan(args []value.Value) (value.Value, *verror.Error) {
 // Contract: <= value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 <= value2, false otherwise
-func LessOrEqual(args []value.Value) (value.Value, *verror.Error) {
+func LessOrEqual(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<=", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<=", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<=", args[1])
 	}
@@ -258,17 +259,17 @@ func LessOrEqual(args []value.Value) (value.Value, *verror.Error) {
 // Contract: >= value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 >= value2, false otherwise
-func GreaterOrEqual(args []value.Value) (value.Value, *verror.Error) {
+func GreaterOrEqual(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError(">=", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError(">=", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError(">=", args[1])
 	}
@@ -281,17 +282,17 @@ func GreaterOrEqual(args []value.Value) (value.Value, *verror.Error) {
 // Contract: = value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 == value2, false otherwise
-func Equal(args []value.Value) (value.Value, *verror.Error) {
+func Equal(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("=", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError("=", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError("=", args[1])
 	}
@@ -304,17 +305,17 @@ func Equal(args []value.Value) (value.Value, *verror.Error) {
 // Contract: <> value1 value2 → logic
 // - Both arguments must be integers
 // - Returns true if value1 != value2, false otherwise
-func NotEqual(args []value.Value) (value.Value, *verror.Error) {
+func NotEqual(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("<>", 2, len(args))
 	}
 
-	a, ok := args[0].AsInteger()
+	a, ok := value.AsInteger(args[0])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<>", args[0])
 	}
 
-	b, ok := args[1].AsInteger()
+	b, ok := value.AsInteger(args[1])
 	if !ok {
 		return value.NoneVal(), mathTypeError("<>", args[1])
 	}
@@ -328,7 +329,7 @@ func NotEqual(args []value.Value) (value.Value, *verror.Error) {
 // - Both arguments evaluated to logic (truthy conversion)
 // - Returns true if both are truthy, false otherwise
 // - Truthy: none/false → false, all others → true
-func And(args []value.Value) (value.Value, *verror.Error) {
+func And(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("and", 2, len(args))
 	}
@@ -346,7 +347,7 @@ func And(args []value.Value) (value.Value, *verror.Error) {
 // - Both arguments evaluated to logic (truthy conversion)
 // - Returns true if either is truthy, false if both falsy
 // - Truthy: none/false → false, all others → true
-func Or(args []value.Value) (value.Value, *verror.Error) {
+func Or(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("or", 2, len(args))
 	}
@@ -364,7 +365,7 @@ func Or(args []value.Value) (value.Value, *verror.Error) {
 // - Argument evaluated to logic (truthy conversion)
 // - Returns negation: true if falsy, false if truthy
 // - Truthy: none/false → false, all others → true
-func Not(args []value.Value) (value.Value, *verror.Error) {
+func Not(args []core.Value) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("not", 1, len(args))
 	}
