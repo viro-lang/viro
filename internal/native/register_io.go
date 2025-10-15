@@ -74,13 +74,7 @@ func RegisterIONatives(rootFrame core.Frame) {
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Print(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Print,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "I/O",

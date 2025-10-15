@@ -45,13 +45,7 @@ func RegisterControlNatives(rootFrame core.Frame) {
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := When(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		When,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Control",
@@ -75,13 +69,7 @@ the result of the body block. If the condition is false, returns none. This is a
 			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
 			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := If(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		If,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Control",
@@ -106,13 +94,7 @@ This is a two-branch conditional (if-then-else).`,
 			value.NewParamSpec("count", true), // evaluated
 			value.NewParamSpec("body", false), // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Loop(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Loop,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Control",
@@ -135,13 +117,7 @@ The count must be a non-negative integer. Returns the result of the last iterati
 			value.NewParamSpec("condition", true), // evaluated
 			value.NewParamSpec("body", false),     // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := While(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		While,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Control",
@@ -166,13 +142,7 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 			value.NewParamSpec("params", false), // NOT evaluated (block)
 			value.NewParamSpec("body", false),   // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Fn(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Fn,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Function",

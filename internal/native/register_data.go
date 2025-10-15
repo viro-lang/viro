@@ -106,13 +106,7 @@ The word is not evaluated; the value is evaluated before assignment. Returns the
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Get(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Get,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Data",
@@ -147,13 +141,7 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Object(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Object,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
@@ -175,13 +163,7 @@ Returns the newly created object.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Context(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Context,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
@@ -204,13 +186,7 @@ and all word definitions become fields of the context.`,
 			value.NewParamSpec("parent", true), // evaluated
 			value.NewParamSpec("spec", false),  // NOT evaluated (block)
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Make(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Make,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
@@ -235,13 +211,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
 			value.NewRefinementSpec("default", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Select(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Select,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Objects",
@@ -273,13 +243,7 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 			value.NewParamSpec("field", false), // NOT evaluated (word/string)
 			value.NewParamSpec("value", true),  // evaluated
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Put(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Put,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Objects",

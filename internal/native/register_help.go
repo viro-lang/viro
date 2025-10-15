@@ -129,13 +129,7 @@ Useful for programmatic access to available functionality.`,
 			value.NewRefinementSpec("file", true),
 			value.NewRefinementSpec("append", false),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := Trace(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Trace,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Debug",
@@ -160,13 +154,7 @@ and other execution events to a log file. Supports filtering and custom output d
 	fn = value.NewNativeFunction(
 		"trace?",
 		[]value.ParamSpec{},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := TraceQuery(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		TraceQuery,
 	)
 	fn.Doc = &NativeDoc{
 		Category:    "Debug",
@@ -194,13 +182,7 @@ and other execution events to a log file. Supports filtering and custom output d
 			value.NewRefinementSpec("locals", false),
 			value.NewRefinementSpec("stack", false),
 		},
-		func(args []core.Value, refValues map[string]core.Value, evaluator core.Evaluator) (core.Value, error) {
-			result, err := Debug(args, refValues, evaluator)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Debug,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Debug",
@@ -278,13 +260,7 @@ returns a block of set-word/value pairs.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := WordsOf(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		WordsOf,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Reflection",
@@ -306,13 +282,7 @@ the object's manifest. Returns an immutable block of words.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			result, err := ValuesOf(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		ValuesOf,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Reflection",
