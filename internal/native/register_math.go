@@ -4,9 +4,9 @@ package native
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // RegisterMathNatives registers all math-related native functions to the root frame.
@@ -39,7 +39,7 @@ func RegisterMathNatives(rootFrame *frame.Frame) {
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Add(args)
 			if err == nil {
 				return result, nil
@@ -70,7 +70,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Subtract(args)
 			if err == nil {
 				return result, nil
@@ -101,7 +101,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Multiply(args)
 			if err == nil {
 				return result, nil
@@ -132,7 +132,7 @@ Supports infix notation for natural mathematical expressions.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Divide(args)
 			if err == nil {
 				return result, nil
@@ -164,7 +164,7 @@ Raises an error if dividing by zero.`,
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := LessThan(args)
 			if err == nil {
 				return result, nil
@@ -194,7 +194,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := GreaterThan(args)
 			if err == nil {
 				return result, nil
@@ -224,7 +224,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := LessOrEqual(args)
 			if err == nil {
 				return result, nil
@@ -254,7 +254,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := GreaterOrEqual(args)
 			if err == nil {
 				return result, nil
@@ -284,7 +284,7 @@ Works with both integers and decimals. Uses lexicographic ordering for strings.`
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Equal(args)
 			if err == nil {
 				return result, nil
@@ -314,7 +314,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values are equ
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := NotEqual(args)
 			if err == nil {
 				return result, nil
@@ -345,7 +345,7 @@ integers, decimals, strings, blocks, and objects. Returns true if values differ.
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := And(args)
 			if err == nil {
 				return result, nil
@@ -375,7 +375,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Or(args)
 			if err == nil {
 				return result, nil
@@ -404,7 +404,7 @@ and non-empty string is considered true; zero, empty strings, and false are cons
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			result, err := Not(args)
 			if err == nil {
 				return result, nil
@@ -429,7 +429,7 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 
 	// ===== Group 4: Advanced math functions (16 functions) =====
 	// Helper function to wrap simple math functions
-	registerSimpleMathFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleMathFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -453,7 +453,7 @@ In viro, any non-zero integer and non-empty string is considered true; zero, emp
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
