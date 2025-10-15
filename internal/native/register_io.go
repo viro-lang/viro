@@ -4,9 +4,9 @@ package native
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // RegisterIONatives registers all I/O and port-related native functions to the root frame.
@@ -33,7 +33,7 @@ func RegisterIONatives(rootFrame *frame.Frame) {
 	}
 
 	// Helper function to wrap simple I/O functions (no evaluator needed)
-	registerSimpleIOFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleIOFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -57,7 +57,7 @@ func RegisterIONatives(rootFrame *frame.Frame) {
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
+			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 				result, err := impl(args)
 				if err == nil {
 					return result, nil
@@ -75,9 +75,8 @@ func RegisterIONatives(rootFrame *frame.Frame) {
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Print(args, refValues, reverseAdapter.unwrap())
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			result, err := Print(args, refValues, eval)
 			if err == nil {
 				return result, nil
 			}

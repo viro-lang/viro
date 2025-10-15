@@ -36,12 +36,12 @@ const (
 // - Flag refinement: --verbose (boolean, true if present, false otherwise)
 // - Value refinement: --title [] (accepts value, none if not provided)
 type ParamSpec struct {
-	Name       string    // parameter name (without -- prefix for refinements)
-	Type       ValueType // expected type (TypeNone = any type accepted)
-	Optional   bool      // true if parameter can be omitted
-	Refinement bool      // true if this is a refinement (--flag or --option)
-	TakesValue bool      // for refinements: true if accepts value, false if boolean flag
-	Eval       bool      // NEW: if true, argument is evaluated; if false, passed raw
+	Name       string         // parameter name (without -- prefix for refinements)
+	Type       core.ValueType // expected type (TypeNone = any type accepted)
+	Optional   bool           // true if parameter can be omitted
+	Refinement bool           // true if this is a refinement (--flag or --option)
+	TakesValue bool           // for refinements: true if accepts value, false if boolean flag
+	Eval       bool           // NEW: if true, argument is evaluated; if false, passed raw
 }
 
 // NewParamSpec creates a ParamSpec for a positional parameter.
@@ -112,7 +112,7 @@ type FunctionValue struct {
 }
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, map[string]Value, Evaluator) (Value, error)) *FunctionValue {
+func NewNativeFunction(name string, params []ParamSpec, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error)) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncNative,
 		Name:   name,
