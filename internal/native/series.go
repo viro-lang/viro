@@ -1,6 +1,7 @@
 package native
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -9,23 +10,23 @@ import (
 //
 // Contract: copy series -> new copy
 // Contract: copy --part series count -> new copy of first count elements/chars
-func Copy(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+func Copy(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
 	// --part refinement: copy only first N elements/chars
 	partVal, hasPart := refinements["part"]
 	// Check if refinement was actually provided (not just default none)
-	hasPart = hasPart && partVal.Type != value.TypeNone
+	hasPart = hasPart && partVal.GetType() != value.TypeNone
 	if len(args) < 1 {
 		return value.NoneVal(), arityError("copy", 1, len(args))
 	}
 	series := args[0]
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		if hasPart {
-			if partVal.Type != value.TypeInteger {
+			if partVal.GetType() != value.TypeInteger {
 				return value.NoneVal(), typeError("copy --part", "integer", partVal)
 			}
-			count64, ok := partVal.AsInteger()
+			count64, ok := value.AsInteger(partVal)
 			if !ok {
 				return value.NoneVal(), typeError("copy --part", "integer", partVal)
 			}
@@ -33,19 +34,19 @@ func Copy(args []value.Value, refinements map[string]value.Value) (value.Value, 
 			if count < 0 || count > blk.Length() {
 				return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
 			}
-			elems := make([]value.Value, count)
+			elems := make([]core.Value, count)
 			copy(elems, blk.Elements[:count])
 			return value.BlockVal(elems), nil
 		}
 		// Full copy
-		return value.BlockVal(append([]value.Value{}, blk.Elements...)), nil
+		return value.BlockVal(append([]core.Value{}, blk.Elements...)), nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		if hasPart {
-			if partVal.Type != value.TypeInteger {
+			if partVal.GetType() != value.TypeInteger {
 				return value.NoneVal(), typeError("copy --part", "integer", partVal)
 			}
-			count64, ok := partVal.AsInteger()
+			count64, ok := value.AsInteger(partVal)
 			if !ok {
 				return value.NoneVal(), typeError("copy --part", "integer", partVal)
 			}
@@ -67,11 +68,11 @@ func Copy(args []value.Value, refinements map[string]value.Value) (value.Value, 
 // seriesSelector is a function that selects a value from a series.
 // For blocks: receives elements and returns the selected element.
 // For strings: receives the string and returns a character as a value.
-type seriesSelector func(series value.Value) (value.Value, *verror.Error)
+type seriesSelector func(series core.Value) (core.Value, error)
 
 // seriesOperation provides a template for operations on series (blocks and strings).
 // It handles arity checking, type validation, and empty series errors.
-func seriesOperation(name string, args []value.Value, sel seriesSelector) (value.Value, *verror.Error) {
+func seriesOperation(name string, args []core.Value, sel seriesSelector) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError(name, 1, len(args))
 	}
@@ -79,14 +80,14 @@ func seriesOperation(name string, args []value.Value, sel seriesSelector) (value
 	series := args[0]
 
 	// Validate series type
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		if blk.Length() == 0 {
 			return value.NoneVal(), emptySeriesError(name)
 		}
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		if str.Length() == 0 {
 			return value.NoneVal(), emptySeriesError(name)
 		}
@@ -103,14 +104,14 @@ func seriesOperation(name string, args []value.Value, sel seriesSelector) (value
 // Contract: first series -> first element
 // - Series must be block or string
 // - Error on empty series
-func First(args []value.Value) (value.Value, *verror.Error) {
-	return seriesOperation("first", args, func(series value.Value) (value.Value, *verror.Error) {
-		switch series.Type {
+func First(args []core.Value) (core.Value, error) {
+	return seriesOperation("first", args, func(series core.Value) (core.Value, error) {
+		switch series.GetType() {
 		case value.TypeBlock:
-			blk, _ := series.AsBlock()
+			blk, _ := value.AsBlock(series)
 			return blk.First(), nil
 		case value.TypeString:
-			str, _ := series.AsString()
+			str, _ := value.AsString(series)
 			return value.StrVal(string(str.First())), nil
 		default:
 			return value.NoneVal(), typeError("first", "series", series)
@@ -119,14 +120,14 @@ func First(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // Last implements the `last` native for series values.
-func Last(args []value.Value) (value.Value, *verror.Error) {
-	return seriesOperation("last", args, func(series value.Value) (value.Value, *verror.Error) {
-		switch series.Type {
+func Last(args []core.Value) (core.Value, error) {
+	return seriesOperation("last", args, func(series core.Value) (core.Value, error) {
+		switch series.GetType() {
 		case value.TypeBlock:
-			blk, _ := series.AsBlock()
+			blk, _ := value.AsBlock(series)
 			return blk.Last(), nil
 		case value.TypeString:
-			str, _ := series.AsString()
+			str, _ := value.AsString(series)
 			return value.StrVal(string(str.Last())), nil
 		default:
 			return value.NoneVal(), typeError("last", "series", series)
@@ -137,23 +138,23 @@ func Last(args []value.Value) (value.Value, *verror.Error) {
 // Append implements the `append` native for series values.
 //
 // Contract: append series value -> modified series
-func Append(args []value.Value) (value.Value, *verror.Error) {
+func Append(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("append", 2, len(args))
 	}
 
 	target := args[0]
-	switch target.Type {
+	switch target.GetType() {
 	case value.TypeBlock:
-		blk, _ := target.AsBlock()
+		blk, _ := value.AsBlock(target)
 		blk.Append(args[1])
 		return target, nil
 	case value.TypeString:
-		str, _ := target.AsString()
-		if args[1].Type != value.TypeString {
+		str, _ := value.AsString(target)
+		if args[1].GetType() != value.TypeString {
 			return value.NoneVal(), typeError("append", "string", args[1])
 		}
-		insertStr, _ := args[1].AsString()
+		insertStr, _ := value.AsString(args[1])
 		str.Append(insertStr)
 		return target, nil
 	default:
@@ -162,24 +163,24 @@ func Append(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // Insert implements the `insert` native for series values.
-func Insert(args []value.Value) (value.Value, *verror.Error) {
+func Insert(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("insert", 2, len(args))
 	}
 
 	target := args[0]
-	switch target.Type {
+	switch target.GetType() {
 	case value.TypeBlock:
-		blk, _ := target.AsBlock()
+		blk, _ := value.AsBlock(target)
 		blk.SetIndex(0)
 		blk.Insert(args[1])
 		return target, nil
 	case value.TypeString:
-		str, _ := target.AsString()
-		if args[1].Type != value.TypeString {
+		str, _ := value.AsString(target)
+		if args[1].GetType() != value.TypeString {
 			return value.NoneVal(), typeError("insert", "string", args[1])
 		}
-		insertStr, _ := args[1].AsString()
+		insertStr, _ := value.AsString(args[1])
 		str.SetIndex(0)
 		str.Insert(insertStr)
 		return target, nil
@@ -189,25 +190,25 @@ func Insert(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // LengthQ implements the `length?` native for series values.
-func LengthQ(args []value.Value) (value.Value, *verror.Error) {
+func LengthQ(args []core.Value) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("length?", 1, len(args))
 	}
 
 	series := args[0]
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		return value.IntVal(int64(blk.Length())), nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		return value.IntVal(int64(str.Length())), nil
 	default:
 		return value.NoneVal(), typeError("length?", "series", series)
 	}
 }
 
-func emptySeriesError(op string) *verror.Error {
+func emptySeriesError(op string) error {
 	return verror.NewScriptError(
 		verror.ErrIDEmptySeries,
 		[3]string{op, "", ""},
@@ -218,7 +219,7 @@ func emptySeriesError(op string) *verror.Error {
 //
 // Contract: find series value -> index (1-based) or none
 // Contract: find --last series value -> last index (1-based) or none
-func Find(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+func Find(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("find", 2, len(args))
 	}
@@ -226,11 +227,11 @@ func Find(args []value.Value, refinements map[string]value.Value) (value.Value, 
 	series := args[0]
 	sought := args[1]
 	lastVal, hasLast := refinements["last"]
-	isLast := hasLast && lastVal.Type == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
+	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		if isLast {
 			for i := blk.Length() - 1; i >= 0; i-- {
 				if blk.Elements[i].Equals(sought) {
@@ -247,8 +248,8 @@ func Find(args []value.Value, refinements map[string]value.Value) (value.Value, 
 		return value.NoneVal(), nil
 
 	case value.TypeString:
-		str, _ := series.AsString()
-		soughtStr, ok := sought.AsString()
+		str, _ := value.AsString(series)
+		soughtStr, ok := value.AsString(sought)
 		if !ok {
 			return value.NoneVal(), typeError("find", "string", sought)
 		}
@@ -298,9 +299,9 @@ func Find(args []value.Value, refinements map[string]value.Value) (value.Value, 
 //
 // Contract: remove series -> modified series
 // Contract: remove series --part count -> modified series
-func Remove(args []value.Value, refinements map[string]value.Value) (value.Value, *verror.Error) {
+func Remove(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
 	partVal, hasPart := refinements["part"]
-	hasPart = hasPart && partVal.Type != value.TypeNone
+	hasPart = hasPart && partVal.GetType() != value.TypeNone
 
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("remove", 1, len(args))
@@ -310,16 +311,16 @@ func Remove(args []value.Value, refinements map[string]value.Value) (value.Value
 	count := 1
 
 	if hasPart {
-		if partVal.Type != value.TypeInteger {
+		if partVal.GetType() != value.TypeInteger {
 			return value.NoneVal(), typeError("remove --part", "integer", partVal)
 		}
-		count64, _ := partVal.AsInteger()
+		count64, _ := value.AsInteger(partVal)
 		count = int(count64)
 	}
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		if count < 0 || count > blk.Length() {
 			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
 		}
@@ -327,7 +328,7 @@ func Remove(args []value.Value, refinements map[string]value.Value) (value.Value
 		blk.Remove(count)
 		return series, nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		if count < 0 || count > str.Length() {
 			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
 		}
@@ -340,20 +341,20 @@ func Remove(args []value.Value, refinements map[string]value.Value) (value.Value
 }
 
 // Skip implements the `skip` native for series values.
-func Skip(args []value.Value) (value.Value, *verror.Error) {
+func Skip(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("skip", 2, len(args))
 	}
 	series, countVal := args[0], args[1]
-	if countVal.Type != value.TypeInteger {
+	if countVal.GetType() != value.TypeInteger {
 		return value.NoneVal(), typeError("skip", "integer", countVal)
 	}
-	count64, _ := countVal.AsInteger()
+	count64, _ := value.AsInteger(countVal)
 	count := int(count64)
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		newIndex := blk.GetIndex() + count
 		if newIndex < 0 || newIndex > blk.Length() {
 			newIndex = blk.Length()
@@ -361,7 +362,7 @@ func Skip(args []value.Value) (value.Value, *verror.Error) {
 		blk.SetIndex(newIndex)
 		return series, nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		newIndex := str.Index() + count
 		if newIndex < 0 || newIndex > str.Length() {
 			newIndex = str.Length()
@@ -374,20 +375,20 @@ func Skip(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // Take implements the `take` native for series values.
-func Take(args []value.Value) (value.Value, *verror.Error) {
+func Take(args []core.Value) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("take", 2, len(args))
 	}
 	series, countVal := args[0], args[1]
-	if countVal.Type != value.TypeInteger {
+	if countVal.GetType() != value.TypeInteger {
 		return value.NoneVal(), typeError("take", "integer", countVal)
 	}
-	count64, _ := countVal.AsInteger()
+	count64, _ := value.AsInteger(countVal)
 	count := int(count64)
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		start := blk.GetIndex()
 		end := start + count
 		if end > blk.Length() {
@@ -397,7 +398,7 @@ func Take(args []value.Value) (value.Value, *verror.Error) {
 		blk.SetIndex(end)
 		return value.BlockVal(newElements), nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		start := str.Index()
 		end := start + count
 		if end > str.Length() {
@@ -412,22 +413,22 @@ func Take(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // Sort implements the `sort` native for series values.
-func Sort(args []value.Value) (value.Value, *verror.Error) {
+func Sort(args []core.Value) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("sort", 1, len(args))
 	}
 	series := args[0]
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		if blk.Length() == 0 {
 			return series, nil
 		}
 		// Check if all elements are of the same comparable type
-		firstType := blk.Elements[0].Type
+		firstType := blk.Elements[0].GetType()
 		for _, v := range blk.Elements {
-			if v.Type != firstType || (v.Type != value.TypeInteger && v.Type != value.TypeString) {
+			if v.GetType() != firstType || (v.GetType() != value.TypeInteger && v.GetType() != value.TypeString) {
 				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 			}
 		}
@@ -440,21 +441,21 @@ func Sort(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // Reverse implements the `reverse` native for series values.
-func Reverse(args []value.Value) (value.Value, *verror.Error) {
+func Reverse(args []core.Value) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("reverse", 1, len(args))
 	}
 	series := args[0]
 
-	switch series.Type {
+	switch series.GetType() {
 	case value.TypeBlock:
-		blk, _ := series.AsBlock()
+		blk, _ := value.AsBlock(series)
 		for i, j := 0, len(blk.Elements)-1; i < j; i, j = i+1, j-1 {
 			blk.Elements[i], blk.Elements[j] = blk.Elements[j], blk.Elements[i]
 		}
 		return series, nil
 	case value.TypeString:
-		str, _ := series.AsString()
+		str, _ := value.AsString(series)
 		r := str.Runes()
 		for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
 			r[i], r[j] = r[j], r[i]

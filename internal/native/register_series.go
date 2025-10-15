@@ -71,7 +71,7 @@ func RegisterSeriesNatives(rootFrame *frame.Frame) {
 
 	// Helper function to register and bind a native function or action
 	registerAndBind := func(name string, val core.Value) {
-		if TypeOf(val) == value.TypeNone {
+		if val.GetType() == value.TypeNone {
 			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil value for '%s'", name))
 		}
 		if registered[name] {
