@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // Port represents a unified I/O abstraction for files, TCP, and HTTP (Feature 002).
@@ -84,11 +86,11 @@ func PortVal(port *Port) Value {
 }
 
 // AsPort extracts the Port from a Value, or returns nil if wrong type.
-func (v Value) AsPort() (*Port, bool) {
-	if v.Type != TypePort {
+func AsPort(v core.Value) (*Port, bool) {
+	if v.GetType() != TypePort {
 		return nil, false
 	}
-	port, ok := v.Payload.(*Port)
+	port, ok := v.GetPayload().(*Port)
 	return port, ok
 }
 
