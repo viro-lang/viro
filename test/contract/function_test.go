@@ -93,7 +93,7 @@ func TestFunction_Call(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if !value.Equals(result, tt.want) {
+			if !result.Equals(tt.want) {
 				t.Fatalf("expected %v, got %v", tt.want, result)
 			}
 		})
@@ -114,7 +114,7 @@ counter`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.IntVal(10)) {
+	if !result.Equals(value.IntVal(10)) {
 		t.Fatalf("expected global counter to remain 10, got %v", result)
 	}
 
@@ -122,7 +122,7 @@ counter`
 	if !ok {
 		t.Fatalf("expected result binding")
 	}
-	if !value.Equals(local, value.IntVal(1)) {
+	if !local.Equals(value.IntVal(1)) {
 		t.Fatalf("expected function return 1, got %v", local)
 	}
 }
@@ -138,7 +138,7 @@ with`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.LogicVal(true)) {
+	if !result.Equals(value.LogicVal(true)) {
 		t.Fatalf("expected final result true, got %v", result)
 	}
 
@@ -146,7 +146,7 @@ with`
 	if !ok {
 		t.Fatalf("expected without binding")
 	}
-	if !value.Equals(without, value.LogicVal(false)) {
+	if !without.Equals(value.LogicVal(false)) {
 		t.Fatalf("expected flag default false, got %v", without)
 	}
 }
@@ -162,7 +162,7 @@ with-title`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.StrVal("Dr.")) {
+	if !result.Equals(value.StrVal("Dr.")) {
 		t.Fatalf("expected final result Dr., got %v", result)
 	}
 
@@ -187,7 +187,7 @@ second`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.IntVal(7)) {
+	if !result.Equals(value.IntVal(7)) {
 		t.Fatalf("expected second call result 7, got %v", result)
 	}
 
@@ -195,7 +195,7 @@ second`
 	if !ok {
 		t.Fatalf("expected first binding")
 	}
-	if !value.Equals(first, value.IntVal(5)) {
+	if !first.Equals(value.IntVal(5)) {
 		t.Fatalf("expected first call result 5, got %v", first)
 	}
 
@@ -220,7 +220,7 @@ add5 7`)
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.IntVal(12)) {
+	if !result.Equals(value.IntVal(12)) {
 		t.Fatalf("expected closure to capture x=5, got %v", result)
 	}
 }
@@ -236,7 +236,7 @@ fact 5`)
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !value.Equals(result, value.IntVal(120)) {
+	if !result.Equals(value.IntVal(120)) {
 		t.Fatalf("expected factorial 120, got %v", result)
 	}
 }

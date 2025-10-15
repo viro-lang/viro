@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -39,10 +40,10 @@ func TestFilePortSandbox(t *testing.T) {
 		if err != nil {
 			t.Errorf("Expected success opening file within sandbox, got error: %v", err)
 		}
-		if port.Type != value.TypePort {
-			t.Errorf("Expected TypePort, got %v", port.Type)
+		if port.GetType() != value.TypePort {
+			t.Errorf("Expected TypePort, got %v", port.GetType())
 		}
-		p, ok := port.AsPort()
+		p, ok := value.AsPort(port)
 		if !ok {
 			t.Fatal("Failed to extract Port from value")
 		}
@@ -81,15 +82,15 @@ func TestHTTPPortTLS(t *testing.T) {
 		defer server.Close()
 
 		// Test with --insecure flag (should succeed)
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"insecure": value.LogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("Expected success with --insecure flag, got: %v", err)
 		}
-		if port.Type == value.TypePort {
-			p, _ := port.AsPort()
+		if port.GetType() == value.TypePort {
+			p, _ := value.AsPort(port)
 			if p.State != value.PortOpen {
 				t.Errorf("Expected PortOpen, got %v", p.State)
 			}
@@ -107,7 +108,7 @@ func TestHTTPPortTLS(t *testing.T) {
 		defer server.Close()
 
 		// Read from HTTPS port
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"insecure": value.LogicVal(true),
 		}
 		content, err := native.ReadPort(server.URL, opts)
@@ -115,7 +116,7 @@ func TestHTTPPortTLS(t *testing.T) {
 			t.Errorf("Expected successful HTTPS read, got: %v", err)
 		}
 
-		str, ok := content.AsString()
+		str, ok := value.AsString(content)
 		if !ok {
 			t.Fatal("Expected string response")
 		}
@@ -129,7 +130,7 @@ func TestHTTPPortTLS(t *testing.T) {
 func TestTCPPortTimeout(t *testing.T) {
 	t.Run("TCPWithTimeout", func(t *testing.T) {
 		// Test TCP connection with custom timeout
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"timeout": value.IntVal(100), // 100ms timeout
 		}
 		_, err := native.OpenPort("tcp://localhost:9999", opts)
@@ -174,7 +175,7 @@ func TestFilePortOperations(t *testing.T) {
 			t.Fatalf("Failed to read file: %v", err)
 		}
 
-		str, ok := content.AsString()
+		str, ok := value.AsString(content)
 		if !ok {
 			t.Fatal("Expected string result from read")
 		}
@@ -194,7 +195,7 @@ func TestFilePortOperations(t *testing.T) {
 
 		// Append more data
 		data2 := value.StrVal("Line 2\n")
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"append": value.LogicVal(true),
 		}
 		if err := native.WritePort(testFile, data2, opts); err != nil {
@@ -207,7 +208,7 @@ func TestFilePortOperations(t *testing.T) {
 			t.Fatalf("Failed to read file: %v", err)
 		}
 
-		str, _ := content.AsString()
+		str, _ := value.AsString(content)
 		expected := "Line 1\nLine 2\n"
 		if str.String() != expected {
 			t.Errorf("Expected '%s', got '%s'", expected, str.String())
@@ -233,10 +234,10 @@ func TestHTTPMethods(t *testing.T) {
 		if err != nil {
 			t.Errorf("HTTP GET failed: %v", err)
 		}
-		if content.Type != value.TypeString {
-			t.Errorf("Expected string response, got %v", content.Type)
+		if content.GetType() != value.TypeString {
+			t.Errorf("Expected string response, got %v", content.GetType())
 		}
-		str, _ := content.AsString()
+		str, _ := value.AsString(content)
 		if !strings.Contains(str.String(), "GET response") {
 			t.Errorf("Expected 'GET response' in content, got: %s", str.String())
 		}
@@ -261,8 +262,8 @@ func TestHTTPMethods(t *testing.T) {
 		if err != nil {
 			t.Errorf("HTTP redirect failed: %v", err)
 		}
-		if content.Type != value.TypeString {
-			t.Errorf("Expected string response after redirects, got %v", content.Type)
+		if content.GetType() != value.TypeString {
+			t.Errorf("Expected string response after redirects, got %v", content.GetType())
 		}
 		if redirectCount != 3 {
 			t.Errorf("Expected 3 redirects, got %d", redirectCount)
@@ -285,7 +286,7 @@ func TestHTTPMethods(t *testing.T) {
 
 		// Test HTTP POST request
 		data := value.StrVal("test data")
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"method": value.WordVal("POST"),
 		}
 		err := native.WritePort(server.URL, data, opts)
@@ -327,12 +328,12 @@ func TestPortQuery(t *testing.T) {
 			t.Errorf("Failed to query port: %v", err)
 		}
 
-		if metadata.Type != value.TypeObject {
-			t.Errorf("Expected object metadata, got %v", metadata.Type)
+		if metadata.GetType() != value.TypeObject {
+			t.Errorf("Expected object metadata, got %v", metadata.GetType())
 		}
 
 		// Metadata should contain: size, modified time, etc.
-		obj, ok := metadata.AsObject()
+		obj, ok := value.AsObject(metadata)
 		if !ok {
 			t.Fatal("Failed to extract object from metadata")
 		}
@@ -408,14 +409,14 @@ func TestTLSInsecureFlag(t *testing.T) {
 		defer server.Close()
 
 		// Test with --insecure flag (should succeed and emit warning)
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"insecure": value.LogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("Expected --insecure to allow self-signed cert, got: %v", err)
 		}
-		if port.Type == value.TypePort {
+		if port.GetType() == value.TypePort {
 			native.ClosePort(port)
 		}
 	})
@@ -428,14 +429,14 @@ func TestTLSInsecureFlag(t *testing.T) {
 		defer server.Close()
 
 		// --insecure should be allowed but has no effect on HTTP
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"insecure": value.LogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("--insecure flag should be allowed on HTTP: %v", err)
 		}
-		if port.Type == value.TypePort {
+		if port.GetType() == value.TypePort {
 			native.ClosePort(port)
 		}
 	})
@@ -449,7 +450,7 @@ func TestTLSInsecureFlag(t *testing.T) {
 		native.SandboxRoot = tmpDir
 
 		// --insecure on file:// should raise error
-		opts := map[string]value.Value{
+		opts := map[string]core.Value{
 			"insecure": value.LogicVal(true),
 		}
 		_, err := native.OpenPort("test.txt", opts)

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -14,7 +14,7 @@ import (
 // Contract tests validate FR-009 through FR-011 requirements
 // These tests follow TDD: they MUST FAIL initially before implementation
 
-func evalObjectScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.Error) {
+func evalObjectScriptWithEvaluator(src string) (core.Evaluator, core.Value, error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
 		return nil, value.NoneVal(), err
@@ -30,16 +30,16 @@ func TestObjectConstruction(t *testing.T) {
 	tests := []struct {
 		name        string
 		code        string
-		expectType  value.ValueType
-		checkFields func(*testing.T, value.Value, *eval.Evaluator)
+		expectType  core.ValueType
+		checkFields func(*testing.T, core.Value, core.Evaluator)
 		wantErr     bool
 	}{
 		{
 			name:       "empty object",
 			code:       "obj: object [] obj",
 			expectType: value.TypeObject,
-			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
-				obj, ok := v.AsObject()
+			checkFields: func(t *testing.T, v core.Value, e core.Evaluator) {
+				obj, ok := value.AsObject(v)
 				if !ok {
 					t.Fatal("expected object type")
 				}
@@ -53,8 +53,8 @@ func TestObjectConstruction(t *testing.T) {
 			name:       "simple fields without values",
 			code:       "obj: object [name age] obj",
 			expectType: value.TypeObject,
-			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
-				obj, ok := v.AsObject()
+			checkFields: func(t *testing.T, v core.Value, e core.Evaluator) {
+				obj, ok := value.AsObject(v)
 				if !ok {
 					t.Fatal("expected object type")
 				}
@@ -71,8 +71,8 @@ func TestObjectConstruction(t *testing.T) {
 			name:       "fields with initialization",
 			code:       "obj: object [name: \"Alice\" age: 30] obj",
 			expectType: value.TypeObject,
-			checkFields: func(t *testing.T, v value.Value, e *eval.Evaluator) {
-				obj, ok := v.AsObject()
+			checkFields: func(t *testing.T, v core.Value, e core.Evaluator) {
+				obj, ok := value.AsObject(v)
 				if !ok {
 					t.Fatal("expected object type")
 				}
@@ -80,7 +80,6 @@ func TestObjectConstruction(t *testing.T) {
 					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
 				}
 
-				// Verify field values are stored in object's frame
 				objFrame := e.GetFrameByIndex(obj.FrameIndex)
 				if objFrame == nil {
 					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
@@ -90,16 +89,16 @@ func TestObjectConstruction(t *testing.T) {
 				if !found {
 					t.Error("field 'name' not found in frame")
 				}
-				if nameVal.Type != value.TypeString {
-					t.Errorf("expected name to be string, got %v", nameVal.Type)
+				if nameVal.GetType() != value.TypeString {
+					t.Errorf("expected name to be string, got %v", value.TypeToString(nameVal.GetType()))
 				}
 
 				ageVal, found := objFrame.Get("age")
 				if !found {
 					t.Error("field 'age' not found in frame")
 				}
-				if ageVal.Type != value.TypeInteger {
-					t.Errorf("expected age to be integer, got %v", ageVal.Type)
+				if ageVal.GetType() != value.TypeInteger {
+					t.Errorf("expected age to be integer, got %v", value.TypeToString(ageVal.GetType()))
 				}
 			},
 			wantErr: false,
@@ -120,8 +119,10 @@ func TestObjectConstruction(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				if verr, ok := err.(*verror.Error); ok {
+					if verr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", verr.Category)
+					}
 				}
 				return
 			}
@@ -130,8 +131,8 @@ func TestObjectConstruction(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
 			}
 
 			if tt.checkFields != nil {
@@ -146,7 +147,7 @@ func TestNestedObjects(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		checkField func(*testing.T, value.Value, *eval.Evaluator)
+		checkField func(*testing.T, core.Value, core.Evaluator)
 		wantErr    bool
 	}{
 		{
@@ -159,13 +160,12 @@ func TestNestedObjects(t *testing.T) {
 				]
 			]
 			user`,
-			checkField: func(t *testing.T, v value.Value, e *eval.Evaluator) {
-				obj, ok := v.AsObject()
+			checkField: func(t *testing.T, v core.Value, e core.Evaluator) {
+				obj, ok := value.AsObject(v)
 				if !ok {
 					t.Fatal("expected object type")
 				}
 
-				// Check nested address object
 				objFrame := e.GetFrameByIndex(obj.FrameIndex)
 				if objFrame == nil {
 					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
@@ -175,11 +175,11 @@ func TestNestedObjects(t *testing.T) {
 					t.Fatal("address field not found")
 				}
 
-				if addrVal.Type != value.TypeObject {
-					t.Errorf("expected address to be object, got %v", addrVal.Type)
+				if addrVal.GetType() != value.TypeObject {
+					t.Errorf("expected address to be object, got %v", value.TypeToString(addrVal.GetType()))
 				}
 
-				addrObj, ok := addrVal.AsObject()
+				addrObj, ok := value.AsObject(addrVal)
 				if !ok {
 					t.Fatal("address is not an object")
 				}
@@ -192,8 +192,8 @@ func TestNestedObjects(t *testing.T) {
 				if !found {
 					t.Error("city field not found in nested object")
 				}
-				if cityVal.Type != value.TypeString {
-					t.Errorf("expected city to be string, got %v", cityVal.Type)
+				if cityVal.GetType() != value.TypeString {
+					t.Errorf("expected city to be string, got %v", value.TypeToString(cityVal.GetType()))
 				}
 			},
 			wantErr: false,
@@ -208,29 +208,28 @@ func TestNestedObjects(t *testing.T) {
 				]
 			]
 			org`,
-			checkField: func(t *testing.T, v value.Value, e *eval.Evaluator) {
-				obj, ok := v.AsObject()
+			checkField: func(t *testing.T, v core.Value, e core.Evaluator) {
+				obj, ok := value.AsObject(v)
 				if !ok {
 					t.Fatal("expected object type")
 				}
 
-				// Navigate through three levels
 				frame1 := e.GetFrameByIndex(obj.FrameIndex)
 				if frame1 == nil {
 					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
 				}
 				deptVal, found := frame1.Get("dept")
-				if !found || deptVal.Type != value.TypeObject {
+				if !found || deptVal.GetType() != value.TypeObject {
 					t.Fatal("dept not found or not an object")
 				}
 
-				deptObj, _ := deptVal.AsObject()
+				deptObj, _ := value.AsObject(deptVal)
 				frame2 := e.GetFrameByIndex(deptObj.FrameIndex)
 				if frame2 == nil {
 					t.Fatalf("invalid frame index: %d", deptObj.FrameIndex)
 				}
 				teamVal, found := frame2.Get("team")
-				if !found || teamVal.Type != value.TypeObject {
+				if !found || teamVal.GetType() != value.TypeObject {
 					t.Fatal("team not found or not an object")
 				}
 			},
@@ -265,7 +264,7 @@ func TestPathReadTraversal(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectType value.ValueType
+		expectType core.ValueType
 		expectStr  string // Expected string representation or partial match
 		wantErr    bool
 	}{
@@ -315,8 +314,10 @@ func TestPathReadTraversal(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				if verr, ok := err.(*verror.Error); ok {
+					if verr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", verr.Category)
+					}
 				}
 				return
 			}
@@ -325,8 +326,8 @@ func TestPathReadTraversal(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
 			}
 
 			if tt.expectStr != "" {
@@ -344,7 +345,7 @@ func TestPathWriteMutation(t *testing.T) {
 	tests := []struct {
 		name      string
 		code      string
-		checkFunc func(*testing.T, *eval.Evaluator)
+		checkFunc func(*testing.T, core.Evaluator)
 		wantErr   bool
 	}{
 		{
@@ -352,12 +353,13 @@ func TestPathWriteMutation(t *testing.T) {
 			code: `obj: object [name: "Alice" age: 30]
 			       obj.name: "Bob"
 			       obj`,
-			checkFunc: func(t *testing.T, e *eval.Evaluator) {
-				objVal, found := e.Frames[0].Get("obj")
+			checkFunc: func(t *testing.T, e core.Evaluator) {
+				rootFrame := e.GetFrameByIndex(0)
+				objVal, found := rootFrame.Get("obj")
 				if !found {
 					t.Fatal("obj not found")
 				}
-				obj, ok := objVal.AsObject()
+				obj, ok := value.AsObject(objVal)
 				if !ok {
 					t.Fatal("obj is not an object")
 				}
@@ -383,12 +385,13 @@ func TestPathWriteMutation(t *testing.T) {
 			code: `user: object [address: object [city: "Portland"]]
 			       user.address.city: "Seattle"
 			       user`,
-			checkFunc: func(t *testing.T, e *eval.Evaluator) {
-				userVal, found := e.Frames[0].Get("user")
+			checkFunc: func(t *testing.T, e core.Evaluator) {
+				rootFrame := e.GetFrameByIndex(0)
+				userVal, found := rootFrame.Get("user")
 				if !found {
 					t.Fatal("user not found")
 				}
-				user, ok := userVal.AsObject()
+				user, ok := value.AsObject(userVal)
 				if !ok {
 					t.Fatal("user is not an object")
 				}
@@ -402,7 +405,7 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("address not found")
 				}
 
-				addr, ok := addrVal.AsObject()
+				addr, ok := value.AsObject(addrVal)
 				if !ok {
 					t.Fatal("address is not an object")
 				}
@@ -438,8 +441,10 @@ func TestPathWriteMutation(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript && err.Category != verror.ErrSyntax {
-					t.Errorf("expected Script or Syntax error, got %v", err.Category)
+				if verr, ok := err.(interface{ Category() verror.ErrorCategory }); ok {
+					if verr.Category() != verror.ErrScript && verr.Category() != verror.ErrSyntax {
+						t.Errorf("expected Script or Syntax error, got %v", verr.Category())
+					}
 				}
 				return
 			}
@@ -460,7 +465,7 @@ func TestPathIndexing(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectType value.ValueType
+		expectType core.ValueType
 		expectStr  string
 		wantErr    bool
 	}{
@@ -511,8 +516,8 @@ func TestPathIndexing(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
 			}
 
 			if tt.expectStr != "" {
@@ -530,7 +535,7 @@ func TestParentPrototype(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectType value.ValueType
+		expectType core.ValueType
 		expectStr  string
 		wantErr    bool
 	}{
@@ -579,8 +584,8 @@ func TestParentPrototype(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
 			}
 
 			if tt.expectStr != "" {
@@ -622,8 +627,10 @@ func TestMakePrototypeErrors(t *testing.T) {
 			if err == nil {
 				t.Fatalf("expected error but got none")
 			}
-			if err.ID != tt.errorID {
-				t.Fatalf("expected error id %s, got %s", tt.errorID, err.ID)
+			if verr, ok := err.(interface{ ID() string }); ok {
+				if verr.ID() != tt.errorID {
+					t.Fatalf("expected error id %s, got %s", tt.errorID, verr.ID())
+				}
 			}
 		})
 	}
@@ -677,13 +684,18 @@ func TestPathErrorHandling(t *testing.T) {
 				t.Fatal("expected error but got none")
 			}
 
-			if err.Category != tt.expectCat {
-				t.Errorf("expected category %v, got %v", tt.expectCat, err.Category)
-			}
+			if verr, ok := err.(interface {
+				Category() verror.ErrorCategory
+				Error() string
+			}); ok {
+				if verr.Category() != tt.expectCat {
+					t.Errorf("expected category %v, got %v", tt.expectCat, verr.Category())
+				}
 
-			errMsg := err.Message
-			if !strings.Contains(strings.ToLower(errMsg), strings.ToLower(tt.expectToken)) {
-				t.Errorf("expected error message to contain %q, got %q", tt.expectToken, errMsg)
+				errMsg := verr.Error()
+				if !strings.Contains(strings.ToLower(errMsg), strings.ToLower(tt.expectToken)) {
+					t.Errorf("expected error message to contain %q, got %q", tt.expectToken, errMsg)
+				}
 			}
 		})
 	}

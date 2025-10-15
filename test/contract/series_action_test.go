@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestActionFirst tests the 'first' action on blocks and strings.
@@ -39,7 +40,8 @@ func TestActionFirst(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.Do_Blk(tokens)
+			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -98,7 +100,8 @@ func TestActionLast(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.Do_Blk(tokens)
+			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -156,7 +159,8 @@ func TestActionAppend(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.Do_Blk(tokens)
+			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -214,7 +218,8 @@ func TestActionInsert(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.Do_Blk(tokens)
+			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -272,7 +277,8 @@ func TestActionLength(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.Do_Blk(tokens)
+			evalErr := err.(*verror.Error)
 
 			if tt.wantErr {
 				if evalErr == nil {

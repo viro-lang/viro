@@ -3,6 +3,7 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -10,7 +11,7 @@ func TestSeries_First(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -70,7 +71,7 @@ func TestSeries_Last(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -125,7 +126,7 @@ func TestSeries_Append(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -133,7 +134,7 @@ func TestSeries_Append(t *testing.T) {
 			input: `data: [1 2 3]
 append data 4
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.IntVal(2),
 				value.IntVal(3),
@@ -145,7 +146,7 @@ data`,
 			input: `data: [1]
 append data "x"
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.StrVal("x"),
 			}),
@@ -189,7 +190,7 @@ func TestSeries_Insert(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -197,7 +198,7 @@ func TestSeries_Insert(t *testing.T) {
 			input: `data: [1 2 3]
 insert data 0
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(0),
 				value.IntVal(1),
 				value.IntVal(2),
@@ -243,7 +244,7 @@ func TestSeries_LengthQ(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -300,7 +301,7 @@ length? data`,
 func TestSeries_Copy(t *testing.T) {
 	t.Run("copy block", func(t *testing.T) {
 		input := "copy [1 2 3]"
-		want := value.BlockVal([]value.Value{
+		want := value.BlockVal([]core.Value{
 			value.IntVal(1), value.IntVal(2), value.IntVal(3),
 		})
 		evalResult, err := Evaluate(input)
@@ -326,7 +327,7 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part block", func(t *testing.T) {
 		input := "copy --part 2 [1 2 3 4]"
-		want := value.BlockVal([]value.Value{
+		want := value.BlockVal([]core.Value{
 			value.IntVal(1), value.IntVal(2),
 		})
 		evalResult, err := Evaluate(input)
@@ -374,7 +375,7 @@ func TestSeries_Find(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -445,7 +446,7 @@ func TestSeries_Remove(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -453,7 +454,7 @@ func TestSeries_Remove(t *testing.T) {
 			input: `data: [1 2 3 4 5]
 remove data
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(2),
 				value.IntVal(3),
 				value.IntVal(4),
@@ -472,7 +473,7 @@ str`,
 			input: `data: [1 2 3 4 5]
 remove data --part 3
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(4),
 				value.IntVal(5),
 			}),
@@ -527,7 +528,7 @@ func TestSeries_SkipTake(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -535,7 +536,7 @@ func TestSeries_SkipTake(t *testing.T) {
 			input: `data: [1 2 3 4 5]
 skip data 2
 take data 2`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(3),
 				value.IntVal(4),
 			}),
@@ -552,7 +553,7 @@ take str 3`,
 			input: `data: [1 2 3]
 part: take data 2
 part`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.IntVal(2),
 			}),
@@ -605,7 +606,7 @@ func TestSeries_SortReverse(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    value.Value
+		want    core.Value
 		wantErr bool
 	}{
 		{
@@ -613,7 +614,7 @@ func TestSeries_SortReverse(t *testing.T) {
 			input: `data: [3 1 4 1 5 9 2 6]
 sort data
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(1), value.IntVal(1), value.IntVal(2), value.IntVal(3),
 				value.IntVal(4), value.IntVal(5), value.IntVal(6), value.IntVal(9),
 			}),
@@ -623,7 +624,7 @@ data`,
 			input: `data: ["c" "a" "b"]
 sort data
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.StrVal("a"), value.StrVal("b"), value.StrVal("c"),
 			}),
 		},
@@ -632,7 +633,7 @@ data`,
 			input: `data: [1 2 3]
 reverse data
 data`,
-			want: value.BlockVal([]value.Value{
+			want: value.BlockVal([]core.Value{
 				value.IntVal(3), value.IntVal(2), value.IntVal(1),
 			}),
 		},

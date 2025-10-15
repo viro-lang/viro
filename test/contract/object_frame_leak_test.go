@@ -24,7 +24,11 @@ func TestObjectFieldIsolation(t *testing.T) {
 
 	t.Logf("Active frames count after object creation: %d", len(e.Frames))
 	for i, f := range e.Frames {
-		t.Logf("Frame %d: type=%v, parent=%d, words=%v", i, f.Type, f.Parent, f.Words)
+		words := make([]string, 0)
+		for _, binding := range f.GetAll() {
+			words = append(words, binding.Symbol)
+		}
+		t.Logf("Frame %d: type=%v, parent=%d, words=%v", i, f.GetType(), f.GetParent(), words)
 	}
 
 	// Now try to lookup 'a' - it should NOT be found

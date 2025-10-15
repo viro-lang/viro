@@ -9,8 +9,6 @@ import (
 	"github.com/marcin-radoszewski/viro/test/contract"
 )
 
-// T009: Test that refinements can use native names without errors
-// This validates User Story 1: Define Functions with Names Matching Natives
 func TestRefinementWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -84,14 +82,13 @@ func TestRefinementWithNativeName(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !value.Equals(result, tt.expected) {
+			if !result.Equals(tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
 }
 
-// T009: Test that local variables can use native names without conflicts
 func TestLocalVariableWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -187,14 +184,13 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !value.Equals(result, tt.expected) {
+			if !result.Equals(tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
 }
 
-// T010: Test that nested scopes follow lexical scoping rules
 func TestNestedScopeShadowing(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -316,16 +312,13 @@ func TestNestedScopeShadowing(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !value.Equals(result, tt.expected) {
+			if !result.Equals(tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
 }
 
-// Verify that native functions are still accessible via the registry
-// This test should pass initially (with registry), then fail when we remove native.Lookup(),
-// then pass again after we implement frame-based lookup
 func TestNativeFunctionsAccessible(t *testing.T) {
 	e := contract.NewTestEvaluator()
 
@@ -351,7 +344,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
-			if !value.Equals(result, tt.expected) {
+			if !result.Equals(tt.expected) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
