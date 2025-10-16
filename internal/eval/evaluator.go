@@ -130,7 +130,6 @@ func init() {
 		value.TypeDatatype: evalLiteral,
 		value.TypeBlock:    evalBlock,
 		value.TypeFunction: evalFunction,
-		value.TypeAction:   evalAction,
 		value.TypeParen:    evalParenDispatch,
 		value.TypeWord:     evalWordDispatch,
 		value.TypeSetWord:  evalSetWordDispatch,
@@ -152,12 +151,6 @@ func evalBlock(e core.Evaluator, val core.Value) (core.Value, error) {
 
 // evalFunction handles function evaluation (returns self)
 func evalFunction(e core.Evaluator, val core.Value) (core.Value, error) {
-	return val, nil
-}
-
-// evalAction handles action evaluation (returns self)
-// Actions are first-class values like functions
-func evalAction(e core.Evaluator, val core.Value) (core.Value, error) {
 	return val, nil
 }
 
@@ -575,42 +568,6 @@ func (a evaluatorAdapter) Lookup(symbol string) (core.Value, bool) {
 	return a.eval.Lookup(symbol)
 }
 
-// invokeAction is the action invocation handler that performs type-based dispatch.
-// It collects arguments (like invokeFunction) and then dispatches to the type-specific implementation.
-func (e *Evaluator) invokeAction(action *value.ActionValue, vals []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
-	startIdx := *idx
-	name := action.Name
-
-	// Push call stack entry
-	e.pushCall(name)
-	defer e.popCall()
-
-	// Create a temporary FunctionValue with action's param specs for argument collection
-	// This allows us to reuse collectFunctionArgsWithInfix logic
-	tmpFn := &value.FunctionValue{
-		Name:   name,
-		Params: action.ParamSpec,
-		Infix:  false, // Actions don't support infix
-	}
-
-	// Collect arguments using same logic as functions
-	tokens := vals[*idx+1:]
-	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(tmpFn, tokens, lastResult)
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, vals, startIdx)
-	}
-
-	*idx += consumed
-
-	// Now dispatch to type-specific implementation
-	result, dispatchErr := e.DispatchAction(action, posArgs, refValues)
-	if dispatchErr != nil {
-		return value.NoneVal(), e.annotateError(dispatchErr, vals, startIdx)
-	}
-
-	return result, nil
-}
-
 // evaluateWithFunctionCall resolves a value that might represent a callable.
 //
 // If the value is a word referring to a native or user-defined function, this
@@ -638,12 +595,6 @@ func (e *Evaluator) evaluateWithFunctionCall(val core.Value, seq []core.Value, i
 	if resolved.GetType() == value.TypeFunction {
 		fn, _ := value.AsFunction(resolved)
 		return e.invokeFunction(fn, seq, idx, lastResult)
-	}
-
-	// Handle actions
-	if resolved.GetType() == value.TypeAction {
-		action, _ := value.AsAction(resolved)
-		return e.invokeAction(action, seq, idx, lastResult)
 	}
 
 	return e.Do_Next(val)
