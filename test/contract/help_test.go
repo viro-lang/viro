@@ -12,7 +12,7 @@ import (
 func TestHelpDirectCall(t *testing.T) {
 	e := NewTestEvaluator()
 
-	val, err := native.Help([]core.Value{}, e)
+	val, err := native.Help([]core.Value{}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with no args failed: %v", err)
 	}
@@ -20,7 +20,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("append")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("append")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with 'append' failed: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("math")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("math")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with 'math' failed: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("+")}, e)
+	val, err = native.Help([]core.Value{value.WordVal("+")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with '+' failed: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestWords(t *testing.T) {
 
 func TestWordsDirectCall(t *testing.T) {
 	e := NewTestEvaluator()
-	val, err := native.Words([]core.Value{}, e)
+	val, err := native.Words([]core.Value{}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Words failed: %v", err)
 	}

@@ -117,19 +117,21 @@ func TestArithmeticNatives(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
 			// Call the appropriate native function
 			var result core.Value
 			var err error
 
 			switch tt.op {
 			case "+":
-				result, err = native.Add(tt.args)
+				result, err = native.Add(tt.args, map[string]core.Value{}, e)
 			case "-":
-				result, err = native.Subtract(tt.args)
+				result, err = native.Subtract(tt.args, map[string]core.Value{}, e)
 			case "*":
-				result, err = native.Multiply(tt.args)
+				result, err = native.Multiply(tt.args, map[string]core.Value{}, e)
 			case "/":
-				result, err = native.Divide(tt.args)
+				result, err = native.Divide(tt.args, map[string]core.Value{}, e)
 			default:
 				t.Fatalf("Unknown operator: %s", tt.op)
 			}
@@ -234,17 +236,19 @@ func TestArithmeticOverflow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
 			// Call the appropriate native function
 			var result core.Value
 			var err error
 
 			switch tt.op {
 			case "+":
-				result, err = native.Add(tt.args)
+				result, err = native.Add(tt.args, map[string]core.Value{}, e)
 			case "-":
-				result, err = native.Subtract(tt.args)
+				result, err = native.Subtract(tt.args, map[string]core.Value{}, e)
 			case "*":
-				result, err = native.Multiply(tt.args)
+				result, err = native.Multiply(tt.args, map[string]core.Value{}, e)
 			default:
 				t.Fatalf("Unknown operator: %s", tt.op)
 			}
