@@ -1,13 +1,9 @@
-
 List of things to impelment:
 
-- pliki `register_*` do rejestrowania funkcji natywnych wszystkie definiują swoje funkcje pomocnicze do rejestrowania
-  warto to wyciągnąć do wspólnego kodu
 - extend help system for user-defined functions
 - regression: introducing actions hid the documentation for them (docs are only for functions, not actions)
   it would be better to reuse the FunctionValue but as an Action type - it could normally store the documentation.
   as types have numbers going up from 0 then the type frame registry could be a simple array instead of a map. This would improve the performance.
-
 
 - merge branch to main, upload to github
 - register native functions within the root frame and drop special native fns handling
