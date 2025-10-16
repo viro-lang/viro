@@ -10,9 +10,9 @@ import (
 //
 // Contract: copy series -> new copy
 // Contract: copy --part series count -> new copy of first count elements/chars
-func Copy(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
+func Copy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// --part refinement: copy only first N elements/chars
-	partVal, hasPart := refinements["part"]
+	partVal, hasPart := refValues["part"]
 	// Check if refinement was actually provided (not just default none)
 	hasPart = hasPart && partVal.GetType() != value.TypeNone
 	if len(args) < 1 {
@@ -104,7 +104,7 @@ func seriesOperation(name string, args []core.Value, sel seriesSelector) (core.V
 // Contract: first series -> first element
 // - Series must be block or string
 // - Error on empty series
-func First(args []core.Value) (core.Value, error) {
+func First(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return seriesOperation("first", args, func(series core.Value) (core.Value, error) {
 		switch series.GetType() {
 		case value.TypeBlock:
@@ -120,7 +120,7 @@ func First(args []core.Value) (core.Value, error) {
 }
 
 // Last implements the `last` native for series values.
-func Last(args []core.Value) (core.Value, error) {
+func Last(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return seriesOperation("last", args, func(series core.Value) (core.Value, error) {
 		switch series.GetType() {
 		case value.TypeBlock:
@@ -138,7 +138,7 @@ func Last(args []core.Value) (core.Value, error) {
 // Append implements the `append` native for series values.
 //
 // Contract: append series value -> modified series
-func Append(args []core.Value) (core.Value, error) {
+func Append(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("append", 2, len(args))
 	}
@@ -163,7 +163,7 @@ func Append(args []core.Value) (core.Value, error) {
 }
 
 // Insert implements the `insert` native for series values.
-func Insert(args []core.Value) (core.Value, error) {
+func Insert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("insert", 2, len(args))
 	}
@@ -190,7 +190,7 @@ func Insert(args []core.Value) (core.Value, error) {
 }
 
 // LengthQ implements the `length?` native for series values.
-func LengthQ(args []core.Value) (core.Value, error) {
+func LengthQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("length?", 1, len(args))
 	}
@@ -219,14 +219,14 @@ func emptySeriesError(op string) error {
 //
 // Contract: find series value -> index (1-based) or none
 // Contract: find --last series value -> last index (1-based) or none
-func Find(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
+func Find(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("find", 2, len(args))
 	}
 
 	series := args[0]
 	sought := args[1]
-	lastVal, hasLast := refinements["last"]
+	lastVal, hasLast := refValues["last"]
 	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
 
 	switch series.GetType() {
@@ -299,8 +299,8 @@ func Find(args []core.Value, refinements map[string]core.Value) (core.Value, err
 //
 // Contract: remove series -> modified series
 // Contract: remove series --part count -> modified series
-func Remove(args []core.Value, refinements map[string]core.Value) (core.Value, error) {
-	partVal, hasPart := refinements["part"]
+func Remove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	partVal, hasPart := refValues["part"]
 	hasPart = hasPart && partVal.GetType() != value.TypeNone
 
 	if len(args) != 1 {
@@ -341,7 +341,7 @@ func Remove(args []core.Value, refinements map[string]core.Value) (core.Value, e
 }
 
 // Skip implements the `skip` native for series values.
-func Skip(args []core.Value) (core.Value, error) {
+func Skip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("skip", 2, len(args))
 	}
@@ -375,7 +375,7 @@ func Skip(args []core.Value) (core.Value, error) {
 }
 
 // Take implements the `take` native for series values.
-func Take(args []core.Value) (core.Value, error) {
+func Take(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("take", 2, len(args))
 	}
@@ -407,7 +407,7 @@ func Take(args []core.Value) (core.Value, error) {
 }
 
 // Sort implements the `sort` native for series values.
-func Sort(args []core.Value) (core.Value, error) {
+func Sort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("sort", 1, len(args))
 	}
@@ -435,7 +435,7 @@ func Sort(args []core.Value) (core.Value, error) {
 }
 
 // Reverse implements the `reverse` native for series values.
-func Reverse(args []core.Value) (core.Value, error) {
+func Reverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("reverse", 1, len(args))
 	}

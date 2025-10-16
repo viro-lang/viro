@@ -733,7 +733,7 @@ func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // Contract: input
 // - Reads a line from stdin
 // - Returns the line as string value without trailing newline
-func Input(args []core.Value) (core.Value, error) {
+func Input(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("input", 0, len(args))
 	}
@@ -798,7 +798,7 @@ func valueToPrintString(val core.Value) string {
 // OpenNative is the native wrapper for open
 // Usage: open "file.txt" or open "http://example.com"
 // Note: Options/refinements not yet supported in native registry
-func OpenNative(args []core.Value) (core.Value, error) {
+func OpenNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("open", 1, len(args))
 	}
@@ -825,7 +825,7 @@ func OpenNative(args []core.Value) (core.Value, error) {
 }
 
 // CloseNative is the native wrapper for close
-func CloseNative(args []core.Value) (core.Value, error) {
+func CloseNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("close", 1, len(args))
 	}
@@ -846,7 +846,7 @@ func CloseNative(args []core.Value) (core.Value, error) {
 }
 
 // ReadNative is the native wrapper for read
-func ReadNative(args []core.Value) (core.Value, error) {
+func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("read", 1, len(args))
 	}
@@ -872,7 +872,7 @@ func ReadNative(args []core.Value) (core.Value, error) {
 }
 
 // WriteNative is the native wrapper for write
-func WriteNative(args []core.Value) (core.Value, error) {
+func WriteNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("write", 2, len(args))
 	}
@@ -898,7 +898,7 @@ func WriteNative(args []core.Value) (core.Value, error) {
 }
 
 // SaveNative is the native wrapper for save
-func SaveNative(args []core.Value) (core.Value, error) {
+func SaveNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("save", 2, len(args))
 	}
@@ -924,7 +924,7 @@ func SaveNative(args []core.Value) (core.Value, error) {
 }
 
 // LoadNative is the native wrapper for load
-func LoadNative(args []core.Value) (core.Value, error) {
+func LoadNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("load", 1, len(args))
 	}
@@ -950,7 +950,7 @@ func LoadNative(args []core.Value) (core.Value, error) {
 }
 
 // QueryNative is the native wrapper for query
-func QueryNative(args []core.Value) (core.Value, error) {
+func QueryNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("query", 1, len(args))
 	}
@@ -971,7 +971,7 @@ func QueryNative(args []core.Value) (core.Value, error) {
 }
 
 // WaitNative is the native wrapper for wait
-func WaitNative(args []core.Value) (core.Value, error) {
+func WaitNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("wait", 1, len(args))
 	}

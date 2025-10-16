@@ -79,7 +79,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}
 
 	// Helper function to wrap simple series functions
-	registerSimpleSeriesFunc := func(name string, impl func([]core.Value) (core.Value, error), arity int, doc *NativeDoc) {
+	registerSimpleSeriesFunc := func(name string, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error), arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -104,7 +104,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			name,
 			params,
 			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args)
+				result, err := impl(args, refValues, eval)
 				if err == nil {
 					return result, nil
 				}
@@ -205,7 +205,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			"copy",
 			params,
 			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Copy(args, refValues)
+				result, err := Copy(args, refValues, eval)
 				if err == nil {
 					return result, nil
 				}
@@ -238,7 +238,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			"find",
 			params,
 			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Find(args, refValues)
+				result, err := Find(args, refValues, eval)
 				if err == nil {
 					return result, nil
 				}
@@ -271,7 +271,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			"remove",
 			params,
 			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Remove(args, refValues)
+				result, err := Remove(args, refValues, eval)
 				if err == nil {
 					return result, nil
 				}
