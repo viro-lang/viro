@@ -38,7 +38,7 @@ func RegisterMathNatives(rootFrame core.Frame) {
 			value.NewParamSpec("left", true),
 			value.NewParamSpec("right", true),
 		},
-		And,
+		Add,
 	)
 	fn.Infix = true
 	fn.Doc = &NativeDoc{

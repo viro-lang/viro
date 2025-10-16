@@ -610,14 +610,14 @@ func (r *REPL) handleHelpShortcut() {
 	rOut, wOut, err := os.Pipe()
 	if err != nil {
 		// Fallback: call Help normally if pipe creation fails
-		_, _ = native.Help([]core.Value{}, r.evaluator)
+		_, _ = native.Help([]core.Value{}, map[string]core.Value{}, r.evaluator)
 		return
 	}
 
 	os.Stdout = wOut
 
 	// Call Help function directly with no arguments to show categories
-	result, helpErr := native.Help([]core.Value{}, r.evaluator)
+	result, helpErr := native.Help([]core.Value{}, map[string]core.Value{}, r.evaluator)
 
 	// Restore stdout immediately
 	wOut.Close()
