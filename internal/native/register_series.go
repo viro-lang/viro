@@ -79,7 +79,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}
 
 	// Helper function to wrap simple series functions
-	registerSimpleSeriesFunc := func(name string, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error), arity int, doc *NativeDoc) {
+	registerSimpleSeriesFunc := func(name string, impl core.NativeFunc, arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -103,13 +103,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args, refValues, eval)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
+			impl,
 		)
 		fn.Doc = doc
 		registerAndBind(name, value.FuncVal(fn))
@@ -204,13 +198,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		fn := value.NewNativeFunction(
 			"copy",
 			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Copy(args, refValues, eval)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
+			Copy,
 		)
 		fn.Doc = &NativeDoc{
 			Category: "Series",
@@ -237,13 +225,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		fn := value.NewNativeFunction(
 			"find",
 			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Find(args, refValues, eval)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
+			Find,
 		)
 		fn.Doc = &NativeDoc{
 			Category: "Series",
@@ -270,13 +252,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		fn := value.NewNativeFunction(
 			"remove",
 			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := Remove(args, refValues, eval)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
+			Remove,
 		)
 		fn.Doc = &NativeDoc{
 			Category: "Series",

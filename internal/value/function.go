@@ -101,18 +101,18 @@ func NewRefinementSpec(name string, takesValue bool) ParamSpec {
 // - Local-by-default scoping: all words in body are local by default
 // - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	Type   FunctionType                                                                                      // Native or User
-	Name   string                                                                                            // function name (for error messages and debugging)
-	Params []ParamSpec                                                                                       // formal parameter specifications
-	Body   *BlockValue                                                                                       // function body (nil for natives)
-	Native func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) // native implementation (nil for user functions)
-	Parent int                                                                                               // parent frame index for closures (-1 if none)
-	Infix  bool                                                                                              // true if function can be used as infix operator
-	Doc    *docmodel.FuncDoc                                                                                 // dokumentacja funkcji użytkownika (nil jeśli brak)
+	Type   FunctionType      // Native or User
+	Name   string            // function name (for error messages and debugging)
+	Params []ParamSpec       // formal parameter specifications
+	Body   *BlockValue       // function body (nil for natives)
+	Native core.NativeFunc   // native implementation (nil for user functions)
+	Parent int               // parent frame index for closures (-1 if none)
+	Infix  bool              // true if function can be used as infix operator
+	Doc    *docmodel.FuncDoc // dokumentacja funkcji użytkownika (nil jeśli brak)
 }
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []ParamSpec, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error)) *FunctionValue {
+func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncNative,
 		Name:   name,

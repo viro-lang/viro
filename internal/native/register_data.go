@@ -39,15 +39,7 @@ func RegisterDataNatives(rootFrame core.Frame) {
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			// We need to pass a native.Evaluator to Set, but we have core.Evaluator
-			// Create a reverse adapter that converts core.Evaluator back to native.Evaluator
-			result, err := Set(args, refValues, eval)
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
+		Set,
 	)
 	fn.Doc = &NativeDoc{
 		Category: "Data",

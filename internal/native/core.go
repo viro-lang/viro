@@ -6,7 +6,7 @@ import (
 )
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []value.ParamSpec, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error)) *value.FunctionValue {
+func NewNativeFunction(name string, params []value.ParamSpec, impl core.NativeFunc) *value.FunctionValue {
 	return &value.FunctionValue{
 		Type:   value.FuncNative,
 		Name:   name,

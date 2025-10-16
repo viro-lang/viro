@@ -32,7 +32,7 @@ func RegisterIONatives(rootFrame core.Frame) {
 	}
 
 	// Helper function to wrap simple I/O functions (no evaluator needed)
-	registerSimpleIOFunc := func(name string, impl func([]core.Value, map[string]core.Value, core.Evaluator) (core.Value, error), arity int, doc *NativeDoc) {
+	registerSimpleIOFunc := func(name string, impl core.NativeFunc, arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
@@ -56,13 +56,7 @@ func RegisterIONatives(rootFrame core.Frame) {
 		fn := value.NewNativeFunction(
 			name,
 			params,
-			func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-				result, err := impl(args, refValues, eval)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
+			impl,
 		)
 		fn.Doc = doc
 		registerAndBind(name, fn)
