@@ -8,51 +8,48 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// init registers type-specific series implementations into type frames.
-// This runs before RegisterSeriesNatives is called, preparing type frames
-// for action dispatch.
-//
-// Feature: 004-dynamic-function-invocation
-func init() {
-	// This will run after frame.InitTypeFrames() is called in NewEvaluator
-	// We can't directly register here because type frames might not be initialized yet
-	// Instead, we'll do registration lazily in RegisterSeriesNatives
-}
-
 // registerSeriesTypeImpls registers type-specific implementations into type frames.
 // Called by RegisterSeriesNatives after type frames are initialized.
 //
 // Feature: 004-dynamic-function-invocation
 func registerSeriesTypeImpls() {
-	// Helper to create native function wrappers
-	wrapNative := func(name string, impl core.NativeFunc) *value.FunctionValue {
-		params := []value.ParamSpec{
-			value.NewParamSpec("series", true),
-		}
-		if name == "append" || name == "insert" {
-			params = append(params, value.NewParamSpec("value", true))
-		}
-
-		return value.NewNativeFunction(
-			name,
-			params,
-			impl,
-		)
-	}
-
 	// Register block-specific implementations
-	RegisterActionImpl(value.TypeBlock, "first", wrapNative("first", BlockFirst))
-	RegisterActionImpl(value.TypeBlock, "last", wrapNative("last", BlockLast))
-	RegisterActionImpl(value.TypeBlock, "append", wrapNative("append", BlockAppend))
-	RegisterActionImpl(value.TypeBlock, "insert", wrapNative("insert", BlockInsert))
-	RegisterActionImpl(value.TypeBlock, "length?", wrapNative("length?", BlockLength))
+	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockFirst))
+	RegisterActionImpl(value.TypeBlock, "last", value.NewNativeFunction("last", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockLast))
+	RegisterActionImpl(value.TypeBlock, "append", value.NewNativeFunction("append", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, BlockAppend))
+	RegisterActionImpl(value.TypeBlock, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, BlockInsert))
+	RegisterActionImpl(value.TypeBlock, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockLength))
 
 	// Register string-specific implementations
-	RegisterActionImpl(value.TypeString, "first", wrapNative("first", StringFirst))
-	RegisterActionImpl(value.TypeString, "last", wrapNative("last", StringLast))
-	RegisterActionImpl(value.TypeString, "append", wrapNative("append", StringAppend))
-	RegisterActionImpl(value.TypeString, "insert", wrapNative("insert", StringInsert))
-	RegisterActionImpl(value.TypeString, "length?", wrapNative("length?", StringLength))
+	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringFirst))
+	RegisterActionImpl(value.TypeString, "last", value.NewNativeFunction("last", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringLast))
+	RegisterActionImpl(value.TypeString, "append", value.NewNativeFunction("append", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, StringAppend))
+	RegisterActionImpl(value.TypeString, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, StringInsert))
+	RegisterActionImpl(value.TypeString, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringLength))
 }
 
 // RegisterSeriesNatives registers all series-related native functions to the root frame.
