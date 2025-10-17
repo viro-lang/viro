@@ -122,6 +122,15 @@ func tokenize(input string) ([]token, error) {
 			continue
 		}
 
+		// Skip comments (semicolon to end of line)
+		if runes[pos] == ';' {
+			// Skip to end of line or end of input
+			for pos < len(runes) && runes[pos] != '\n' {
+				pos++
+			}
+			continue
+		}
+
 		// String literals
 		if runes[pos] == '"' {
 			start := pos

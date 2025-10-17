@@ -151,3 +151,75 @@ func TestDecimalLiteralDisambiguation(t *testing.T) {
 		})
 	}
 }
+
+// TestCommentParsing validates that comments starting with ';' are ignored
+func TestCommentParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected []core.Value
+		desc     string
+	}{
+		{
+			name:     "Comment at start of line",
+			input:    "; this is a comment\n42",
+			expected: []core.Value{value.IntVal(42)},
+			desc:     "Should ignore comment and parse the number",
+		},
+		{
+			name:     "Comment after code",
+			input:    "42 ; this is a comment",
+			expected: []core.Value{value.IntVal(42)},
+			desc:     "Should parse number and ignore trailing comment",
+		},
+		{
+			name:     "Multiple comments",
+			input:    "; first comment\n42 ; second comment\n; third comment",
+			expected: []core.Value{value.IntVal(42)},
+			desc:     "Should ignore all comments and parse the number",
+		},
+		{
+			name:     "Comment in expression",
+			input:    "3 ; comment\n+ ; another comment\n4",
+			expected: []core.Value{value.ParenVal([]core.Value{value.WordVal("+"), value.IntVal(3), value.IntVal(4)})},
+			desc:     "Should parse expression with comments interspersed",
+		},
+		{
+			name:     "Empty comment",
+			input:    "42 ;",
+			expected: []core.Value{value.IntVal(42)},
+			desc:     "Should handle empty comments",
+		},
+		{
+			name:     "Comment at EOF",
+			input:    "42 ; comment at end",
+			expected: []core.Value{value.IntVal(42)},
+			desc:     "Should handle comments at end of input",
+		},
+		{
+			name:     "Only comments",
+			input:    "; first\n; second\n; third",
+			expected: []core.Value{},
+			desc:     "Should handle input with only comments",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vals, err := Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse error for %s: %v", tt.desc, err)
+			}
+
+			if len(vals) != len(tt.expected) {
+				t.Fatalf("Expected %d values, got %d for %s", len(tt.expected), len(vals), tt.desc)
+			}
+
+			for i, expected := range tt.expected {
+				if !vals[i].Equals(expected) {
+					t.Errorf("Value %d mismatch for %s: expected %v, got %v", i, tt.desc, expected, vals[i])
+				}
+			}
+		})
+	}
+}
