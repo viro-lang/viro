@@ -438,6 +438,16 @@ func ClosePort(portVal core.Value) error {
 
 // ReadPort implements the `read` native (T067)
 func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
+	// Check if binary mode is requested
+	isBinary := false
+	if opts != nil {
+		if binaryVal, ok := opts["binary"]; ok {
+			if binaryVal.GetType() == value.TypeLogic {
+				isBinary, _ = value.AsLogic(binaryVal)
+			}
+		}
+	}
+
 	// Open temporary port
 	portVal, err := OpenPort(spec, opts)
 	if err != nil {
@@ -448,13 +458,13 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 
 	// Read all content
 	buf := make([]byte, 4096)
-	var result strings.Builder
+	var data []byte
 	totalBytes := 0
 
 	for {
 		n, err := port.Driver.Read(buf)
 		if n > 0 {
-			result.Write(buf[:n])
+			data = append(data, buf[:n]...)
 			totalBytes += n
 		}
 		if err == io.EOF {
@@ -469,7 +479,12 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 
 	trace.TracePortRead(port.Scheme, spec, totalBytes)
 	ClosePort(portVal)
-	return value.StrVal(result.String()), nil
+
+	// Return binary or string based on mode
+	if isBinary {
+		return value.BinaryVal(data), nil
+	}
+	return value.StrVal(string(data)), nil
 }
 
 // WritePort implements the `write` native (T068)
@@ -484,13 +499,16 @@ func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 		}
 	}
 
-	// Get string content
-	var content string
-	if data.GetType() == value.TypeString {
+	// Get content as bytes (handle both string and binary)
+	var contentBytes []byte
+	if data.GetType() == value.TypeBinary {
+		bin, _ := value.AsBinary(data)
+		contentBytes = bin.Bytes()
+	} else if data.GetType() == value.TypeString {
 		str, _ := value.AsString(data)
-		content = str.String()
+		contentBytes = []byte(str.String())
 	} else {
-		content = data.String()
+		contentBytes = []byte(data.String())
 	}
 
 	// For file operations with append mode
@@ -521,11 +539,11 @@ func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 		}
 		defer file.Close()
 
-		_, err = file.WriteString(content)
+		_, err = file.Write(contentBytes)
 		if err != nil {
 			trace.TracePortError("file", spec, err)
 		} else {
-			trace.TracePortWrite("file", spec, len(content))
+			trace.TracePortWrite("file", spec, len(contentBytes))
 		}
 		return err
 	}
@@ -542,11 +560,11 @@ func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 	}
 
 	port, _ := value.AsPort(portVal)
-	_, err = port.Driver.Write([]byte(content))
+	_, err = port.Driver.Write(contentBytes)
 	if err != nil {
 		trace.TracePortError(port.Scheme, spec, err)
 	} else {
-		trace.TracePortWrite(port.Scheme, spec, len(content))
+		trace.TracePortWrite(port.Scheme, spec, len(contentBytes))
 	}
 	ClosePort(portVal)
 	return err
@@ -860,7 +878,15 @@ func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		spec = args[0].String()
 	}
 
-	result, err := ReadPort(spec, nil)
+	// Build options map from refinements
+	opts := make(map[string]core.Value)
+	if refValues != nil {
+		for name, val := range refValues {
+			opts[name] = val
+		}
+	}
+
+	result, err := ReadPort(spec, opts)
 	if err != nil {
 		return value.NoneVal(), verror.NewAccessError(
 			verror.ErrIDInvalidOperation,

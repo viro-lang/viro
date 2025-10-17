@@ -123,19 +123,36 @@ After closing, the port should not be used for further I/O operations. Returns n
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "close", "cleanup"},
 	})
 
-	registerSimpleIOFunc("read", ReadNative, 1, &NativeDoc{
+	fn = value.NewNativeFunction(
+		"read",
+		[]value.ParamSpec{
+			value.NewParamSpec("source", true),       // evaluated
+			value.NewRefinementSpec("binary", false), // --binary flag
+		},
+		ReadNative,
+	)
+	fn.Doc = &NativeDoc{
 		Category: "Ports",
 		Summary:  "Reads data from a port or file",
 		Description: `Reads all data from a port or directly from a file path.
 If given a port, reads from that open port. If given a string (file path),
-opens the file, reads its contents, and closes it automatically. Returns the data as a string.`,
+opens the file, reads its contents, and closes it automatically.
+Returns the data as a string by default, or as binary! when --binary is used.
+
+Refinements:
+  --binary: Return data as binary! instead of string!`,
 		Parameters: []ParamDoc{
 			{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
 		},
-		Returns:  "[string!] The data read from the source",
-		Examples: []string{`content: read "file://data.txt"  ; read entire file`, `p: open "file://data.txt"\ndata: read p\nclose p`},
-		SeeAlso:  []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file"},
-	})
+		Returns: "[string! binary!] The data read from the source",
+		Examples: []string{
+			`content: read "file://data.txt"  ; read as string`,
+			`data: read --binary "file://image.png"  ; read as binary`,
+			`p: open "file://data.txt"\ndata: read p\nclose p`,
+		},
+		SeeAlso: []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file", "binary"},
+	}
+	registerAndBind("read", fn)
 
 	registerSimpleIOFunc("write", WriteNative, 2, &NativeDoc{
 		Category: "Ports",

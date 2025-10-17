@@ -110,6 +110,11 @@ func (v Value) String() string {
 			return name
 		}
 		return "datatype!"
+	case TypeBinary:
+		if bin, ok := v.Payload.(*BinaryValue); ok {
+			return bin.String()
+		}
+		return "#{...}"
 	default:
 		return fmt.Sprintf("<%s>", TypeToString(v.Type))
 	}
@@ -150,6 +155,13 @@ func (v Value) Equals(other core.Value) bool {
 	case TypeFunction:
 		// Functions compared by identity (pointer equality)
 		return v.Payload == other.GetPayload()
+	case TypeBinary:
+		vBin, vOk := v.Payload.(*BinaryValue)
+		oBin, oOk := other.GetPayload().(*BinaryValue)
+		if !vOk || !oOk {
+			return false
+		}
+		return vBin.Equals(oBin)
 	default:
 		return false
 	}
@@ -219,6 +231,11 @@ func DatatypeVal(name string) Value {
 	return Value{Type: TypeDatatype, Payload: name}
 }
 
+// BinaryVal creates a binary value from a byte slice.
+func BinaryVal(data []byte) Value {
+	return Value{Type: TypeBinary, Payload: NewBinaryValue(data)}
+}
+
 // Type assertion helpers for safe payload extraction.
 // Return (value, true) on success or (zero-value, false) on type mismatch.
 
@@ -280,6 +297,15 @@ func AsDatatype(v core.Value) (string, bool) {
 	}
 	name, ok := v.GetPayload().(string)
 	return name, ok
+}
+
+// AsBinary extracts BinaryValue if value is TypeBinary.
+func AsBinary(v core.Value) (*BinaryValue, bool) {
+	if v.GetType() != TypeBinary {
+		return nil, false
+	}
+	b, ok := v.GetPayload().(*BinaryValue)
+	return b, ok
 }
 
 // IsTruthy returns true if value is considered "true" in conditional contexts.

@@ -28,6 +28,7 @@ const (
 	TypePort     // I/O port abstraction (file, TCP, HTTP)
 	TypePath     // Path expression (transient evaluation type)
 	TypeDatatype // Datatype literal (e.g., object!, integer!)
+	TypeBinary   // Raw byte sequence
 )
 
 // TypeToString returns the type name for debugging and error messages.
@@ -65,6 +66,8 @@ func TypeToString(t core.ValueType) string {
 		return "path!"
 	case TypeDatatype:
 		return "datatype!"
+	case TypeBinary:
+		return "binary!"
 	default:
 		return "unknown!"
 	}
@@ -76,5 +79,5 @@ func IsWord(t core.ValueType) bool {
 
 // IsSeries returns true if the type supports series operations.
 func IsSeries(t core.ValueType) bool {
-	return t == TypeBlock || t == TypeParen || t == TypeString
+	return t == TypeBlock || t == TypeParen || t == TypeString || t == TypeBinary
 }

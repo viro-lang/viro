@@ -184,6 +184,43 @@ func TestFilePortOperations(t *testing.T) {
 		}
 	})
 
+	t.Run("ReadFileAsBinary", func(t *testing.T) {
+		testFile := "test-binary.txt"
+		// Write binary data to file
+		binaryData := []byte{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01, 0x02}
+		data := value.BinaryVal(binaryData)
+		err := native.WritePort(testFile, data, nil)
+		if err != nil {
+			t.Fatalf("Failed to write binary file: %v", err)
+		}
+		defer os.Remove(filepath.Join(tmpDir, testFile))
+
+		// Read data back as binary
+		opts := map[string]core.Value{
+			"binary": value.LogicVal(true),
+		}
+		content, err := native.ReadPort(testFile, opts)
+		if err != nil {
+			t.Fatalf("Failed to read binary file: %v", err)
+		}
+
+		bin, ok := value.AsBinary(content)
+		if !ok {
+			t.Fatalf("Expected binary result from read, got type: %s", value.TypeToString(content.GetType()))
+		}
+
+		readData := bin.Bytes()
+		if len(readData) != len(binaryData) {
+			t.Errorf("Expected %d bytes, got %d", len(binaryData), len(readData))
+		}
+
+		for i, expected := range binaryData {
+			if i >= len(readData) || readData[i] != expected {
+				t.Errorf("Byte mismatch at index %d: expected %x, got %x", i, expected, readData[i])
+			}
+		}
+	})
+
 	t.Run("AppendToFile", func(t *testing.T) {
 		testFile := "test-append.txt"
 		// Write initial data
