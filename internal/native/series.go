@@ -60,159 +60,30 @@ func Copy(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		}
 		// Full copy
 		return value.StrVal(str.String()), nil
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		if hasPart {
+			if partVal.GetType() != value.TypeInteger {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count64, ok := value.AsInteger(partVal)
+			if !ok {
+				return value.NoneVal(), typeError("copy --part", "integer", partVal)
+			}
+			count := int(count64)
+			if count < 0 || count > bin.Length() {
+				return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "binary", "out of range"})
+			}
+			// Copy first count bytes
+			bytes := make([]byte, count)
+			copy(bytes, bin.Bytes()[:count])
+			return value.BinaryVal(bytes), nil
+		}
+		// Full copy
+		return value.BinaryVal(append([]byte{}, bin.Bytes()...)), nil
 	default:
 		return value.NoneVal(), typeError("copy", "series", series)
 	}
-}
-
-// seriesSelector is a function that selects a value from a series.
-// For blocks: receives elements and returns the selected element.
-// For strings: receives the string and returns a character as a value.
-type seriesSelector func(series core.Value) (core.Value, error)
-
-// seriesOperation provides a template for operations on series (blocks and strings).
-// It handles arity checking, type validation, and empty series errors.
-func seriesOperation(name string, args []core.Value, sel seriesSelector) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NoneVal(), arityError(name, 1, len(args))
-	}
-
-	series := args[0]
-
-	// Validate series type
-	switch series.GetType() {
-	case value.TypeBlock:
-		blk, _ := value.AsBlock(series)
-		if blk.Length() == 0 {
-			return value.NoneVal(), emptySeriesError(name)
-		}
-	case value.TypeString:
-		str, _ := value.AsString(series)
-		if str.Length() == 0 {
-			return value.NoneVal(), emptySeriesError(name)
-		}
-	default:
-		return value.NoneVal(), typeError(name, "series", series)
-	}
-
-	// Apply selector
-	return sel(series)
-}
-
-// First implements the `first` native for series values.
-//
-// Contract: first series -> first element
-// - Series must be block or string
-// - Error on empty series
-func First(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesOperation("first", args, func(series core.Value) (core.Value, error) {
-		switch series.GetType() {
-		case value.TypeBlock:
-			blk, _ := value.AsBlock(series)
-			return blk.First(), nil
-		case value.TypeString:
-			str, _ := value.AsString(series)
-			return value.StrVal(string(str.First())), nil
-		default:
-			return value.NoneVal(), typeError("first", "series", series)
-		}
-	})
-}
-
-// Last implements the `last` native for series values.
-func Last(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesOperation("last", args, func(series core.Value) (core.Value, error) {
-		switch series.GetType() {
-		case value.TypeBlock:
-			blk, _ := value.AsBlock(series)
-			return blk.Last(), nil
-		case value.TypeString:
-			str, _ := value.AsString(series)
-			return value.StrVal(string(str.Last())), nil
-		default:
-			return value.NoneVal(), typeError("last", "series", series)
-		}
-	})
-}
-
-// Append implements the `append` native for series values.
-//
-// Contract: append series value -> modified series
-func Append(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("append", 2, len(args))
-	}
-
-	target := args[0]
-	switch target.GetType() {
-	case value.TypeBlock:
-		blk, _ := value.AsBlock(target)
-		blk.Append(args[1])
-		return target, nil
-	case value.TypeString:
-		str, _ := value.AsString(target)
-		if args[1].GetType() != value.TypeString {
-			return value.NoneVal(), typeError("append", "string", args[1])
-		}
-		insertStr, _ := value.AsString(args[1])
-		str.Append(insertStr)
-		return target, nil
-	default:
-		return value.NoneVal(), typeError("append", "series", target)
-	}
-}
-
-// Insert implements the `insert` native for series values.
-func Insert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("insert", 2, len(args))
-	}
-
-	target := args[0]
-	switch target.GetType() {
-	case value.TypeBlock:
-		blk, _ := value.AsBlock(target)
-		blk.SetIndex(0)
-		blk.Insert(args[1])
-		return target, nil
-	case value.TypeString:
-		str, _ := value.AsString(target)
-		if args[1].GetType() != value.TypeString {
-			return value.NoneVal(), typeError("insert", "string", args[1])
-		}
-		insertStr, _ := value.AsString(args[1])
-		str.SetIndex(0)
-		str.Insert(insertStr)
-		return target, nil
-	default:
-		return value.NoneVal(), typeError("insert", "series", target)
-	}
-}
-
-// LengthQ implements the `length?` native for series values.
-func LengthQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NoneVal(), arityError("length?", 1, len(args))
-	}
-
-	series := args[0]
-	switch series.GetType() {
-	case value.TypeBlock:
-		blk, _ := value.AsBlock(series)
-		return value.IntVal(int64(blk.Length())), nil
-	case value.TypeString:
-		str, _ := value.AsString(series)
-		return value.IntVal(int64(str.Length())), nil
-	default:
-		return value.NoneVal(), typeError("length?", "series", series)
-	}
-}
-
-func emptySeriesError(op string) error {
-	return verror.NewScriptError(
-		verror.ErrIDEmptySeries,
-		[3]string{op, "", ""},
-	)
 }
 
 // Find implements the `find` native for series values.
@@ -290,6 +161,31 @@ func Find(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		}
 		return value.NoneVal(), nil
 
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		soughtByte, ok := value.AsInteger(sought)
+		if !ok || soughtByte < 0 || soughtByte > 255 {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"byte value (0-255)", value.TypeToString(sought.GetType()), ""})
+		}
+
+		bytes := bin.Bytes()
+		targetByte := byte(soughtByte)
+
+		if isLast {
+			for i := len(bytes) - 1; i >= 0; i-- {
+				if bytes[i] == targetByte {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		} else {
+			for i, b := range bytes {
+				if b == targetByte {
+					return value.IntVal(int64(i + 1)), nil
+				}
+			}
+		}
+		return value.NoneVal(), nil
+
 	default:
 		return value.NoneVal(), typeError("find", "series", series)
 	}
@@ -335,6 +231,14 @@ func Remove(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		str.SetIndex(0)
 		str.Remove(count)
 		return series, nil
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		if count < 0 || count > bin.Length() {
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "binary", "out of range"})
+		}
+		bin.SetIndex(0)
+		bin.Remove(count)
+		return series, nil
 	default:
 		return value.NoneVal(), typeError("remove", "series", series)
 	}
@@ -369,6 +273,14 @@ func Skip(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		}
 		str.SetIndex(newIndex)
 		return series, nil
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		newIndex := bin.GetIndex() + count
+		if newIndex < 0 || newIndex > bin.Length() {
+			newIndex = bin.Length()
+		}
+		bin.SetIndex(newIndex)
+		return series, nil
 	default:
 		return value.NoneVal(), typeError("skip", "series", series)
 	}
@@ -401,6 +313,13 @@ func Take(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		newRunes := str.Runes()[start:end]
 		str.SetIndex(end)
 		return value.StrVal(string(newRunes)), nil
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		start := bin.GetIndex()
+		end := min(start+count, bin.Length())
+		newBytes := bin.Bytes()[start:end]
+		bin.SetIndex(end)
+		return value.BinaryVal(newBytes), nil
 	default:
 		return value.NoneVal(), typeError("take", "series", series)
 	}
@@ -455,6 +374,13 @@ func Reverse(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			r[i], r[j] = r[j], r[i]
 		}
 		str.SetRunes(r)
+		return series, nil
+	case value.TypeBinary:
+		bin, _ := value.AsBinary(series)
+		bytes := bin.Bytes()
+		for i, j := 0, len(bytes)-1; i < j; i, j = i+1, j-1 {
+			bytes[i], bytes[j] = bytes[j], bytes[i]
+		}
 		return series, nil
 	default:
 		return value.NoneVal(), typeError("reverse", "series", series)

@@ -50,6 +50,25 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringLength))
+
+	// Register binary-specific implementations
+	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryFirst))
+	RegisterActionImpl(value.TypeBinary, "last", value.NewNativeFunction("last", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryLast))
+	RegisterActionImpl(value.TypeBinary, "append", value.NewNativeFunction("append", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, BinaryAppend))
+	RegisterActionImpl(value.TypeBinary, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, BinaryInsert))
+	RegisterActionImpl(value.TypeBinary, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryLength))
 }
 
 // RegisterSeriesNatives registers all series-related native functions to the root frame.
@@ -119,10 +138,10 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Returns the first element of a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to get first element from"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get first element from"},
 		},
 		Returns:  "any! The first element of the series",
-		Examples: []string{"first [1 2 3]  ; => 1", `first "hello"  ; => "h"`},
+		Examples: []string{"first [1 2 3]  ; => 1", `first "hello"  ; => "h"`, "first #{DEADBEEF}  ; => 222"},
 		SeeAlso:  []string{"last", "skip", "take"},
 		Tags:     []string{"series"},
 	}))
@@ -134,10 +153,10 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Returns the last element of a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to get last element from"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get last element from"},
 		},
 		Returns:  "any! The last element of the series",
-		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`},
+		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`, "last #{DEADBEEF}  ; => 239"},
 		SeeAlso:  []string{"first", "skip", "take"},
 		Tags:     []string{"series"},
 	}))
@@ -150,11 +169,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Appends a value to the end of a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to append to"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to append to"},
 			{Name: "value", Type: "any!", Description: "The value to append"},
 		},
-		Returns:  "block! string! The modified series",
-		Examples: []string{"append [1 2] 3  ; => [1 2 3]", `append "hel" "lo"  ; => "hello"`},
+		Returns:  "block! string! binary! The modified series",
+		Examples: []string{"append [1 2] 3  ; => [1 2 3]", `append "hel" "lo"  ; => "hello"`, "append #{DEAD} 190  ; => #{DEADBE}"},
 		SeeAlso:  []string{"insert", "skip", "take"},
 		Tags:     []string{"series", "modification"},
 	}))
@@ -167,11 +186,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Inserts a value at the beginning of a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to insert into"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to insert into"},
 			{Name: "value", Type: "any!", Description: "The value to insert"},
 		},
-		Returns:  "block! string! The modified series",
-		Examples: []string{"insert [2 3] 1  ; => [1 2 3]", `insert "ello" "h"  ; => "hello"`},
+		Returns:  "block! string! binary! The modified series",
+		Examples: []string{"insert [2 3] 1  ; => [1 2 3]", `insert "ello" "h"  ; => "hello"`, "insert #{ADBE} #{DE}  ; => #{DEADBE}"},
 		SeeAlso:  []string{"append", "skip", "take"},
 		Tags:     []string{"series", "modification"},
 	}))
@@ -183,10 +202,10 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Returns the length of a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to get length of"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get length of"},
 		},
 		Returns:  "integer! The number of elements in the series",
-		Examples: []string{"length? [1 2 3]  ; => 3", `length? "hello"  ; => 5`},
+		Examples: []string{"length? [1 2 3]  ; => 3", `length? "hello"  ; => 5`, "length? #{DEADBEEF}  ; => 4"},
 		SeeAlso:  []string{"first", "last", "skip", "take"},
 		Tags:     []string{"series", "query"},
 	}))

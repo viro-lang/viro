@@ -31,6 +31,7 @@ func InitTypeFrames() {
 	// Create type frames for series types (primary use case for actions)
 	TypeRegistry[value.TypeBlock] = createTypeFrame("block!")
 	TypeRegistry[value.TypeString] = createTypeFrame("string!")
+	TypeRegistry[value.TypeBinary] = createTypeFrame("binary!")
 
 	// Note: Additional types can be registered later via RegisterTypeFrame
 }

@@ -39,3 +39,70 @@ func (b *BinaryValue) Equals(other *BinaryValue) bool {
 	}
 	return true
 }
+
+// Series operations (contracts/series.md)
+
+// First returns the first byte (error if empty handled by caller).
+func (b *BinaryValue) First() byte {
+	return b.data[0]
+}
+
+// Last returns the last byte (error if empty handled by caller).
+func (b *BinaryValue) Last() byte {
+	return b.data[len(b.data)-1]
+}
+
+// At returns byte at index (bounds checking by caller).
+func (b *BinaryValue) At(index int) byte {
+	return b.data[index]
+}
+
+// Length returns byte count.
+func (b *BinaryValue) Length() int {
+	return len(b.data)
+}
+
+// Append adds a byte or binary value to the end (in-place mutation).
+func (b *BinaryValue) Append(val interface{}) {
+	switch v := val.(type) {
+	case byte:
+		b.data = append(b.data, v)
+	case []byte:
+		b.data = append(b.data, v...)
+	case *BinaryValue:
+		b.data = append(b.data, v.data...)
+	}
+}
+
+// Insert adds a byte or binary value at current position (in-place mutation).
+func (b *BinaryValue) Insert(val interface{}) {
+	var toInsert []byte
+	switch v := val.(type) {
+	case byte:
+		toInsert = []byte{v}
+	case []byte:
+		toInsert = v
+	case *BinaryValue:
+		toInsert = v.data
+	}
+
+	// Insert at current index
+	b.data = append(b.data[:b.index], append(toInsert, b.data[b.index:]...)...)
+}
+
+// Remove removes a specified number of bytes from the current position (in-place mutation).
+func (b *BinaryValue) Remove(count int) {
+	if b.index+count <= len(b.data) {
+		b.data = append(b.data[:b.index], b.data[b.index+count:]...)
+	}
+}
+
+// GetIndex returns current series position.
+func (b *BinaryValue) GetIndex() int {
+	return b.index
+}
+
+// SetIndex sets the current series position.
+func (b *BinaryValue) SetIndex(index int) {
+	b.index = index
+}
