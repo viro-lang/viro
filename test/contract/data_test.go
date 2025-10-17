@@ -202,3 +202,149 @@ func TestData_TypeQ(t *testing.T) {
 		})
 	}
 }
+
+// TestData_Form validates the 'form' native.
+//
+// Contract: form value → string! human-readable representation
+// - Blocks: no outer brackets
+// - Strings: no quotes
+// - Other types: standard representation
+func TestData_Form(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected value.Value
+	}{
+		{
+			name:     "form block removes brackets",
+			input:    "form [1 2 3]",
+			expected: value.StrVal("1 2 3"),
+		},
+		{
+			name:     "form string removes quotes",
+			input:    "form \"hello\"",
+			expected: value.StrVal("hello"),
+		},
+		{
+			name:     "form integer",
+			input:    "form 42",
+			expected: value.StrVal("42"),
+		},
+		{
+			name:     "form logic true",
+			input:    "form true",
+			expected: value.StrVal("true"),
+		},
+		{
+			name:     "form logic false",
+			input:    "form false",
+			expected: value.StrVal("false"),
+		},
+		{
+			name:     "form none",
+			input:    "form none",
+			expected: value.StrVal("none"),
+		},
+		{
+			name:     "form word",
+			input:    "form 'x",
+			expected: value.StrVal("x"),
+		},
+		{
+			name:     "form empty block",
+			input:    "form []",
+			expected: value.StrVal(""),
+		},
+		{
+			name:     "form nested block",
+			input:    "form [a [b c] d]",
+			expected: value.StrVal("a [b c] d"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestData_Mold validates the 'mold' native.
+//
+// Contract: mold value → string! REBOL-readable representation
+// - Blocks: with outer brackets
+// - Strings: with quotes
+// - Other types: standard representation
+func TestData_Mold(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected value.Value
+	}{
+		{
+			name:     "mold block includes brackets",
+			input:    "mold [1 2 3]",
+			expected: value.StrVal("[1 2 3]"),
+		},
+		{
+			name:     "mold string includes quotes",
+			input:    "mold \"hello\"",
+			expected: value.StrVal("\"hello\""),
+		},
+		{
+			name:     "mold integer",
+			input:    "mold 42",
+			expected: value.StrVal("42"),
+		},
+		{
+			name:     "mold logic true",
+			input:    "mold true",
+			expected: value.StrVal("true"),
+		},
+		{
+			name:     "mold logic false",
+			input:    "mold false",
+			expected: value.StrVal("false"),
+		},
+		{
+			name:     "mold none",
+			input:    "mold none",
+			expected: value.StrVal("none"),
+		},
+		{
+			name:     "mold word",
+			input:    "mold 'x",
+			expected: value.StrVal("x"),
+		},
+		{
+			name:     "mold empty block",
+			input:    "mold []",
+			expected: value.StrVal("[]"),
+		},
+		{
+			name:     "mold nested block",
+			input:    "mold [a [b c] d]",
+			expected: value.StrVal("[a [b c] d]"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}

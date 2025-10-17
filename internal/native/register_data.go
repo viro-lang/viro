@@ -31,8 +31,7 @@ func RegisterDataNatives(rootFrame core.Frame) {
 		registered[name] = true
 	}
 
-	// ===== Group 6: Data operations (3 functions) =====
-	// set and get need evaluator, type? doesn't
+	// ===== Group 6: Data operations  =====
 	fn := value.NewNativeFunction(
 		"set",
 		[]value.ParamSpec{
@@ -97,6 +96,48 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		SeeAlso:  []string{"set", "get"}, Tags: []string{"data", "type", "introspection", "reflection"},
 	}
 	registerAndBind("type?", fn)
+
+	fn = value.NewNativeFunction(
+		"form",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		Form,
+	)
+	fn.Doc = &NativeDoc{
+		Category: "Data",
+		Summary:  "Converts a value to a human-readable string",
+		Description: `Returns a human-readable string representation of the value.
+For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate block contents.`,
+		Parameters: []ParamDoc{
+			{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+		},
+		Returns:  "[string!] Human-readable string representation",
+		Examples: []string{"form [1 2 3]  ; => \"1 2 3\"", `form "hello"  ; => "hello"`, "form 42  ; => \"42\""},
+		SeeAlso:  []string{"mold", "type?"}, Tags: []string{"data", "string", "formatting"},
+	}
+	registerAndBind("form", fn)
+
+	fn = value.NewNativeFunction(
+		"mold",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		Mold,
+	)
+	fn.Doc = &NativeDoc{
+		Category: "Data",
+		Summary:  "Converts a value to a REBOL-readable string",
+		Description: `Returns a REBOL-readable string representation of the value.
+For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.`,
+		Parameters: []ParamDoc{
+			{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+		},
+		Returns:  "[string!] REBOL-readable string representation",
+		Examples: []string{"mold [1 2 3]  ; => \"[1 2 3]\"", `mold "hello"  ; => "\"hello\""`, "mold 42  ; => \"42\""},
+		SeeAlso:  []string{"form", "type?"}, Tags: []string{"data", "string", "formatting", "serialization"},
+	}
+	registerAndBind("mold", fn)
 
 	// ===== Group 7: Object operations (5 functions - all need evaluator) =====
 	fn = value.NewNativeFunction(

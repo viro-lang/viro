@@ -66,6 +66,47 @@ func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	return value.WordVal(typeName), nil
 }
 
+// Form implements the `form` native.
+//
+// Contract: form value -> string! human-readable representation
+// Returns display-friendly string format (no brackets on blocks, no quotes on strings)
+func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("form", 1, len(args))
+	}
+
+	val := args[0]
+	return value.StrVal(formatForDisplay(val)), nil
+}
+
+// Mold implements the `mold` native.
+//
+// Contract: mold value -> string! REBOL-readable representation
+// Returns serialization-friendly string format (brackets on blocks, quotes on strings)
+func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("mold", 1, len(args))
+	}
+
+	val := args[0]
+	return value.StrVal(val.String()), nil
+}
+
+// formatForDisplay creates human-readable string representation for form function
+func formatForDisplay(v core.Value) string {
+	switch v.GetType() {
+	case value.TypeBlock:
+		if blk, ok := value.AsBlock(v); ok {
+			return blk.StringElements() // No outer brackets
+		}
+	case value.TypeString:
+		if str, ok := value.AsString(v); ok {
+			return str.String() // Raw string content, no quotes
+		}
+	}
+	return v.String() // Default formatting for other types
+}
+
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
 	fields := []string{}
 	initializers := make(map[string][]core.Value)

@@ -169,6 +169,92 @@ if type? value = 'integer! [
 
 ---
 
+## Native: `form`
+
+**Signature**: `form value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: String representation for display
+
+**Behavior**:
+Returns human-readable string format. For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate block contents.
+
+**Type Rules**:
+- Argument can be any type (evaluated)
+
+**Usage Pattern**:
+```viro
+form [1 2 3]     ; returns "1 2 3" (no brackets)
+form "hello"     ; returns "hello" (no quotes)
+form 42          ; returns "42"
+```
+
+**Examples**:
+```viro
+form [1 2 3]     → "1 2 3"
+form "hello"     → "hello"
+form 42          → "42"
+form true        → "true"
+form [a b c]     → "a b c"
+```
+
+**Error Cases**: None (accepts any value)
+
+**Test Cases**:
+1. `form [1 2 3]` returns string `"1 2 3"`
+2. `form "hello"` returns string `"hello"`
+3. `form 42` returns string `"42"`
+4. `form true` returns string `"true"`
+5. `form none` returns string `"none"`
+6. `form 'word` returns string `"word"`
+
+---
+
+## Native: `mold`
+
+**Signature**: `mold value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: String representation for serialization
+
+**Behavior**:
+Returns REBOL-readable string format. For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.
+
+**Type Rules**:
+- Argument can be any type (evaluated)
+
+**Usage Pattern**:
+```viro
+mold [1 2 3]     ; returns "[1 2 3]" (with brackets)
+mold "hello"     ; returns "\"hello\"" (with quotes)
+mold 42          ; returns "42"
+```
+
+**Examples**:
+```viro
+mold [1 2 3]     → "[1 2 3]"
+mold "hello"     → "\"hello\""
+mold 42          → "42"
+mold true        → "true"
+mold [a b c]     → "[a b c]"
+```
+
+**Error Cases**: None (accepts any value)
+
+**Test Cases**:
+1. `mold [1 2 3]` returns string `"[1 2 3]"`
+2. `mold "hello"` returns string `"\"hello\""`
+3. `mold 42` returns string `"42"`
+4. `mold true` returns string `"true"`
+5. `mold none` returns string `"none"`
+6. `mold 'word` returns string `"word"`
+
+---
+
 ## Common Properties
 
 **Word Operations** (`set`, `get`):
