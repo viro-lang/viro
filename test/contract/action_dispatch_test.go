@@ -195,13 +195,10 @@ func TestTypeFrameRegistration(t *testing.T) {
 
 	_ = NewTestEvaluator()
 
-	// Verify that multiple types are registered
+	// Verify that series types are registered (primary use case for actions)
 	expectedTypes := []core.ValueType{
 		value.TypeBlock,
 		value.TypeString,
-		value.TypeInteger,
-		value.TypeLogic,
-		value.TypeParen,
 	}
 
 	for _, typ := range expectedTypes {

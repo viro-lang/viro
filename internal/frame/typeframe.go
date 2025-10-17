@@ -32,11 +32,6 @@ func InitTypeFrames() {
 	TypeRegistry[value.TypeBlock] = createTypeFrame("block!")
 	TypeRegistry[value.TypeString] = createTypeFrame("string!")
 
-	// Create type frames for other native types (future extensibility)
-	TypeRegistry[value.TypeInteger] = createTypeFrame("integer!")
-	TypeRegistry[value.TypeLogic] = createTypeFrame("logic!")
-	TypeRegistry[value.TypeParen] = createTypeFrame("paren!")
-
 	// Note: Additional types can be registered later via RegisterTypeFrame
 }
 
