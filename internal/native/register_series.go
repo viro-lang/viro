@@ -31,6 +31,33 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockLength))
+	RegisterActionImpl(value.TypeBlock, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, BlockCopy))
+	RegisterActionImpl(value.TypeBlock, "find", value.NewNativeFunction("find", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("last", false),
+	}, BlockFind))
+	RegisterActionImpl(value.TypeBlock, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, BlockRemove))
+	RegisterActionImpl(value.TypeBlock, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, BlockSkip))
+	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, BlockTake))
+	RegisterActionImpl(value.TypeBlock, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockSort))
+	RegisterActionImpl(value.TypeBlock, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockReverse))
 
 	// Register string-specific implementations
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
@@ -50,6 +77,30 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringLength))
+	RegisterActionImpl(value.TypeString, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, StringCopy))
+	RegisterActionImpl(value.TypeString, "find", value.NewNativeFunction("find", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("last", false),
+	}, StringFind))
+	RegisterActionImpl(value.TypeString, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, StringRemove))
+	RegisterActionImpl(value.TypeString, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, StringSkip))
+	RegisterActionImpl(value.TypeString, "take", value.NewNativeFunction("take", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, StringTake))
+	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringReverse))
 
 	// Register binary-specific implementations
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
@@ -69,6 +120,30 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBinary, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryLength))
+	RegisterActionImpl(value.TypeBinary, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, BinaryCopy))
+	RegisterActionImpl(value.TypeBinary, "find", value.NewNativeFunction("find", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("last", false),
+	}, BinaryFind))
+	RegisterActionImpl(value.TypeBinary, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, BinaryRemove))
+	RegisterActionImpl(value.TypeBinary, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, BinarySkip))
+	RegisterActionImpl(value.TypeBinary, "take", value.NewNativeFunction("take", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, BinaryTake))
+	RegisterActionImpl(value.TypeBinary, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryReverse))
 }
 
 // RegisterSeriesNatives registers all series-related native functions to the root frame.
@@ -94,42 +169,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		registered[name] = true
 	}
 
-	// Helper function to wrap simple series functions
-	registerSimpleSeriesFunc := func(name string, impl core.NativeFunc, arity int, doc *NativeDoc) {
-		// Extract parameter names from existing documentation
-		params := make([]value.ParamSpec, arity)
-
-		if doc != nil && len(doc.Parameters) == arity {
-			// Use parameter names from documentation
-			for i := range arity {
-				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
-			}
-		} else {
-			// Fallback to generic names if documentation is missing or mismatched
-			paramNames := []string{"series", "value"}
-			for i := range arity {
-				if i < len(paramNames) {
-					params[i] = value.NewParamSpec(paramNames[i], true)
-				} else {
-					params[i] = value.NewParamSpec("arg", true)
-				}
-			}
-		}
-
-		fn := value.NewNativeFunction(
-			name,
-			params,
-			impl,
-		)
-		fn.Doc = doc
-		registerAndBind(name, value.FuncVal(fn))
-	}
-
 	// Register type-specific implementations into type frames
 	registerSeriesTypeImpls()
 
-	// ===== Group 5: Series operations (5 actions) =====
-	// These are now actions that dispatch to type-specific implementations
+	// ===== Group 5: Series operations (12 actions) =====
+	// All series operations now use action dispatch to type-specific implementations
 
 	// first - action
 	registerAndBind("first", CreateAction("first", []value.ParamSpec{
@@ -209,131 +253,121 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		SeeAlso:  []string{"first", "last", "skip", "take"},
 		Tags:     []string{"series", "query"},
 	}))
-	registerSimpleSeriesFunc("skip", Skip, 2, &NativeDoc{
+
+	// copy - action
+	registerAndBind("copy", CreateAction("copy", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Copies a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
+			{Name: "--part", Type: "integer!", Description: "Copy only first N elements", Optional: true},
+		},
+		Returns:  "block! string! binary! A copy of the series",
+		Examples: []string{"copy [1 2 3]  ; => [1 2 3]", `copy "hello"  ; => "hello"`, "copy #{DEADBEEF}  ; => #{DEADBEEF}"},
+		SeeAlso:  []string{"append", "insert"},
+		Tags:     []string{"series"},
+	}))
+
+	// find - action
+	registerAndBind("find", CreateAction("find", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("last", false),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Finds a value in a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to search"},
+			{Name: "value", Type: "any!", Description: "The value to find"},
+			{Name: "--last", Type: "", Description: "Find last occurrence instead of first", Optional: true},
+		},
+		Returns:  "integer! 1-based index or none",
+		Examples: []string{"find [1 2 3] 2  ; => 2", `find "hello" "l"  ; => 3`, "find #{DEADBEEF} 190  ; => 3"},
+		SeeAlso:  []string{"first", "last"},
+		Tags:     []string{"series", "search"},
+	}))
+
+	// remove - action
+	registerAndBind("remove", CreateAction("remove", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("part", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Removes elements from a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to remove from"},
+			{Name: "--part", Type: "integer!", Description: "Remove n elements", Optional: true},
+		},
+		Returns:  "block! string! binary! The modified series",
+		Examples: []string{"remove [1 2 3]  ; => [2 3]", "remove --part 2 [1 2 3]  ; => [3]", `remove "hello"  ; => "ello"`, "remove #{DEADBEEF}  ; => #{ADBE}"},
+		SeeAlso:  []string{"append", "insert"},
+		Tags:     []string{"series", "modification"},
+	}))
+
+	// skip - action
+	registerAndBind("skip", CreateAction("skip", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Skips n elements in a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to skip from"},
-			{Name: "n", Type: "integer!", Description: "Number of elements to skip"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to skip from"},
+			{Name: "count", Type: "integer!", Description: "Number of elements to skip"},
 		},
-		Returns:  "[block! string!] Series with first n elements removed",
-		Examples: []string{"skip [1 2 3 4] 2  ; => [3 4]"},
+		Returns:  "block! string! binary! Series with index advanced by count",
+		Examples: []string{"skip [1 2 3 4] 2  ; => [1 2 3 4] (index at 3)", `skip "hello" 2  ; => "hello" (index at 3)`, "skip #{DEADBEEF} 2  ; => #{DEADBEEF} (index at 3)"},
 		SeeAlso:  []string{"take", "first", "last"},
 		Tags:     []string{"series"},
-	})
-	registerSimpleSeriesFunc("take", Take, 2, &NativeDoc{
+	}))
+
+	// take - action
+	registerAndBind("take", CreateAction("take", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Takes n elements from a series",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to take from"},
-			{Name: "n", Type: "integer!", Description: "Number of elements to take"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to take from"},
+			{Name: "count", Type: "integer!", Description: "Number of elements to take"},
 		},
-		Returns:  "[block! string!] Series with first n elements",
-		Examples: []string{"take [1 2 3 4] 2  ; => [1 2]"},
+		Returns:  "block! string! binary! Series containing first count elements",
+		Examples: []string{"take [1 2 3 4] 2  ; => [1 2]", `take "hello" 2  ; => "he"`, "take #{DEADBEEF} 2  ; => #{DEAD}"},
 		SeeAlso:  []string{"skip", "first", "last"},
 		Tags:     []string{"series"},
-	})
-	registerSimpleSeriesFunc("sort", Sort, 1, &NativeDoc{
+	}))
+
+	// sort - action
+	registerAndBind("sort", CreateAction("sort", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Sorts a series in place",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to sort"},
+			{Name: "series", Type: "block!", Description: "The series to sort"},
 		},
-		Returns:  "[block! string!] The sorted series",
+		Returns:  "block! The sorted series",
 		Examples: []string{"sort [3 1 2]  ; => [1 2 3]"},
 		SeeAlso:  []string{"reverse"},
-		Tags:     []string{"series"},
-	})
-	registerSimpleSeriesFunc("reverse", Reverse, 1, &NativeDoc{
+		Tags:     []string{"series", "sorting"},
+	}))
+
+	// reverse - action
+	registerAndBind("reverse", CreateAction("reverse", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Reverses a series in place",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string!", Description: "The series to reverse"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to reverse"},
 		},
-		Returns:  "[block! string!] The reversed series",
-		Examples: []string{"reverse [1 2 3]  ; => [3 2 1]"},
+		Returns:  "block! string! binary! The reversed series",
+		Examples: []string{"reverse [1 2 3]  ; => [3 2 1]", `reverse "hello"  ; => "olleh"`, "reverse #{DEADBEEF}  ; => #{EFBEADDE}"},
 		SeeAlso:  []string{"sort"},
 		Tags:     []string{"series"},
-	})
-
-	// Functions with refinements need special handling
-	// Copy function
-	{
-		params := []value.ParamSpec{
-			value.NewParamSpec("series", true),
-			value.NewRefinementSpec("part", true),
-		}
-		fn := value.NewNativeFunction(
-			"copy",
-			params,
-			Copy,
-		)
-		fn.Doc = &NativeDoc{
-			Category: "Series",
-			Summary:  "Copies a series",
-			Parameters: []ParamDoc{
-				{Name: "series", Type: "block! string!", Description: "The series to copy"},
-				{Name: "--part", Type: "integer!", Description: "Copy only first N elements", Optional: true},
-			},
-			Returns:  "[block! string!] A copy of the series",
-			Examples: []string{"copy [1 2 3]  ; => [1 2 3]"},
-			SeeAlso:  []string{"append", "insert"},
-			Tags:     []string{"series"},
-		}
-		registerAndBind("copy", value.FuncVal(fn))
-	}
-
-	// Find function
-	{
-		params := []value.ParamSpec{
-			value.NewParamSpec("series", true),
-			value.NewParamSpec("value", true),
-			value.NewRefinementSpec("last", false),
-		}
-		fn := value.NewNativeFunction(
-			"find",
-			params,
-			Find,
-		)
-		fn.Doc = &NativeDoc{
-			Category: "Series",
-			Summary:  "Finds a value in a series",
-			Parameters: []ParamDoc{
-				{Name: "series", Type: "block! string!", Description: "The series to search"},
-				{Name: "value", Type: "any-type!", Description: "The value to find"},
-				{Name: "--last", Type: "", Description: "Find last occurrence instead of first", Optional: true},
-			},
-			Returns:  "[block! string! none!] Series from found position or none",
-			Examples: []string{"find [1 2 3] 2  ; => [2 3]"},
-			SeeAlso:  []string{"append", "insert"},
-			Tags:     []string{"series"},
-		}
-		registerAndBind("find", value.FuncVal(fn))
-	}
-
-	// Remove function
-	{
-		params := []value.ParamSpec{
-			value.NewParamSpec("series", true),
-			value.NewRefinementSpec("part", true),
-		}
-		fn := value.NewNativeFunction(
-			"remove",
-			params,
-			Remove,
-		)
-		fn.Doc = &NativeDoc{
-			Category: "Series",
-			Summary:  "Removes elements from a series",
-			Parameters: []ParamDoc{
-				{Name: "series", Type: "block! string!", Description: "The series to remove from"},
-				{Name: "--part", Type: "integer!", Description: "Remove n elements", Optional: true},
-			},
-			Returns:  "[block! string!] The modified series",
-			Examples: []string{"remove [1 2 3]  ; => [2 3]", "remove --part 2 [1 2 3]  ; => [3]"},
-			SeeAlso:  []string{"append", "insert"},
-			Tags:     []string{"series"},
-		}
-		registerAndBind("remove", value.FuncVal(fn))
-	}
+	}))
 }
