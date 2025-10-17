@@ -14,11 +14,12 @@ import (
 // Parameters:
 //   - name: Action name (e.g., "first", "append")
 //   - params: Parameter specifications (same format as FunctionValue)
+//   - doc: Documentation for the action (can be nil)
 //
 // Returns a function value ready to be bound into the root frame.
 //
 // Feature: 004-dynamic-function-invocation
-func CreateAction(name string, params []value.ParamSpec) value.Value {
+func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) value.Value {
 	// Create dispatcher closure that captures the action name
 	dispatcher := func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 		// Validate we have at least one argument for dispatch
@@ -69,6 +70,7 @@ func CreateAction(name string, params []value.ParamSpec) value.Value {
 
 	// Create regular native function with dispatcher as implementation
 	actionFunc := value.NewNativeFunction(name, params, dispatcher)
+	actionFunc.Doc = doc
 	return value.FuncVal(actionFunc)
 }
 

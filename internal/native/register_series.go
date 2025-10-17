@@ -118,28 +118,80 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	// first - action
 	registerAndBind("first", CreateAction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the first element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to get first element from"},
+		},
+		Returns:  "any! The first element of the series",
+		Examples: []string{"first [1 2 3]  ; => 1", `first "hello"  ; => "h"`},
+		SeeAlso:  []string{"last", "skip", "take"},
+		Tags:     []string{"series"},
 	}))
 
 	// last - action
 	registerAndBind("last", CreateAction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the last element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to get last element from"},
+		},
+		Returns:  "any! The last element of the series",
+		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`},
+		SeeAlso:  []string{"first", "skip", "take"},
+		Tags:     []string{"series"},
 	}))
 
 	// append - action
 	registerAndBind("append", CreateAction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Appends a value to the end of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to append to"},
+			{Name: "value", Type: "any!", Description: "The value to append"},
+		},
+		Returns:  "block! string! The modified series",
+		Examples: []string{"append [1 2] 3  ; => [1 2 3]", `append "hel" "lo"  ; => "hello"`},
+		SeeAlso:  []string{"insert", "skip", "take"},
+		Tags:     []string{"series", "modification"},
 	}))
 
 	// insert - action
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Inserts a value at the beginning of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to insert into"},
+			{Name: "value", Type: "any!", Description: "The value to insert"},
+		},
+		Returns:  "block! string! The modified series",
+		Examples: []string{"insert [2 3] 1  ; => [1 2 3]", `insert "ello" "h"  ; => "hello"`},
+		SeeAlso:  []string{"append", "skip", "take"},
+		Tags:     []string{"series", "modification"},
 	}))
 
 	// length? - action
 	registerAndBind("length?", CreateAction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the length of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string!", Description: "The series to get length of"},
+		},
+		Returns:  "integer! The number of elements in the series",
+		Examples: []string{"length? [1 2 3]  ; => 3", `length? "hello"  ; => 5`},
+		SeeAlso:  []string{"first", "last", "skip", "take"},
+		Tags:     []string{"series", "query"},
 	}))
 	registerSimpleSeriesFunc("skip", Skip, 2, &NativeDoc{
 		Category: "Series",
