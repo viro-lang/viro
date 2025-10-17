@@ -916,8 +916,15 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 				}
 				tr.values = append(tr.values, value.StrVal(string(runes[index-1])))
 
+			} else if current.GetType() == value.TypeBinary {
+				bin, _ := value.AsBinary(current)
+				if index < 1 || index > int64(bin.Length()) {
+					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for binary of length %d", index, bin.Length()), "", ""})
+				}
+				tr.values = append(tr.values, value.IntVal(int64(bin.At(int(index-1)))))
+
 			} else {
-				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block or string type", "", ""})
+				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block, string, or binary type", "", ""})
 			}
 
 		default:

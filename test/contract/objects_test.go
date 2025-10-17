@@ -499,6 +499,25 @@ func TestPathIndexing(t *testing.T) {
 			expectType: value.TypeBlock,
 			wantErr:    false,
 		},
+		{
+			name:       "access string element by index",
+			code:       "str: \"hello\" str.2",
+			expectType: value.TypeString,
+			expectStr:  "e",
+			wantErr:    false,
+		},
+		{
+			name:       "access first string element",
+			code:       "str: \"world\" str.1",
+			expectType: value.TypeString,
+			expectStr:  "w",
+			wantErr:    false,
+		},
+		{
+			name:    "string index out of range",
+			code:    "str: \"hi\" str.10",
+			wantErr: true, // Should raise Script error (index-out-of-range)
+		},
 	}
 
 	for _, tt := range tests {
@@ -659,6 +678,12 @@ func TestPathErrorHandling(t *testing.T) {
 		{
 			name:        "index out of range",
 			code:        "data: [1 2 3] data.10",
+			expectCat:   verror.ErrScript,
+			expectToken: "range",
+		},
+		{
+			name:        "string index out of range",
+			code:        "str: \"hi\" str.10",
 			expectCat:   verror.ErrScript,
 			expectToken: "range",
 		},
