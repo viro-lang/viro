@@ -248,7 +248,7 @@ func evalScriptWithEvaluator(src string) (*eval.Evaluator, core.Value, error) {
 	}
 
 	e := NewTestEvaluator()
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	return e, result, evalErr
 }
 

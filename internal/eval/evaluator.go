@@ -161,7 +161,7 @@ func evalParenDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
 		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
 	}
 
-	return e.Do_Blk(block.Elements)
+	return e.DoBlock(block.Elements)
 }
 
 // evalWordDispatch handles word evaluation
@@ -351,7 +351,7 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	return value.NoneVal(), false
 }
 
-// Do_Next evaluates a single value and returns the result.
+// DoNext evaluates a single value and returns the result.
 //
 // Contract per data-model.md §3:
 // - Integers, strings, logic, none: Return self (literals)
@@ -363,7 +363,7 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 // - Lit-words ('word): Return word as-is
 //
 // Returns the evaluated value and any error encountered.
-func (e *Evaluator) Do_Next(val core.Value) (core.Value, error) {
+func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
 	// Trace instrumentation (Feature 002, T025)
 	// Per FR-015: emit trace events when tracing is enabled
 	var traceStart time.Time
@@ -402,13 +402,13 @@ func (e *Evaluator) Do_Next(val core.Value) (core.Value, error) {
 	return result, err
 }
 
-// Do_Blk evaluates a block of values in sequence.
+// DoBlock evaluates a block of values in sequence.
 //
 // Contract per data-model.md §3: Evaluates each value left-to-right.
 // Returns the last result, or none if block is empty.
 //
 // Special handling for set-words: evaluates next value and binds result.
-func (e *Evaluator) Do_Blk(vals []core.Value) (core.Value, error) {
+func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	if len(vals) == 0 {
 		return value.NoneVal(), nil
 	}
@@ -533,12 +533,12 @@ type evaluatorAdapter struct {
 }
 
 func (a evaluatorAdapter) Do_Blk(vals []core.Value) (core.Value, error) {
-	result, err := a.eval.Do_Blk(vals)
+	result, err := a.eval.DoBlock(vals)
 	return result, err // *verror.Error implements error interface
 }
 
 func (a evaluatorAdapter) Do_Next(val core.Value) (core.Value, error) {
-	result, err := a.eval.Do_Next(val)
+	result, err := a.eval.DoNext(val)
 	return result, err // *verror.Error implements error interface
 }
 
@@ -578,17 +578,17 @@ func (a evaluatorAdapter) Lookup(symbol string) (core.Value, bool) {
 // becomes the first argument.
 func (e *Evaluator) evaluateWithFunctionCall(val core.Value, seq []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
 	if val.GetType() != value.TypeWord {
-		return e.Do_Next(val)
+		return e.DoNext(val)
 	}
 
 	wordStr, ok := value.AsWord(val)
 	if !ok {
-		return e.Do_Next(val)
+		return e.DoNext(val)
 	}
 
 	resolved, found := e.Lookup(wordStr)
 	if !found {
-		return e.Do_Next(val)
+		return e.DoNext(val)
 	}
 
 	// Handle functions
@@ -597,7 +597,7 @@ func (e *Evaluator) evaluateWithFunctionCall(val core.Value, seq []core.Value, i
 		return e.invokeFunction(fn, seq, idx, lastResult)
 	}
 
-	return e.Do_Next(val)
+	return e.DoNext(val)
 }
 
 // isRefinement checks if a value is a refinement (word starting with "--")
@@ -800,7 +800,7 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 		return value.NoneVal(), verror.NewInternalError("function body missing", [3]string{})
 	}
 
-	result, err := e.Do_Blk(fn.Body.Elements)
+	result, err := e.DoBlock(fn.Body.Elements)
 	if err != nil {
 		return value.NoneVal(), err
 	}

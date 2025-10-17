@@ -40,7 +40,7 @@ func TestActionFirst(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -100,7 +100,7 @@ func TestActionLast(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -159,7 +159,7 @@ func TestActionAppend(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -218,7 +218,7 @@ func TestActionInsert(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -277,7 +277,7 @@ func TestActionLength(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {

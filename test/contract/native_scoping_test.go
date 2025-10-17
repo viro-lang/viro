@@ -70,7 +70,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -172,7 +172,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -300,7 +300,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -340,7 +340,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}

@@ -40,7 +40,7 @@ func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	if isTruthy {
 		// Evaluate the block
 		block, _ := value.AsBlock(args[1])
-		return eval.Do_Blk(block.Elements)
+		return eval.DoBlock(block.Elements)
 	}
 
 	// Condition is falsy, return none
@@ -78,12 +78,12 @@ func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 	if isTruthy {
 		// Evaluate true-block
 		block, _ := value.AsBlock(args[1])
-		return eval.Do_Blk(block.Elements)
+		return eval.DoBlock(block.Elements)
 	}
 
 	// Evaluate false-block
 	block, _ := value.AsBlock(args[2])
-	return eval.Do_Blk(block.Elements)
+	return eval.DoBlock(block.Elements)
 }
 
 // Loop implements the 'loop' iteration native.
@@ -127,7 +127,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	var result core.Value
 	var err error
 	for range count {
-		result, err = eval.Do_Blk(block.Elements)
+		result, err = eval.DoBlock(block.Elements)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -166,7 +166,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	// Loop while condition is truthy
 	for {
 		// Evaluate condition block
-		conditionResult, err := eval.Do_Blk(conditionBlock.Elements)
+		conditionResult, err := eval.DoBlock(conditionBlock.Elements)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -177,7 +177,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		}
 
 		// Evaluate body block
-		result, err = eval.Do_Blk(bodyBlock.Elements)
+		result, err = eval.DoBlock(bodyBlock.Elements)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -212,7 +212,7 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	// Evaluate each element in the block
 	for i, elem := range block.Elements {
-		result, err := eval.Do_Next(elem)
+		result, err := eval.DoNext(elem)
 		if err != nil {
 			return value.NoneVal(), err
 		}

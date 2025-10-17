@@ -30,7 +30,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 			}
 
 			start := time.Now()
-			_, err = evaluator.Do_Blk(values)
+			_, err = evaluator.DoBlock(values)
 			elapsed := time.Since(start)
 
 			if err != nil {
@@ -90,7 +90,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 				}
 
 				start := time.Now()
-				_, err = evaluator.Do_Blk(values)
+				_, err = evaluator.DoBlock(values)
 				elapsed := time.Since(start)
 
 				if err != nil {

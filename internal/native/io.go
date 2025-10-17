@@ -768,7 +768,7 @@ func buildPrintOutput(val core.Value, eval core.Evaluator) (string, error) {
 
 		parts := make([]string, 0, len(blk.Elements))
 		for idx, elem := range blk.Elements {
-			evaluated, err := eval.Do_Next(elem)
+			evaluated, err := eval.DoNext(elem)
 			if err != nil {
 				if vErr, ok := err.(*verror.Error); ok && vErr.Near == "" {
 					vErr.SetNear(verror.CaptureNear(blk.Elements, idx))

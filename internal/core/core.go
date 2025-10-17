@@ -45,7 +45,7 @@ type Evaluator interface {
 	PushFrameContext(frame Frame) int
 	PopFrameContext()
 	Lookup(symbol string) (Value, bool)
-	Do_Next(value Value) (Value, error)
-	Do_Blk(vals []Value) (Value, error)
+	DoNext(value Value) (Value, error)
+	DoBlock(vals []Value) (Value, error)
 	Callstack() []string
 }

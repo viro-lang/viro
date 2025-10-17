@@ -429,7 +429,7 @@ func (r *REPL) getCurrentPrompt() string {
 }
 
 func (r *REPL) evalParsedValues(values []core.Value) {
-	result, err := r.evaluator.Do_Blk(values)
+	result, err := r.evaluator.DoBlock(values)
 	if err != nil {
 		r.printError(err)
 		return

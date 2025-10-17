@@ -22,7 +22,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 
 	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.Do_Blk(values)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
@@ -34,7 +34,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.Do_Blk(values)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}
@@ -69,7 +69,7 @@ total
 
 	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.Do_Blk(values)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
@@ -81,7 +81,7 @@ total
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.Do_Blk(values)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}

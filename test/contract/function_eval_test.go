@@ -22,7 +22,7 @@ func TestUserFunctionEvalFalse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -53,7 +53,7 @@ func TestUserFunctionMixedEval(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -85,7 +85,7 @@ func TestNativeIfEvalArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -118,7 +118,7 @@ func TestRefinementsAlwaysEvaluated(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -153,7 +153,7 @@ func TestLitWordRefinementError(t *testing.T) {
 		return
 	}
 	// Should fail during fn execution (ParseParamSpecs)
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr == nil {
 		t.Error("Expected error for lit-word refinement, got nil")
 	}
@@ -172,7 +172,7 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -196,7 +196,7 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -222,7 +222,7 @@ func TestTypeQueryLitWordArgument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr == nil {
 		if result.GetType() != 4 {
 			t.Fatalf("Expected word! result, got type %d", result.GetType())

@@ -57,7 +57,7 @@ func TestActionNoImpl(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			_, evalErr := e.Do_Blk(tokens)
+			_, evalErr := e.DoBlock(tokens)
 
 			if evalErr == nil {
 				t.Fatal("Expected error but got nil")
@@ -120,7 +120,7 @@ func TestActionWrongArity(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			_, evalErr := e.Do_Blk(tokens)
+			_, evalErr := e.DoBlock(tokens)
 
 			if evalErr == nil {
 				t.Fatal("Expected error but got nil")
@@ -178,7 +178,7 @@ func TestActionEmptySeries(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			_, evalErr := e.Do_Blk(tokens)
+			_, evalErr := e.DoBlock(tokens)
 
 			if evalErr == nil {
 				t.Fatal("Expected error but got nil")
@@ -236,7 +236,7 @@ func TestActionTypeMismatch(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			_, evalErr := e.Do_Blk(tokens)
+			_, evalErr := e.DoBlock(tokens)
 
 			if evalErr == nil {
 				t.Fatal("Expected error but got nil")

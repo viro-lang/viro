@@ -28,7 +28,7 @@ func Set(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	symbol, _ := value.AsWord(args[0])
 	assignment := []core.Value{value.SetWordVal(symbol), args[1]}
 
-	result, err := eval.Do_Blk(assignment)
+	result, err := eval.DoBlock(assignment)
 	if err != nil {
 		return value.NoneVal(), err
 	}
@@ -51,7 +51,7 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	}
 
 	symbol, _ := value.AsWord(args[0])
-	return eval.Do_Next(value.GetWordVal(symbol))
+	return eval.DoNext(value.GetWordVal(symbol))
 }
 
 // TypeQ implements the `type?` native.
@@ -154,7 +154,7 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 	for _, field := range fields {
 		initVals := initializers[field]
 
-		evaled, err := eval.Do_Blk(initVals)
+		evaled, err := eval.DoBlock(initVals)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -285,7 +285,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		switch target.GetType() {
 		case value.TypeWord:
 			word, _ := value.AsWord(target)
-			evaluated, evalErr := eval.Do_Next(value.WordVal(word))
+			evaluated, evalErr := eval.DoNext(value.WordVal(word))
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}
@@ -294,7 +294,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		case value.TypeGetWord:
 			symbol, _ := value.AsWord(target)
-			evaluated, evalErr := eval.Do_Next(value.GetWordVal(symbol))
+			evaluated, evalErr := eval.DoNext(value.GetWordVal(symbol))
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}

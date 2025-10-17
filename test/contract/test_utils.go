@@ -49,5 +49,5 @@ func Evaluate(src string) (core.Value, error) {
 	}
 
 	e := NewTestEvaluator()
-	return e.Do_Blk(vals)
+	return e.DoBlock(vals)
 }

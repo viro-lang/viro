@@ -52,7 +52,7 @@ func TestActionDispatchBasics(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -95,7 +95,7 @@ func TestActionShadowing(t *testing.T) {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(tokens)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}
@@ -122,7 +122,7 @@ func TestActionMultipleArguments(t *testing.T) {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(tokens)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}

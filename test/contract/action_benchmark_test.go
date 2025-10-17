@@ -20,7 +20,7 @@ func BenchmarkActionDispatch(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := e.Do_Blk(tokens)
+		_, err := e.DoBlock(tokens)
 		if err != nil {
 			b.Fatalf("Eval error: %v", err)
 		}
@@ -38,7 +38,7 @@ func BenchmarkActionDispatchString(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := e.Do_Blk(tokens)
+		_, err := e.DoBlock(tokens)
 		if err != nil {
 			b.Fatalf("Eval error: %v", err)
 		}
@@ -54,7 +54,7 @@ func BenchmarkActionAppend(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
-	_, err = e.Do_Blk(setupTokens)
+	_, err = e.DoBlock(setupTokens)
 	if err != nil {
 		b.Fatalf("Setup error: %v", err)
 	}
@@ -67,7 +67,7 @@ func BenchmarkActionAppend(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := e.Do_Blk(tokens)
+		_, err := e.DoBlock(tokens)
 		if err != nil {
 			b.Fatalf("Eval error: %v", err)
 		}
@@ -85,7 +85,7 @@ func BenchmarkActionLength(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := e.Do_Blk(tokens)
+		_, err := e.DoBlock(tokens)
 		if err != nil {
 			b.Fatalf("Eval error: %v", err)
 		}
@@ -110,7 +110,7 @@ func BenchmarkTypeFrameLookup(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := e.Do_Blk(tokens)
+		_, err := e.DoBlock(tokens)
 		if err != nil {
 			b.Fatalf("Eval error: %v", err)
 		}

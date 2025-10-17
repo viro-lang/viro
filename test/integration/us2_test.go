@@ -25,7 +25,7 @@ func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, c
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("closing stdout writer failed: %v", err)
@@ -49,7 +49,7 @@ func runScript(t *testing.T, e core.Evaluator, script string) (core.Value, error
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
-	return e.Do_Blk(vals)
+	return e.DoBlock(vals)
 }
 
 func TestUS2_ControlFlowScenarios(t *testing.T) {

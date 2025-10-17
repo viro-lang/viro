@@ -21,7 +21,7 @@ func evalObjectScriptWithEvaluator(src string) (core.Evaluator, core.Value, erro
 	}
 
 	e := NewTestEvaluator()
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	return e, result, evalErr
 }
 

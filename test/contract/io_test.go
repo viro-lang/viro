@@ -88,7 +88,7 @@ func TestIO_Print(t *testing.T) {
 			e := NewTestEvaluator()
 
 			captured, result, evalErr := captureStdout(t, func() (core.Value, error) {
-				val, derr := e.Do_Blk(vals)
+				val, derr := e.DoBlock(vals)
 				if derr != nil {
 					return value.NoneVal(), derr
 				}
@@ -154,7 +154,7 @@ func TestIO_Input(t *testing.T) {
 			os.Stdin = r
 
 			e := NewTestEvaluator()
-			result, evalErr := e.Do_Blk(vals)
+			result, evalErr := e.DoBlock(vals)
 
 			if err := r.Close(); err != nil {
 				t.Fatalf("closing stdin pipe reader failed: %v", err)
