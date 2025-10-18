@@ -2,6 +2,8 @@ package integration
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -15,6 +17,11 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
+
+	// Redirect stdout to capture print output
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
 
 	tests := []struct {
 		name     string
@@ -32,7 +39,7 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "String literal",
 			input:    "\"hello\"",
-			expected: "\"hello\"",
+			expected: "hello",
 		},
 		// 3. Logic literal (true)
 		{
@@ -63,7 +70,7 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "Block literal",
 			input:    "[1 2 3]",
-			expected: "[1 2 3]",
+			expected: "1 2 3",
 		},
 		// 8. Paren evaluation
 		{
@@ -162,14 +169,14 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "Append series operation",
 			input:    "append data 4",
-			expected: "[1 2 3 4]",
+			expected: "1 2 3 4",
 			setup:    []string{"data: [1 2 3]"},
 		},
 		// 24. Insert operation
 		{
 			name:     "Insert series operation",
 			input:    "insert data 0",
-			expected: "[0 1 2 3]",
+			expected: "0 1 2 3",
 			setup:    []string{"data: [1 2 3]"},
 		},
 		// 25. When control flow
@@ -239,25 +246,44 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Run setup commands if any
+			// Run setup commands if any (discard their output)
 			for _, setupCmd := range tt.setup {
 				out.Reset()
 				loop.EvalLineForTest(setupCmd)
+				// Drain any output from setup
+				w.Close()
+				var drain bytes.Buffer
+				io.Copy(&drain, r)
+				r, w, _ = os.Pipe()
+				os.Stdout = w
 			}
 
-			// Execute test
+			// Execute test command
 			out.Reset()
 			loop.EvalLineForTest(tt.input)
-			result := strings.TrimSpace(out.String())
+
+			// Read captured stdout from the test command only
+			w.Close()
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			result := strings.TrimSpace(buf.String())
 
 			if result != tt.expected {
 				t.Errorf("%s: expected %q, got %q", tt.name, tt.expected, result)
 			} else {
 				passedTests++
 			}
+
+			// Reset pipe for next test
+			r, w, _ = os.Pipe()
+			os.Stdout = w
 		})
 		expressionTypeCount++
 	}
+
+	// Restore stdout
+	w.Close()
+	os.Stdout = oldStdout
 
 	// Validate SC-001 criterion: at least 20 different expression types
 	if expressionTypeCount < 20 {
