@@ -142,7 +142,7 @@ For blocks, includes outer brackets. For strings, includes quotes. Does not eval
 	fn = value.NewNativeFunction(
 		"reduce",
 		[]value.ParamSpec{
-			value.NewParamSpec("block", false),
+			value.NewParamSpec("block", true),
 		},
 		Reduce,
 	)
