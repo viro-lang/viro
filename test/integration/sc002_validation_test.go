@@ -50,8 +50,8 @@ func TestSC002_MemoryStability(t *testing.T) {
 		out.Reset()
 		loop.EvalLineForTest(expr)
 
-		// Check that evaluation didn't crash
-		if out.Len() > 0 {
+		// Check that evaluation succeeded (no error output)
+		if out.Len() == 0 {
 			successfulCycles++
 		}
 

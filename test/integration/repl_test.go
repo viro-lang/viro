@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,66 +14,134 @@ import (
 func TestREPL_ErrorRecovery(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
+
+	// Redirect stdout to capture print output
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	loop := repl.NewREPLForTest(evaluator, &out)
 
+	// Function definition - output goes to stdout
 	loop.EvalLineForTest("square: fn [n] [n * n]")
-	output := out.String()
+	w.Close()
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := strings.TrimSpace(buf.String())
 	if !strings.Contains(output, "function") {
 		t.Fatalf("expected function definition output, got %q", output)
 	}
 
-	out.Reset()
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
 
+	// Error case - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("square \"oops\"")
-	output = out.String()
-	if !strings.Contains(output, "** Script Error") {
-		t.Fatalf("expected script error header, got %q", output)
+	errorOutput := out.String()
+	if !strings.Contains(errorOutput, "** Script Error") {
+		t.Fatalf("expected script error header, got %q", errorOutput)
 	}
-	if !strings.Contains(output, "square") {
-		t.Fatalf("expected call stack or message to mention square, got %q", output)
+	if !strings.Contains(errorOutput, "square") {
+		t.Fatalf("expected call stack or message to mention square, got %q", errorOutput)
 	}
 
-	out.Reset()
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
 
+	// Successful evaluation after error - output goes to stdout
 	loop.EvalLineForTest("square 4")
-	output = out.String()
+	w.Close()
+	buf.Reset()
+	io.Copy(&buf, r)
+	output = strings.TrimSpace(buf.String())
 	if !strings.Contains(output, "16") {
 		t.Fatalf("expected successful evaluation after error, got %q", output)
 	}
+
+	// Restore stdout
+	os.Stdout = oldStdout
 }
 
 func TestREPL_StatePreservedAfterError(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
+
+	// Redirect stdout to capture print output
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	loop := repl.NewREPLForTest(evaluator, &out)
 
+	// Assignment - output goes to stdout
 	loop.EvalLineForTest("x: 10")
-	if output := out.String(); !strings.Contains(output, "10") {
+	w.Close()
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected assignment result to include 10, got %q", output)
 	}
+
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
+
+	// Error - output goes to buffer
 	out.Reset()
 	loop.EvalLineForTest("1 / 0")
-	if output := out.String(); !strings.Contains(output, "** Math Error") {
-		t.Fatalf("expected math error header, got %q", output)
+	errorOutput := out.String()
+	if !strings.Contains(errorOutput, "** Math Error") {
+		t.Fatalf("expected math error header, got %q", errorOutput)
 	}
-	out.Reset()
 
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
+
+	// Variable lookup after error - output goes to stdout
 	loop.EvalLineForTest("x")
-	if output := out.String(); !strings.Contains(output, "10") {
+	w.Close()
+	buf.Reset()
+	io.Copy(&buf, r)
+	output = strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected x to retain value 10 after error, got %q", output)
 	}
-	out.Reset()
 
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
+
+	// Reassignment - output goes to stdout
 	loop.EvalLineForTest("x: x + 5")
-	if output := out.String(); !strings.Contains(output, "15") {
+	w.Close()
+	buf.Reset()
+	io.Copy(&buf, r)
+	output = strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected reassignment result to include 15, got %q", output)
 	}
-	out.Reset()
 
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
+
+	// Final lookup - output goes to stdout
 	loop.EvalLineForTest("x")
-	if output := out.String(); !strings.Contains(output, "15") {
+	w.Close()
+	buf.Reset()
+	io.Copy(&buf, r)
+	output = strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected x to reflect updated value 15, got %q", output)
 	}
+
+	// Restore stdout
+	os.Stdout = oldStdout
 }
 
 func TestREPL_CommandHistory(t *testing.T) {
@@ -148,6 +217,12 @@ func TestREPL_CommandHistory(t *testing.T) {
 func TestREPL_MultiLineInput(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
+
+	// Redirect stdout to capture print output
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	loop := repl.NewREPLForTest(evaluator, &out)
 
 	if loop.AwaitingContinuation() {
@@ -176,15 +251,30 @@ func TestREPL_MultiLineInput(t *testing.T) {
 	if loop.AwaitingContinuation() {
 		t.Fatalf("expected REPL to exit continuation state after closing paren")
 	}
-	if output := out.String(); !strings.Contains(output, "15") {
+	// Multi-line evaluation result goes to stdout
+	w.Close()
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected evaluated result to include 15, got %q", output)
 	}
-	out.Reset()
+
+	// Reset pipe
+	r, w, _ = os.Pipe()
+	os.Stdout = w
 
 	loop.EvalLineForTest("value")
-	if output := out.String(); !strings.Contains(output, "15") {
+	w.Close()
+	buf.Reset()
+	io.Copy(&buf, r)
+	output = strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected value to be preserved after multi-line evaluation, got %q", output)
 	}
+
+	// Restore stdout
+	os.Stdout = oldStdout
 }
 
 func TestREPL_ExitCommands(t *testing.T) {
@@ -222,6 +312,12 @@ func TestREPL_ExitCommands(t *testing.T) {
 func TestREPL_CtrlCInterrupt(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
+
+	// Redirect stdout to capture print output
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
 	loop := repl.NewREPLForTest(evaluator, &out)
 
 	loop.EvalLineForTest("value: (")
@@ -244,10 +340,18 @@ func TestREPL_CtrlCInterrupt(t *testing.T) {
 	}
 	out.Reset()
 
+	// Evaluation after interrupt goes to stdout
 	loop.EvalLineForTest("value: 10")
-	if output := out.String(); !strings.Contains(output, "10") {
+	w.Close()
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := strings.TrimSpace(buf.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected evaluation to continue after interrupt, got %q", output)
 	}
+
+	// Restore stdout
+	os.Stdout = oldStdout
 }
 
 func TestREPL_HistoryPersistence(t *testing.T) {
