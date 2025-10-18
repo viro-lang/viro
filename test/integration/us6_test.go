@@ -2,7 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,16 +95,10 @@ func TestUS6_MultiLineContinuation(t *testing.T) {
 	}
 	errOut.Reset()
 
-	// Capture stdout for the final evaluation
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
+	// Capture output for the final evaluation
+	errOut.Reset()
 	loop.EvalLineForTest("]")
-	w.Close()
-	output, _ := io.ReadAll(r)
-	result := strings.TrimSpace(string(output))
-	os.Stdout = oldStdout
+	result := strings.TrimSpace(errOut.String())
 
 	if loop.AwaitingContinuation() {
 		t.Fatalf("expected continuation state cleared after closing block")

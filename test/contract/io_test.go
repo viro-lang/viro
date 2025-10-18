@@ -7,31 +7,35 @@ import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// captureStdout redirects stdout during fn execution and returns captured output.
-func captureStdout(t *testing.T, fn func() (core.Value, error)) (string, core.Value, error) {
+// captureOutput configures evaluator output and returns captured output.
+func captureOutput(t *testing.T, e *eval.Evaluator, fn func() (core.Value, error)) (string, core.Value, error) {
 	t.Helper()
 
-	oldStdout := os.Stdout
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("os.Pipe failed: %v", err)
 	}
-	os.Stdout = w
+
+	// Configure evaluator to write to our pipe
+	oldWriter := e.GetOutputWriter()
+	e.SetOutputWriter(w)
 
 	result, fnErr := fn()
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("closing pipe writer failed: %v", err)
 	}
-	os.Stdout = oldStdout
+	// Restore original writer
+	e.SetOutputWriter(oldWriter)
 
 	output, readErr := io.ReadAll(r)
 	if readErr != nil {
-		t.Fatalf("reading captured stdout failed: %v", readErr)
+		t.Fatalf("reading captured output failed: %v", readErr)
 	}
 	if err := r.Close(); err != nil {
 		t.Fatalf("closing pipe reader failed: %v", err)
@@ -87,7 +91,7 @@ func TestIO_Print(t *testing.T) {
 
 			e := NewTestEvaluator()
 
-			captured, result, evalErr := captureStdout(t, func() (core.Value, error) {
+			captured, result, evalErr := captureOutput(t, e, func() (core.Value, error) {
 				val, derr := e.DoBlock(vals)
 				if derr != nil {
 					return value.NoneVal(), derr

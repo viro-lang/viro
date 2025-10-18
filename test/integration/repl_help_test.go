@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -148,19 +146,10 @@ func TestREPL_HelpIntegration(t *testing.T) {
 					}
 				}
 			} else {
-				// Capture stdout for successful evaluations
-				oldStdout := os.Stdout
-				r, w, _ := os.Pipe()
-				os.Stdout = w
-
+				// Capture output for successful evaluations
 				errOut.Reset()
 				loop.EvalLineForTest(tt.input)
-				w.Close()
-				output, _ := io.ReadAll(r)
-				result := string(output)
-
-				// Restore stdout
-				os.Stdout = oldStdout
+				result := errOut.String()
 
 				if tt.checkOutput {
 					if tt.shouldContain != "" && !strings.Contains(result, tt.shouldContain) {

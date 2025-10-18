@@ -2,6 +2,8 @@ package eval
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,11 +20,14 @@ import (
 // Evaluator represents the core evaluation engine for the Vi programming language.
 // It manages execution context including frames, call stack, and value evaluation.
 type Evaluator struct {
-	Stack      *stack.Stack
-	Frames     []core.Frame
-	frameStore []core.Frame
-	captured   map[int]bool
-	callStack  []string
+	Stack        *stack.Stack
+	Frames       []core.Frame
+	frameStore   []core.Frame
+	captured     map[int]bool
+	callStack    []string
+	OutputWriter io.Writer
+	ErrorWriter  io.Writer
+	InputReader  io.Reader
 }
 
 // NewEvaluator creates a new evaluator instance with an initialized global frame.
@@ -32,11 +37,14 @@ func NewEvaluator() *Evaluator {
 	global.Name = "(top level)"
 	global.Index = 0
 	e := &Evaluator{
-		Stack:      stack.NewStack(1024),
-		Frames:     []core.Frame{global},
-		frameStore: []core.Frame{global},
-		captured:   make(map[int]bool),
-		callStack:  []string{"(top level)"},
+		Stack:        stack.NewStack(1024),
+		Frames:       []core.Frame{global},
+		frameStore:   []core.Frame{global},
+		captured:     make(map[int]bool),
+		callStack:    []string{"(top level)"},
+		OutputWriter: os.Stdout,
+		ErrorWriter:  os.Stderr,
+		InputReader:  os.Stdin,
 	}
 	e.captured[0] = true
 
@@ -49,6 +57,51 @@ func NewEvaluator() *Evaluator {
 // The call stack represents the execution context, with the most recent call at the end.
 func (e *Evaluator) Callstack() []string {
 	return e.callStack
+}
+
+// SetOutputWriter sets the output writer for this evaluator.
+// This allows redirecting output (e.g., from print function) to different destinations.
+func (e *Evaluator) SetOutputWriter(w io.Writer) {
+	if w == nil {
+		e.OutputWriter = os.Stdout
+	} else {
+		e.OutputWriter = w
+	}
+}
+
+// GetOutputWriter returns the current output writer.
+func (e *Evaluator) GetOutputWriter() io.Writer {
+	return e.OutputWriter
+}
+
+// SetErrorWriter sets the error writer for this evaluator.
+// This allows redirecting error output to different destinations.
+func (e *Evaluator) SetErrorWriter(w io.Writer) {
+	if w == nil {
+		e.ErrorWriter = os.Stderr
+	} else {
+		e.ErrorWriter = w
+	}
+}
+
+// GetErrorWriter returns the current error writer.
+func (e *Evaluator) GetErrorWriter() io.Writer {
+	return e.ErrorWriter
+}
+
+// SetInputReader sets the input reader for this evaluator.
+// This allows redirecting input (e.g., from input function) from different sources.
+func (e *Evaluator) SetInputReader(r io.Reader) {
+	if r == nil {
+		e.InputReader = os.Stdin
+	} else {
+		e.InputReader = r
+	}
+}
+
+// GetInputReader returns the current input reader.
+func (e *Evaluator) GetInputReader() io.Reader {
+	return e.InputReader
 }
 
 // currentFrame returns the currently active frame in the evaluation context.

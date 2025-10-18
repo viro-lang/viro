@@ -90,12 +90,15 @@ func NewREPL() (*REPL, error) {
 	}
 
 	evaluator := eval.NewEvaluator()
+	evaluator.SetOutputWriter(os.Stdout)
+	evaluator.SetErrorWriter(os.Stderr)
+	evaluator.SetInputReader(os.Stdin)
 
 	rootFrame := evaluator.GetFrameByIndex(0)
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
@@ -131,11 +134,16 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 		out = io.Discard
 	}
 
+	// Configure evaluator I/O
+	e.SetOutputWriter(out)
+	e.SetErrorWriter(out)                   // For tests, use same writer for both
+	e.SetInputReader(strings.NewReader("")) // Empty input for tests
+
 	rootFrame := e.GetFrameByIndex(0)
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 

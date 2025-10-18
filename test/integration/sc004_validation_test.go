@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -18,16 +16,9 @@ func TestSC004_RecursionDepth(t *testing.T) {
 	loop := repl.NewREPLForTest(evaluator, &errOut)
 
 	// Define a recursive countdown function
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
 	errOut.Reset()
 	loop.EvalLineForTest("countdown: fn [n] [when (> n 0) [(countdown (- n 1))]]")
-	w.Close()
-	output, _ := io.ReadAll(r)
-	result := strings.TrimSpace(string(output))
-	os.Stdout = oldStdout
+	result := strings.TrimSpace(errOut.String())
 
 	if !strings.Contains(result, "function[countdown]") {
 		t.Fatalf("Failed to define recursive function: %s", result)
@@ -48,11 +39,7 @@ func TestSC004_RecursionDepth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Capture stdout for the countdown call
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
+			// Test the countdown call
 			errOut.Reset()
 			input := ""
 			if tt.depth == 10 {
@@ -66,9 +53,6 @@ func TestSC004_RecursionDepth(t *testing.T) {
 			}
 
 			loop.EvalLineForTest(input)
-			w.Close()
-			_, _ = io.ReadAll(r)
-			os.Stdout = oldStdout
 
 			// Check if it completed without error (no error in errOut)
 			if errOut.Len() == 0 {

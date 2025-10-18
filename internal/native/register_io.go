@@ -11,7 +11,7 @@ import (
 // RegisterIONatives registers all I/O and port-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
-func RegisterIONatives(rootFrame core.Frame) {
+func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
@@ -224,4 +224,13 @@ Returns the port that became ready, or none if a timeout occurred.`,
 		Examples: []string{"wait 2  ; wait for 2 seconds", "wait 0.5  ; wait for half a second", `p: open "file://data.txt"\nwait p  ; wait until port is ready`},
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "wait", "delay", "timeout"},
 	})
+
+	// Create and bind standard I/O ports
+	stdoutPort := value.NewPort("stdio", "stdout", &stdioWriterDriver{writer: eval.GetOutputWriter()})
+	stderrPort := value.NewPort("stdio", "stderr", &stdioWriterDriver{writer: eval.GetErrorWriter()})
+	stdinPort := value.NewPort("stdio", "stdin", &stdioReaderDriver{reader: eval.GetInputReader()})
+
+	rootFrame.Bind("stdout", value.PortVal(stdoutPort))
+	rootFrame.Bind("stderr", value.PortVal(stderrPort))
+	rootFrame.Bind("stdin", value.PortVal(stdinPort))
 }

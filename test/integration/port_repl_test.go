@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -58,29 +56,17 @@ func TestPortNativesInREPL(t *testing.T) {
 	passedTests := 0
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Capture stdout for this test
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
 			// Run setup commands
 			for _, setupCmd := range tt.setup {
+				errOut.Reset()
 				loop.EvalLineForTest(setupCmd)
-				// Drain setup output
-				w.Close()
-				io.ReadAll(r)
-				r, w, _ = os.Pipe()
-				os.Stdout = w
+				// Setup output is discarded
 			}
 
 			// Execute test
+			errOut.Reset()
 			loop.EvalLineForTest(tt.input)
-			w.Close()
-			output, _ := io.ReadAll(r)
-			result := strings.TrimSpace(string(output))
-
-			// Restore stdout
-			os.Stdout = oldStdout
+			result := strings.TrimSpace(errOut.String())
 
 			if !strings.Contains(result, tt.contains) {
 				t.Errorf("%s: expected to contain %q, got %q", tt.name, tt.contains, result)

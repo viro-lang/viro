@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -45,16 +43,8 @@ func TestSC015_TraceOverheadDisabled(t *testing.T) {
 
 	// Verify trace is actually off
 	out.Reset()
-	// Redirect stdout to capture print output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
 	loop.EvalLineForTest("trace?")
-	w.Close()
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
-	os.Stdout = oldStdout
-	result := strings.TrimSpace(buf.String())
+	result := strings.TrimSpace(out.String())
 	if !strings.Contains(result, "false") {
 		t.Errorf("Expected trace? to return false, got: %s", result)
 	}
@@ -214,16 +204,8 @@ func TestSC015_EndToEndTraceSession(t *testing.T) {
 	t.Run("TraceEnableDisable", func(t *testing.T) {
 		// Check initial state
 		out.Reset()
-		// Redirect stdout to capture print output
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("trace?")
-		w.Close()
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result := strings.TrimSpace(buf.String())
+		result := strings.TrimSpace(out.String())
 		if !strings.Contains(result, "false") {
 			t.Logf("Initial trace state: %s", result)
 		}
@@ -233,15 +215,8 @@ func TestSC015_EndToEndTraceSession(t *testing.T) {
 		loop.EvalLineForTest("trace --on")
 
 		out.Reset()
-		// Redirect stdout to capture print output
-		r, w, _ = os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("trace?")
-		w.Close()
-		buf.Reset()
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result = strings.TrimSpace(buf.String())
+		result = strings.TrimSpace(out.String())
 		if !strings.Contains(result, "true") {
 			t.Errorf("Expected trace? to return true after enable, got: %s", result)
 		} else {
@@ -253,15 +228,8 @@ func TestSC015_EndToEndTraceSession(t *testing.T) {
 		loop.EvalLineForTest("trace --off")
 
 		out.Reset()
-		// Redirect stdout to capture print output
-		r, w, _ = os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("trace?")
-		w.Close()
-		buf.Reset()
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result = strings.TrimSpace(buf.String())
+		result = strings.TrimSpace(out.String())
 		if !strings.Contains(result, "false") {
 			t.Errorf("Expected trace? to return false after disable, got: %s", result)
 		} else {
@@ -421,16 +389,8 @@ func TestSC015_DebugSessionStepping(t *testing.T) {
 	t.Run("ReflectionNatives", func(t *testing.T) {
 		// Test type-of
 		out.Reset()
-		// Redirect stdout to capture print output
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("type-of 42")
-		w.Close()
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result := strings.TrimSpace(buf.String())
+		result := strings.TrimSpace(out.String())
 		if !strings.Contains(result, "integer") {
 			t.Errorf("Expected type-of 42 to contain 'integer', got: %s", result)
 		} else {
@@ -439,43 +399,22 @@ func TestSC015_DebugSessionStepping(t *testing.T) {
 
 		// Test spec-of with function
 		out.Reset()
-		// Redirect stdout to capture print output
-		r, w, _ = os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("spec-of :add-two")
-		w.Close()
-		buf.Reset()
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result = strings.TrimSpace(buf.String())
+		result = strings.TrimSpace(out.String())
 		t.Logf("spec-of :add-two result: %s", result)
 		t.Log("PASS: spec-of executed")
 
 		// Test body-of with function
 		out.Reset()
-		// Redirect stdout to capture print output
-		r, w, _ = os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("body-of :add-two")
-		w.Close()
-		buf.Reset()
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result = strings.TrimSpace(buf.String())
+		result = strings.TrimSpace(out.String())
 		t.Logf("body-of :add-two result: %s", result)
 		t.Log("PASS: body-of executed")
 
 		// Test words-of
 		out.Reset()
-		// Redirect stdout to capture print output
-		r, w, _ = os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("words-of :add-two")
-		w.Close()
-		buf.Reset()
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result = strings.TrimSpace(buf.String())
+		result = strings.TrimSpace(out.String())
 		t.Logf("words-of :add-two result: %s", result)
 		t.Log("PASS: words-of executed")
 	})
@@ -609,23 +548,16 @@ func TestSC015_SourceNative(t *testing.T) {
 	t.Run("SourceNative", func(t *testing.T) {
 		// Get source code representation
 		out.Reset()
-		// Redirect stdout to capture print output
-		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
-		os.Stdout = w
 		loop.EvalLineForTest("source :greet")
-		w.Close()
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		os.Stdout = oldStdout
-		result := strings.TrimSpace(buf.String())
+		result := strings.TrimSpace(out.String())
 
 		// Verify the source contains the function definition
-		if len(result) == 0 {
-			t.Error("source native returned empty result")
+		if result == "" {
+			t.Errorf("source native returned empty result")
+		} else if !strings.Contains(result, "name") {
+			t.Errorf("source should contain parameter name, got: %s", result)
 		} else {
-			t.Logf("source result: %s", result)
-			t.Log("PASS: source native executed")
+			t.Logf("PASS: source native returned: %s", result)
 		}
 	})
 

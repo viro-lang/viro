@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -18,10 +16,7 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
-	// Redirect stdout to capture print output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	// Output will be captured in the 'out' buffer
 
 	tests := []struct {
 		name     string
@@ -250,40 +245,22 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 			for _, setupCmd := range tt.setup {
 				out.Reset()
 				loop.EvalLineForTest(setupCmd)
-				// Drain any output from setup
-				w.Close()
-				var drain bytes.Buffer
-				io.Copy(&drain, r)
-				r, w, _ = os.Pipe()
-				os.Stdout = w
+				// Setup output is discarded
 			}
 
 			// Execute test command
 			out.Reset()
 			loop.EvalLineForTest(tt.input)
-
-			// Read captured stdout from the test command only
-			w.Close()
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			result := strings.TrimSpace(buf.String())
+			result := strings.TrimSpace(out.String())
 
 			if result != tt.expected {
 				t.Errorf("%s: expected %q, got %q", tt.name, tt.expected, result)
 			} else {
 				passedTests++
 			}
-
-			// Reset pipe for next test
-			r, w, _ = os.Pipe()
-			os.Stdout = w
 		})
 		expressionTypeCount++
 	}
-
-	// Restore stdout
-	w.Close()
-	os.Stdout = oldStdout
 
 	// Validate SC-001 criterion: at least 20 different expression types
 	if expressionTypeCount < 20 {

@@ -336,6 +336,64 @@ func (d *httpDriver) Query() (map[string]interface{}, error) {
 	}, nil
 }
 
+// stdioWriterDriver implements PortDriver for standard output/error streams
+type stdioWriterDriver struct {
+	writer io.Writer
+}
+
+func (d *stdioWriterDriver) Open(ctx context.Context, spec string) error {
+	// Always open - stdio streams are always available
+	return nil
+}
+
+func (d *stdioWriterDriver) Read(buf []byte) (int, error) {
+	return 0, fmt.Errorf("stdio writer does not support reading")
+}
+
+func (d *stdioWriterDriver) Write(buf []byte) (int, error) {
+	return d.writer.Write(buf)
+}
+
+func (d *stdioWriterDriver) Close() error {
+	// Cannot close stdio streams
+	return nil
+}
+
+func (d *stdioWriterDriver) Query() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "stdio-writer",
+	}, nil
+}
+
+// stdioReaderDriver implements PortDriver for standard input stream
+type stdioReaderDriver struct {
+	reader io.Reader
+}
+
+func (d *stdioReaderDriver) Open(ctx context.Context, spec string) error {
+	// Always open - stdio streams are always available
+	return nil
+}
+
+func (d *stdioReaderDriver) Read(buf []byte) (int, error) {
+	return d.reader.Read(buf)
+}
+
+func (d *stdioReaderDriver) Write(buf []byte) (int, error) {
+	return 0, fmt.Errorf("stdio reader does not support writing")
+}
+
+func (d *stdioReaderDriver) Close() error {
+	// Cannot close stdio streams
+	return nil
+}
+
+func (d *stdioReaderDriver) Query() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "stdio-reader",
+	}, nil
+}
+
 // Port native functions (T065-T072)
 
 // OpenPort implements the `open` native for Feature 002.
@@ -736,7 +794,8 @@ func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		return value.NoneVal(), err
 	}
 
-	if _, writeErr := fmt.Fprintln(os.Stdout, output); writeErr != nil {
+	writer := eval.GetOutputWriter()
+	if _, writeErr := fmt.Fprintln(writer, output); writeErr != nil {
 		return value.NoneVal(), verror.NewAccessError(
 			verror.ErrIDInvalidOperation,
 			[3]string{fmt.Sprintf("print output error: %v", writeErr), "", ""},
@@ -756,7 +815,7 @@ func Input(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		return value.NoneVal(), arityError("input", 0, len(args))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(eval.GetInputReader())
 	line, err := reader.ReadString('\n')
 	if err != nil {
 		if !errors.Is(err, io.EOF) {

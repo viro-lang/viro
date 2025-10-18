@@ -34,7 +34,7 @@ func NewTestEvaluator() *eval.Evaluator {
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 

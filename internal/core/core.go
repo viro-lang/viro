@@ -1,5 +1,7 @@
 package core
 
+import "io"
+
 type ValueType uint8
 
 type NativeFunc func(args []Value, refValues map[string]Value, eval Evaluator) (Value, error)
@@ -48,4 +50,10 @@ type Evaluator interface {
 	DoNext(value Value) (Value, error)
 	DoBlock(vals []Value) (Value, error)
 	Callstack() []string
+	SetOutputWriter(writer io.Writer)
+	GetOutputWriter() io.Writer
+	SetErrorWriter(writer io.Writer)
+	GetErrorWriter() io.Writer
+	SetInputReader(reader io.Reader)
+	GetInputReader() io.Reader
 }
