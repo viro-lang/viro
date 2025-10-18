@@ -4,6 +4,7 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -358,6 +359,104 @@ func TestData_Mold(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestData_Reduce validates the 'reduce' native.
+//
+// Contract: reduce block → block! containing evaluated elements
+// - Takes a block (not evaluated)
+// - Evaluates each element individually
+// - Returns new block with evaluation results
+// - Preserves element order
+func TestData_Reduce(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected value.Value
+		wantErr  bool
+	}{
+		{
+			name:     "reduce literals",
+			input:    "reduce [1 2 3]",
+			expected: value.BlockVal([]core.Value{value.IntVal(1), value.IntVal(2), value.IntVal(3)}),
+			wantErr:  false,
+		},
+		{
+			name:     "reduce expressions",
+			input:    "reduce [1 + 2 3 * 4]",
+			expected: value.BlockVal([]core.Value{value.IntVal(3), value.IntVal(12)}),
+			wantErr:  false,
+		},
+		{
+			name:     "reduce with variables",
+			input:    "x: 10\ny: 20\nreduce [x y + 5]",
+			expected: value.BlockVal([]core.Value{value.IntVal(10), value.IntVal(25)}),
+			wantErr:  false,
+		},
+		{
+			name:     "reduce empty block",
+			input:    "reduce []",
+			expected: value.BlockVal([]core.Value{}),
+			wantErr:  false,
+		},
+		{
+			name:     "reduce mixed types",
+			input:    "reduce [42 \"hello\" true none]",
+			expected: value.BlockVal([]core.Value{value.IntVal(42), value.StrVal("hello"), value.LogicVal(true), value.NoneVal()}),
+			wantErr:  false,
+		},
+		{
+			name:  "reduce nested blocks",
+			input: "reduce [[1 2] [3 4]]",
+			expected: value.BlockVal([]core.Value{
+				value.BlockVal([]core.Value{value.IntVal(1), value.IntVal(2)}),
+				value.BlockVal([]core.Value{value.IntVal(3), value.IntVal(4)}),
+			}),
+			wantErr: false,
+		},
+		{
+			name:     "reduce with function calls",
+			input:    "reduce [(type? 42) (type? \"test\")]",
+			expected: value.BlockVal([]core.Value{value.WordVal("integer!"), value.WordVal("string!")}),
+			wantErr:  false,
+		},
+		{
+			name:    "reduce non-block argument",
+			input:   "reduce 42",
+			wantErr: true,
+		},
+		{
+			name:    "reduce undefined variable",
+			input:   "reduce [undefined-var]",
+			wantErr: true,
+		},
+		{
+			name:    "reduce with evaluation error",
+			input:   "reduce [1 / 0]",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				return
+			}
+
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}

@@ -139,6 +139,27 @@ For blocks, includes outer brackets. For strings, includes quotes. Does not eval
 	}
 	registerAndBind("mold", fn)
 
+	fn = value.NewNativeFunction(
+		"reduce",
+		[]value.ParamSpec{
+			value.NewParamSpec("block", false),
+		},
+		Reduce,
+	)
+	fn.Doc = &NativeDoc{
+		Category: "Data",
+		Summary:  "Evaluates each element in a block and returns the results as a block",
+		Description: `Takes a block and evaluates each element individually, collecting the results
+into a new block. This is useful for computing values dynamically and building data structures.`,
+		Parameters: []ParamDoc{
+			{Name: "block", Type: "block!", Description: "The block containing elements to evaluate", Optional: false},
+		},
+		Returns:  "[block!] A new block containing the evaluated results",
+		Examples: []string{"reduce [1 2 3]  ; => [1 2 3]", "reduce [1 + 2, 3 * 4]  ; => [3, 12]", "reduce []  ; => []"},
+		SeeAlso:  []string{"form", "mold"}, Tags: []string{"data", "evaluation", "block", "reduce"},
+	}
+	registerAndBind("reduce", fn)
+
 	// ===== Group 7: Object operations (5 functions - all need evaluator) =====
 	fn = value.NewNativeFunction(
 		"object",

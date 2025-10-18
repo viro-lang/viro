@@ -255,6 +255,62 @@ mold [a b c]     → "[a b c]"
 
 ---
 
+## Native: `reduce`
+
+**Signature**: `reduce block`
+
+**Parameters**:
+- `block`: Block (not evaluated)
+
+**Return**: Block containing evaluation results
+
+**Behavior**:
+1. Takes a block as input
+2. Evaluates each element in the block
+3. Returns a new block containing the results of evaluation
+4. Preserves the order of elements
+
+**Type Rules**:
+- Argument must be Block type (not evaluated)
+- Block elements can be any type (will be evaluated)
+- Returns Block type
+
+**Usage Pattern**:
+```viro
+reduce [1 2 3]           ; returns [1 2 3] (literals)
+reduce [1 + 2, 3 * 4]    ; returns [3, 12] (expressions)
+reduce [x, y + 1]        ; returns [value-of-x, value-of-y-plus-1]
+```
+
+**Examples**:
+```viro
+reduce [1 2 3]           → [1 2 3]
+reduce [1 + 2, 3 * 4]    → [3, 12]
+reduce []                → []
+reduce [true, false]     → [true, false]
+reduce ["hello", "world"] → ["hello", "world"]
+```
+
+**Error Cases**:
+- Argument not block → Script error (300): "Reduce expects block argument"
+- Evaluation errors in block elements → propagate the first error encountered
+
+**Test Cases**:
+1. `reduce [1 2 3]` returns block `[1 2 3]`
+2. `reduce [1 + 2, 3 * 4]` returns block `[3, 12]`
+3. `reduce []` returns block `[]`
+4. `reduce [true, false]` returns block `[true, false]`
+5. `reduce 42` errors (not a block)
+6. `reduce [1, undefined-word]` errors (evaluation fails)
+
+**Implementation Note**:
+- Each element is evaluated individually in the current evaluation context
+- Evaluation errors are propagated immediately (first error stops processing)
+- Empty blocks return empty blocks
+- Nested blocks are evaluated as single elements
+
+---
+
 ## Common Properties
 
 **Word Operations** (`set`, `get`):
