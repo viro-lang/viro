@@ -1,5 +1,7 @@
 package value
 
+import "sort"
+
 // StringValue represents a UTF-8 character sequence.
 // Stored as []rune internally for proper REBOL series semantics
 // (character-level operations, not byte-level).
@@ -116,4 +118,11 @@ func (s *StringValue) Remove(count int) {
 	if s.index+count <= len(s.runes) {
 		s.runes = append(s.runes[:s.index], s.runes[s.index+count:]...)
 	}
+}
+
+// SortString sorts the runes in the string in ascending order.
+func SortString(s *StringValue) {
+	sort.SliceStable(s.runes, func(i, j int) bool {
+		return s.runes[i] < s.runes[j]
+	})
 }

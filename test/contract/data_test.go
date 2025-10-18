@@ -430,9 +430,10 @@ func TestData_Reduce(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:    "reduce non-block argument",
-			input:   "reduce 42",
-			wantErr: true,
+			name:     "reduce non-block argument",
+			input:    "reduce 42",
+			expected: value.IntVal(42),
+			wantErr:  false,
 		},
 		{
 			name:    "reduce undefined variable",

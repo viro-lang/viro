@@ -315,3 +315,19 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 
 	return args[0], nil
 }
+
+// StringSort implements sort action for string values.
+// Feature: 004-dynamic-function-invocation
+func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) == 0 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
+	}
+
+	str, ok := value.AsString(args[0])
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	value.SortString(str)
+	return args[0], nil
+}

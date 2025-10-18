@@ -629,6 +629,13 @@ data`,
 			}),
 		},
 		{
+			name: "sort string",
+			input: `str: "cba"
+sort str
+str`,
+			want: value.StrVal("abc"),
+		},
+		{
 			name: "reverse block",
 			input: `data: [1 2 3]
 reverse data

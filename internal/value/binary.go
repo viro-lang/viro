@@ -1,5 +1,7 @@
 package value
 
+import "sort"
+
 // BinaryValue represents a sequence of raw bytes.
 type BinaryValue struct {
 	data  []byte
@@ -105,4 +107,11 @@ func (b *BinaryValue) GetIndex() int {
 // SetIndex sets the current series position.
 func (b *BinaryValue) SetIndex(index int) {
 	b.index = index
+}
+
+// SortBinary sorts the bytes in the binary value in ascending order.
+func SortBinary(b *BinaryValue) {
+	sort.SliceStable(b.data, func(i, j int) bool {
+		return b.data[i] < b.data[j]
+	})
 }

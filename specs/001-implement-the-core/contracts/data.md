@@ -300,7 +300,7 @@ reduce ["hello", "world"] → ["hello", "world"]
 2. `reduce [1 + 2, 3 * 4]` returns block `[3, 12]`
 3. `reduce []` returns block `[]`
 4. `reduce [true, false]` returns block `[true, false]`
-5. `reduce 42` errors (not a block)
+5. `reduce 42` returns `42` (non-block values pass through unchanged)
 6. `reduce [1, undefined-word]` errors (evaluation fails)
 
 **Implementation Note**:

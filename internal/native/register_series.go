@@ -98,6 +98,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, StringTake))
+	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringSort))
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse))
@@ -141,6 +144,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, BinaryTake))
+	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinarySort))
 	RegisterActionImpl(value.TypeBinary, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryReverse))
@@ -348,12 +354,16 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Category: "Series",
 		Summary:  "Sorts a series in place",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block!", Description: "The series to sort"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to sort"},
 		},
-		Returns:  "block! The sorted series",
-		Examples: []string{"sort [3 1 2]  ; => [1 2 3]"},
-		SeeAlso:  []string{"reverse"},
-		Tags:     []string{"series", "sorting"},
+		Returns: "block! string! binary! The sorted series",
+		Examples: []string{
+			"sort [3 1 2]  ; => [1 2 3]",
+			`sort "cba"  ; => "abc"`,
+			"sort #{030201}  ; => #{010203}",
+		},
+		SeeAlso: []string{"reverse"},
+		Tags:    []string{"series", "sorting"},
 	}))
 
 	// reverse - action

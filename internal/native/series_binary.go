@@ -314,3 +314,19 @@ func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core
 
 	return args[0], nil
 }
+
+// BinarySort implements sort action for binary values.
+// Feature: 004-dynamic-function-invocation
+func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) == 0 {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
+	}
+
+	bin, ok := value.AsBinary(args[0])
+	if !ok {
+		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	value.SortBinary(bin)
+	return args[0], nil
+}
