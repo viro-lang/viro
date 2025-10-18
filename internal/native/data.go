@@ -1,6 +1,7 @@
 package native
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -69,26 +70,46 @@ func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // Form implements the `form` native.
 //
 // Contract: form value -> string! human-readable representation
-// Returns display-friendly string format (no brackets on blocks, no quotes on strings)
+// Returns display-friendly string format (no brackets on blocks, no quotes on strings, objects as multi-line field display)
 func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("form", 1, len(args))
 	}
 
 	val := args[0]
+
+	// Special handling for objects - return multi-line field display
+	if val.GetType() == value.TypeObject {
+		formatted, err := formatObjectForDisplay(val, eval)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+		return value.StrVal(formatted), nil
+	}
+
 	return value.StrVal(formatForDisplay(val)), nil
 }
 
 // Mold implements the `mold` native.
 //
 // Contract: mold value -> string! REBOL-readable representation
-// Returns serialization-friendly string format (brackets on blocks, quotes on strings)
+// Returns serialization-friendly string format (brackets on blocks, quotes on strings, objects as make object! [...])
 func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("mold", 1, len(args))
 	}
 
 	val := args[0]
+
+	// Special handling for objects - return loadable "make object! [...]" format
+	if val.GetType() == value.TypeObject {
+		molded, err := formatObjectForMold(val, eval)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+		return value.StrVal(molded), nil
+	}
+
 	return value.StrVal(val.String()), nil
 }
 
@@ -103,8 +124,81 @@ func formatForDisplay(v core.Value) string {
 		if str, ok := value.AsString(v); ok {
 			return str.String() // Raw string content, no quotes
 		}
+	case value.TypeObject:
+		if obj, ok := value.AsObject(v); ok {
+			if obj == nil {
+				return "object[]"
+			}
+			return fmt.Sprintf("object[%s]", strings.Join(obj.Manifest.Words, " "))
+		}
 	}
 	return v.String() // Default formatting for other types
+}
+
+// formatObjectForDisplay creates human-readable multi-line display for objects
+func formatObjectForDisplay(objVal core.Value, eval core.Evaluator) (string, error) {
+	obj, ok := value.AsObject(objVal)
+	if !ok || obj == nil {
+		return "", nil
+	}
+
+	// Get the object's frame to access field values
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
+	if objFrame == nil {
+		return "", verror.NewInternalError(
+			"internal-error",
+			[3]string{"form", "invalid-object-frame", ""},
+		)
+	}
+
+	// Build field display lines
+	fieldLines := []string{}
+	for _, fieldName := range obj.Manifest.Words {
+		if fieldVal, found := objFrame.Get(fieldName); found {
+			// Use formatForDisplay for human-readable field values
+			displayVal := formatForDisplay(fieldVal)
+			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
+		}
+	}
+
+	if len(fieldLines) == 0 {
+		return "", nil
+	}
+
+	return strings.Join(fieldLines, "\n"), nil
+}
+
+// formatObjectForMold creates loadable Viro code for objects: make object! [field1: value1 field2: value2 ...]
+func formatObjectForMold(objVal core.Value, eval core.Evaluator) (string, error) {
+	obj, ok := value.AsObject(objVal)
+	if !ok || obj == nil {
+		return "make object! []", nil
+	}
+
+	// Get the object's frame to access field values
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
+	if objFrame == nil {
+		return "", verror.NewInternalError(
+			"internal-error",
+			[3]string{"mold", "invalid-object-frame", ""},
+		)
+	}
+
+	// Build field assignments
+	fieldAssignments := []string{}
+	for _, fieldName := range obj.Manifest.Words {
+		if fieldVal, found := objFrame.Get(fieldName); found {
+			// Recursively mold the field value
+			moldedVal := fieldVal.String() // Use the standard String() which handles mold formatting
+			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
+		}
+	}
+
+	if len(fieldAssignments) == 0 {
+		return "make object! []", nil
+	}
+
+	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " ")), nil
 }
 
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {

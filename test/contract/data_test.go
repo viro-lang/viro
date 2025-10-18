@@ -260,6 +260,16 @@ func TestData_Form(t *testing.T) {
 			input:    "form [a [b c] d]",
 			expected: value.StrVal("a [b c] d"),
 		},
+		{
+			name:     "form empty object",
+			input:    "form (make object! [])",
+			expected: value.StrVal(""),
+		},
+		{
+			name:     "form object with fields",
+			input:    "form (make object! [x: 10 y: \"hello\"])",
+			expected: value.StrVal("x: 10\ny: hello"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -332,6 +342,16 @@ func TestData_Mold(t *testing.T) {
 			name:     "mold nested block",
 			input:    "mold [a [b c] d]",
 			expected: value.StrVal("[a [b c] d]"),
+		},
+		{
+			name:     "mold empty object",
+			input:    "mold (make object! [])",
+			expected: value.StrVal("make object! []"),
+		},
+		{
+			name:     "mold object with fields",
+			input:    "mold (make object! [x: 10 y: \"hello\"])",
+			expected: value.StrVal("make object! [x: 10 y: \"hello\"]"),
 		},
 	}
 
