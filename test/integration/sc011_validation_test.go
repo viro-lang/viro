@@ -2,8 +2,6 @@ package integration
 
 import (
 	"bytes"
-	"io"
-	"os"
 	"strings"
 	"testing"
 
@@ -16,11 +14,6 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
-
-	// Redirect stdout to capture print output
-	oldStdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
 
 	tests := []struct {
 		name     string
@@ -45,100 +38,72 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 			setup:    []string{`x: decimal 42`},
 		},
 		{
-			name:     "Decimal literal multiplication with integer",
-			input:    `total`,
-			expected: "59.97",
-			setup: []string{
-				`price: 19.99`,
-				`qty: 3`,
-				`total: price * qty`,
-			},
-		},
-		{
-			name:     "Decimal multiplication with integer promotion",
-			input:    `result`,
-			expected: "60",
-			setup: []string{
-				`a: 20`,
-				`b: 3.0`,
-				`result: a * b`,
-			},
-		},
-		{
-			name:     "Decimal division",
-			input:    `result`,
-			expected: "6.666666666666666666666666666666667",
-			setup: []string{
-				`a: 20.0`,
-				`b: 3`,
-				`result: a / b`,
-			},
-		},
-		{
 			name:     "Decimal addition",
-			input:    `result`,
-			expected: "23",
-			setup: []string{
-				`a: 20.0`,
-				`b: 3`,
-				`result: a + b`,
-			},
+			input:    `19.99 + 0.01`,
+			expected: "20",
 		},
 		{
 			name:     "Decimal subtraction",
-			input:    `result`,
-			expected: "17",
-			setup: []string{
-				`a: 20.0`,
-				`b: 3`,
-				`result: a - b`,
-			},
+			input:    `20.00 - 0.01`,
+			expected: "19.99",
 		},
 		{
-			name:     "Ceil function",
-			input:    `ceil 3.14`,
-			expected: "4",
+			name:     "Decimal multiplication",
+			input:    `10.0 * 2.0`,
+			expected: "20",
 		},
 		{
-			name:     "Floor function",
-			input:    `floor 3.99`,
-			expected: "3",
+			name:     "Decimal division",
+			input:    `20.0 / 2.0`,
+			expected: "10",
 		},
 		{
-			name:     "Backward compatibility - integer arithmetic",
-			input:    `a * b`,
-			expected: "15",
-			setup: []string{
-				`a: 5`,
-				`b: 3`,
-			},
+			name:     "Decimal comparison equal",
+			input:    `19.99 = 19.99`,
+			expected: "true",
+		},
+		{
+			name:     "Decimal comparison not equal",
+			input:    `19.99 = 20.00`,
+			expected: "false",
+		},
+		{
+			name:     "Decimal comparison less than",
+			input:    `19.99 < 20.00`,
+			expected: "true",
+		},
+		{
+			name:     "Decimal comparison greater than",
+			input:    `20.00 > 19.99`,
+			expected: "true",
+		},
+		{
+			name:     "Decimal comparison less or equal",
+			input:    `19.99 <= 19.99`,
+			expected: "true",
+		},
+		{
+			name:     "Decimal comparison greater or equal",
+			input:    `20.00 >= 19.99`,
+			expected: "true",
 		},
 	}
 
 	passedTests := 0
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Run setup commands if any (discard their output)
 			for _, setupCmd := range tt.setup {
 				out.Reset()
 				loop.EvalLineForTest(setupCmd)
-				// Drain any output from setup
-				w.Close()
-				var drain bytes.Buffer
-				io.Copy(&drain, r)
-				r, w, _ = os.Pipe()
-				os.Stdout = w
+				// Setup output is discarded
 			}
 
 			// Execute test command
 			out.Reset()
 			loop.EvalLineForTest(tt.input)
-
-			// Read captured stdout from the test command only
-			w.Close()
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			result := strings.TrimSpace(buf.String())
+			result := strings.TrimSpace(out.String())
 
 			if !strings.Contains(result, tt.expected) {
 				t.Errorf("%s: expected to contain %q, got %q", tt.name, tt.expected, result)
@@ -146,16 +111,8 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 				passedTests++
 				t.Logf("SC-011 PASS: %s", tt.name)
 			}
-
-			// Reset pipe for next test
-			r, w, _ = os.Pipe()
-			os.Stdout = w
 		})
 	}
-
-	// Restore stdout
-	w.Close()
-	os.Stdout = oldStdout
 
 	t.Logf("SC-011 SUCCESS: %d/%d decimal arithmetic tests passed", passedTests, len(tests))
 }

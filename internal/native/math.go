@@ -20,6 +20,14 @@ type intOp func(a, b int64) (result int64, overflow bool)
 // decimalOp represents a decimal arithmetic operation.
 type decimalOp func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big
 
+// intCompareFn represents an integer comparison operation.
+// Returns true if the comparison holds.
+type intCompareFn func(a, b int64) bool
+
+// decimalCompareFn represents a decimal comparison operation.
+// Returns true if the comparison holds.
+type decimalCompareFn func(a, b *decimal.Big) bool
+
 // mathOp provides a generic template for binary arithmetic operations.
 // It handles type checking, decimal promotion, and overflow detection.
 func mathOp(name string, args []core.Value, intFn intOp, decFn decimalOp) (core.Value, error) {
@@ -70,6 +78,43 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 	decFn(ctx, result, aVal, bVal)
 
 	return value.DecimalVal(result, 2), nil
+}
+
+// compareOp provides a generic template for binary comparison operations.
+// It handles type checking and decimal promotion.
+func compareOp(name string, args []core.Value, intFn intCompareFn, decFn decimalCompareFn) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NoneVal(), arityError(name, 2, len(args))
+	}
+
+	// Check if either argument is decimal - if so, promote to decimal comparison
+	if args[0].GetType() == value.TypeDecimal || args[1].GetType() == value.TypeDecimal {
+		return decimalCompareOp(name, args[0], args[1], decFn)
+	}
+
+	// Integer comparison
+	a, ok := value.AsInteger(args[0])
+	if !ok {
+		return value.NoneVal(), mathTypeError(name, args[0])
+	}
+
+	b, ok := value.AsInteger(args[1])
+	if !ok {
+		return value.NoneVal(), mathTypeError(name, args[1])
+	}
+
+	return value.LogicVal(intFn(a, b)), nil
+}
+
+// decimalCompareOp handles decimal comparison with promotion.
+func decimalCompareOp(name string, a, b core.Value, decFn decimalCompareFn) (core.Value, error) {
+	aVal := promoteToDecimal(a, nil, nil)
+	bVal := promoteToDecimal(b, nil, nil)
+	if aVal == nil || bVal == nil {
+		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
+	}
+
+	return value.LogicVal(decFn(aVal, bVal)), nil
 }
 
 // Add implements the + native function.
@@ -188,139 +233,67 @@ func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 // LessThan implements the < native function.
 //
 // Contract: < value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 < value2, false otherwise
 func LessThan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("<", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<", args[1])
-	}
-
-	return value.LogicVal(a < b), nil
+	return compareOp("<", args,
+		func(a, b int64) bool { return a < b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) < 0 })
 }
 
 // GreaterThan implements the > native function.
 //
 // Contract: > value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 > value2, false otherwise
 func GreaterThan(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError(">", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError(">", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError(">", args[1])
-	}
-
-	return value.LogicVal(a > b), nil
+	return compareOp(">", args,
+		func(a, b int64) bool { return a > b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) > 0 })
 }
 
 // LessOrEqual implements the <= native function.
 //
 // Contract: <= value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 <= value2, false otherwise
 func LessOrEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("<=", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<=", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<=", args[1])
-	}
-
-	return value.LogicVal(a <= b), nil
+	return compareOp("<=", args,
+		func(a, b int64) bool { return a <= b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) <= 0 })
 }
 
 // GreaterOrEqual implements the >= native function.
 //
 // Contract: >= value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 >= value2, false otherwise
 func GreaterOrEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError(">=", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError(">=", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError(">=", args[1])
-	}
-
-	return value.LogicVal(a >= b), nil
+	return compareOp(">=", args,
+		func(a, b int64) bool { return a >= b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) >= 0 })
 }
 
 // Equal implements the = native function.
 //
 // Contract: = value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 == value2, false otherwise
 func Equal(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("=", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError("=", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError("=", args[1])
-	}
-
-	return value.LogicVal(a == b), nil
+	return compareOp("=", args,
+		func(a, b int64) bool { return a == b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) == 0 })
 }
 
 // NotEqual implements the <> native function.
 //
 // Contract: <> value1 value2 → logic
-// - Both arguments must be integers
+// - Arguments can be integers or decimals
 // - Returns true if value1 != value2, false otherwise
 func NotEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NoneVal(), arityError("<>", 2, len(args))
-	}
-
-	a, ok := value.AsInteger(args[0])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<>", args[0])
-	}
-
-	b, ok := value.AsInteger(args[1])
-	if !ok {
-		return value.NoneVal(), mathTypeError("<>", args[1])
-	}
-
-	return value.LogicVal(a != b), nil
+	return compareOp("<>", args,
+		func(a, b int64) bool { return a != b },
+		func(a, b *decimal.Big) bool { return a.Cmp(b) != 0 })
 }
 
 // And implements the and native function.

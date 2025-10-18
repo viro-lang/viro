@@ -1,6 +1,8 @@
 package value
 
 import (
+	"fmt"
+
 	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
@@ -39,6 +41,10 @@ func (d *DecimalValue) String() string {
 		return "0.0"
 	}
 	// Use scale to format with correct decimal places
+	if f, ok := d.Magnitude.Float64(); ok {
+		return fmt.Sprintf("%.*f", d.Scale, f)
+	}
+	// Fallback to scientific notation if conversion fails
 	return d.Magnitude.String()
 }
 
