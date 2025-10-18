@@ -273,62 +273,6 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.evalParsedValues(values)
 }
 
-// formatValue formats a value for display in the REPL.
-func (r *REPL) formatValue(v core.Value) string {
-	switch v.GetType() {
-	case value.TypeInteger:
-		if i, ok := value.AsInteger(v); ok {
-			return fmt.Sprintf("%d", i)
-		}
-	case value.TypeString:
-		if s, ok := value.AsString(v); ok {
-			return fmt.Sprintf("\"%s\"", s.String())
-		}
-	case value.TypeLogic:
-		if b, ok := value.AsLogic(v); ok {
-			if b {
-				return "true"
-			}
-			return "false"
-		}
-	case value.TypeNone:
-		return ""
-	case value.TypeWord:
-		if w, ok := value.AsWord(v); ok {
-			return w
-		}
-	case value.TypeSetWord:
-		if w, ok := value.AsWord(v); ok {
-			return w + ":"
-		}
-	case value.TypeGetWord:
-		if w, ok := value.AsWord(v); ok {
-			return ":" + w
-		}
-	case value.TypeLitWord:
-		if w, ok := value.AsWord(v); ok {
-			return "'" + w
-		}
-	case value.TypeBlock:
-		if b, ok := value.AsBlock(v); ok {
-			var parts []string
-			for _, elem := range b.Elements {
-				parts = append(parts, r.formatValue(elem))
-			}
-			return "[" + strings.Join(parts, " ") + "]"
-		}
-	case value.TypeParen:
-		if p, ok := value.AsBlock(v); ok {
-			var parts []string
-			for _, elem := range p.Elements {
-				parts = append(parts, r.formatValue(elem))
-			}
-			return "(" + strings.Join(parts, " ") + ")"
-		}
-	}
-	return fmt.Sprintf("%v", v)
-}
-
 // printWelcome displays the welcome message.
 func (r *REPL) printWelcome() {
 	fmt.Fprint(r.out, WelcomeMessage())
@@ -436,7 +380,11 @@ func (r *REPL) evalParsedValues(values []core.Value) {
 	}
 
 	if result.GetType() != value.TypeNone {
-		fmt.Fprintln(r.out, r.formatValue(result))
+		_, err := native.Print([]core.Value{result}, nil, r.evaluator)
+		if err != nil {
+			r.printError(err)
+			return
+		}
 	}
 }
 
@@ -638,6 +586,6 @@ func (r *REPL) handleHelpShortcut() {
 
 	// Help returns none, no need to print result
 	if result.GetType() != value.TypeNone {
-		fmt.Fprintln(r.out, r.formatValue(result))
+		fmt.Fprintln(r.out, result.String())
 	}
 }
