@@ -774,40 +774,22 @@ func Input(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 }
 
 func buildPrintOutput(val core.Value, eval core.Evaluator) (string, error) {
-	if val.GetType() == value.TypeBlock {
-		blk, ok := value.AsBlock(val)
-		if !ok {
-			return "", verror.NewInternalError("block value missing payload in print", [3]string{})
-		}
-
-		if len(blk.Elements) == 0 {
-			return "", nil
-		}
-
-		parts := make([]string, 0, len(blk.Elements))
-		for idx, elem := range blk.Elements {
-			evaluated, err := eval.DoNext(elem)
-			if err != nil {
-				if vErr, ok := err.(*verror.Error); ok && vErr.Near == "" {
-					vErr.SetNear(verror.CaptureNear(blk.Elements, idx))
-				}
-				return "", err
-			}
-			parts = append(parts, valueToPrintString(evaluated))
-		}
-		return strings.Join(parts, " "), nil
+	// Use reduce on any value (blocks get reduced, others returned as-is)
+	reduced, err := Reduce([]core.Value{val}, nil, eval)
+	if err != nil {
+		return "", err
 	}
 
-	return valueToPrintString(val), nil
-}
-
-func valueToPrintString(val core.Value) string {
-	if val.GetType() == value.TypeString {
-		if str, ok := value.AsString(val); ok {
-			return str.String()
-		}
+	// Use form to format the result
+	formed, err := Form([]core.Value{reduced}, nil, eval)
+	if err != nil {
+		return "", err
 	}
-	return val.String()
+
+	if str, ok := value.AsString(formed); ok {
+		return str.String(), nil
+	}
+	return "", verror.NewInternalError("form did not return string", [3]string{})
 }
 
 // Native function wrappers for port operations (T073)

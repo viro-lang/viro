@@ -188,9 +188,9 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 
 // Reduce implements the 'reduce' native.
 //
-// Contract: reduce block
-// - Evaluates each element in the block
-// - Returns a new block containing the evaluated results
+// Contract: reduce value
+// - If value is a block, evaluates each element and returns a new block with the results
+// - If value is not a block, returns the value as-is
 // - Similar to REBOL's reduce function
 //
 // This enables blocks to be evaluated for their contents, useful for:
@@ -202,9 +202,9 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		return value.NoneVal(), arityError("reduce", 1, len(args))
 	}
 
-	// Argument must be a block
+	// If not a block, return as-is
 	if args[0].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("reduce", "block", args[0])
+		return args[0], nil
 	}
 
 	block, _ := value.AsBlock(args[0])

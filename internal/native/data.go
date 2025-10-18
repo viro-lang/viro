@@ -118,7 +118,23 @@ func formatForDisplay(v core.Value) string {
 	switch v.GetType() {
 	case value.TypeBlock:
 		if blk, ok := value.AsBlock(v); ok {
-			return blk.StringElements() // No outer brackets
+			if len(blk.Elements) == 0 {
+				return ""
+			}
+			parts := make([]string, len(blk.Elements))
+			for i, elem := range blk.Elements {
+				// For strings: remove quotes, for blocks: keep brackets, for others: standard format
+				if elem.GetType() == value.TypeString {
+					if str, ok := value.AsString(elem); ok {
+						parts[i] = str.String()
+					} else {
+						parts[i] = elem.String()
+					}
+				} else {
+					parts[i] = elem.String()
+				}
+			}
+			return strings.Join(parts, " ")
 		}
 	case value.TypeString:
 		if str, ok := value.AsString(v); ok {
