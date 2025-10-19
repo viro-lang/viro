@@ -17,3 +17,5 @@ List of things to implement:
 
 - make debugging step by step actually work
    STATUS: PARTIALLY IMPLEMENTED - Debug commands exist and set stepping flags, but no actual interactive step-by-step execution implemented in evaluator
+
+- wherever a viro value is converted into string it should use either `mold` or `form` functions
