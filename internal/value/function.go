@@ -7,19 +7,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/docmodel"
 )
 
-// Evaluator is a minimal interface for evaluating Viro code.
-// Used by native functions that need to evaluate arguments or blocks.
-// The actual implementation is in the eval package to avoid circular dependencies.
-//
-// NOTE: This interface returns the standard error interface (not *verror.Error)
-// to avoid an import cycle (verror imports value for context formatting).
-// Native functions use native.Evaluator which returns *verror.Error directly.
-// The adapter pattern in registry.go bridges between these two interfaces.
-type Evaluator interface {
-	Do_Blk(vals []Value) (Value, error)
-	Do_Next(val Value) (Value, error)
-}
-
 // FunctionType distinguishes native (built-in) from user-defined functions.
 type FunctionType uint8
 

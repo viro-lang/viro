@@ -132,7 +132,7 @@ Each native function:
 - `register_control.go` - Control flow (if, when, loop, while, fn)
 - `register_help.go` - Help and reflection (?, words, type-of, spec-of, debug, trace)
 
-**Note**: `native.Registry` still exists for backward compatibility with the help system, but the evaluator uses frame-based lookup exclusively
+**Note**: The help system dynamically builds its registry from the root frame at runtime
 
 ### Action System (Feature 004: Dynamic Function Invocation)
 
@@ -173,12 +173,12 @@ Each native function:
 
 ### Evaluator Interface
 
-Two parallel interfaces exist due to import cycle constraints:
+The evaluator interface is defined in the `core` package:
 
-- `native.Evaluator`: returns `error` (used by native implementations)
-- `core.Evaluator`: returns `error` (used by FunctionValue.Native field)
+- `core.Evaluator`: Full evaluator interface used by native functions and the evaluation engine
+- The actual implementation is `*eval.Evaluator` in the eval package
 
-Adapters bridge between them automatically in registry code.
+Native functions receive `core.Evaluator` through their implementation signature.
 
 ### Error Handling
 
