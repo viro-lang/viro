@@ -195,7 +195,10 @@ func TestUS6_ExitAndInterrupt(t *testing.T) {
 
 	out.Reset()
 	loop.EvalLineForTest("value: 42")
-	// Evaluation after interrupt verified manually
+	result := strings.TrimSpace(out.String())
+	if result != "42" {
+		t.Errorf("expected '42', got %q", result)
+	}
 }
 
 func TestUS6_WelcomeMessage(t *testing.T) {

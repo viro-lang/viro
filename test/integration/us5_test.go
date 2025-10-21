@@ -88,7 +88,11 @@ func TestUS5_ErrorScenarios(t *testing.T) {
 		t.Fatalf("expected call stack frames inner and outer, got %q", errorOutput)
 	}
 
-	// Test that REPL still works after errors (verified manually)
+	// Test that REPL still works after errors
 	out.Reset()
 	loop.EvalLineForTest("1 + 1")
+	result := strings.TrimSpace(out.String())
+	if result != "2" {
+		t.Errorf("expected '2', got %q", result)
+	}
 }
