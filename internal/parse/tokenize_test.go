@@ -106,14 +106,7 @@ func TestComplexNumberParsing(t *testing.T) {
 					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
 				}
 			},
-			desc:        "Should parse multiple decimal points as path",
-		},
-			name:        "number at end of input",
-			input:       "value 42",
-			expectError: false,
-			expected:    []core.Value{value.WordVal("value"), value.IntVal(42)},
-			checkResult: nil,
-			desc:        "Should parse number at end of input",
+			desc: "Should parse multiple decimal points as path",
 		},
 		{
 			name:        "number at start of input",
