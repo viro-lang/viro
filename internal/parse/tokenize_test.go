@@ -15,6 +15,7 @@ func TestComplexNumberParsing(t *testing.T) {
 		input       string
 		expectError bool
 		expected    []core.Value
+		checkResult func(*testing.T, []core.Value)
 		desc        string
 	}{
 		{
@@ -71,6 +72,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			input:       "1.5e",
 			expectError: false,
 			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1), value.WordVal("e")},
+			checkResult: nil,
 			desc:        "Should tokenize incomplete exponent as separate tokens",
 		},
 		{
@@ -78,6 +80,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			input:       "1.5ee",
 			expectError: false,
 			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1), value.WordVal("ee")},
+			checkResult: nil,
 			desc:        "Should tokenize invalid exponent as separate tokens",
 		},
 		{
@@ -115,6 +118,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			input:       "value 42",
 			expectError: false,
 			expected:    []core.Value{value.WordVal("value"), value.IntVal(42)},
+			checkResult: nil,
 			desc:        "Should parse number at end of input",
 		},
 		{
@@ -122,6 +126,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			input:       "123 rest",
 			expectError: false,
 			expected:    []core.Value{value.IntVal(123), value.WordVal("rest")},
+			checkResult: nil,
 			desc:        "Should parse number at start of input",
 		},
 	}
