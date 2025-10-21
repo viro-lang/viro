@@ -105,9 +105,7 @@ func TestComplexNumberParsing(t *testing.T) {
 					}
 				}
 			},
-			desc:        "Should parse multiple decimal points as path",
-		},
-			desc: "Should parse multiple decimal points as path",
+			desc:        "Should parse multiple decimal points as separate tokens",
 		},
 		{
 			name:        "number at start of input",
