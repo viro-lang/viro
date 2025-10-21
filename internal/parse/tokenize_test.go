@@ -95,7 +95,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			name:        "multiple decimal points as path",
 			input:       "1.2.3",
 			expectError: false,
-			expected:    []core.Value{}, // Will be checked by checkResult
+			expected:    nil, // Will be checked by checkResult
 			checkResult: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 1 {
 					t.Errorf("Expected 1 value, got %d", len(vals))
