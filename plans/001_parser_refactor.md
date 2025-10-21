@@ -72,7 +72,7 @@
 - Operator precedence edge cases
 - Operators in different contexts
 
-**Coverage Improvement:** 68.1% → 80.9% (+12.8%)
+**Coverage Improvement:** 68.1% → 81.1% (+13.0%)
 
 **Key Achievements:**
 - `tokenize`: 62.3% → 85.2% coverage
