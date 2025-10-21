@@ -123,6 +123,33 @@ func TestFormatFunction(t *testing.T) {
 			expected: "[(1) 2]",
 			desc:     "Should format mixed blocks and parens",
 		},
+		{
+			name: "simple path",
+			input: func() core.Value {
+				vals, _ := ParseEval("obj.field")
+				return vals[0]
+			}(),
+			expected: "path[obj.field]",
+			desc:     "Should format simple paths",
+		},
+		{
+			name: "path with index",
+			input: func() core.Value {
+				vals, _ := ParseEval("array.5")
+				return vals[0]
+			}(),
+			expected: "path[array.5]",
+			desc:     "Should format paths with numeric indices",
+		},
+		{
+			name: "complex path",
+			input: func() core.Value {
+				vals, _ := ParseEval("obj.sub.field")
+				return vals[0]
+			}(),
+			expected: "path[obj.sub.field]",
+			desc:     "Should format complex nested paths",
+		},
 	}
 
 	for _, tt := range tests {
