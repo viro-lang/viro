@@ -108,14 +108,6 @@ func TestComplexNumberParsing(t *testing.T) {
 			},
 			desc:        "Should parse multiple decimal points as path",
 		},
-			desc: "Should parse multiple decimal points as path",
-		},
-			input:       "1.2.3",
-			expectError: false,
-			expected:    []core.Value{value.DecimalVal(decimalValue("1.2"), 1)}, // May parse as 1.2
-			desc:        "Should handle multiple decimal points gracefully",
-		},
-		{
 			name:        "number at end of input",
 			input:       "value 42",
 			expectError: false,
