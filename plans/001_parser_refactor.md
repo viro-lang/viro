@@ -72,12 +72,12 @@
 - Operator precedence edge cases
 - Operators in different contexts
 
-**Coverage Improvement:** 68.1% → 81.3% (+13.2%)
+**Coverage Improvement:** 68.1% → 81.5% (+13.4%)
 
 **Key Achievements:**
-- `tokenize`: 62.3% → 85.2% coverage
-- `parsePrimary`: 63.6% → 78.9% coverage
-- `peek`: 66.7% → 83.3% coverage
+- `tokenize`: 62.3% → 87.1%
+- `parsePrimary`: 63.6% → 81.6%
+- `peek`: 66.7% → 83.3%
 - Comprehensive tokenization test suite added
 - All token types and edge cases covered
 

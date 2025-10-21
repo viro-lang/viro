@@ -465,8 +465,29 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeNone {
 					t.Errorf("Expected none, got %s", value.TypeToString(vals[0].GetType()))
 				}
+		{
+			name:        "multiple decimal points as separate tokens",
+			input:       "1.2.3",
+			expectError: false,
+			expected:    nil, // Will be checked by checkResult
+			checkResult: func(t *testing.T, vals []core.Value) {
+				// "1.2.3" actually parses as separate tokens: 1, ., 2, ., 3
+				// This is expected behavior - multiple decimals are separate
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (1 . 2 . 3), got %d", len(vals))
+					return
+				}
+				// Check that we get the expected token sequence
+				expectedTypes := []value.Type{
+					value.TypeInteger, value.TypeWord, value.TypeInteger, value.TypeWord, value.TypeInteger,
+				}
+				for i, expectedType := range expectedTypes {
+					if vals[i].GetType() != expectedType {
+						t.Errorf("Value %d: expected %s, got %s", i, value.TypeToString(expectedType), value.TypeToString(vals[i].GetType()))
+					}
+				}
 			},
-			desc: "Should parse none as none value",
+			desc:        "Should parse multiple decimal points as separate tokens",
 		},
 		{
 			name:        "set-word",
