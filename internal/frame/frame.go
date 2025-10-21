@@ -24,6 +24,7 @@ package frame
 import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"slices"
 )
 
 const (
@@ -199,12 +200,7 @@ func (f *Frame) Set(symbol string, val core.Value) bool {
 
 // HasWord checks if a symbol is bound in this frame.
 func (f *Frame) HasWord(symbol string) bool {
-	for _, w := range f.Words {
-		if w == symbol {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(f.Words, symbol)
 }
 
 // Count returns the number of bindings in this frame.
@@ -286,11 +282,5 @@ func (f *Frame) HasManifestField(symbol string) bool {
 		return false
 	}
 
-	for _, word := range f.Manifest.Words {
-		if word == symbol {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.Manifest.Words, symbol)
 }
