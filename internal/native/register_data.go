@@ -32,204 +32,204 @@ func RegisterDataNatives(rootFrame core.Frame) {
 	}
 
 	// ===== Group 6: Data operations  =====
-	fn := value.NewNativeFunction(
+	registerAndBind("set", value.NewNativeFunction(
 		"set",
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 			value.NewParamSpec("value", true), // evaluated
 		},
 		Set,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Sets a word to a value in the current context",
-		Description: `Assigns a value to a word (variable) in the current frame.
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Sets a word to a value in the current context",
+			Description: `Assigns a value to a word (variable) in the current frame.
 The word is not evaluated; the value is evaluated before assignment. Returns the assigned value.`,
-		Parameters: []ParamDoc{
-			{Name: "word", Type: "word!", Description: "The word to set (not evaluated)", Optional: false},
-			{Name: "value", Type: "any-type!", Description: "The value to assign (evaluated)", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "word", Type: "word!", Description: "The word to set (not evaluated)", Optional: false},
+				{Name: "value", Type: "any-type!", Description: "The value to assign (evaluated)", Optional: false},
+			},
+			Returns:  "[any-type!] The value that was assigned",
+			Examples: []string{"set 'x 42  ; => 42 (x is now 42)", "set 'name \"Alice\"  ; => \"Alice\"", "set 'data [1 2 3]  ; => [1 2 3]"},
+			SeeAlso:  []string{"get", ":", "type?"}, Tags: []string{"data", "assignment", "variable"},
 		},
-		Returns:  "[any-type!] The value that was assigned",
-		Examples: []string{"set 'x 42  ; => 42 (x is now 42)", "set 'name \"Alice\"  ; => \"Alice\"", "set 'data [1 2 3]  ; => [1 2 3]"},
-		SeeAlso:  []string{"get", ":", "type?"}, Tags: []string{"data", "assignment", "variable"},
-	}
-	registerAndBind("set", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("get", value.NewNativeFunction(
 		"get",
 		[]value.ParamSpec{
 			value.NewParamSpec("word", false), // NOT evaluated (lit-word)
 		},
 		Get,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Gets the value of a word from the current context",
-		Description: `Retrieves the value associated with a word (variable) in the current frame.
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Gets the value of a word from the current context",
+			Description: `Retrieves the value associated with a word (variable) in the current frame.
 The word is not evaluated. Raises an error if the word is not bound to a value.`,
-		Parameters: []ParamDoc{
-			{Name: "word", Type: "word!", Description: "The word to look up (not evaluated)", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "word", Type: "word!", Description: "The word to look up (not evaluated)", Optional: false},
+			},
+			Returns:  "[any-type!] The value bound to the word",
+			Examples: []string{"x: 42\nget 'x  ; => 42", "name: \"Bob\"\nget 'name  ; => \"Bob\""},
+			SeeAlso:  []string{"set", ":", "type?"}, Tags: []string{"data", "access", "variable"},
 		},
-		Returns:  "[any-type!] The value bound to the word",
-		Examples: []string{"x: 42\nget 'x  ; => 42", "name: \"Bob\"\nget 'name  ; => \"Bob\""},
-		SeeAlso:  []string{"set", ":", "type?"}, Tags: []string{"data", "access", "variable"},
-	}
-	registerAndBind("get", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("type?", value.NewNativeFunction(
 		"type?",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
 		TypeQ,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Returns the type of a value",
-		Description: `Returns a word representing the type of the given value.
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Returns the type of a value",
+			Description: `Returns a word representing the type of the given value.
 Possible types include: integer!, decimal!, string!, block!, word!, function!, object!, port!, logic!, none!`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to check the type of", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to check the type of", Optional: false},
+			},
+			Returns:  "[word!] A word representing the value's type",
+			Examples: []string{"type? 42  ; => integer!", `type? "hello"  ; => string!`, "type? [1 2 3]  ; => block!", "type? :print  ; => function!"},
+			SeeAlso:  []string{"set", "get"}, Tags: []string{"data", "type", "introspection", "reflection"},
 		},
-		Returns:  "[word!] A word representing the value's type",
-		Examples: []string{"type? 42  ; => integer!", `type? "hello"  ; => string!`, "type? [1 2 3]  ; => block!", "type? :print  ; => function!"},
-		SeeAlso:  []string{"set", "get"}, Tags: []string{"data", "type", "introspection", "reflection"},
-	}
-	registerAndBind("type?", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("form", value.NewNativeFunction(
 		"form",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
 		Form,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Converts a value to a human-readable string",
-		Description: `Returns a human-readable string representation of the value.
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Converts a value to a human-readable string",
+			Description: `Returns a human-readable string representation of the value.
 For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate block contents.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+			},
+			Returns:  "[string!] Human-readable string representation",
+			Examples: []string{"form [1 2 3]  ; => \"1 2 3\"", `form "hello"  ; => "hello"`, "form 42  ; => \"42\""},
+			SeeAlso:  []string{"mold", "type?"}, Tags: []string{"data", "string", "formatting"},
 		},
-		Returns:  "[string!] Human-readable string representation",
-		Examples: []string{"form [1 2 3]  ; => \"1 2 3\"", `form "hello"  ; => "hello"`, "form 42  ; => \"42\""},
-		SeeAlso:  []string{"mold", "type?"}, Tags: []string{"data", "string", "formatting"},
-	}
-	registerAndBind("form", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("mold", value.NewNativeFunction(
 		"mold",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
 		Mold,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Converts a value to a REBOL-readable string",
-		Description: `Returns a REBOL-readable string representation of the value.
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Converts a value to a REBOL-readable string",
+			Description: `Returns a REBOL-readable string representation of the value.
 For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
+			},
+			Returns:  "[string!] REBOL-readable string representation",
+			Examples: []string{"mold [1 2 3]  ; => \"[1 2 3]\"", `mold "hello"  ; => "\"hello\""`, "mold 42  ; => \"42\""},
+			SeeAlso:  []string{"form", "type?"}, Tags: []string{"data", "string", "formatting", "serialization"},
 		},
-		Returns:  "[string!] REBOL-readable string representation",
-		Examples: []string{"mold [1 2 3]  ; => \"[1 2 3]\"", `mold "hello"  ; => "\"hello\""`, "mold 42  ; => \"42\""},
-		SeeAlso:  []string{"form", "type?"}, Tags: []string{"data", "string", "formatting", "serialization"},
-	}
-	registerAndBind("mold", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("reduce", value.NewNativeFunction(
 		"reduce",
 		[]value.ParamSpec{
 			value.NewParamSpec("block", true),
 		},
 		Reduce,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Data",
-		Summary:  "Evaluates each element in a block and returns the results as a block",
-		Description: `Takes a block and evaluates each element individually, collecting the results
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Evaluates each element in a block and returns the results as a block",
+			Description: `Takes a block and evaluates each element individually, collecting the results
 into a new block. This is useful for computing values dynamically and building data structures.`,
-		Parameters: []ParamDoc{
-			{Name: "block", Type: "block!", Description: "The block containing elements to evaluate", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "block", Type: "block!", Description: "The block containing elements to evaluate", Optional: false},
+			},
+			Returns:  "[block!] A new block containing the evaluated results",
+			Examples: []string{"reduce [1 2 3]  ; => [1 2 3]", "reduce [1 + 2, 3 * 4]  ; => [3, 12]", "reduce []  ; => []"},
+			SeeAlso:  []string{"form", "mold"}, Tags: []string{"data", "evaluation", "block", "reduce"},
 		},
-		Returns:  "[block!] A new block containing the evaluated results",
-		Examples: []string{"reduce [1 2 3]  ; => [1 2 3]", "reduce [1 + 2, 3 * 4]  ; => [3, 12]", "reduce []  ; => []"},
-		SeeAlso:  []string{"form", "mold"}, Tags: []string{"data", "evaluation", "block", "reduce"},
-	}
-	registerAndBind("reduce", fn)
+	))
 
 	// ===== Group 7: Object operations (5 functions - all need evaluator) =====
-	fn = value.NewNativeFunction(
+	registerAndBind("object", value.NewNativeFunction(
 		"object",
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
 		Object,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Objects",
-		Summary:  "Creates a new object from a block of definitions",
-		Description: `Creates a new object (context) by evaluating a block of word-value pairs.
+		false,
+		&NativeDoc{
+			Category: "Objects",
+			Summary:  "Creates a new object from a block of definitions",
+			Description: `Creates a new object (context) by evaluating a block of word-value pairs.
 The block is evaluated in a new frame, and all word definitions become fields of the object.
 Returns the newly created object.`,
-		Parameters: []ParamDoc{
-			{Name: "spec", Type: "block!", Description: "A block containing word definitions to become object fields", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "spec", Type: "block!", Description: "A block containing word definitions to become object fields", Optional: false},
+			},
+			Returns:  "[object!] The newly created object",
+			Examples: []string{"obj: object [x: 10 y: 20]  ; => object with fields x and y", "person: object [name: \"Alice\" age: 30]"},
+			SeeAlso:  []string{"context", "make"}, Tags: []string{"objects", "context", "creation"},
 		},
-		Returns:  "[object!] The newly created object",
-		Examples: []string{"obj: object [x: 10 y: 20]  ; => object with fields x and y", "person: object [name: \"Alice\" age: 30]"},
-		SeeAlso:  []string{"context", "make"}, Tags: []string{"objects", "context", "creation"},
-	}
-	registerAndBind("object", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("context", value.NewNativeFunction(
 		"context",
 		[]value.ParamSpec{
 			value.NewParamSpec("spec", false), // NOT evaluated (block)
 		},
 		Context,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Objects",
-		Summary:  "Creates a new context (alias for object)",
-		Description: `Creates a new object (context) by evaluating a block of word-value pairs.
+		false,
+		&NativeDoc{
+			Category: "Objects",
+			Summary:  "Creates a new context (alias for object)",
+			Description: `Creates a new object (context) by evaluating a block of word-value pairs.
 This is an alias for the 'object' function. The block is evaluated in a new frame,
 and all word definitions become fields of the context.`,
-		Parameters: []ParamDoc{
-			{Name: "spec", Type: "block!", Description: "A block containing word definitions to become context fields", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "spec", Type: "block!", Description: "A block containing word definitions to become context fields", Optional: false},
+			},
+			Returns:  "[object!] The newly created context",
+			Examples: []string{"ctx: context [counter: 0 increment: fn [] [counter: counter + 1]]", "config: context [debug: true port: 8080]"},
+			SeeAlso:  []string{"object", "make"}, Tags: []string{"objects", "context", "creation"},
 		},
-		Returns:  "[object!] The newly created context",
-		Examples: []string{"ctx: context [counter: 0 increment: fn [] [counter: counter + 1]]", "config: context [debug: true port: 8080]"},
-		SeeAlso:  []string{"object", "make"}, Tags: []string{"objects", "context", "creation"},
-	}
-	registerAndBind("context", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("make", value.NewNativeFunction(
 		"make",
 		[]value.ParamSpec{
 			value.NewParamSpec("parent", true), // evaluated
 			value.NewParamSpec("spec", false),  // NOT evaluated (block)
 		},
 		Make,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Objects",
-		Summary:  "Creates a derived object from a parent object",
-		Description: `Creates a new object that inherits from a parent object and adds or overrides fields.
+		false,
+		&NativeDoc{
+			Category: "Objects",
+			Summary:  "Creates a derived object from a parent object",
+			Description: `Creates a new object that inherits from a parent object and adds or overrides fields.
 The first argument is the parent object (prototype), and the second is a block of
 new or overriding field definitions. The new object shares the parent's fields but can shadow them.`,
-		Parameters: []ParamDoc{
-			{Name: "parent", Type: "object!", Description: "The parent object to derive from", Optional: false},
-			{Name: "spec", Type: "block!", Description: "A block of field definitions to add or override", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "parent", Type: "object!", Description: "The parent object to derive from", Optional: false},
+				{Name: "spec", Type: "block!", Description: "A block of field definitions to add or override", Optional: false},
+			},
+			Returns:  "[object!] The newly created derived object",
+			Examples: []string{"base: object [x: 1 y: 2]\nderived: make base [z: 3]  ; => object with x, y, z", "point: object [x: 0 y: 0]\npoint3d: make point [z: 0]"},
+			SeeAlso:  []string{"object", "context"}, Tags: []string{"objects", "inheritance", "derivation"},
 		},
-		Returns:  "[object!] The newly created derived object",
-		Examples: []string{"base: object [x: 1 y: 2]\nderived: make base [z: 3]  ; => object with x, y, z", "point: object [x: 0 y: 0]\npoint3d: make point [z: 0]"},
-		SeeAlso:  []string{"object", "context"}, Tags: []string{"objects", "inheritance", "derivation"},
-	}
-	registerAndBind("make", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("select", value.NewNativeFunction(
 		"select",
 		[]value.ParamSpec{
 			value.NewParamSpec("target", true), // evaluated
@@ -237,31 +237,31 @@ new or overriding field definitions. The new object shares the parent's fields b
 			value.NewRefinementSpec("default", true),
 		},
 		Select,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Objects",
-		Summary:  "Retrieves a field value from an object or block",
-		Description: `Looks up a field in an object or searches for a key in a block.
+		false,
+		&NativeDoc{
+			Category: "Objects",
+			Summary:  "Retrieves a field value from an object or block",
+			Description: `Looks up a field in an object or searches for a key in a block.
 For objects: returns the field value, checking parent prototypes if needed.
 For blocks: searches for key-value pairs (alternating pattern) and returns the value.
 Use --default refinement to provide a fallback when field/key is not found.`,
-		Parameters: []ParamDoc{
-			{Name: "target", Type: "object! or block!", Description: "The object or block to search", Optional: false},
-			{Name: "field", Type: "word! or string!", Description: "The field name or key to look up", Optional: false},
-			{Name: "--default", Type: "any-type!", Description: "Optional default value when field not found", Optional: true},
+			Parameters: []ParamDoc{
+				{Name: "target", Type: "object! or block!", Description: "The object or block to search", Optional: false},
+				{Name: "field", Type: "word! or string!", Description: "The field name or key to look up", Optional: false},
+				{Name: "--default", Type: "any-type!", Description: "Optional default value when field not found", Optional: true},
+			},
+			Returns: "[any-type!] The field/key value, or default, or none",
+			Examples: []string{
+				"obj: object [x: 10 y: 20]\nselect obj 'x  ; => 10",
+				"select obj 'z --default 99  ; => 99 (field not found)",
+				"data: ['name \"Alice\" 'age 30]\nselect data 'age  ; => 30",
+			},
+			SeeAlso: []string{"put", "get", "object"},
+			Tags:    []string{"objects", "lookup", "field-access"},
 		},
-		Returns: "[any-type!] The field/key value, or default, or none",
-		Examples: []string{
-			"obj: object [x: 10 y: 20]\nselect obj 'x  ; => 10",
-			"select obj 'z --default 99  ; => 99 (field not found)",
-			"data: ['name \"Alice\" 'age 30]\nselect data 'age  ; => 30",
-		},
-		SeeAlso: []string{"put", "get", "object"},
-		Tags:    []string{"objects", "lookup", "field-access"},
-	}
-	registerAndBind("select", fn)
+	))
 
-	fn = value.NewNativeFunction(
+	registerAndBind("put", value.NewNativeFunction(
 		"put",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true), // evaluated
@@ -269,26 +269,26 @@ Use --default refinement to provide a fallback when field/key is not found.`,
 			value.NewParamSpec("value", true),  // evaluated
 		},
 		Put,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Objects",
-		Summary:  "Sets a field value in an object",
-		Description: `Updates an existing field in an object with a new value.
+		false,
+		&NativeDoc{
+			Category: "Objects",
+			Summary:  "Sets a field value in an object",
+			Description: `Updates an existing field in an object with a new value.
 The field must already exist in the object's manifest - dynamic field addition is not allowed.
 If the field has a type hint, the new value must match that type.
 Returns the assigned value.`,
-		Parameters: []ParamDoc{
-			{Name: "object", Type: "object!", Description: "The object to modify", Optional: false},
-			{Name: "field", Type: "word! or string!", Description: "The field name to update", Optional: false},
-			{Name: "value", Type: "any-type!", Description: "The new value to assign", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "object", Type: "object!", Description: "The object to modify", Optional: false},
+				{Name: "field", Type: "word! or string!", Description: "The field name to update", Optional: false},
+				{Name: "value", Type: "any-type!", Description: "The new value to assign", Optional: false},
+			},
+			Returns: "[any-type!] The assigned value",
+			Examples: []string{
+				"obj: object [x: 10 y: 20]\nput obj 'x 42  ; => 42, obj.x is now 42",
+				"person: object [name: \"Alice\" age: 30]\nput person 'age 31",
+			},
+			SeeAlso: []string{"select", "set", "object"},
+			Tags:    []string{"objects", "mutation", "field-update"},
 		},
-		Returns: "[any-type!] The assigned value",
-		Examples: []string{
-			"obj: object [x: 10 y: 20]\nput obj 'x 42  ; => 42, obj.x is now 42",
-			"person: object [name: \"Alice\" age: 30]\nput person 'age 31",
-		},
-		SeeAlso: []string{"select", "set", "object"},
-		Tags:    []string{"objects", "mutation", "field-update"},
-	}
-	registerAndBind("put", fn)
+	))
 }

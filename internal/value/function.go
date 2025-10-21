@@ -99,7 +99,7 @@ type FunctionValue struct {
 }
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc) *FunctionValue {
+func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc, infix bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncNative,
 		Name:   name,
@@ -107,6 +107,8 @@ func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc) *F
 		Body:   nil,
 		Native: impl,
 		Parent: -1,
+		Infix:  infix,
+		Doc:    doc,
 	}
 }
 

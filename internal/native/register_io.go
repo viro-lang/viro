@@ -53,36 +53,36 @@ func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 			}
 		}
 
-		fn := value.NewNativeFunction(
+		registerAndBind(name, value.NewNativeFunction(
 			name,
 			params,
 			impl,
-		)
-		fn.Doc = doc
-		registerAndBind(name, fn)
+			false,
+			doc,
+		))
 	}
 
 	// ===== Group 8: I/O operations (2 functions - print needs evaluator) =====
-	fn := value.NewNativeFunction(
+	registerAndBind("print", value.NewNativeFunction(
 		"print",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
 		Print,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "I/O",
-		Summary:  "Prints a value to standard output",
-		Description: `Evaluates and prints a value to standard output, followed by a newline.
+		false,
+		&NativeDoc{
+			Category: "I/O",
+			Summary:  "Prints a value to standard output",
+			Description: `Evaluates and prints a value to standard output, followed by a newline.
 Blocks are formatted with spaces between elements. Returns none.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
+			},
+			Returns:  "[none!] Always returns none",
+			Examples: []string{`print "Hello, world!"  ; prints: Hello, world!`, "print 42  ; prints: 42", "print [1 2 3]  ; prints: 1 2 3"},
+			SeeAlso:  []string{"input"}, Tags: []string{"io", "output", "print", "display"},
 		},
-		Returns:  "[none!] Always returns none",
-		Examples: []string{`print "Hello, world!"  ; prints: Hello, world!`, "print 42  ; prints: 42", "print [1 2 3]  ; prints: 1 2 3"},
-		SeeAlso:  []string{"input"}, Tags: []string{"io", "output", "print", "display"},
-	}
-	registerAndBind("print", fn)
+	))
 
 	registerSimpleIOFunc("input", Input, 0, &NativeDoc{
 		Category: "I/O",
@@ -123,36 +123,36 @@ After closing, the port should not be used for further I/O operations. Returns n
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "close", "cleanup"},
 	})
 
-	fn = value.NewNativeFunction(
+	registerAndBind("read", value.NewNativeFunction(
 		"read",
 		[]value.ParamSpec{
 			value.NewParamSpec("source", true),       // evaluated
 			value.NewRefinementSpec("binary", false), // --binary flag
 		},
 		ReadNative,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Ports",
-		Summary:  "Reads data from a port or file",
-		Description: `Reads all data from a port or directly from a file path.
+		false,
+		&NativeDoc{
+			Category: "Ports",
+			Summary:  "Reads data from a port or file",
+			Description: `Reads all data from a port or directly from a file path.
 If given a port, reads from that open port. If given a string (file path),
 opens the file, reads its contents, and closes it automatically.
 Returns the data as a string by default, or as binary! when --binary is used.
 
 Refinements:
   --binary: Return data as binary! instead of string!`,
-		Parameters: []ParamDoc{
-			{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
+			},
+			Returns: "[string! binary!] The data read from the source",
+			Examples: []string{
+				`content: read "file://data.txt"  ; read as string`,
+				`data: read --binary "file://image.png"  ; read as binary`,
+				`p: open "file://data.txt"\ndata: read p\nclose p`,
+			},
+			SeeAlso: []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file", "binary"},
 		},
-		Returns: "[string! binary!] The data read from the source",
-		Examples: []string{
-			`content: read "file://data.txt"  ; read as string`,
-			`data: read --binary "file://image.png"  ; read as binary`,
-			`p: open "file://data.txt"\ndata: read p\nclose p`,
-		},
-		SeeAlso: []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file", "binary"},
-	}
-	registerAndBind("read", fn)
+	))
 
 	registerSimpleIOFunc("write", WriteNative, 2, &NativeDoc{
 		Category: "Ports",

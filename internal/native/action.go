@@ -69,9 +69,7 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) value.V
 	}
 
 	// Create regular native function with dispatcher as implementation
-	actionFunc := value.NewNativeFunction(name, params, dispatcher)
-	actionFunc.Doc = doc
-	return value.FuncVal(actionFunc)
+	return value.FuncVal(value.NewNativeFunction(name, params, dispatcher, false, doc))
 }
 
 // RegisterActionImpl registers a type-specific implementation for an action.

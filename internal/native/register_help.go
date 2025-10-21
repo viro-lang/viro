@@ -18,57 +18,53 @@ func RegisterHelpNatives(rootFrame core.Frame) {
 		panic("RegisterHelpNatives: rootFrame is nil")
 	}
 
-	var fn *value.FunctionValue
-
 	// Group 12: Help system (2 functions)
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("?", value.FuncVal(value.NewNativeFunction(
 		"?",
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
 		},
 		Help,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Help",
-		Summary:  "Displays help for functions or lists functions in a category",
-		Description: `Interactive help system for discovering and learning about viro functions.
+		false,
+		&NativeDoc{
+			Category: "Help",
+			Summary:  "Displays help for functions or lists functions in a category",
+			Description: `Interactive help system for discovering and learning about viro functions.
 Provide a word argument to show detailed documentation for that function or list functions in that category.
 Provides usage examples, parameter descriptions, and cross-references.
 
 Note: In the REPL, typing just '?' (without arguments) is a special shortcut that shows all categories.
 In scripts, you must provide an argument: '? math' or '? append'.`,
-		Parameters: []ParamDoc{
-			{Name: "topic", Type: "word! string!", Description: "Function name or category to get help for", Optional: true},
+			Parameters: []ParamDoc{
+				{Name: "topic", Type: "word! string!", Description: "Function name or category to get help for", Optional: true},
+			},
+			Returns:  "[none!] Always returns none (displays help to stdout)",
+			Examples: []string{"? math  ; list functions in Math category", "? append  ; show detailed help for append", "? \"sqrt\"  ; help using string"},
+			SeeAlso:  []string{"words", "type?"},
+			Tags:     []string{"help", "documentation", "discovery", "introspection"},
 		},
-		Returns:  "[none!] Always returns none (displays help to stdout)",
-		Examples: []string{"? math  ; list functions in Math category", "? append  ; show detailed help for append", "? \"sqrt\"  ; help using string"},
-		SeeAlso:  []string{"words", "type?"},
-		Tags:     []string{"help", "documentation", "discovery", "introspection"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("?", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("words", value.FuncVal(value.NewNativeFunction(
 		"words",
 		[]value.ParamSpec{},
 		Words,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Help",
-		Summary:  "Lists all available native function names",
-		Description: `Returns a block containing all native function names as words.
+		false,
+		&NativeDoc{
+			Category: "Help",
+			Summary:  "Lists all available native function names",
+			Description: `Returns a block containing all native function names as words.
 Does not print by default - use 'print words' to display the list.
 Useful for programmatic access to available functionality.`,
-		Parameters: []ParamDoc{},
-		Returns:    "[block!] A block containing all function names as words",
-		Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
-		SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("words", value.FuncVal(fn))
+			Parameters: []ParamDoc{},
+			Returns:    "[block!] A block containing all function names as words",
+			Examples:   []string{"words  ; return all function names", "fns: words\nlength? fns  ; count available functions", "print words  ; display function names"},
+			SeeAlso:    []string{"?", "type?"}, Tags: []string{"help", "documentation", "discovery", "list"},
+		},
+	)))
 
 	// Group 13: Trace/Debug/Reflection (9 functions - Feature 002, FR-020 to FR-022)
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("trace", value.FuncVal(value.NewNativeFunction(
 		"trace",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -79,45 +75,43 @@ Useful for programmatic access to available functionality.`,
 			value.NewRefinementSpec("append", false),
 		},
 		Trace,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Debug",
-		Summary:  "Controls execution tracing",
-		Description: `Enables or disables tracing of code execution. When enabled, traces function calls
+		false,
+		&NativeDoc{
+			Category: "Debug",
+			Summary:  "Controls execution tracing",
+			Description: `Enables or disables tracing of code execution. When enabled, traces function calls
 and other execution events to a log file. Supports filtering and custom output destinations.`,
-		Parameters: []ParamDoc{
-			{Name: "--on", Type: "logic!", Description: "Enable tracing", Optional: true},
-			{Name: "--off", Type: "logic!", Description: "Disable tracing", Optional: true},
-			{Name: "--only", Type: "block!", Description: "Block of words to include in trace (whitelist)", Optional: true},
-			{Name: "--exclude", Type: "block!", Description: "Block of words to exclude from trace (blacklist)", Optional: true},
-			{Name: "--file", Type: "string!", Description: "Custom file path for trace output", Optional: true},
-			{Name: "--append", Type: "logic!", Description: "Append to trace file instead of overwriting", Optional: true},
+			Parameters: []ParamDoc{
+				{Name: "--on", Type: "logic!", Description: "Enable tracing", Optional: true},
+				{Name: "--off", Type: "logic!", Description: "Disable tracing", Optional: true},
+				{Name: "--only", Type: "block!", Description: "Block of words to include in trace (whitelist)", Optional: true},
+				{Name: "--exclude", Type: "block!", Description: "Block of words to exclude from trace (blacklist)", Optional: true},
+				{Name: "--file", Type: "string!", Description: "Custom file path for trace output", Optional: true},
+				{Name: "--append", Type: "logic!", Description: "Append to trace file instead of overwriting", Optional: true},
+			},
+			Returns:  "[none!] Always returns none",
+			Examples: []string{"trace --on  ; enable tracing", "trace --on --only [calculate-interest]  ; trace specific function", "trace --off  ; disable tracing"},
+			SeeAlso:  []string{"trace?", "debug"}, Tags: []string{"debug", "trace", "observability"},
 		},
-		Returns:  "[none!] Always returns none",
-		Examples: []string{"trace --on  ; enable tracing", "trace --on --only [calculate-interest]  ; trace specific function", "trace --off  ; disable tracing"},
-		SeeAlso:  []string{"trace?", "debug"}, Tags: []string{"debug", "trace", "observability"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("trace", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("trace?", value.FuncVal(value.NewNativeFunction(
 		"trace?",
 		[]value.ParamSpec{},
 		TraceQuery,
-	)
-	fn.Doc = &NativeDoc{
-		Category:    "Debug",
-		Summary:     "Queries trace status",
-		Description: `Returns a boolean indicating whether tracing is currently enabled.`,
-		Parameters:  []ParamDoc{},
-		Returns:     "[logic!] true if tracing is enabled, false otherwise",
-		Examples:    []string{"trace?  ; => false", "trace --on\ntrace?  ; => true"},
-		SeeAlso:     []string{"trace", "debug"}, Tags: []string{"debug", "trace", "query"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("trace?", value.FuncVal(fn))
+		false,
+		&NativeDoc{
+			Category:    "Debug",
+			Summary:     "Queries trace status",
+			Description: `Returns a boolean indicating whether tracing is currently enabled.`,
+			Parameters:  []ParamDoc{},
+			Returns:     "[logic!] true if tracing is enabled, false otherwise",
+			Examples:    []string{"trace?  ; => false", "trace --on\ntrace?  ; => true"},
+			SeeAlso:     []string{"trace", "debug"}, Tags: []string{"debug", "trace", "query"},
+		},
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("debug", value.FuncVal(value.NewNativeFunction(
 		"debug",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -132,169 +126,162 @@ and other execution events to a log file. Supports filtering and custom output d
 			value.NewRefinementSpec("stack", false),
 		},
 		Debug,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Debug",
-		Summary:  "Controls the interactive debugger",
-		Description: `Provides debugging capabilities including breakpoints, stepping, and inspection.
+		false,
+		&NativeDoc{
+			Category: "Debug",
+			Summary:  "Controls the interactive debugger",
+			Description: `Provides debugging capabilities including breakpoints, stepping, and inspection.
 Use --on to enable the debugger, set breakpoints with --breakpoint, and control execution flow
 with stepping commands. Inspect state with --locals and --stack.`,
-		Parameters: []ParamDoc{
-			{Name: "--on", Type: "logic!", Description: "Enable debugger", Optional: true},
-			{Name: "--off", Type: "logic!", Description: "Disable debugger", Optional: true},
-			{Name: "--breakpoint", Type: "word!", Description: "Set breakpoint on word (returns breakpoint ID)", Optional: true},
-			{Name: "--remove", Type: "integer!", Description: "Remove breakpoint by ID", Optional: true},
-			{Name: "--step", Type: "logic!", Description: "Step into next expression", Optional: true},
-			{Name: "--next", Type: "logic!", Description: "Step over next expression", Optional: true},
-			{Name: "--finish", Type: "logic!", Description: "Continue until function returns", Optional: true},
-			{Name: "--continue", Type: "logic!", Description: "Resume normal execution", Optional: true},
-			{Name: "--locals", Type: "logic!", Description: "Show local variables", Optional: true},
-			{Name: "--stack", Type: "logic!", Description: "Show call stack", Optional: true},
+			Parameters: []ParamDoc{
+				{Name: "--on", Type: "logic!", Description: "Enable debugger", Optional: true},
+				{Name: "--off", Type: "logic!", Description: "Disable debugger", Optional: true},
+				{Name: "--breakpoint", Type: "word!", Description: "Set breakpoint on word (returns breakpoint ID)", Optional: true},
+				{Name: "--remove", Type: "integer!", Description: "Remove breakpoint by ID", Optional: true},
+				{Name: "--step", Type: "logic!", Description: "Step into next expression", Optional: true},
+				{Name: "--next", Type: "logic!", Description: "Step over next expression", Optional: true},
+				{Name: "--finish", Type: "logic!", Description: "Continue until function returns", Optional: true},
+				{Name: "--continue", Type: "logic!", Description: "Resume normal execution", Optional: true},
+				{Name: "--locals", Type: "logic!", Description: "Show local variables", Optional: true},
+				{Name: "--stack", Type: "logic!", Description: "Show call stack", Optional: true},
+			},
+			Returns: "[integer! block! none!] Breakpoint ID, inspection data, or none",
+			Examples: []string{
+				"debug --on  ; enable debugger",
+				"debug --breakpoint 'square  ; set breakpoint",
+				"debug --step  ; step into",
+				"debug --locals  ; show locals",
+			},
+			SeeAlso: []string{"trace", "trace?"}, Tags: []string{"debug", "breakpoint", "stepping"},
 		},
-		Returns: "[integer! block! none!] Breakpoint ID, inspection data, or none",
-		Examples: []string{
-			"debug --on  ; enable debugger",
-			"debug --breakpoint 'square  ; set breakpoint",
-			"debug --step  ; step into",
-			"debug --locals  ; show locals",
-		},
-		SeeAlso: []string{"trace", "trace?"}, Tags: []string{"debug", "breakpoint", "stepping"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("debug", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("type-of", value.FuncVal(value.NewNativeFunction(
 		"type-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
 		TypeOf,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns the type name of a value",
-		Description: `Returns a word representing the canonical type name of any value.
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns the type name of a value",
+			Description: `Returns a word representing the canonical type name of any value.
 Type names follow the pattern 'type!' (e.g., integer!, string!, block!).`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to get the type of", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to get the type of", Optional: false},
+			},
+			Returns:  "[word!] The type name as a word",
+			Examples: []string{"type-of 42  ; => integer!", `type-of "hello"  ; => string!`, "type-of [1 2 3]  ; => block!"},
+			SeeAlso:  []string{"type?", "spec-of", "body-of"}, Tags: []string{"reflection", "type", "introspection"},
 		},
-		Returns:  "[word!] The type name as a word",
-		Examples: []string{"type-of 42  ; => integer!", `type-of "hello"  ; => string!`, "type-of [1 2 3]  ; => block!"},
-		SeeAlso:  []string{"type?", "spec-of", "body-of"}, Tags: []string{"reflection", "type", "introspection"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("type-of", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("spec-of", value.FuncVal(value.NewNativeFunction(
 		"spec-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
 		SpecOf,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns the specification of a function or object",
-		Description: `Extracts the specification (parameter list or field definitions) from a function or object.
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns the specification of a function or object",
+			Description: `Extracts the specification (parameter list or field definitions) from a function or object.
 Returns an immutable copy as a block. For functions, returns the parameter spec. For objects,
 returns the field names and type hints.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "function! object!", Description: "The function or object to inspect", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "function! object!", Description: "The function or object to inspect", Optional: false},
+			},
+			Returns:  "[block!] The specification as a block",
+			Examples: []string{"square: fn [x] [x * x]\nspec-of :square  ; => [x]", "obj: object [name: \"Alice\"]\nspec-of obj  ; => [name]"},
+			SeeAlso:  []string{"body-of", "type-of", "words-of"}, Tags: []string{"reflection", "spec", "introspection"},
 		},
-		Returns:  "[block!] The specification as a block",
-		Examples: []string{"square: fn [x] [x * x]\nspec-of :square  ; => [x]", "obj: object [name: \"Alice\"]\nspec-of obj  ; => [name]"},
-		SeeAlso:  []string{"body-of", "type-of", "words-of"}, Tags: []string{"reflection", "spec", "introspection"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("spec-of", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("body-of", value.FuncVal(value.NewNativeFunction(
 		"body-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
 		BodyOf,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns the body of a function or object",
-		Description: `Extracts the body block from a function or object. Returns an immutable deep copy
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns the body of a function or object",
+			Description: `Extracts the body block from a function or object. Returns an immutable deep copy
 to prevent mutation of the original. For functions, returns the function body. For objects,
 returns a block of set-word/value pairs.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "function! object!", Description: "The function or object to inspect", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "function! object!", Description: "The function or object to inspect", Optional: false},
+			},
+			Returns:  "[block!] The body as a block",
+			Examples: []string{"square: fn [x] [x * x]\nbody-of :square  ; => [x * x]", "obj: object [x: 10]\nbody-of obj  ; => [x: 10]"},
+			SeeAlso:  []string{"spec-of", "type-of", "source"}, Tags: []string{"reflection", "body", "introspection"},
 		},
-		Returns:  "[block!] The body as a block",
-		Examples: []string{"square: fn [x] [x * x]\nbody-of :square  ; => [x * x]", "obj: object [x: 10]\nbody-of obj  ; => [x: 10]"},
-		SeeAlso:  []string{"spec-of", "type-of", "source"}, Tags: []string{"reflection", "body", "introspection"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("body-of", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("words-of", value.FuncVal(value.NewNativeFunction(
 		"words-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
 		WordsOf,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns the field names of an object",
-		Description: `Extracts all field names (words) from an object as a block. The order matches
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns the field names of an object",
+			Description: `Extracts all field names (words) from an object as a block. The order matches
 the object's manifest. Returns an immutable block of words.`,
-		Parameters: []ParamDoc{
-			{Name: "object", Type: "object!", Description: "The object to inspect", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "object", Type: "object!", Description: "The object to inspect", Optional: false},
+			},
+			Returns:  "[block!] Block of field names as words",
+			Examples: []string{"obj: object [name: \"Alice\" age: 30]\nwords-of obj  ; => [name age]", "words-of object []  ; => []"},
+			SeeAlso:  []string{"values-of", "spec-of"}, Tags: []string{"reflection", "object", "fields"},
 		},
-		Returns:  "[block!] Block of field names as words",
-		Examples: []string{"obj: object [name: \"Alice\" age: 30]\nwords-of obj  ; => [name age]", "words-of object []  ; => []"},
-		SeeAlso:  []string{"values-of", "spec-of"}, Tags: []string{"reflection", "object", "fields"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("words-of", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("values-of", value.FuncVal(value.NewNativeFunction(
 		"values-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
 		},
 		ValuesOf,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns the field values of an object",
-		Description: `Extracts all field values from an object as a block. The order matches the object's
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns the field values of an object",
+			Description: `Extracts all field values from an object as a block. The order matches the object's
 manifest and corresponds to words-of. Returns deep copies to prevent mutation.`,
-		Parameters: []ParamDoc{
-			{Name: "object", Type: "object!", Description: "The object to inspect", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "object", Type: "object!", Description: "The object to inspect", Optional: false},
+			},
+			Returns:  "[block!] Block of field values",
+			Examples: []string{"obj: object [name: \"Alice\" age: 30]\nvalues-of obj  ; => [\"Alice\" 30]", "values-of object []  ; => []"},
+			SeeAlso:  []string{"words-of", "spec-of"}, Tags: []string{"reflection", "object", "values"},
 		},
-		Returns:  "[block!] Block of field values",
-		Examples: []string{"obj: object [name: \"Alice\" age: 30]\nvalues-of obj  ; => [\"Alice\" 30]", "values-of object []  ; => []"},
-		SeeAlso:  []string{"words-of", "spec-of"}, Tags: []string{"reflection", "object", "values"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("values-of", value.FuncVal(fn))
+	)))
 
-	fn = value.NewNativeFunction(
+	rootFrame.Bind("source", value.FuncVal(value.NewNativeFunction(
 		"source",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
 		},
 		Source,
-	)
-	fn.Doc = &NativeDoc{
-		Category: "Reflection",
-		Summary:  "Returns formatted source code for a function or object",
-		Description: `Reconstructs a readable source code representation of a function or object.
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Returns formatted source code for a function or object",
+			Description: `Reconstructs a readable source code representation of a function or object.
 For functions, returns the complete definition including spec and body. For objects,
 returns the object definition with field names.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "function! object!", Description: "The function or object to format", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "function! object!", Description: "The function or object to format", Optional: false},
+			},
+			Returns:  "[string!] The formatted source code",
+			Examples: []string{"square: fn [x] [x * x]\nsource :square  ; => \"fn [x] [x * x]\"", "obj: object [x: 10]\nsource obj  ; => \"object [x]\""},
+			SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
 		},
-		Returns:  "[string!] The formatted source code",
-		Examples: []string{"square: fn [x] [x * x]\nsource :square  ; => \"fn [x] [x * x]\"", "obj: object [x: 10]\nsource obj  ; => \"object [x]\""},
-		SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
-	}
-	// Bind to root frame
-	rootFrame.Bind("source", value.FuncVal(fn))
+	)))
 }
