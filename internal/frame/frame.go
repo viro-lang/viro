@@ -9,6 +9,8 @@
 // Frame types:
 //   - FrameFunctionArgs: Function parameter bindings
 //   - FrameClosure: Closure variable capture
+//   - FrameObject: Object instance frame
+//   - FrameTypeFrame: Type frame for action dispatch
 //
 // Operations:
 //   - Bind: Create new word-to-value binding
@@ -27,7 +29,8 @@ import (
 const (
 	FrameFunctionArgs core.FrameType = iota // Function call frame (arguments + locals)
 	FrameClosure                            // Closure captured environment
-	FrameObject                             // Object instance frame (Feature 002)
+	FrameObject                             // Object instance frame
+	FrameTypeFrame                          // Type frame for action dispatch
 )
 
 // Frame represents a variable binding context.

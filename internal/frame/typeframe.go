@@ -21,7 +21,7 @@ var TypeRegistry map[core.ValueType]core.Frame
 // Each type frame:
 // - Parent = 0 (index to root frame on stack)
 // - Index = -1 (not in frameStore)
-// - Type = FrameFunctionArgs (reusing existing type for consistency)
+// - Type = FrameTypeFrame (semantically correct type for type frames)
 //
 // Type-specific implementations will be registered into these frames
 // by the native package during its initialization.
@@ -38,7 +38,7 @@ func InitTypeFrames() {
 
 // createTypeFrame creates a type frame with standard configuration.
 func createTypeFrame(typeName string) core.Frame {
-	frame := NewFrame(FrameFunctionArgs, 0) // Parent = 0 (root frame)
+	frame := NewFrame(FrameTypeFrame, 0) // Parent = 0 (root frame)
 	frame.SetIndex(-1)
 	frame.SetName(typeName)
 	return frame
@@ -61,9 +61,9 @@ func GetTypeFrame(typ core.ValueType) (core.Frame, bool) {
 // Example usage for a hypothetical custom type:
 //
 //	// 1. Create a type frame
-//	customFrame := frame.NewFrame(frame.FrameFunctionArgs, 0)
-//	customFrame.Index = -1
-//	customFrame.Name = "custom-type!"
+//	customFrame := frame.NewFrame(frame.FrameTypeFrame, 0)
+//	customFrame.SetIndex(-1)
+//	customFrame.SetName("custom-type!")
 //
 //	// 2. Add type-specific implementations
 //	customFrame.Bind("first", value.FuncVal(customFirstImpl))
