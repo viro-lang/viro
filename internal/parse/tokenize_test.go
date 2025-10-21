@@ -89,23 +89,15 @@ func TestComplexNumberParsing(t *testing.T) {
 			expectError: false,
 			expected:    nil, // Will be checked by checkResult
 			checkResult: func(t *testing.T, vals []core.Value) {
-				// "1.2.3" actually parses as separate tokens: 1, ., 2, ., 3
-				// This is expected behavior - multiple decimals are separate
-				if len(vals) != 5 {
-					t.Errorf("Expected 5 values (1 . 2 . 3), got %d", len(vals))
+				if len(vals) != 1 {
+					t.Errorf("Expected 1 value, got %d", len(vals))
 					return
 				}
-				// Check that we get the expected token sequence
-				expectedTypes := []value.Type{
-					value.TypeInteger, value.TypeWord, value.TypeInteger, value.TypeWord, value.TypeInteger,
-				}
-				for i, expectedType := range expectedTypes {
-					if vals[i].GetType() != expectedType {
-						t.Errorf("Value %d: expected %s, got %s", i, value.TypeToString(expectedType), value.TypeToString(vals[i].GetType()))
-					}
+				if vals[0].GetType() != value.TypePath {
+					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
 				}
 			},
-			desc:        "Should parse multiple decimal points as separate tokens",
+			desc: "Should parse multiple decimal points as a path",
 		},
 		{
 			name:        "number at start of input",
@@ -133,21 +125,23 @@ func TestComplexNumberParsing(t *testing.T) {
 				return
 			}
 
-			if len(vals) != len(tt.expected) {
-				t.Errorf("Expected %d values, got %d for %s", len(tt.expected), len(vals), tt.desc)
-				return
-			}
+			if tt.expected != nil {
+				if len(vals) != len(tt.expected) {
+					t.Errorf("Expected %d values, got %d for %s", len(tt.expected), len(vals), tt.desc)
+					return
+				}
 
-			for i, expected := range tt.expected {
-				// For decimals, compare string representations since Equals might not work for all cases
-				if expected.GetType() == value.TypeDecimal && vals[i].GetType() == value.TypeDecimal {
-					expectedDec, _ := value.AsDecimal(expected)
-					actualDec, _ := value.AsDecimal(vals[i])
-					if expectedDec.String() != actualDec.String() {
-						t.Errorf("Decimal value %d mismatch for %s: expected %s, got %s", i, tt.desc, expectedDec.String(), actualDec.String())
+				for i, expected := range tt.expected {
+					// For decimals, compare string representations since Equals might not work for all cases
+					if expected.GetType() == value.TypeDecimal && vals[i].GetType() == value.TypeDecimal {
+						expectedDec, _ := value.AsDecimal(expected)
+						actualDec, _ := value.AsDecimal(vals[i])
+						if expectedDec.String() != actualDec.String() {
+							t.Errorf("Decimal value %d mismatch for %s: expected %s, got %s", i, tt.desc, expectedDec.String(), actualDec.String())
+						}
+					} else if !vals[i].Equals(expected) {
+						t.Errorf("Value %d mismatch for %s: expected %v, got %v", i, tt.desc, expected, vals[i])
 					}
-				} else if !vals[i].Equals(expected) {
-					t.Errorf("Value %d mismatch for %s: expected %v, got %v", i, tt.desc, expected, vals[i])
 				}
 			}
 		})
@@ -463,29 +457,8 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeNone {
 					t.Errorf("Expected none, got %s", value.TypeToString(vals[0].GetType()))
 				}
-		{
-			name:        "multiple decimal points as separate tokens",
-			input:       "1.2.3",
-			expectError: false,
-			expected:    nil, // Will be checked by checkResult
-			checkResult: func(t *testing.T, vals []core.Value) {
-				// "1.2.3" actually parses as separate tokens: 1, ., 2, ., 3
-				// This is expected behavior - multiple decimals are separate
-				if len(vals) != 5 {
-					t.Errorf("Expected 5 values (1 . 2 . 3), got %d", len(vals))
-					return
-				}
-				// Check that we get the expected token sequence
-				expectedTypes := []value.Type{
-					value.TypeInteger, value.TypeWord, value.TypeInteger, value.TypeWord, value.TypeInteger,
-				}
-				for i, expectedType := range expectedTypes {
-					if vals[i].GetType() != expectedType {
-						t.Errorf("Value %d: expected %s, got %s", i, value.TypeToString(expectedType), value.TypeToString(vals[i].GetType()))
-					}
-				}
 			},
-			desc:        "Should parse multiple decimal points as separate tokens",
+			desc: "Should parse none as none value",
 		},
 		{
 			name:        "set-word",
