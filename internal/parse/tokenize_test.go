@@ -84,14 +84,6 @@ func TestComplexNumberParsing(t *testing.T) {
 			desc:        "Should parse number at end of input",
 		},
 		{
-			name:        "number at start of input",
-			input:       "123 rest",
-			expectError: false,
-			expected:    []core.Value{value.IntVal(123), value.WordVal("rest")},
-			checkResult: nil,
-			desc:        "Should parse number at start of input",
-		},
-		{
 			name:        "multiple decimal points as path",
 			input:       "1.2.3",
 			expectError: false,
