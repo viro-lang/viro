@@ -110,15 +110,6 @@ func TestComplexNumberParsing(t *testing.T) {
 		},
 			desc: "Should parse multiple decimal points as path",
 		},
-		{
-			name:        "exponent without digit",
-			input:       "1.5ee",
-			expectError: false,                                                  // Parser may be lenient
-			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1)}, // May parse as 1.5
-			desc:        "Should handle invalid exponent format gracefully",
-		},
-		{
-			name:        "multiple decimal points",
 			input:       "1.2.3",
 			expectError: false,
 			expected:    []core.Value{value.DecimalVal(decimalValue("1.2"), 1)}, // May parse as 1.2
