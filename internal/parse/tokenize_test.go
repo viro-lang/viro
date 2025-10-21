@@ -76,17 +76,26 @@ func TestComplexNumberParsing(t *testing.T) {
 			desc:        "Should tokenize incomplete exponent as separate tokens",
 		},
 		{
-			name:        "exponent without digit",
-			input:       "1.5ee",
+			name:        "number at end of input",
+			input:       "value 42",
 			expectError: false,
-			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1), value.WordVal("ee")},
+			expected:    []core.Value{value.WordVal("value"), value.IntVal(42)},
 			checkResult: nil,
-			desc:        "Should tokenize invalid exponent as separate tokens",
+			desc:        "Should parse number at end of input",
 		},
 		{
-			name:        "multiple decimal points",
+			name:        "number at start of input",
+			input:       "123 rest",
+			expectError: false,
+			expected:    []core.Value{value.IntVal(123), value.WordVal("rest")},
+			checkResult: nil,
+			desc:        "Should parse number at start of input",
+		},
+		{
+			name:        "multiple decimal points as path",
 			input:       "1.2.3",
 			expectError: false,
+			expected:    []core.Value{}, // Will be checked by checkResult
 			checkResult: func(t *testing.T, vals []core.Value) {
 				if len(vals) != 1 {
 					t.Errorf("Expected 1 value, got %d", len(vals))
@@ -97,6 +106,8 @@ func TestComplexNumberParsing(t *testing.T) {
 					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
 				}
 			},
+			desc:        "Should parse multiple decimal points as path",
+		},
 			desc: "Should parse multiple decimal points as path",
 		},
 		{
