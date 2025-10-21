@@ -42,13 +42,19 @@ const (
 // - Parent is an integer index, not a pointer
 // - Safe across stack expansion
 //
+// Frame Chain Navigation:
+// - Parent field is essential for lexical scoping and frame chain traversal
+// - Used by evaluator's Lookup method to walk parent chain
+// - Parent=0 for root frame and type frames (links to root)
+// - Parent=-1 for frames with no parent (root frame itself)
+//
 // Feature 002: Objects
 // - Manifest: Optional field metadata for object frames (type validation)
 type Frame struct {
 	Type     core.FrameType  // Frame category
 	Words    []string        // Symbol names (parallel to Values)
 	Values   []core.Value    // Bound values (parallel to Words)
-	Parent   int             // Index of parent frame for closures (-1 if none) (deprecated: use Index to navigate frameStore)
+	Parent   int             // Parent frame index for lexical scoping (-1 if none). Essential for frame chain traversal.
 	Index    int             // Position in evaluator's frameStore (-1 if not yet stored)
 	Name     string          // Optional function or context name for diagnostics
 	Manifest *ObjectManifest // Optional: field metadata for objects (Feature 002)
