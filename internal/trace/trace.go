@@ -46,7 +46,6 @@ type TraceEvent struct {
 	Value     string    `json:"value"`    // String representation of evaluated value
 	Word      string    `json:"word"`     // Word being evaluated (if applicable)
 	Duration  int64     `json:"duration"` // Nanoseconds spent evaluating
-	Depth     int       `json:"depth"`    // Call stack depth
 }
 
 // GlobalTraceSession is the active trace session (singleton).
@@ -162,7 +161,6 @@ func TracePortOpen(scheme, spec string) {
 		Word:      "open",
 		Value:     fmt.Sprintf("port opened: %s (%s)", spec, scheme),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -178,7 +176,6 @@ func TracePortRead(scheme, spec string, bytes int) {
 		Word:      "read",
 		Value:     fmt.Sprintf("port read: %s (%s) %d bytes", spec, scheme, bytes),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -194,7 +191,6 @@ func TracePortWrite(scheme, spec string, bytes int) {
 		Word:      "write",
 		Value:     fmt.Sprintf("port write: %s (%s) %d bytes", spec, scheme, bytes),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -210,7 +206,6 @@ func TracePortClose(scheme, spec string) {
 		Word:      "close",
 		Value:     fmt.Sprintf("port closed: %s (%s)", spec, scheme),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -226,7 +221,6 @@ func TracePortError(scheme, spec string, err error) {
 		Word:      "error",
 		Value:     fmt.Sprintf("port error: %s (%s) - %v", spec, scheme, err),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -242,7 +236,6 @@ func TraceObjectCreate(frameIndex int, fieldCount int) {
 		Word:      "object",
 		Value:     fmt.Sprintf("object created: frame:%d fields:%d", frameIndex, fieldCount),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -263,7 +256,6 @@ func TraceObjectFieldRead(frameIndex int, field string, found bool) {
 		Word:      "select",
 		Value:     fmt.Sprintf("object field read: frame:%d field:%s (%s)", frameIndex, field, status),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -279,7 +271,6 @@ func TraceObjectFieldWrite(frameIndex int, field string, newValue string) {
 		Word:      "put",
 		Value:     fmt.Sprintf("object field write: frame:%d field:%s value:%s", frameIndex, field, newValue),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }

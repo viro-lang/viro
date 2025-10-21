@@ -53,12 +53,6 @@ func NewEvaluator() *Evaluator {
 	return e
 }
 
-// Callstack returns the current call stack as a slice of function names.
-// The call stack represents the execution context, with the most recent call at the end.
-func (e *Evaluator) Callstack() []string {
-	return e.callStack
-}
-
 // SetOutputWriter sets the output writer for this evaluator.
 // This allows redirecting output (e.g., from print function) to different destinations.
 func (e *Evaluator) SetOutputWriter(w io.Writer) {
@@ -207,7 +201,6 @@ func evalWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
 					Word:      "debug",
 					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
 					Duration:  0,
-					Depth:     len(e.Callstack()),
 				})
 			}
 		}
@@ -421,7 +414,6 @@ func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
 			Value:     result.String(),
 			Word:      traceWord,
 			Duration:  duration.Nanoseconds(),
-			Depth:     len(e.callStack),
 		})
 	}
 
