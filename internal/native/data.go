@@ -276,15 +276,10 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 }
 
 func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
-	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
-
-	// Create owned frame for self-contained object storage (Phase 1 refactor)
 	ownedFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
-	frameIdx := eval.RegisterFrame(objFrame)
-	eval.MarkFrameCaptured(frameIdx)
-
-	eval.PushFrameContext(objFrame)
+	// Evaluate initializers in a temporary frame context
+	eval.PushFrameContext(ownedFrame)
 	defer eval.PopFrameContext()
 
 	for _, field := range fields {
@@ -295,18 +290,15 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 			return value.NoneVal(), err
 		}
 
-		objFrame.Bind(field, evaled)
-		// Also bind to owned frame for self-contained storage (Phase 1 refactor)
 		ownedFrame.Bind(field, evaled)
 	}
 
-	obj := value.NewObjectWithFrame(frameIdx, ownedFrame, fields, nil)
+	obj := value.NewObject(ownedFrame, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
 	}
 
-	// Emit trace event for object creation (Feature 002, T097)
-	trace.TraceObjectCreate(frameIdx, len(fields))
+	trace.TraceObjectCreate(len(fields))
 
 	return value.ObjectVal(obj), nil
 }
@@ -491,12 +483,12 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 		// Use owned frame to get field value with prototype chain traversal
 		if result, found := obj.GetFieldWithProto(fieldName); found {
-			trace.TraceObjectFieldRead(0, fieldName, true) // FrameIndex removed
+			trace.TraceObjectFieldRead(fieldName, true)
 			return result, nil
 		}
 
 		// Field not found - return default or none (not an error)
-		trace.TraceObjectFieldRead(0, fieldName, false) // FrameIndex removed
+		trace.TraceObjectFieldRead(fieldName, false) // FrameIndex removed
 		if hasDefault {
 			return defaultVal, nil
 		}
@@ -605,7 +597,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
-	trace.TraceObjectFieldWrite(0, fieldName, newVal.String()) // FrameIndex removed
+	trace.TraceObjectFieldWrite(fieldName, newVal.String())
 
 	return newVal, nil
 }

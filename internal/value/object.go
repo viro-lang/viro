@@ -19,9 +19,6 @@ type ObjectInstance struct {
 	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
 	Manifest    ObjectManifest  // Field metadata
-
-	// Deprecated: Parent field kept for backward compatibility
-	Parent int // Parent object frame index (-1 = no parent)
 }
 
 // ObjectManifest describes the fields exposed by an object.
@@ -30,25 +27,8 @@ type ObjectManifest struct {
 	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
-// NewObject creates an ObjectInstance with the given frame and field manifest.
-func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectInstance {
-	if types == nil {
-		// Default to TypeNone (any type) for all fields
-		types = make([]core.ValueType, len(words))
-	}
-	return &ObjectInstance{
-		Frame:       nil, // Owned frame will be set during object creation in native functions
-		ParentProto: nil, // No parent by default
-		Parent:      -1,  // Deprecated field
-		Manifest: ObjectManifest{
-			Words: words,
-			Types: types,
-		},
-	}
-}
-
-// NewObjectWithFrame creates an ObjectInstance with owned frame for self-contained storage.
-func NewObjectWithFrame(frameIndex int, ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
+// NewObject creates an ObjectInstance with owned frame for self-contained storage.
+func NewObject(ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
 	if types == nil {
 		// Default to TypeNone (any type) for all fields
 		types = make([]core.ValueType, len(words))
@@ -56,7 +36,6 @@ func NewObjectWithFrame(frameIndex int, ownedFrame core.Frame, words []string, t
 	return &ObjectInstance{
 		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
-		Parent:      -1,  // Deprecated field
 		Manifest: ObjectManifest{
 			Words: words,
 			Types: types,
