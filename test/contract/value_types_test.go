@@ -73,9 +73,7 @@ func TestObjectInstanceConstruction(t *testing.T) {
 		t.Fatal("NewObject returned nil")
 	}
 
-	if obj.FrameIndex != 1 {
-		t.Errorf("expected frame index 1, got %d", obj.FrameIndex)
-	}
+	// FrameIndex removed in Phase 3
 
 	if obj.Parent != -1 {
 		t.Errorf("expected parent -1, got %d", obj.Parent)

@@ -8,10 +8,8 @@ import (
 
 // CLI flags for Feature 002
 var (
-	sandboxRoot       = flag.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
-	traceFile         = flag.String("trace-file", "", "Redirect trace output to file (default: stderr)")
-	traceMaxSize      = flag.Int("trace-max-size", 50, "Max trace log file size in MB before rotation")
-	allowInsecureTLS  = flag.Bool("allow-insecure-tls", false, "Allow insecure TLS connections globally (warning: disables certificate verification)")
+	sandboxRoot      = flag.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
+	allowInsecureTLS = flag.Bool("allow-insecure-tls", false, "Allow insecure TLS connections globally (warning: disables certificate verification)")
 )
 
 func main() {

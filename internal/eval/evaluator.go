@@ -1046,11 +1046,6 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 		// Set field using owned frame
 		obj.SetField(fieldName, newVal)
 
-		// Phase 2 compatibility: also update evaluator frame
-		if objFrame := e.GetFrameByIndex(obj.FrameIndex); objFrame != nil {
-			objFrame.Bind(fieldName, newVal)
-		}
-
 	default:
 		return value.NoneVal(), verror.NewInternalError("unsupported path segment type for assignment", [3]string{})
 	}

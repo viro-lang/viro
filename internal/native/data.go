@@ -303,7 +303,6 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 	obj := value.NewObjectWithFrame(frameIdx, ownedFrame, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
-		eval.MarkFrameCaptured(prototype.FrameIndex)
 	}
 
 	// Emit trace event for object creation (Feature 002, T097)
@@ -492,12 +491,12 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 		// Use owned frame to get field value with prototype chain traversal
 		if result, found := obj.GetFieldWithProto(fieldName); found {
-			trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
+			trace.TraceObjectFieldRead(0, fieldName, true) // FrameIndex removed
 			return result, nil
 		}
 
 		// Field not found - return default or none (not an error)
-		trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, false)
+		trace.TraceObjectFieldRead(0, fieldName, false) // FrameIndex removed
 		if hasDefault {
 			return defaultVal, nil
 		}
@@ -606,7 +605,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
-	trace.TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())
+	trace.TraceObjectFieldWrite(0, fieldName, newVal.String()) // FrameIndex removed
 
 	return newVal, nil
 }

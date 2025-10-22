@@ -10,14 +10,12 @@ import (
 // ObjectInstance represents an object with frame-based field storage (Feature 002).
 //
 // Design per data-model.md:
-// - FrameIndex: index into frame registry/stack (reuses frame infrastructure)
-// - Frame: owned frame for self-contained field storage (Phase 1 refactor)
+// - Frame: owned frame for self-contained field storage
 // - ParentProto: reference to parent prototype object (nil if none) for prototype chain
 // - Manifest: published field names and optional type hints
 //
 // Per FR-009: captures word/value pairs into dedicated frame with nested object support
 type ObjectInstance struct {
-	FrameIndex  int             // Index into frame storage (backward compatibility)
 	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
 	Manifest    ObjectManifest  // Field metadata
@@ -39,7 +37,6 @@ func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectIn
 		types = make([]core.ValueType, len(words))
 	}
 	return &ObjectInstance{
-		FrameIndex:  frameIndex,
 		Frame:       nil, // Owned frame will be set during object creation in native functions
 		ParentProto: nil, // No parent by default
 		Parent:      -1,  // Deprecated field
@@ -57,7 +54,6 @@ func NewObjectWithFrame(frameIndex int, ownedFrame core.Frame, words []string, t
 		types = make([]core.ValueType, len(words))
 	}
 	return &ObjectInstance{
-		FrameIndex:  frameIndex, // Keep for backward compatibility
 		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
 		Parent:      -1,  // Deprecated field
@@ -119,19 +115,11 @@ func (obj *ObjectInstance) GetField(name string) (core.Value, bool) {
 
 // SetField sets a field value in the owned frame.
 // Creates new binding if field doesn't exist.
-// Note: During Phase 2 migration, also updates evaluator frame for compatibility.
 func (obj *ObjectInstance) SetField(name string, val core.Value) {
 	if obj.Frame == nil {
 		return // No-op if no owned frame
 	}
 	obj.Frame.Bind(name, val)
-
-	// Phase 2 compatibility: also update evaluator frame if it exists
-	// This will be removed in Phase 3 when evaluator frames are eliminated
-	if obj.FrameIndex >= 0 {
-		// We don't have direct access to evaluator here, so this is handled
-		// in the native functions that call SetField
-	}
 }
 
 // GetFieldWithProto retrieves a field value, searching through prototype chain.
