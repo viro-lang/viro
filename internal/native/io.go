@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"os"
@@ -125,7 +126,7 @@ func (d *fileDriver) Close() error {
 	return err
 }
 
-func (d *fileDriver) Query() (map[string]interface{}, error) {
+func (d *fileDriver) Query() (map[string]any, error) {
 	if d.file == nil {
 		return nil, fmt.Errorf("file not open")
 	}
@@ -133,7 +134,7 @@ func (d *fileDriver) Query() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"size":     info.Size(),
 		"modified": info.ModTime(),
 		"mode":     info.Mode().String(),
@@ -190,13 +191,13 @@ func (d *tcpDriver) Close() error {
 	return err
 }
 
-func (d *tcpDriver) Query() (map[string]interface{}, error) {
+func (d *tcpDriver) Query() (map[string]any, error) {
 	if d.conn == nil {
 		return nil, fmt.Errorf("connection not open")
 	}
 	localAddr := d.conn.LocalAddr().String()
 	remoteAddr := d.conn.RemoteAddr().String()
-	return map[string]interface{}{
+	return map[string]any{
 		"local-address":  localAddr,
 		"remote-address": remoteAddr,
 		"state":          "connected",
@@ -325,11 +326,11 @@ func (d *httpDriver) Close() error {
 	return nil
 }
 
-func (d *httpDriver) Query() (map[string]interface{}, error) {
+func (d *httpDriver) Query() (map[string]any, error) {
 	if d.response == nil {
 		return nil, fmt.Errorf("no response available")
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"status":         d.response.StatusCode,
 		"content-length": d.response.ContentLength,
 		"headers":        d.response.Header,
@@ -359,8 +360,8 @@ func (d *stdioWriterDriver) Close() error {
 	return nil
 }
 
-func (d *stdioWriterDriver) Query() (map[string]interface{}, error) {
-	return map[string]interface{}{
+func (d *stdioWriterDriver) Query() (map[string]any, error) {
+	return map[string]any{
 		"type": "stdio-writer",
 	}, nil
 }
@@ -388,8 +389,8 @@ func (d *stdioReaderDriver) Close() error {
 	return nil
 }
 
-func (d *stdioReaderDriver) Query() (map[string]interface{}, error) {
-	return map[string]interface{}{
+func (d *stdioReaderDriver) Query() (map[string]any, error) {
+	return map[string]any{
 		"type": "stdio-reader",
 	}, nil
 }
@@ -922,9 +923,7 @@ func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	// Build options map from refinements
 	opts := make(map[string]core.Value)
 	if refValues != nil {
-		for name, val := range refValues {
-			opts[name] = val
-		}
+		maps.Copy(opts, refValues)
 	}
 
 	result, err := ReadPort(spec, opts)

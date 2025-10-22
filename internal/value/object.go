@@ -10,12 +10,14 @@ import (
 //
 // Design per data-model.md:
 // - FrameIndex: index into frame registry/stack (reuses frame infrastructure)
+// - Frame: owned frame for self-contained field storage (Phase 1 refactor)
 // - ParentProto: reference to parent prototype object (nil if none) for prototype chain
 // - Manifest: published field names and optional type hints
 //
 // Per FR-009: captures word/value pairs into dedicated frame with nested object support
 type ObjectInstance struct {
-	FrameIndex  int             // Index into frame storage
+	FrameIndex  int             // Index into frame storage (backward compatibility)
+	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
 	Manifest    ObjectManifest  // Field metadata
 
@@ -37,6 +39,25 @@ func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectIn
 	}
 	return &ObjectInstance{
 		FrameIndex:  frameIndex,
+		Frame:       nil, // Owned frame will be set during object creation in native functions
+		ParentProto: nil, // No parent by default
+		Parent:      -1,  // Deprecated field
+		Manifest: ObjectManifest{
+			Words: words,
+			Types: types,
+		},
+	}
+}
+
+// NewObjectWithFrame creates an ObjectInstance with owned frame for self-contained storage.
+func NewObjectWithFrame(frameIndex int, ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
+	if types == nil {
+		// Default to TypeNone (any type) for all fields
+		types = make([]core.ValueType, len(words))
+	}
+	return &ObjectInstance{
+		FrameIndex:  frameIndex, // Keep for backward compatibility
+		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
 		Parent:      -1,  // Deprecated field
 		Manifest: ObjectManifest{
@@ -69,4 +90,42 @@ func AsObject(v core.Value) (*ObjectInstance, bool) {
 	}
 	obj, ok := v.GetPayload().(*ObjectInstance)
 	return obj, ok
+}
+
+// GetField retrieves a field value from the owned frame.
+// Returns (value, true) if found, (NoneVal, false) if not.
+func (obj *ObjectInstance) GetField(name string) (core.Value, bool) {
+	if obj.Frame == nil {
+		return NoneVal(), false
+	}
+	return obj.Frame.Get(name)
+}
+
+// SetField sets a field value in the owned frame.
+// Creates new binding if field doesn't exist.
+func (obj *ObjectInstance) SetField(name string, val core.Value) {
+	if obj.Frame == nil {
+		return // No-op if no owned frame
+	}
+	obj.Frame.Bind(name, val)
+}
+
+// GetFieldWithProto retrieves a field value, searching through prototype chain.
+// Returns (value, true) if found, (NoneVal, false) if not.
+func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
+	// First check owned frame
+	if val, found := obj.GetField(name); found {
+		return val, true
+	}
+
+	// Then check prototype chain
+	current := obj.ParentProto
+	for current != nil {
+		if val, found := current.GetField(name); found {
+			return val, true
+		}
+		current = current.ParentProto
+	}
+
+	return NoneVal(), false
 }

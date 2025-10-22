@@ -296,6 +296,9 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
 	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
+	// Create owned frame for self-contained object storage (Phase 1 refactor)
+	ownedFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
+
 	frameIdx := eval.RegisterFrame(objFrame)
 	eval.MarkFrameCaptured(frameIdx)
 
@@ -311,9 +314,11 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 		}
 
 		objFrame.Bind(field, evaled)
+		// Also bind to owned frame for self-contained storage (Phase 1 refactor)
+		ownedFrame.Bind(field, evaled)
 	}
 
-	obj := value.NewObject(frameIdx, fields, nil)
+	obj := value.NewObjectWithFrame(frameIdx, ownedFrame, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
 		eval.MarkFrameCaptured(prototype.FrameIndex)
