@@ -158,19 +158,10 @@ func formatObjectForDisplay(objVal core.Value, eval core.Evaluator) (string, err
 		return "", nil
 	}
 
-	// Get the object's frame to access field values
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return "", verror.NewInternalError(
-			"internal-error",
-			[3]string{"form", "invalid-object-frame", ""},
-		)
-	}
-
-	// Build field display lines
+	// Build field display lines using owned frame
 	fieldLines := []string{}
 	for _, fieldName := range obj.Manifest.Words {
-		if fieldVal, found := objFrame.Get(fieldName); found {
+		if fieldVal, found := obj.GetField(fieldName); found {
 			// Use formatForDisplay for human-readable field values
 			displayVal := formatForDisplay(fieldVal)
 			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
@@ -191,19 +182,10 @@ func formatObjectForMold(objVal core.Value, eval core.Evaluator) (string, error)
 		return "make object! []", nil
 	}
 
-	// Get the object's frame to access field values
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return "", verror.NewInternalError(
-			"internal-error",
-			[3]string{"mold", "invalid-object-frame", ""},
-		)
-	}
-
-	// Build field assignments
+	// Build field assignments using owned frame
 	fieldAssignments := []string{}
 	for _, fieldName := range obj.Manifest.Words {
-		if fieldVal, found := objFrame.Get(fieldName); found {
+		if fieldVal, found := obj.GetField(fieldName); found {
 			// Recursively mold the field value
 			moldedVal := fieldVal.String() // Use the standard String() which handles mold formatting
 			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
@@ -508,32 +490,10 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	if targetVal.GetType() == value.TypeObject {
 		obj, _ := value.AsObject(targetVal)
 
-		// Look up field in object's frame
-		objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-		if objFrame == nil {
-			return value.NoneVal(), verror.NewInternalError(
-				"internal-error",
-				[3]string{"select", "invalid-frame-index", ""},
-			)
-		}
-
-		// Try to get the field value
-		if result, found := objFrame.Get(fieldName); found {
+		// Use owned frame to get field value with prototype chain traversal
+		if result, found := obj.GetFieldWithProto(fieldName); found {
 			trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
 			return result, nil
-		}
-
-		// Check parent prototype chain
-		current := obj.ParentProto
-		for current != nil {
-			parentFrame := eval.GetFrameByIndex(current.FrameIndex)
-			if parentFrame != nil {
-				if result, found := parentFrame.Get(fieldName); found {
-					trace.TraceObjectFieldRead(current.FrameIndex, fieldName, true)
-					return result, nil
-				}
-			}
-			current = current.ParentProto
 		}
 
 		// Field not found - return default or none (not an error)
@@ -616,15 +576,6 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	obj, _ := value.AsObject(targetVal)
 
-	// Get object's frame
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"put", "invalid-frame-index", ""},
-		)
-	}
-
 	// Check if field exists in manifest
 	fieldIndex := -1
 	for i, word := range obj.Manifest.Words {
@@ -651,8 +602,8 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 		)
 	}
 
-	// Update the field in the frame
-	objFrame.Set(fieldName, newVal)
+	// Update the field using owned frame
+	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
 	trace.TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())

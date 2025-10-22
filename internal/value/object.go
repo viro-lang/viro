@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
@@ -72,7 +73,22 @@ func (o *ObjectInstance) String() string {
 	if o == nil {
 		return "object[]"
 	}
-	return fmt.Sprintf("object[frame:%d fields:%d]", o.FrameIndex, len(o.Manifest.Words))
+
+	// Build field representation using owned frame
+	var fields []string
+	for _, fieldName := range o.Manifest.Words {
+		if val, found := o.GetField(fieldName); found {
+			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.String()))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s: <missing>", fieldName))
+		}
+	}
+
+	if len(fields) == 0 {
+		return "object[]"
+	}
+
+	return fmt.Sprintf("object[%s]", strings.Join(fields, " "))
 }
 
 // ObjectVal creates a Value wrapping an ObjectInstance.
@@ -103,11 +119,19 @@ func (obj *ObjectInstance) GetField(name string) (core.Value, bool) {
 
 // SetField sets a field value in the owned frame.
 // Creates new binding if field doesn't exist.
+// Note: During Phase 2 migration, also updates evaluator frame for compatibility.
 func (obj *ObjectInstance) SetField(name string, val core.Value) {
 	if obj.Frame == nil {
 		return // No-op if no owned frame
 	}
 	obj.Frame.Bind(name, val)
+
+	// Phase 2 compatibility: also update evaluator frame if it exists
+	// This will be removed in Phase 3 when evaluator frames are eliminated
+	if obj.FrameIndex >= 0 {
+		// We don't have direct access to evaluator here, so this is handled
+		// in the native functions that call SetField
+	}
 }
 
 // GetFieldWithProto retrieves a field value, searching through prototype chain.

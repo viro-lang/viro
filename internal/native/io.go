@@ -648,14 +648,7 @@ func QueryPort(portVal core.Value) (core.Value, error) {
 	// Convert metadata map to object
 	// For now, create a simple object representation
 	// Full implementation would use ObjectInstance with proper frame
-	obj := &value.ObjectInstance{
-		FrameIndex: -1, // Temporary object without frame
-		Parent:     -1,
-		Manifest: value.ObjectManifest{
-			Words: make([]string, 0, len(metadata)),
-			Types: make([]core.ValueType, 0, len(metadata)),
-		},
-	}
+	obj := value.NewObjectWithFrame(-1, nil, make([]string, 0, len(metadata)), make([]core.ValueType, 0, len(metadata)))
 
 	// Store metadata keys
 	for key := range metadata {
