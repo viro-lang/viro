@@ -29,7 +29,7 @@ func TestDecimalConstructor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var dec *value.DecimalValue
-			
+
 			switch v := tt.input.(type) {
 			case int64:
 				mag := decimal.New(v, 0)
@@ -69,7 +69,7 @@ func TestDecimalPromotion(t *testing.T) {
 	// This test validates FR-003: integer→decimal promotion
 	// Will be implemented when arithmetic natives are ready
 	t.Skip("Requires arithmetic natives implementation")
-	
+
 	// Expected behavior:
 	// integer + decimal → decimal result
 	// decimal * integer → decimal result with correct scale
@@ -127,10 +127,10 @@ func TestLogDomainErrors(t *testing.T) {
 // T030: trig functions (sin, cos, tan, asin, acos, atan)
 func TestTrigFunctions(t *testing.T) {
 	tests := []struct {
-		name     string
-		function string
-		input    string
-		expected string // Approximate expected output
+		name      string
+		function  string
+		input     string
+		expected  string // Approximate expected output
 		tolerance float64
 	}{
 		{"sin 0", "sin", "0.0", "0.0", 0.0001},

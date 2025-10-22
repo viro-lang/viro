@@ -5,13 +5,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestREPL_HelpShortcut tests the special REPL-only '?' command without arguments
 func TestREPL_HelpShortcut(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -42,7 +41,7 @@ func TestREPL_HelpShortcut(t *testing.T) {
 // Note: ? with argument goes through parser and Help prints to os.Stdout
 // which cannot be easily redirected in tests, so we just verify no errors
 func TestREPL_HelpWithArgument(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -60,7 +59,7 @@ func TestREPL_HelpWithArgument(t *testing.T) {
 
 // TestREPL_HelpAfterError tests that help works after errors
 func TestREPL_HelpAfterError(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -86,9 +85,9 @@ func TestREPL_HelpAfterError(t *testing.T) {
 // Note: Most '? arg' calls print to os.Stdout, not captured in tests
 // We verify no errors occur and REPL continues working
 func TestREPL_HelpIntegration(t *testing.T) {
-	evaluator := eval.NewEvaluator()
-	var out bytes.Buffer
-	loop := repl.NewREPLForTest(evaluator, &out)
+	evaluator := NewTestEvaluator()
+	var errOut bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &errOut)
 
 	tests := []struct {
 		name          string
@@ -106,7 +105,7 @@ func TestREPL_HelpIntegration(t *testing.T) {
 		{
 			name:          "? with category (goes to stdout)",
 			input:         "? control",
-			checkOutput:   false, // Goes to os.Stdout, not out buffer
+			checkOutput:   false, // Goes to os.Stdout, not captured in errOut
 			expectedInOut: nil,
 		},
 		{
@@ -119,29 +118,47 @@ func TestREPL_HelpIntegration(t *testing.T) {
 			name:          "words returns block",
 			input:         "words",
 			checkOutput:   true,
-			shouldContain: "[", // Returns a block
+			shouldContain: "native[", // Returns a block of words in Form format
 		},
 		{
 			name:          "Help in sequence",
 			input:         "x: 5  ? math  x + 1",
 			checkOutput:   true,
-			shouldContain: "6", // Final result should be captured
+			shouldContain: "6", // Final result should be printed to stdout
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out.Reset()
-			loop.EvalLineForTest(tt.input)
-			output := out.String()
-
-			if tt.checkOutput {
-				if tt.shouldContain != "" && !strings.Contains(output, tt.shouldContain) {
-					t.Errorf("Expected %q in output, got:\n%s", tt.shouldContain, output)
+			// For bare ?, output goes to errOut, not stdout
+			if tt.input == "?" {
+				errOut.Reset()
+				loop.EvalLineForTest(tt.input)
+				result := errOut.String()
+				if tt.checkOutput {
+					if tt.shouldContain != "" && !strings.Contains(result, tt.shouldContain) {
+						t.Errorf("Expected %q in output, got:\n%s", tt.shouldContain, result)
+					}
+					for _, exp := range tt.expectedInOut {
+						if !strings.Contains(result, exp) {
+							t.Errorf("Expected %q in output, got:\n%s", exp, result)
+						}
+					}
 				}
-				for _, exp := range tt.expectedInOut {
-					if !strings.Contains(output, exp) {
-						t.Errorf("Expected %q in output, got:\n%s", exp, output)
+			} else {
+				// Capture output for successful evaluations
+				errOut.Reset()
+				loop.EvalLineForTest(tt.input)
+				result := errOut.String()
+
+				if tt.checkOutput {
+					if tt.shouldContain != "" && !strings.Contains(result, tt.shouldContain) {
+						t.Errorf("Expected %q in output, got:\n%s", tt.shouldContain, result)
+					}
+					for _, exp := range tt.expectedInOut {
+						if !strings.Contains(result, exp) {
+							t.Errorf("Expected %q in output, got:\n%s", exp, result)
+						}
 					}
 				}
 			}
@@ -153,7 +170,7 @@ func TestREPL_HelpIntegration(t *testing.T) {
 // TestREPL_HelpVsScriptBehavior documents the difference
 func TestREPL_HelpVsScriptBehavior(t *testing.T) {
 	t.Run("REPL_BareQuestionMark", func(t *testing.T) {
-		evaluator := eval.NewEvaluator()
+		evaluator := NewTestEvaluator()
 		var out bytes.Buffer
 		loop := repl.NewREPLForTest(evaluator, &out)
 

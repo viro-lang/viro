@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -13,13 +14,13 @@ import (
 func TestCaptureNear_DecimalMetadata(t *testing.T) {
 	tests := []struct {
 		name       string
-		values     []value.Value
+		values     []core.Value
 		index      int
 		wantSubstr []string
 	}{
 		{
 			name: "decimal with scale in error position",
-			values: []value.Value{
+			values: []core.Value{
 				value.IntVal(1),
 				value.IntVal(2),
 				value.DecimalVal(decimal.New(1999, -2), 2),
@@ -33,7 +34,7 @@ func TestCaptureNear_DecimalMetadata(t *testing.T) {
 		},
 		{
 			name: "decimal with zero scale",
-			values: []value.Value{
+			values: []core.Value{
 				value.DecimalVal(decimal.New(42, 0), 0),
 				value.IntVal(10),
 			},

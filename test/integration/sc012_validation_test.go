@@ -223,7 +223,7 @@ func TestSC012_PortLifecycle(t *testing.T) {
 			t.Fatalf("Failed to open port: %v", err)
 		}
 
-		p, ok := port.AsPort()
+		p, ok := value.AsPort(port)
 		if !ok {
 			t.Fatal("Failed to extract port from value")
 		}
@@ -268,8 +268,8 @@ func TestSC012_PortLifecycle(t *testing.T) {
 		}
 
 		// Verify content (basic check - full parsing would require parse package)
-		if loaded.Type != value.TypeString {
-			t.Errorf("Expected string type after load, got %v", loaded.Type)
+		if loaded.GetType() != value.TypeString {
+			t.Errorf("Expected string type after load, got %v", loaded.GetType())
 		}
 
 		t.Log("SC-012 PASS: Save and load operations")

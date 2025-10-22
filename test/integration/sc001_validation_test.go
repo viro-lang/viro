@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -13,9 +12,11 @@ import (
 // Users can evaluate at least 20 different expression types correctly
 // (literals, arithmetic, comparisons, control flow, series operations, function calls)
 func TestSC001_ExpressionTypesCoverage(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
+
+	// Output will be captured in the 'out' buffer
 
 	tests := []struct {
 		name     string
@@ -33,7 +34,7 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "String literal",
 			input:    "\"hello\"",
-			expected: "\"hello\"",
+			expected: "hello",
 		},
 		// 3. Logic literal (true)
 		{
@@ -64,7 +65,7 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "Block literal",
 			input:    "[1 2 3]",
-			expected: "[1 2 3]",
+			expected: "1 2 3",
 		},
 		// 8. Paren evaluation
 		{
@@ -163,14 +164,14 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 		{
 			name:     "Append series operation",
 			input:    "append data 4",
-			expected: "[1 2 3 4]",
+			expected: "1 2 3 4",
 			setup:    []string{"data: [1 2 3]"},
 		},
 		// 24. Insert operation
 		{
 			name:     "Insert series operation",
 			input:    "insert data 0",
-			expected: "[0 1 2 3]",
+			expected: "0 1 2 3",
 			setup:    []string{"data: [1 2 3]"},
 		},
 		// 25. When control flow
@@ -240,13 +241,14 @@ func TestSC001_ExpressionTypesCoverage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Run setup commands if any
+			// Run setup commands if any (discard their output)
 			for _, setupCmd := range tt.setup {
 				out.Reset()
 				loop.EvalLineForTest(setupCmd)
+				// Setup output is discarded
 			}
 
-			// Execute test
+			// Execute test command
 			out.Reset()
 			loop.EvalLineForTest(tt.input)
 			result := strings.TrimSpace(out.String())

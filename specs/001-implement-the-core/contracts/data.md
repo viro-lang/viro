@@ -169,6 +169,148 @@ if type? value = 'integer! [
 
 ---
 
+## Native: `form`
+
+**Signature**: `form value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: String representation for display
+
+**Behavior**:
+Returns human-readable string format. For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate block contents.
+
+**Type Rules**:
+- Argument can be any type (evaluated)
+
+**Usage Pattern**:
+```viro
+form [1 2 3]     ; returns "1 2 3" (no brackets)
+form "hello"     ; returns "hello" (no quotes)
+form 42          ; returns "42"
+```
+
+**Examples**:
+```viro
+form [1 2 3]     → "1 2 3"
+form "hello"     → "hello"
+form 42          → "42"
+form true        → "true"
+form [a b c]     → "a b c"
+```
+
+**Error Cases**: None (accepts any value)
+
+**Test Cases**:
+1. `form [1 2 3]` returns string `"1 2 3"`
+2. `form "hello"` returns string `"hello"`
+3. `form 42` returns string `"42"`
+4. `form true` returns string `"true"`
+5. `form none` returns string `"none"`
+6. `form 'word` returns string `"word"`
+
+---
+
+## Native: `mold`
+
+**Signature**: `mold value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: String representation for serialization
+
+**Behavior**:
+Returns REBOL-readable string format. For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.
+
+**Type Rules**:
+- Argument can be any type (evaluated)
+
+**Usage Pattern**:
+```viro
+mold [1 2 3]     ; returns "[1 2 3]" (with brackets)
+mold "hello"     ; returns "\"hello\"" (with quotes)
+mold 42          ; returns "42"
+```
+
+**Examples**:
+```viro
+mold [1 2 3]     → "[1 2 3]"
+mold "hello"     → "\"hello\""
+mold 42          → "42"
+mold true        → "true"
+mold [a b c]     → "[a b c]"
+```
+
+**Error Cases**: None (accepts any value)
+
+**Test Cases**:
+1. `mold [1 2 3]` returns string `"[1 2 3]"`
+2. `mold "hello"` returns string `"\"hello\""`
+3. `mold 42` returns string `"42"`
+4. `mold true` returns string `"true"`
+5. `mold none` returns string `"none"`
+6. `mold 'word` returns string `"word"`
+
+---
+
+## Native: `reduce`
+
+**Signature**: `reduce block`
+
+**Parameters**:
+- `block`: Block (not evaluated)
+
+**Return**: Block containing evaluation results
+
+**Behavior**:
+1. Takes a block as input
+2. Evaluates each element in the block
+3. Returns a new block containing the results of evaluation
+4. Preserves the order of elements
+
+**Type Rules**:
+- Argument must be Block type (not evaluated)
+- Block elements can be any type (will be evaluated)
+- Returns Block type
+
+**Usage Pattern**:
+```viro
+reduce [1 2 3]           ; returns [1 2 3] (literals)
+reduce [1 + 2, 3 * 4]    ; returns [3, 12] (expressions)
+reduce [x, y + 1]        ; returns [value-of-x, value-of-y-plus-1]
+```
+
+**Examples**:
+```viro
+reduce [1 2 3]           → [1 2 3]
+reduce [1 + 2, 3 * 4]    → [3, 12]
+reduce []                → []
+reduce [true, false]     → [true, false]
+reduce ["hello", "world"] → ["hello", "world"]
+```
+
+**Error Cases**:
+- Argument not block → Script error (300): "Reduce expects block argument"
+- Evaluation errors in block elements → propagate the first error encountered
+
+**Test Cases**:
+1. `reduce [1 2 3]` returns block `[1 2 3]`
+2. `reduce [1 + 2, 3 * 4]` returns block `[3, 12]`
+3. `reduce []` returns block `[]`
+4. `reduce [true, false]` returns block `[true, false]`
+5. `reduce 42` returns `42` (non-block values pass through unchanged)
+6. `reduce [1, undefined-word]` errors (evaluation fails)
+
+**Implementation Note**:
+- Each element is evaluated individually in the current evaluation context
+- Evaluation errors are propagated immediately (first error stops processing)
+- Empty blocks return empty blocks
+- Nested blocks are evaluated as single elements
+
+---
+
 ## Common Properties
 
 **Word Operations** (`set`, `get`):

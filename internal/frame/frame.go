@@ -9,6 +9,8 @@
 // Frame types:
 //   - FrameFunctionArgs: Function parameter bindings
 //   - FrameClosure: Closure variable capture
+//   - FrameObject: Object instance frame
+//   - FrameTypeFrame: Type frame for action dispatch
 //
 // Operations:
 //   - Bind: Create new word-to-value binding
@@ -20,16 +22,16 @@
 package frame
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"slices"
 )
 
-// FrameType distinguishes different kinds of frames.
-type FrameType uint8
-
 const (
-	FrameFunctionArgs FrameType = iota // Function call frame (arguments + locals)
-	FrameClosure                       // Closure captured environment
-	FrameObject                        // Object instance frame (Feature 002)
+	FrameFunctionArgs core.FrameType = iota // Function call frame (arguments + locals)
+	FrameClosure                            // Closure captured environment
+	FrameObject                             // Object instance frame
+	FrameTypeFrame                          // Type frame for action dispatch
 )
 
 // Frame represents a variable binding context.
@@ -44,13 +46,19 @@ const (
 // - Parent is an integer index, not a pointer
 // - Safe across stack expansion
 //
+// Frame Chain Navigation:
+// - Parent field is essential for lexical scoping and frame chain traversal
+// - Used by evaluator's Lookup method to walk parent chain
+// - Parent=0 for root frame and type frames (links to root)
+// - Parent=-1 for frames with no parent (root frame itself)
+//
 // Feature 002: Objects
 // - Manifest: Optional field metadata for object frames (type validation)
 type Frame struct {
-	Type     FrameType       // Frame category
+	Type     core.FrameType  // Frame category
 	Words    []string        // Symbol names (parallel to Values)
-	Values   []value.Value   // Bound values (parallel to Words)
-	Parent   int             // Index of parent frame for closures (-1 if none) (deprecated: use Index to navigate frameStore)
+	Values   []core.Value    // Bound values (parallel to Words)
+	Parent   int             // Parent frame index for lexical scoping (-1 if none). Essential for frame chain traversal.
 	Index    int             // Position in evaluator's frameStore (-1 if not yet stored)
 	Name     string          // Optional function or context name for diagnostics
 	Manifest *ObjectManifest // Optional: field metadata for objects (Feature 002)
@@ -59,16 +67,16 @@ type Frame struct {
 // ObjectManifest describes the fields and type constraints for an object frame.
 // Used for type validation during field assignment (Feature 002, FR-009).
 type ObjectManifest struct {
-	Words []string          // Published field names (case-sensitive)
-	Types []value.ValueType // Optional type hints (TypeNone = any type allowed)
+	Words []string         // Published field names (case-sensitive)
+	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewFrame creates an empty frame.
-func NewFrame(frameType FrameType, parent int) *Frame {
+func NewFrame(frameType core.FrameType, parent int) core.Frame {
 	return &Frame{
 		Type:     frameType,
 		Words:    []string{},
-		Values:   []value.Value{},
+		Values:   []core.Value{},
 		Parent:   parent,
 		Index:    -1,
 		Name:     "",
@@ -78,11 +86,11 @@ func NewFrame(frameType FrameType, parent int) *Frame {
 
 // NewFrameWithCapacity creates a frame with pre-allocated capacity.
 // Useful for function frames where parameter count is known.
-func NewFrameWithCapacity(frameType FrameType, parent int, capacity int) *Frame {
+func NewFrameWithCapacity(frameType core.FrameType, parent int, capacity int) *Frame {
 	return &Frame{
 		Type:     frameType,
 		Words:    make([]string, 0, capacity),
-		Values:   make([]value.Value, 0, capacity),
+		Values:   make([]core.Value, 0, capacity),
 		Parent:   parent,
 		Index:    -1,
 		Name:     "",
@@ -92,10 +100,10 @@ func NewFrameWithCapacity(frameType FrameType, parent int, capacity int) *Frame 
 
 // NewObjectFrame creates an object frame with a manifest for type validation.
 // Feature 002: Used by the object native to create typed object instances.
-func NewObjectFrame(parent int, words []string, types []value.ValueType) *Frame {
+func NewObjectFrame(parent int, words []string, types []core.ValueType) *Frame {
 	if len(types) == 0 {
 		// Default to TypeNone (any type) for all fields
-		types = make([]value.ValueType, len(words))
+		types = make([]core.ValueType, len(words))
 		for i := range types {
 			types[i] = value.TypeNone
 		}
@@ -104,7 +112,7 @@ func NewObjectFrame(parent int, words []string, types []value.ValueType) *Frame 
 	return &Frame{
 		Type:   FrameObject,
 		Words:  make([]string, 0, len(words)),
-		Values: make([]value.Value, 0, len(words)),
+		Values: make([]core.Value, 0, len(words)),
 		Parent: parent,
 		Index:  -1,
 		Name:   "",
@@ -115,12 +123,40 @@ func NewObjectFrame(parent int, words []string, types []value.ValueType) *Frame 
 	}
 }
 
+func (f *Frame) GetType() core.FrameType {
+	return f.Type
+}
+
+func (f *Frame) ChangeType(newType core.FrameType) {
+	f.Type = newType
+}
+
+func (f *Frame) GetParent() int {
+	return f.Parent
+}
+
+func (f *Frame) GetIndex() int {
+	return f.Index
+}
+
+func (f *Frame) SetIndex(idx int) {
+	f.Index = idx
+}
+
+func (f *Frame) GetName() string {
+	return f.Name
+}
+
+func (f *Frame) SetName(name string) {
+	f.Name = name
+}
+
 // Bind adds or updates a word binding in this frame.
 // Local-by-default: creates new binding if word doesn't exist.
 //
 // Per data-model.md: This is the core of local-by-default scoping.
 // Assignment in a function creates a local variable, NOT a global.
-func (f *Frame) Bind(symbol string, val value.Value) {
+func (f *Frame) Bind(symbol string, val core.Value) {
 	// Check if word already exists in this frame
 	for i, w := range f.Words {
 		if w == symbol {
@@ -140,7 +176,7 @@ func (f *Frame) Bind(symbol string, val value.Value) {
 //
 // LOCAL LOOKUP ONLY - does NOT search parent frame.
 // Evaluator is responsible for walking frame chain if needed.
-func (f *Frame) Get(symbol string) (value.Value, bool) {
+func (f *Frame) Get(symbol string) (core.Value, bool) {
 	for i, w := range f.Words {
 		if w == symbol {
 			return f.Values[i], true
@@ -152,7 +188,7 @@ func (f *Frame) Get(symbol string) (value.Value, bool) {
 // Set updates an existing binding in this frame.
 // Returns true if word was found and updated, false if not found.
 // Does NOT create new binding (use Bind for that).
-func (f *Frame) Set(symbol string, val value.Value) bool {
+func (f *Frame) Set(symbol string, val core.Value) bool {
 	for i, w := range f.Words {
 		if w == symbol {
 			f.Values[i] = val
@@ -164,12 +200,7 @@ func (f *Frame) Set(symbol string, val value.Value) bool {
 
 // HasWord checks if a symbol is bound in this frame.
 func (f *Frame) HasWord(symbol string) bool {
-	for _, w := range f.Words {
-		if w == symbol {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(f.Words, symbol)
 }
 
 // Count returns the number of bindings in this frame.
@@ -179,10 +210,10 @@ func (f *Frame) Count() int {
 
 // GetAll returns all bindings as (symbol, value) pairs.
 // Useful for debugging and inspection.
-func (f *Frame) GetAll() []Binding {
-	bindings := make([]Binding, len(f.Words))
+func (f *Frame) GetAll() []core.Binding {
+	bindings := make([]core.Binding, len(f.Words))
 	for i := range f.Words {
-		bindings[i] = Binding{
+		bindings[i] = core.Binding{
 			Symbol: f.Words[i],
 			Value:  f.Values[i],
 		}
@@ -190,18 +221,12 @@ func (f *Frame) GetAll() []Binding {
 	return bindings
 }
 
-// Binding represents a word-to-value binding.
-type Binding struct {
-	Symbol string
-	Value  value.Value
-}
-
 // Clone creates a shallow copy of the frame.
 // Words and values are copied, but value contents are shared.
 // Used for closure capture.
-func (f *Frame) Clone() *Frame {
+func (f *Frame) Clone() core.Frame {
 	wordsCopy := make([]string, len(f.Words))
-	valuesCopy := make([]value.Value, len(f.Values))
+	valuesCopy := make([]core.Value, len(f.Values))
 	copy(wordsCopy, f.Words)
 	copy(valuesCopy, f.Values)
 
@@ -209,7 +234,7 @@ func (f *Frame) Clone() *Frame {
 	var manifestCopy *ObjectManifest
 	if f.Manifest != nil {
 		manifestWordsCopy := make([]string, len(f.Manifest.Words))
-		manifestTypesCopy := make([]value.ValueType, len(f.Manifest.Types))
+		manifestTypesCopy := make([]core.ValueType, len(f.Manifest.Types))
 		copy(manifestWordsCopy, f.Manifest.Words)
 		copy(manifestTypesCopy, f.Manifest.Types)
 		manifestCopy = &ObjectManifest{
@@ -231,7 +256,7 @@ func (f *Frame) Clone() *Frame {
 // ValidateFieldType checks if a value matches the expected type for a field in an object frame.
 // Feature 002: Used during object field assignment to enforce type constraints.
 // Returns true if validation passes or if no type constraint exists (TypeNone).
-func (f *Frame) ValidateFieldType(symbol string, val value.Value) bool {
+func (f *Frame) ValidateFieldType(symbol string, val core.Value) bool {
 	if f.Manifest == nil {
 		return true // No manifest = no type validation
 	}
@@ -243,7 +268,7 @@ func (f *Frame) ValidateFieldType(symbol string, val value.Value) bool {
 			if expectedType == value.TypeNone {
 				return true // TypeNone allows any type
 			}
-			return val.Type == expectedType
+			return val.GetType() == expectedType
 		}
 	}
 
@@ -257,11 +282,5 @@ func (f *Frame) HasManifestField(symbol string) bool {
 		return false
 	}
 
-	for _, word := range f.Manifest.Words {
-		if word == symbol {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(f.Manifest.Words, symbol)
 }

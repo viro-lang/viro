@@ -3,9 +3,9 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestArithmeticNatives tests basic arithmetic operations.
@@ -16,29 +16,29 @@ func TestArithmeticNatives(t *testing.T) {
 	tests := []struct {
 		name     string
 		op       string
-		args     []value.Value
-		expected value.Value
+		args     []core.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		// Addition
 		{
 			name:     "add positive integers",
 			op:       "+",
-			args:     []value.Value{value.IntVal(3), value.IntVal(4)},
+			args:     []core.Value{value.IntVal(3), value.IntVal(4)},
 			expected: value.IntVal(7),
 			wantErr:  false,
 		},
 		{
 			name:     "add negative integers",
 			op:       "+",
-			args:     []value.Value{value.IntVal(-5), value.IntVal(10)},
+			args:     []core.Value{value.IntVal(-5), value.IntVal(10)},
 			expected: value.IntVal(5),
 			wantErr:  false,
 		},
 		{
 			name:     "add with zero",
 			op:       "+",
-			args:     []value.Value{value.IntVal(42), value.IntVal(0)},
+			args:     []core.Value{value.IntVal(42), value.IntVal(0)},
 			expected: value.IntVal(42),
 			wantErr:  false,
 		},
@@ -47,14 +47,14 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "subtract integers",
 			op:       "-",
-			args:     []value.Value{value.IntVal(10), value.IntVal(3)},
+			args:     []core.Value{value.IntVal(10), value.IntVal(3)},
 			expected: value.IntVal(7),
 			wantErr:  false,
 		},
 		{
 			name:     "subtract to negative",
 			op:       "-",
-			args:     []value.Value{value.IntVal(3), value.IntVal(10)},
+			args:     []core.Value{value.IntVal(3), value.IntVal(10)},
 			expected: value.IntVal(-7),
 			wantErr:  false,
 		},
@@ -63,21 +63,21 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "multiply integers",
 			op:       "*",
-			args:     []value.Value{value.IntVal(6), value.IntVal(7)},
+			args:     []core.Value{value.IntVal(6), value.IntVal(7)},
 			expected: value.IntVal(42),
 			wantErr:  false,
 		},
 		{
 			name:     "multiply by zero",
 			op:       "*",
-			args:     []value.Value{value.IntVal(42), value.IntVal(0)},
+			args:     []core.Value{value.IntVal(42), value.IntVal(0)},
 			expected: value.IntVal(0),
 			wantErr:  false,
 		},
 		{
 			name:     "multiply negative",
 			op:       "*",
-			args:     []value.Value{value.IntVal(-3), value.IntVal(4)},
+			args:     []core.Value{value.IntVal(-3), value.IntVal(4)},
 			expected: value.IntVal(-12),
 			wantErr:  false,
 		},
@@ -86,21 +86,21 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "divide integers",
 			op:       "/",
-			args:     []value.Value{value.IntVal(10), value.IntVal(3)},
+			args:     []core.Value{value.IntVal(10), value.IntVal(3)},
 			expected: value.IntVal(3), // Truncated toward zero
 			wantErr:  false,
 		},
 		{
 			name:     "divide negative",
 			op:       "/",
-			args:     []value.Value{value.IntVal(-10), value.IntVal(3)},
+			args:     []core.Value{value.IntVal(-10), value.IntVal(3)},
 			expected: value.IntVal(-3), // Truncated toward zero
 			wantErr:  false,
 		},
 		{
 			name:     "divide by zero error",
 			op:       "/",
-			args:     []value.Value{value.IntVal(10), value.IntVal(0)},
+			args:     []core.Value{value.IntVal(10), value.IntVal(0)},
 			expected: value.NoneVal(),
 			wantErr:  true, // Math error: division by zero
 		},
@@ -109,7 +109,7 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "add string to integer error",
 			op:       "+",
-			args:     []value.Value{value.StrVal("hello"), value.IntVal(5)},
+			args:     []core.Value{value.StrVal("hello"), value.IntVal(5)},
 			expected: value.NoneVal(),
 			wantErr:  true, // Type mismatch error
 		},
@@ -117,19 +117,21 @@ func TestArithmeticNatives(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
 			// Call the appropriate native function
-			var result value.Value
-			var err *verror.Error
+			var result core.Value
+			var err error
 
 			switch tt.op {
 			case "+":
-				result, err = native.Add(tt.args)
+				result, err = native.Add(tt.args, map[string]core.Value{}, e)
 			case "-":
-				result, err = native.Subtract(tt.args)
+				result, err = native.Subtract(tt.args, map[string]core.Value{}, e)
 			case "*":
-				result, err = native.Multiply(tt.args)
+				result, err = native.Multiply(tt.args, map[string]core.Value{}, e)
 			case "/":
-				result, err = native.Divide(tt.args)
+				result, err = native.Divide(tt.args, map[string]core.Value{}, e)
 			default:
 				t.Fatalf("Unknown operator: %s", tt.op)
 			}
@@ -154,7 +156,7 @@ func TestLeftToRightEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
 		expr     string // Expression as string (will be parsed)
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "left-to-right addition and multiplication",
@@ -209,42 +211,44 @@ func TestArithmeticOverflow(t *testing.T) {
 	tests := []struct {
 		name    string
 		op      string
-		args    []value.Value
+		args    []core.Value
 		wantErr bool
 	}{
 		{
 			name:    "addition overflow",
 			op:      "+",
-			args:    []value.Value{value.IntVal(9223372036854775807), value.IntVal(1)},
+			args:    []core.Value{value.IntVal(9223372036854775807), value.IntVal(1)},
 			wantErr: true,
 		},
 		{
 			name:    "subtraction underflow",
 			op:      "-",
-			args:    []value.Value{value.IntVal(-9223372036854775808), value.IntVal(1)},
+			args:    []core.Value{value.IntVal(-9223372036854775808), value.IntVal(1)},
 			wantErr: true,
 		},
 		{
 			name:    "multiplication overflow",
 			op:      "*",
-			args:    []value.Value{value.IntVal(9223372036854775807), value.IntVal(2)},
+			args:    []core.Value{value.IntVal(9223372036854775807), value.IntVal(2)},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
 			// Call the appropriate native function
-			var result value.Value
-			var err *verror.Error
+			var result core.Value
+			var err error
 
 			switch tt.op {
 			case "+":
-				result, err = native.Add(tt.args)
+				result, err = native.Add(tt.args, map[string]core.Value{}, e)
 			case "-":
-				result, err = native.Subtract(tt.args)
+				result, err = native.Subtract(tt.args, map[string]core.Value{}, e)
 			case "*":
-				result, err = native.Multiply(tt.args)
+				result, err = native.Multiply(tt.args, map[string]core.Value{}, e)
 			default:
 				t.Fatalf("Unknown operator: %s", tt.op)
 			}

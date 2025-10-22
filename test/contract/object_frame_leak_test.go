@@ -3,7 +3,6 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
@@ -16,22 +15,26 @@ func TestObjectFieldIsolation(t *testing.T) {
 		t.Fatalf("parse error: %v", err)
 	}
 
-	e := eval.NewEvaluator()
+	e := NewTestEvaluator()
 
-	_, evalErr := e.Do_Blk(values)
+	_, evalErr := e.DoBlock(values)
 	if evalErr != nil {
 		t.Fatalf("eval error: %v", evalErr)
 	}
 
 	t.Logf("Active frames count after object creation: %d", len(e.Frames))
 	for i, f := range e.Frames {
-		t.Logf("Frame %d: type=%v, parent=%d, words=%v", i, f.Type, f.Parent, f.Words)
+		words := make([]string, 0)
+		for _, binding := range f.GetAll() {
+			words = append(words, binding.Symbol)
+		}
+		t.Logf("Frame %d: type=%v, parent=%d, words=%v", i, f.GetType(), f.GetParent(), words)
 	}
 
 	// Now try to lookup 'a' - it should NOT be found
 	code2 := `a`
 	values2, _ := parse.Parse(code2)
-	_, err2 := e.Do_Blk(values2)
+	_, err2 := e.DoBlock(values2)
 
 	if err2 == nil {
 		t.Fatal("BUG: Variable 'a' from object scope leaked to outer scope! Should have gotten 'no-value' error.")

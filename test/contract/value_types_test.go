@@ -3,8 +3,9 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 // T025.1: Foundation TDD checkpoint - Contract tests for new value types
@@ -15,19 +16,19 @@ func TestDecimalValueConstruction(t *testing.T) {
 	// Test decimal construction from Big number
 	mag := decimal.New(1999, 2) // 19.99
 	dec := value.NewDecimal(mag, 2)
-	
+
 	if dec == nil {
 		t.Fatal("NewDecimal returned nil")
 	}
-	
+
 	if dec.Scale != 2 {
 		t.Errorf("expected scale 2, got %d", dec.Scale)
 	}
-	
+
 	if dec.Context.Precision != 34 {
 		t.Errorf("expected precision 34, got %d", dec.Context.Precision)
 	}
-	
+
 	// Test String() output
 	str := dec.String()
 	if str == "" {
@@ -39,23 +40,23 @@ func TestDecimalValueConstruction(t *testing.T) {
 func TestDecimalValueWrapping(t *testing.T) {
 	mag := decimal.New(42, 0)
 	val := value.DecimalVal(mag, 0)
-	
+
 	if val.Type != value.TypeDecimal {
 		t.Errorf("expected TypeDecimal, got %v", val.Type)
 	}
-	
+
 	// Test AsDecimal extraction
-	dec, ok := val.AsDecimal()
+	dec, ok := value.AsDecimal(val)
 	if !ok {
 		t.Error("AsDecimal returned false for decimal value")
 	}
 	if dec == nil {
 		t.Error("AsDecimal returned nil")
 	}
-	
+
 	// Test wrong type
 	intVal := value.IntVal(42)
-	_, ok = intVal.AsDecimal()
+	_, ok = value.AsDecimal(intVal)
 	if ok {
 		t.Error("AsDecimal returned true for integer value")
 	}
@@ -64,26 +65,26 @@ func TestDecimalValueWrapping(t *testing.T) {
 // TestObjectInstanceConstruction validates ObjectInstance creation
 func TestObjectInstanceConstruction(t *testing.T) {
 	words := []string{"name", "age"}
-	types := []value.ValueType{value.TypeString, value.TypeInteger}
-	
+	types := []core.ValueType{value.TypeString, value.TypeInteger}
+
 	obj := value.NewObject(1, words, types)
-	
+
 	if obj == nil {
 		t.Fatal("NewObject returned nil")
 	}
-	
+
 	if obj.FrameIndex != 1 {
 		t.Errorf("expected frame index 1, got %d", obj.FrameIndex)
 	}
-	
+
 	if obj.Parent != -1 {
 		t.Errorf("expected parent -1, got %d", obj.Parent)
 	}
-	
+
 	if len(obj.Manifest.Words) != 2 {
 		t.Errorf("expected 2 words, got %d", len(obj.Manifest.Words))
 	}
-	
+
 	// Test String() output
 	str := obj.String()
 	if str == "" {
@@ -95,23 +96,23 @@ func TestObjectInstanceConstruction(t *testing.T) {
 func TestObjectValueWrapping(t *testing.T) {
 	obj := value.NewObject(0, []string{"x"}, nil)
 	val := value.ObjectVal(obj)
-	
+
 	if val.Type != value.TypeObject {
 		t.Errorf("expected TypeObject, got %v", val.Type)
 	}
-	
+
 	// Test AsObject extraction
-	extracted, ok := val.AsObject()
+	extracted, ok := value.AsObject(val)
 	if !ok {
 		t.Error("AsObject returned false for object value")
 	}
 	if extracted == nil {
 		t.Error("AsObject returned nil")
 	}
-	
+
 	// Test wrong type
 	intVal := value.IntVal(42)
-	_, ok = intVal.AsObject()
+	_, ok = value.AsObject(intVal)
 	if ok {
 		t.Error("AsObject returned true for integer value")
 	}
@@ -121,19 +122,19 @@ func TestObjectValueWrapping(t *testing.T) {
 func TestPortConstruction(t *testing.T) {
 	// Port requires a driver, use nil for now (will implement drivers later)
 	port := value.NewPort("file", "/tmp/test.txt", nil)
-	
+
 	if port == nil {
 		t.Fatal("NewPort returned nil")
 	}
-	
+
 	if port.Scheme != "file" {
 		t.Errorf("expected scheme 'file', got %s", port.Scheme)
 	}
-	
+
 	if port.State != value.PortClosed {
 		t.Errorf("expected PortClosed, got %v", port.State)
 	}
-	
+
 	// Test String() output
 	str := port.String()
 	if str == "" {
@@ -145,23 +146,23 @@ func TestPortConstruction(t *testing.T) {
 func TestPortValueWrapping(t *testing.T) {
 	port := value.NewPort("tcp", "localhost:8080", nil)
 	val := value.PortVal(port)
-	
+
 	if val.Type != value.TypePort {
 		t.Errorf("expected TypePort, got %v", val.Type)
 	}
-	
+
 	// Test AsPort extraction
-	extracted, ok := val.AsPort()
+	extracted, ok := value.AsPort(val)
 	if !ok {
 		t.Error("AsPort returned false for port value")
 	}
 	if extracted == nil {
 		t.Error("AsPort returned nil")
 	}
-	
+
 	// Test wrong type
 	intVal := value.IntVal(42)
-	_, ok = intVal.AsPort()
+	_, ok = value.AsPort(intVal)
 	if ok {
 		t.Error("AsPort returned true for integer value")
 	}
@@ -175,17 +176,17 @@ func TestPathExpressionConstruction(t *testing.T) {
 		{Type: value.PathSegmentWord, Value: "city"},
 	}
 	base := value.WordVal("user")
-	
+
 	path := value.NewPath(segments, base)
-	
+
 	if path == nil {
 		t.Fatal("NewPath returned nil")
 	}
-	
+
 	if len(path.Segments) != 3 {
 		t.Errorf("expected 3 segments, got %d", len(path.Segments))
 	}
-	
+
 	// Test String() output
 	str := path.String()
 	if str == "" {
@@ -200,23 +201,23 @@ func TestPathValueWrapping(t *testing.T) {
 	}
 	path := value.NewPath(segments, value.NoneVal())
 	val := value.PathVal(path)
-	
+
 	if val.Type != value.TypePath {
 		t.Errorf("expected TypePath, got %v", val.Type)
 	}
-	
+
 	// Test AsPath extraction
-	extracted, ok := val.AsPath()
+	extracted, ok := value.AsPath(val)
 	if !ok {
 		t.Error("AsPath returned false for path value")
 	}
 	if extracted == nil {
 		t.Error("AsPath returned nil")
 	}
-	
+
 	// Test wrong type
 	intVal := value.IntVal(42)
-	_, ok = intVal.AsPath()
+	_, ok = value.AsPath(intVal)
 	if ok {
 		t.Error("AsPath returned true for integer value")
 	}
@@ -226,21 +227,21 @@ func TestPathValueWrapping(t *testing.T) {
 func TestValueTypeDispatch(t *testing.T) {
 	tests := []struct {
 		name     string
-		val      value.Value
-		expected value.ValueType
+		val      core.Value
+		expected core.ValueType
 	}{
 		{"decimal", value.DecimalVal(decimal.New(42, 0), 0), value.TypeDecimal},
 		{"object", value.ObjectVal(value.NewObject(0, nil, nil)), value.TypeObject},
 		{"port", value.PortVal(value.NewPort("file", "test", nil)), value.TypePort},
 		{"path", value.PathVal(value.NewPath(nil, value.NoneVal())), value.TypePath},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.val.Type != tt.expected {
-				t.Errorf("expected type %v, got %v", tt.expected, tt.val.Type)
+			if tt.val.GetType() != tt.expected {
+				t.Errorf("expected type %v, got %v", tt.expected, tt.val.GetType())
 			}
-			
+
 			// Verify String() method works
 			str := tt.val.String()
 			if str == "" {
@@ -253,18 +254,18 @@ func TestValueTypeDispatch(t *testing.T) {
 // TestInvalidConversions validates error cases for type assertions
 func TestInvalidConversions(t *testing.T) {
 	intVal := value.IntVal(42)
-	
+
 	// Test all AsXXX methods return false for wrong type
-	if _, ok := intVal.AsDecimal(); ok {
+	if _, ok := value.AsDecimal(intVal); ok {
 		t.Error("AsDecimal succeeded on integer")
 	}
-	if _, ok := intVal.AsObject(); ok {
+	if _, ok := value.AsObject(intVal); ok {
 		t.Error("AsObject succeeded on integer")
 	}
-	if _, ok := intVal.AsPort(); ok {
+	if _, ok := value.AsPort(intVal); ok {
 		t.Error("AsPort succeeded on integer")
 	}
-	if _, ok := intVal.AsPath(); ok {
+	if _, ok := value.AsPath(intVal); ok {
 		t.Error("AsPath succeeded on integer")
 	}
 }

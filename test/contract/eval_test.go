@@ -3,7 +3,7 @@ package contract
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -15,8 +15,8 @@ import (
 func TestLiteralEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    value.Value
-		expected value.Value
+		input    core.Value
+		expected core.Value
 	}{
 		{
 			name:     "integer literal",
@@ -62,9 +62,9 @@ func TestLiteralEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
-			result, err := e.Do_Next(tt.input)
+			result, err := e.DoNext(tt.input)
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -83,22 +83,22 @@ func TestLiteralEvaluation(t *testing.T) {
 func TestBlockEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    value.Value
-		expected value.Value
+		input    core.Value
+		expected core.Value
 	}{
 		{
 			name:     "empty block",
-			input:    value.BlockVal([]value.Value{}),
-			expected: value.BlockVal([]value.Value{}),
+			input:    value.BlockVal([]core.Value{}),
+			expected: value.BlockVal([]core.Value{}),
 		},
 		{
 			name: "block with integers",
-			input: value.BlockVal([]value.Value{
+			input: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.IntVal(2),
 				value.IntVal(3),
 			}),
-			expected: value.BlockVal([]value.Value{
+			expected: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.IntVal(2),
 				value.IntVal(3),
@@ -106,13 +106,13 @@ func TestBlockEvaluation(t *testing.T) {
 		},
 		{
 			name: "block with unevaluated expression",
-			input: value.BlockVal([]value.Value{
+			input: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.WordVal("+"),
 				value.IntVal(2),
 			}),
 			// Block returns self - does NOT evaluate to 3
-			expected: value.BlockVal([]value.Value{
+			expected: value.BlockVal([]core.Value{
 				value.IntVal(1),
 				value.WordVal("+"),
 				value.IntVal(2),
@@ -122,9 +122,9 @@ func TestBlockEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
-			result, err := e.Do_Next(tt.input)
+			result, err := e.DoNext(tt.input)
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -143,24 +143,24 @@ func TestBlockEvaluation(t *testing.T) {
 func TestParenEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    value.Value
-		expected value.Value
+		input    core.Value
+		expected core.Value
 	}{
 		{
 			name:     "empty paren",
-			input:    value.ParenVal([]value.Value{}),
+			input:    value.ParenVal([]core.Value{}),
 			expected: value.NoneVal(), // Empty block returns none
 		},
 		{
 			name: "paren with single value",
-			input: value.ParenVal([]value.Value{
+			input: value.ParenVal([]core.Value{
 				value.IntVal(42),
 			}),
 			expected: value.IntVal(42),
 		},
 		{
 			name: "paren evaluates like block with extra tokens",
-			input: value.ParenVal([]value.Value{
+			input: value.ParenVal([]core.Value{
 				value.WordVal("+"),
 				value.IntVal(1),
 				value.IntVal(2),
@@ -173,9 +173,9 @@ func TestParenEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
-			result, err := e.Do_Next(tt.input)
+			result, err := e.DoNext(tt.input)
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -194,10 +194,10 @@ func TestParenEvaluation(t *testing.T) {
 func TestWordEvaluation(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupWord string      // Word to bind before test
-		setupVal  value.Value // Value to bind to word
-		input     value.Value // Word to evaluate
-		expected  value.Value // Expected result
+		setupWord string     // Word to bind before test
+		setupVal  core.Value // Value to bind to word
+		input     core.Value // Word to evaluate
+		expected  core.Value // Expected result
 		wantErr   bool
 	}{
 		{
@@ -218,7 +218,7 @@ func TestWordEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			// Set up frame if needed
 			if tt.setupWord != "" {
@@ -227,7 +227,7 @@ func TestWordEvaluation(t *testing.T) {
 				e.Frames = append(e.Frames, f)
 			}
 
-			result, err := e.Do_Next(tt.input)
+			result, err := e.DoNext(tt.input)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Do_Next(%v) error = %v, wantErr %v", tt.input, err, tt.wantErr)
@@ -246,13 +246,13 @@ func TestWordEvaluation(t *testing.T) {
 func TestSetWordEvaluation(t *testing.T) {
 	tests := []struct {
 		name      string
-		sequence  []value.Value // Sequence containing set-word and value
-		checkWord string        // Word to check after evaluation
-		expected  value.Value   // Expected value bound to word
+		sequence  []core.Value // Sequence containing set-word and value
+		checkWord string       // Word to check after evaluation
+		expected  core.Value   // Expected value bound to word
 	}{
 		{
 			name: "set integer",
-			sequence: []value.Value{
+			sequence: []core.Value{
 				value.SetWordVal("x"),
 				value.IntVal(42),
 			},
@@ -261,7 +261,7 @@ func TestSetWordEvaluation(t *testing.T) {
 		},
 		{
 			name: "set string",
-			sequence: []value.Value{
+			sequence: []core.Value{
 				value.SetWordVal("name"),
 				value.StrVal("Alice"),
 			},
@@ -272,10 +272,10 @@ func TestSetWordEvaluation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := eval.NewEvaluator()
+			e := NewTestEvaluator()
 
 			// Evaluate sequence (set-word will bind the next value)
-			result, err := e.Do_Blk(tt.sequence)
+			result, err := e.DoBlock(tt.sequence)
 
 			if err != nil {
 				t.Errorf("Do_Blk(%v) unexpected error: %v", tt.sequence, err)

@@ -6,14 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestSC015_TraceOverheadDisabled validates Feature 002 - User Story 5
 // Success Criteria SC-015: Trace overhead when disabled < 5%
 func TestSC015_TraceOverheadDisabled(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -59,7 +58,7 @@ func TestSC015_TraceOverheadDisabled(t *testing.T) {
 // TestSC015_TraceOverheadEnabled validates Feature 002 - User Story 5
 // Success Criteria SC-015: Trace overhead when enabled < 25%
 func TestSC015_TraceOverheadEnabled(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -132,7 +131,7 @@ func TestSC015_TraceOverheadEnabled(t *testing.T) {
 func TestSC015_BreakpointLatency(t *testing.T) {
 	// Note: This test measures the overhead of checking breakpoints
 	// The actual interactive debugging latency is user-perception based
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -198,7 +197,7 @@ func TestSC015_BreakpointLatency(t *testing.T) {
 // TestSC015_EndToEndTraceSession validates Feature 002 - User Story 5
 // Integration test: Complete trace session workflow
 func TestSC015_EndToEndTraceSession(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -279,7 +278,7 @@ func TestSC015_EndToEndTraceSession(t *testing.T) {
 // TestSC015_DebugSessionStepping validates Feature 002 - User Story 5
 // Integration test: Debug session with stepping and inspection
 func TestSC015_DebugSessionStepping(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -426,7 +425,7 @@ func TestSC015_DebugSessionStepping(t *testing.T) {
 // TestSC015_ReflectionImmutability validates Feature 002 - User Story 5
 // Verify that reflection operations return immutable snapshots
 func TestSC015_ReflectionImmutability(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -479,7 +478,7 @@ func TestSC015_ReflectionImmutability(t *testing.T) {
 // TestSC015_TraceEventStructure validates Feature 002 - User Story 5
 // Verify trace events have proper structure (when trace is enabled)
 func TestSC015_TraceEventStructure(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -532,7 +531,7 @@ func TestSC015_TraceEventStructure(t *testing.T) {
 
 // TestSC015_SourceNative validates the source native for code formatting
 func TestSC015_SourceNative(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -553,11 +552,12 @@ func TestSC015_SourceNative(t *testing.T) {
 		result := strings.TrimSpace(out.String())
 
 		// Verify the source contains the function definition
-		if len(result) == 0 {
-			t.Error("source native returned empty result")
+		if result == "" {
+			t.Errorf("source native returned empty result")
+		} else if !strings.Contains(result, "name") {
+			t.Errorf("source should contain parameter name, got: %s", result)
 		} else {
-			t.Logf("source result: %s", result)
-			t.Log("PASS: source native executed")
+			t.Logf("PASS: source native returned: %s", result)
 		}
 	})
 
@@ -566,7 +566,7 @@ func TestSC015_SourceNative(t *testing.T) {
 
 // TestSC015_ValuesOfNative validates the values-of reflection native
 func TestSC015_ValuesOfNative(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -608,7 +608,7 @@ func TestSC015_ValuesOfNative(t *testing.T) {
 
 // TestSC015_DebugModeToggle validates debug mode on/off
 func TestSC015_DebugModeToggle(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -633,7 +633,7 @@ func TestSC015_DebugModeToggle(t *testing.T) {
 
 // TestSC015_TypeOfAllValueTypes validates type-of for all value types
 func TestSC015_TypeOfAllValueTypes(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 

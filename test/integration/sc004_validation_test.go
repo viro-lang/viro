@@ -5,22 +5,23 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 // TestSC004_RecursionDepth validates success criterion SC-004:
 // Users can define and call recursive functions up to depth of 100 without stack overflow
 func TestSC004_RecursionDepth(t *testing.T) {
-	evaluator := eval.NewEvaluator()
-	var out bytes.Buffer
-	loop := repl.NewREPLForTest(evaluator, &out)
+	evaluator := NewTestEvaluator()
+	var errOut bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &errOut)
 
 	// Define a recursive countdown function
-	out.Reset()
+	errOut.Reset()
 	loop.EvalLineForTest("countdown: fn [n] [when (> n 0) [(countdown (- n 1))]]")
-	if !strings.Contains(out.String(), "function[countdown]") {
-		t.Fatalf("Failed to define recursive function: %s", out.String())
+	result := strings.TrimSpace(errOut.String())
+
+	if !strings.Contains(result, "function[countdown]") {
+		t.Fatalf("Failed to define recursive function: %s", result)
 	}
 
 	tests := []struct {
@@ -38,11 +39,8 @@ func TestSC004_RecursionDepth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out.Reset()
-			loop.EvalLineForTest("countdown " + strings.Repeat("1", len(strings.Split(tt.name, " ")[1])))
-
-			// Build the actual countdown call
-			out.Reset()
+			// Test the countdown call
+			errOut.Reset()
 			input := ""
 			if tt.depth == 10 {
 				input = "countdown 10"
@@ -55,16 +53,15 @@ func TestSC004_RecursionDepth(t *testing.T) {
 			}
 
 			loop.EvalLineForTest(input)
-			result := strings.TrimSpace(out.String())
 
-			// Check if it completed without error
-			if !strings.Contains(result, "Error") && !strings.Contains(result, "overflow") {
+			// Check if it completed without error (no error in errOut)
+			if errOut.Len() == 0 {
 				if tt.depth > maxDepthAchieved {
 					maxDepthAchieved = tt.depth
 				}
 				t.Logf("Successfully handled recursion depth %d", tt.depth)
 			} else {
-				t.Logf("Recursion depth %d failed or hit limit: %s", tt.depth, result)
+				t.Logf("Recursion depth %d failed or hit limit: %s", tt.depth, errOut.String())
 			}
 		})
 	}

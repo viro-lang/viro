@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -45,7 +46,6 @@ type TraceEvent struct {
 	Value     string    `json:"value"`    // String representation of evaluated value
 	Word      string    `json:"word"`     // Word being evaluated (if applicable)
 	Duration  int64     `json:"duration"` // Nanoseconds spent evaluating
-	Depth     int       `json:"depth"`    // Call stack depth
 }
 
 // GlobalTraceSession is the active trace session (singleton).
@@ -112,22 +112,14 @@ func (ts *TraceSession) Emit(event TraceEvent) {
 
 	// Apply filters
 	if len(ts.filters.IncludeWords) > 0 {
-		found := false
-		for _, w := range ts.filters.IncludeWords {
-			if event.Word == w {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(ts.filters.IncludeWords, event.Word)
 		if !found {
 			return
 		}
 	}
 
-	for _, w := range ts.filters.ExcludeWords {
-		if event.Word == w {
-			return
-		}
+	if slices.Contains(ts.filters.ExcludeWords, event.Word) {
+		return
 	}
 
 	if ts.filters.MinDuration > 0 && time.Duration(event.Duration) < ts.filters.MinDuration {
@@ -169,7 +161,6 @@ func TracePortOpen(scheme, spec string) {
 		Word:      "open",
 		Value:     fmt.Sprintf("port opened: %s (%s)", spec, scheme),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -185,7 +176,6 @@ func TracePortRead(scheme, spec string, bytes int) {
 		Word:      "read",
 		Value:     fmt.Sprintf("port read: %s (%s) %d bytes", spec, scheme, bytes),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -201,7 +191,6 @@ func TracePortWrite(scheme, spec string, bytes int) {
 		Word:      "write",
 		Value:     fmt.Sprintf("port write: %s (%s) %d bytes", spec, scheme, bytes),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -217,7 +206,6 @@ func TracePortClose(scheme, spec string) {
 		Word:      "close",
 		Value:     fmt.Sprintf("port closed: %s (%s)", spec, scheme),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -233,7 +221,6 @@ func TracePortError(scheme, spec string, err error) {
 		Word:      "error",
 		Value:     fmt.Sprintf("port error: %s (%s) - %v", spec, scheme, err),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -249,7 +236,6 @@ func TraceObjectCreate(frameIndex int, fieldCount int) {
 		Word:      "object",
 		Value:     fmt.Sprintf("object created: frame:%d fields:%d", frameIndex, fieldCount),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -270,7 +256,6 @@ func TraceObjectFieldRead(frameIndex int, field string, found bool) {
 		Word:      "select",
 		Value:     fmt.Sprintf("object field read: frame:%d field:%s (%s)", frameIndex, field, status),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }
@@ -286,7 +271,6 @@ func TraceObjectFieldWrite(frameIndex int, field string, newValue string) {
 		Word:      "put",
 		Value:     fmt.Sprintf("object field write: frame:%d field:%s value:%s", frameIndex, field, newValue),
 		Duration:  0,
-		Depth:     0,
 	}
 	GlobalTraceSession.Emit(event)
 }

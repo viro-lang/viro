@@ -1,8 +1,10 @@
 package native
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -15,19 +17,19 @@ import (
 // - First argument must be a lit-word (receives unevaluated word)
 // - Second argument is any value (already evaluated)
 // - Binds word in current frame and returns the value
-func Set(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Set(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("set", 2, len(args))
 	}
 
-	if args[0].Type != value.TypeLitWord {
+	if args[0].GetType() != value.TypeLitWord {
 		return value.NoneVal(), typeError("set", "lit-word", args[0])
 	}
 
-	symbol, _ := args[0].AsWord()
-	assignment := []value.Value{value.SetWordVal(symbol), args[1]}
+	symbol, _ := value.AsWord(args[0])
+	assignment := []core.Value{value.SetWordVal(symbol), args[1]}
 
-	result, err := eval.Do_Blk(assignment)
+	result, err := eval.DoBlock(assignment)
 	if err != nil {
 		return value.NoneVal(), err
 	}
@@ -40,96 +42,192 @@ func Set(args []value.Value, refValues map[string]value.Value, eval Evaluator) (
 // Contract: get 'word
 // - Argument must be a lit-word (receives unevaluated word symbol)
 // - Returns bound value from current frame chain
-func Get(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("get", 1, len(args))
 	}
 
-	if args[0].Type != value.TypeLitWord {
+	if args[0].GetType() != value.TypeLitWord {
 		return value.NoneVal(), typeError("get", "lit-word", args[0])
 	}
 
-	symbol, _ := args[0].AsWord()
-	return eval.Do_Next(value.GetWordVal(symbol))
+	symbol, _ := value.AsWord(args[0])
+	return eval.DoNext(value.GetWordVal(symbol))
 }
 
 // TypeQ implements the `type?` native.
 //
 // Contract: type? value -> word representing type name
-func TypeQ(args []value.Value) (value.Value, *verror.Error) {
+func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("type?", 1, len(args))
 	}
 
-	typeName := typeNameFor(args[0].Type)
+	typeName := value.TypeToString(args[0].GetType())
 	return value.WordVal(typeName), nil
 }
 
-func typeNameFor(t value.ValueType) string {
-	switch t {
-	case value.TypeInteger:
-		return "integer!"
-	case value.TypeString:
-		return "string!"
-	case value.TypeLogic:
-		return "logic!"
-	case value.TypeNone:
-		return "none!"
-	case value.TypeBlock:
-		return "block!"
-	case value.TypeWord:
-		return "word!"
-	case value.TypeSetWord:
-		return "set-word!"
-	case value.TypeGetWord:
-		return "get-word!"
-	case value.TypeLitWord:
-		return "lit-word!"
-	case value.TypeFunction:
-		return "function!"
-	case value.TypeParen:
-		return "paren!"
-	case value.TypeDecimal:
-		return "decimal!"
-	case value.TypeObject:
-		return "object!"
-	case value.TypePort:
-		return "port!"
-	case value.TypePath:
-		return "path!"
-	case value.TypeDatatype:
-		return "datatype!"
-	default:
-		return "unknown!"
+// Form implements the `form` native.
+//
+// Contract: form value -> string! human-readable representation
+// Returns display-friendly string format (no brackets on blocks, no quotes on strings, objects as multi-line field display)
+func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("form", 1, len(args))
 	}
+
+	val := args[0]
+
+	// Special handling for objects - return multi-line field display
+	if val.GetType() == value.TypeObject {
+		formatted, err := formatObjectForDisplay(val, eval)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+		return value.StrVal(formatted), nil
+	}
+
+	return value.StrVal(formatForDisplay(val)), nil
 }
 
-// frameManager interface for object natives to access frame operations.
-type frameManager interface {
-	RegisterFrame(f *frame.Frame) int
-	GetFrameByIndex(idx int) *frame.Frame
-	MarkFrameCaptured(idx int)
-	PushFrameContext(f *frame.Frame) int
-	PopFrameContext()
-	Do_Blk(vals []value.Value) (value.Value, *verror.Error)
+// Mold implements the `mold` native.
+//
+// Contract: mold value -> string! REBOL-readable representation
+// Returns serialization-friendly string format (brackets on blocks, quotes on strings, objects as make object! [...])
+func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NoneVal(), arityError("mold", 1, len(args))
+	}
+
+	val := args[0]
+
+	// Special handling for objects - return loadable "make object! [...]" format
+	if val.GetType() == value.TypeObject {
+		molded, err := formatObjectForMold(val, eval)
+		if err != nil {
+			return value.NoneVal(), err
+		}
+		return value.StrVal(molded), nil
+	}
+
+	return value.StrVal(val.String()), nil
 }
 
-// wordLookup interface for natives that need to check word existence.
-type wordLookup interface {
-	Lookup(symbol string) (value.Value, bool)
+// formatForDisplay creates human-readable string representation for form function
+func formatForDisplay(v core.Value) string {
+	switch v.GetType() {
+	case value.TypeBlock:
+		if blk, ok := value.AsBlock(v); ok {
+			if len(blk.Elements) == 0 {
+				return ""
+			}
+			parts := make([]string, len(blk.Elements))
+			for i, elem := range blk.Elements {
+				// For strings: remove quotes, for blocks: keep brackets, for others: standard format
+				if elem.GetType() == value.TypeString {
+					if str, ok := value.AsString(elem); ok {
+						parts[i] = str.String()
+					} else {
+						parts[i] = elem.String()
+					}
+				} else {
+					parts[i] = elem.String()
+				}
+			}
+			return strings.Join(parts, " ")
+		}
+	case value.TypeString:
+		if str, ok := value.AsString(v); ok {
+			return str.String() // Raw string content, no quotes
+		}
+	case value.TypeObject:
+		if obj, ok := value.AsObject(v); ok {
+			if obj == nil {
+				return "object[]"
+			}
+			return fmt.Sprintf("object[%s]", strings.Join(obj.Manifest.Words, " "))
+		}
+	}
+	return v.String() // Default formatting for other types
 }
 
-func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]value.Value, *verror.Error) {
+// formatObjectForDisplay creates human-readable multi-line display for objects
+func formatObjectForDisplay(objVal core.Value, eval core.Evaluator) (string, error) {
+	obj, ok := value.AsObject(objVal)
+	if !ok || obj == nil {
+		return "", nil
+	}
+
+	// Get the object's frame to access field values
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
+	if objFrame == nil {
+		return "", verror.NewInternalError(
+			"internal-error",
+			[3]string{"form", "invalid-object-frame", ""},
+		)
+	}
+
+	// Build field display lines
+	fieldLines := []string{}
+	for _, fieldName := range obj.Manifest.Words {
+		if fieldVal, found := objFrame.Get(fieldName); found {
+			// Use formatForDisplay for human-readable field values
+			displayVal := formatForDisplay(fieldVal)
+			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
+		}
+	}
+
+	if len(fieldLines) == 0 {
+		return "", nil
+	}
+
+	return strings.Join(fieldLines, "\n"), nil
+}
+
+// formatObjectForMold creates loadable Viro code for objects: make object! [field1: value1 field2: value2 ...]
+func formatObjectForMold(objVal core.Value, eval core.Evaluator) (string, error) {
+	obj, ok := value.AsObject(objVal)
+	if !ok || obj == nil {
+		return "make object! []", nil
+	}
+
+	// Get the object's frame to access field values
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
+	if objFrame == nil {
+		return "", verror.NewInternalError(
+			"internal-error",
+			[3]string{"mold", "invalid-object-frame", ""},
+		)
+	}
+
+	// Build field assignments
+	fieldAssignments := []string{}
+	for _, fieldName := range obj.Manifest.Words {
+		if fieldVal, found := objFrame.Get(fieldName); found {
+			// Recursively mold the field value
+			moldedVal := fieldVal.String() // Use the standard String() which handles mold formatting
+			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
+		}
+	}
+
+	if len(fieldAssignments) == 0 {
+		return "make object! []", nil
+	}
+
+	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " ")), nil
+}
+
+func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
 	fields := []string{}
-	initializers := make(map[string][]value.Value)
+	initializers := make(map[string][]core.Value)
 	seenFields := make(map[string]bool)
 
 	for i := 0; i < len(spec.Elements); i++ {
 		val := spec.Elements[i]
 
-		switch val.Type {
+		switch val.GetType() {
 		case value.TypeWord:
-			word, _ := val.AsWord()
+			word, _ := value.AsWord(val)
 			if isReservedField(word) {
 				return nil, nil, verror.NewScriptError(
 					verror.ErrIDReservedField,
@@ -144,10 +242,10 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 			}
 			fields = append(fields, word)
 			seenFields[word] = true
-			initializers[word] = []value.Value{value.NoneVal()}
+			initializers[word] = []core.Value{value.NoneVal()}
 
 		case value.TypeSetWord:
-			word, _ := val.AsWord()
+			word, _ := value.AsWord(val)
 			if isReservedField(word) {
 				return nil, nil, verror.NewScriptError(
 					verror.ErrIDReservedField,
@@ -171,10 +269,10 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 				)
 			}
 
-			initVals := []value.Value{}
+			initVals := []core.Value{}
 			for i < len(spec.Elements) {
 				nextVal := spec.Elements[i]
-				if nextVal.Type == value.TypeSetWord {
+				if nextVal.GetType() == value.TypeSetWord {
 					i--
 					break
 				}
@@ -183,7 +281,7 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 			}
 
 			if len(initVals) == 0 {
-				initVals = []value.Value{value.NoneVal()}
+				initVals = []core.Value{value.NoneVal()}
 			}
 			initializers[word] = initVals
 
@@ -195,19 +293,19 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 	return fields, initializers, nil
 }
 
-func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]value.Value) (value.Value, *verror.Error) {
+func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
 	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
-	frameIdx := mgr.RegisterFrame(objFrame)
-	mgr.MarkFrameCaptured(frameIdx)
+	frameIdx := eval.RegisterFrame(objFrame)
+	eval.MarkFrameCaptured(frameIdx)
 
-	mgr.PushFrameContext(objFrame)
-	defer mgr.PopFrameContext()
+	eval.PushFrameContext(objFrame)
+	defer eval.PopFrameContext()
 
 	for _, field := range fields {
 		initVals := initializers[field]
 
-		evaled, err := mgr.Do_Blk(initVals)
+		evaled, err := eval.DoBlock(initVals)
 		if err != nil {
 			return value.NoneVal(), err
 		}
@@ -218,7 +316,7 @@ func instantiateObject(mgr frameManager, eval Evaluator, lexicalParent int, prot
 	obj := value.NewObject(frameIdx, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
-		mgr.MarkFrameCaptured(prototype.FrameIndex)
+		eval.MarkFrameCaptured(prototype.FrameIndex)
 	}
 
 	// Emit trace event for object creation (Feature 002, T097)
@@ -244,25 +342,16 @@ func isReservedField(name string) bool {
 //     [word: value] for explicit initialization
 //   - Returns object! instance with dedicated frame
 //   - Evaluates initializers in object's context
-func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Object(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("object", 1, len(args))
 	}
 
-	if args[0].Type != value.TypeBlock {
+	if args[0].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("object", "block", args[0])
 	}
 
-	spec, _ := args[0].AsBlock()
-
-	// Type-assert to access frame management
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"object", "frame-manager-unavailable", ""},
-		)
-	}
+	spec, _ := value.AsBlock(args[0])
 
 	fields, initializers, err := buildObjectSpec("object", spec)
 	if err != nil {
@@ -270,12 +359,9 @@ func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator
 	}
 
 	// Create object frame with parent set to current frame
-	parentIdx := 0 // Global frame as parent
-	if provider, ok := eval.(frameProvider); ok {
-		parentIdx = provider.CurrentFrameIndex()
-	}
+	parentIdx := eval.CurrentFrameIndex() // Global frame as parent
 
-	return instantiateObject(mgr, eval, parentIdx, nil, fields, initializers)
+	return instantiateObject(eval, parentIdx, nil, fields, initializers)
 }
 
 // Context implements the `context` native.
@@ -284,32 +370,23 @@ func Object(args []value.Value, refValues map[string]value.Value, eval Evaluator
 // - Alias for object but with isolated scope (no parent frame)
 // - spec: block describing fields and optional initial values
 // - Returns object! instance with isolated frame
-func Context(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Context(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("context", 1, len(args))
 	}
 
-	if args[0].Type != value.TypeBlock {
+	if args[0].GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("context", "block", args[0])
 	}
 
-	spec, _ := args[0].AsBlock()
-
-	// Type-assert to access frame management
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"context", "frame-manager-unavailable", ""},
-		)
-	}
+	spec, _ := value.AsBlock(args[0])
 
 	fields, initializers, err := buildObjectSpec("context", spec)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
-	return instantiateObject(mgr, eval, -1, nil, fields, initializers)
+	return instantiateObject(eval, -1, nil, fields, initializers)
 }
 
 // Make implements the `make` native supporting object prototypes.
@@ -318,27 +395,19 @@ func Context(args []value.Value, refValues map[string]value.Value, eval Evaluato
 // - When target is word "object!" create new base object (prototype = none)
 // - When target is object value (or word resolving to object), use it as prototype
 // - Spec must be block describing fields/initializers (same as object)
-func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("make", 2, len(args))
 	}
 
 	specVal := args[1]
-	if specVal.Type != value.TypeBlock {
+	if specVal.GetType() != value.TypeBlock {
 		return value.NoneVal(), typeError("make spec", "block", specVal)
 	}
 
-	specBlock, ok := specVal.AsBlock()
+	specBlock, ok := value.AsBlock(specVal)
 	if !ok {
 		return value.NoneVal(), verror.NewInternalError("make spec missing block payload", [3]string{})
-	}
-
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"make", "frame-manager-unavailable", ""},
-		)
 	}
 
 	fields, initializers, err := buildObjectSpec("make", specBlock)
@@ -350,8 +419,8 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	target := args[0]
 
 	// Handle datatype literal like object!
-	if target.Type == value.TypeDatatype {
-		dtName, _ := target.AsDatatype()
+	if target.GetType() == value.TypeDatatype {
+		dtName, _ := value.AsDatatype(target)
 		if strings.EqualFold(dtName, "object!") {
 			prototype = nil
 			goto instantiate
@@ -364,10 +433,10 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 
 	// Evaluate target to get object prototype
 	for {
-		switch target.Type {
+		switch target.GetType() {
 		case value.TypeWord:
-			word, _ := target.AsWord()
-			evaluated, evalErr := eval.Do_Next(value.WordVal(word))
+			word, _ := value.AsWord(target)
+			evaluated, evalErr := eval.DoNext(value.WordVal(word))
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}
@@ -375,8 +444,8 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 			continue
 
 		case value.TypeGetWord:
-			symbol, _ := target.AsWord()
-			evaluated, evalErr := eval.Do_Next(value.GetWordVal(symbol))
+			symbol, _ := value.AsWord(target)
+			evaluated, evalErr := eval.DoNext(value.GetWordVal(symbol))
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}
@@ -384,7 +453,7 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 			continue
 
 		case value.TypeObject:
-			obj, _ := target.AsObject()
+			obj, _ := value.AsObject(target)
 			prototype = obj
 		default:
 			return value.NoneVal(), typeError("make target", "object", target)
@@ -393,12 +462,8 @@ func Make(args []value.Value, refValues map[string]value.Value, eval Evaluator) 
 	}
 
 instantiate:
-	parentIdx := 0
-	if provider, ok := eval.(frameProvider); ok {
-		parentIdx = provider.CurrentFrameIndex()
-	}
-
-	return instantiateObject(mgr, eval, parentIdx, prototype, fields, initializers)
+	parentIdx := eval.CurrentFrameIndex()
+	return instantiateObject(eval, parentIdx, prototype, fields, initializers)
 }
 
 // Select implements the `select` native for object field lookup with default.
@@ -408,7 +473,7 @@ instantiate:
 // - field: word! or string! representing field name
 // - --default: optional refinement providing fallback value when field missing
 // - Returns field value or default (or none! if no default provided)
-func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Select(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
 		return value.NoneVal(), arityError("select", 2, len(args))
 	}
@@ -418,11 +483,11 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 
 	// Extract field name from word or string
 	var fieldName string
-	switch fieldVal.Type {
+	switch fieldVal.GetType() {
 	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-		fieldName, _ = fieldVal.AsWord()
+		fieldName, _ = value.AsWord(fieldVal)
 	case value.TypeString:
-		str, _ := fieldVal.AsString()
+		str, _ := value.AsString(fieldVal)
 		fieldName = str.String()
 	default:
 		return value.NoneVal(), typeError("select field", "word or string", fieldVal)
@@ -435,20 +500,11 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 	}
 
 	// Handle object selection
-	if targetVal.Type == value.TypeObject {
-		obj, _ := targetVal.AsObject()
-
-		// Type-assert to access frame operations
-		mgr, ok := eval.(frameManager)
-		if !ok {
-			return value.NoneVal(), verror.NewInternalError(
-				"internal-error",
-				[3]string{"select", "frame-manager-unavailable", ""},
-			)
-		}
+	if targetVal.GetType() == value.TypeObject {
+		obj, _ := value.AsObject(targetVal)
 
 		// Look up field in object's frame
-		objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+		objFrame := eval.GetFrameByIndex(obj.FrameIndex)
 		if objFrame == nil {
 			return value.NoneVal(), verror.NewInternalError(
 				"internal-error",
@@ -465,7 +521,7 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 		// Check parent prototype chain
 		current := obj.ParentProto
 		for current != nil {
-			parentFrame := mgr.GetFrameByIndex(current.FrameIndex)
+			parentFrame := eval.GetFrameByIndex(current.FrameIndex)
 			if parentFrame != nil {
 				if result, found := parentFrame.Get(fieldName); found {
 					trace.TraceObjectFieldRead(current.FrameIndex, fieldName, true)
@@ -485,8 +541,8 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 	}
 
 	// Handle block selection (key-value pairs)
-	if targetVal.Type == value.TypeBlock {
-		block, _ := targetVal.AsBlock()
+	if targetVal.GetType() == value.TypeBlock {
+		block, _ := value.AsBlock(targetVal)
 		elements := block.Elements
 
 		// Search for key-value pairs
@@ -494,11 +550,11 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 			key := elements[i]
 			var keyStr string
 
-			switch key.Type {
+			switch key.GetType() {
 			case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-				keyStr, _ = key.AsWord()
+				keyStr, _ = value.AsWord(key)
 			case value.TypeString:
-				str, _ := key.AsString()
+				str, _ := value.AsString(key)
 				keyStr = str.String()
 			default:
 				continue
@@ -527,7 +583,7 @@ func Select(args []value.Value, refValues map[string]value.Value, eval Evaluator
 // - value: any value to assign to the field
 // - Updates field in object's frame after optional type validation
 // - Returns the assigned value
-func Put(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
 		return value.NoneVal(), arityError("put", 3, len(args))
 	}
@@ -538,34 +594,25 @@ func Put(args []value.Value, refValues map[string]value.Value, eval Evaluator) (
 
 	// Extract field name
 	var fieldName string
-	switch fieldVal.Type {
+	switch fieldVal.GetType() {
 	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-		fieldName, _ = fieldVal.AsWord()
+		fieldName, _ = value.AsWord(fieldVal)
 	case value.TypeString:
-		str, _ := fieldVal.AsString()
+		str, _ := value.AsString(fieldVal)
 		fieldName = str.String()
 	default:
 		return value.NoneVal(), typeError("put field", "word or string", fieldVal)
 	}
 
 	// Only support objects for now
-	if targetVal.Type != value.TypeObject {
+	if targetVal.GetType() != value.TypeObject {
 		return value.NoneVal(), typeError("put target", "object", targetVal)
 	}
 
-	obj, _ := targetVal.AsObject()
-
-	// Type-assert to access frame operations
-	mgr, ok := eval.(frameManager)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"put", "frame-manager-unavailable", ""},
-		)
-	}
+	obj, _ := value.AsObject(targetVal)
 
 	// Get object's frame
-	objFrame := mgr.GetFrameByIndex(obj.FrameIndex)
+	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
 	if objFrame == nil {
 		return value.NoneVal(), verror.NewInternalError(
 			"internal-error",
@@ -592,10 +639,10 @@ func Put(args []value.Value, refValues map[string]value.Value, eval Evaluator) (
 
 	// Optional: Type validation if type hint is present
 	expectedType := obj.Manifest.Types[fieldIndex]
-	if expectedType != value.TypeNone && expectedType != newVal.Type {
+	if expectedType != value.TypeNone && expectedType != newVal.GetType() {
 		return value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDTypeMismatch,
-			[3]string{typeNameFor(expectedType), typeNameFor(newVal.Type), fieldName},
+			[3]string{value.TypeToString(expectedType), value.TypeToString(newVal.GetType()), fieldName},
 		)
 	}
 

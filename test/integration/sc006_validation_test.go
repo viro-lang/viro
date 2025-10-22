@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
@@ -16,7 +15,7 @@ import (
 // We test type checking at the native function level where arguments
 // are validated before execution.
 func TestSC006_TypeErrorDetection(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -172,7 +171,7 @@ func TestSC006_TypeErrorDetection(t *testing.T) {
 	}
 
 	detectionRate := float64(errorsCaught) / float64(expectedErrors) * 100
-	
+
 	t.Logf("SC-006 VALIDATION: Type error detection rate: %.1f%%", detectionRate)
 	t.Logf("SC-006 VALIDATION: Errors caught: %d/%d", errorsCaught, expectedErrors)
 	t.Logf("SC-006 VALIDATION: False negatives: %d", falseNegatives)

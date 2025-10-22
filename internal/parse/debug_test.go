@@ -25,6 +25,6 @@ func TestDebugPathTokenization(t *testing.T) {
 
 	t.Logf("Parsed %d values", len(vals))
 	for i, val := range vals {
-		t.Logf("Value %d: type=%v, val=%v", i, val.Type, val)
+		t.Logf("Value %d: type=%v, val=%v", i, val.GetType(), val)
 	}
 }

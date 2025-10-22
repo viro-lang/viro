@@ -1,6 +1,10 @@
 package value
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
+)
 
 // ObjectInstance represents an object with frame-based field storage (Feature 002).
 //
@@ -21,15 +25,15 @@ type ObjectInstance struct {
 
 // ObjectManifest describes the fields exposed by an object.
 type ObjectManifest struct {
-	Words []string    // Published field names (case-sensitive)
-	Types []ValueType // Optional type hints (TypeNone = any type allowed)
+	Words []string         // Published field names (case-sensitive)
+	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewObject creates an ObjectInstance with the given frame and field manifest.
-func NewObject(frameIndex int, words []string, types []ValueType) *ObjectInstance {
+func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectInstance {
 	if types == nil {
 		// Default to TypeNone (any type) for all fields
-		types = make([]ValueType, len(words))
+		types = make([]core.ValueType, len(words))
 	}
 	return &ObjectInstance{
 		FrameIndex:  frameIndex,
@@ -59,10 +63,10 @@ func ObjectVal(obj *ObjectInstance) Value {
 }
 
 // AsObject extracts the ObjectInstance from a Value, or returns nil if wrong type.
-func (v Value) AsObject() (*ObjectInstance, bool) {
-	if v.Type != TypeObject {
+func AsObject(v core.Value) (*ObjectInstance, bool) {
+	if v.GetType() != TypeObject {
 		return nil, false
 	}
-	obj, ok := v.Payload.(*ObjectInstance)
+	obj, ok := v.GetPayload().(*ObjectInstance)
 	return obj, ok
 }

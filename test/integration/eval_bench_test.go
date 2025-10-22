@@ -3,14 +3,14 @@ package integration
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 var (
-	simpleEvalResult  value.Value
-	complexEvalResult value.Value
+	simpleEvalResult  core.Value
+	complexEvalResult core.Value
 )
 
 func BenchmarkEvalSimpleExpression(b *testing.B) {
@@ -20,13 +20,13 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 		b.Fatalf("parse failed: %v", err)
 	}
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.Do_Blk(values)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
-	if got, ok := warmResult.AsInteger(); !ok || got != 5 {
+	if got, ok := value.AsInteger(warmResult); !ok || got != 5 {
 		b.Fatalf("unexpected warm-up result: %v", warmResult)
 	}
 
@@ -34,14 +34,14 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.Do_Blk(values)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}
 		simpleEvalResult = result
 	}
 
-	if got, ok := simpleEvalResult.AsInteger(); !ok || got != 5 {
+	if got, ok := value.AsInteger(simpleEvalResult); !ok || got != 5 {
 		b.Fatalf("unexpected final result: %v", simpleEvalResult)
 	}
 }
@@ -67,13 +67,13 @@ total
 		b.Fatalf("parse failed: %v", err)
 	}
 
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.Do_Blk(values)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
-	if got, ok := warmResult.AsInteger(); !ok || got != 1100 {
+	if got, ok := value.AsInteger(warmResult); !ok || got != 1100 {
 		b.Fatalf("unexpected warm-up result: %v", warmResult)
 	}
 
@@ -81,14 +81,14 @@ total
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.Do_Blk(values)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}
 		complexEvalResult = result
 	}
 
-	if got, ok := complexEvalResult.AsInteger(); !ok || got != 1100 {
+	if got, ok := value.AsInteger(complexEvalResult); !ok || got != 1100 {
 		b.Fatalf("unexpected final result: %v", complexEvalResult)
 	}
 }

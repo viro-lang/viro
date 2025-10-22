@@ -3,21 +3,9 @@ package value
 import (
 	"fmt"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/docmodel"
 )
-
-// Evaluator is a minimal interface for evaluating Viro code.
-// Used by native functions that need to evaluate arguments or blocks.
-// The actual implementation is in the eval package to avoid circular dependencies.
-//
-// NOTE: This interface returns the standard error interface (not *verror.Error)
-// to avoid an import cycle (verror imports value for context formatting).
-// Native functions use native.Evaluator which returns *verror.Error directly.
-// The adapter pattern in registry.go bridges between these two interfaces.
-type Evaluator interface {
-	Do_Blk(vals []Value) (Value, error)
-	Do_Next(val Value) (Value, error)
-}
 
 // FunctionType distinguishes native (built-in) from user-defined functions.
 type FunctionType uint8
@@ -35,12 +23,12 @@ const (
 // - Flag refinement: --verbose (boolean, true if present, false otherwise)
 // - Value refinement: --title [] (accepts value, none if not provided)
 type ParamSpec struct {
-	Name       string    // parameter name (without -- prefix for refinements)
-	Type       ValueType // expected type (TypeNone = any type accepted)
-	Optional   bool      // true if parameter can be omitted
-	Refinement bool      // true if this is a refinement (--flag or --option)
-	TakesValue bool      // for refinements: true if accepts value, false if boolean flag
-	Eval       bool      // NEW: if true, argument is evaluated; if false, passed raw
+	Name       string         // parameter name (without -- prefix for refinements)
+	Type       core.ValueType // expected type (TypeNone = any type accepted)
+	Optional   bool           // true if parameter can be omitted
+	Refinement bool           // true if this is a refinement (--flag or --option)
+	TakesValue bool           // for refinements: true if accepts value, false if boolean flag
+	Eval       bool           // NEW: if true, argument is evaluated; if false, passed raw
 }
 
 // NewParamSpec creates a ParamSpec for a positional parameter.
@@ -100,18 +88,18 @@ func NewRefinementSpec(name string, takesValue bool) ParamSpec {
 // - Local-by-default scoping: all words in body are local by default
 // - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	Type   FunctionType                                                                  // Native or User
-	Name   string                                                                        // function name (for error messages and debugging)
-	Params []ParamSpec                                                                   // formal parameter specifications
-	Body   *BlockValue                                                                   // function body (nil for natives)
-	Native func(args []Value, refValues map[string]Value, eval Evaluator) (Value, error) // native implementation (nil for user functions)
-	Parent int                                                                           // parent frame index for closures (-1 if none)
-	Infix  bool                                                                          // true if function can be used as infix operator
-	Doc    *docmodel.FuncDoc                                                             // dokumentacja funkcji użytkownika (nil jeśli brak)
+	Type   FunctionType      // Native or User
+	Name   string            // function name (for error messages and debugging)
+	Params []ParamSpec       // formal parameter specifications
+	Body   *BlockValue       // function body (nil for natives)
+	Native core.NativeFunc   // native implementation (nil for user functions)
+	Parent int               // parent frame index for closures (-1 if none)
+	Infix  bool              // true if function can be used as infix operator
+	Doc    *docmodel.FuncDoc // dokumentacja funkcji użytkownika (nil jeśli brak)
 }
 
 // NewNativeFunction creates a native (built-in) function.
-func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, map[string]Value, Evaluator) (Value, error)) *FunctionValue {
+func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc, infix bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
 		Type:   FuncNative,
 		Name:   name,
@@ -119,6 +107,8 @@ func NewNativeFunction(name string, params []ParamSpec, impl func([]Value, map[s
 		Body:   nil,
 		Native: impl,
 		Parent: -1,
+		Infix:  infix,
+		Doc:    doc,
 	}
 }
 
@@ -173,4 +163,13 @@ func (f *FunctionValue) GetRefinement(name string) *ParamSpec {
 		}
 	}
 	return nil
+}
+
+func (f *FunctionValue) Equals(other core.Value) bool {
+	if other.GetType() == TypeFunction {
+		// TODO: fix the equals implementation
+		return other.GetPayload() == f
+
+	}
+	return false
 }

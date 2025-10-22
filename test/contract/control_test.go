@@ -4,6 +4,7 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -16,7 +17,7 @@ func TestControlFlow_When(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -84,7 +85,7 @@ func TestControlFlow_If(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -152,7 +153,7 @@ func TestControlFlow_Loop(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -231,7 +232,7 @@ func TestControlFlow_While(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -277,7 +278,7 @@ func TestControlFlow_TruthyConversion(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "none is falsy",
@@ -331,7 +332,7 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "less than true",

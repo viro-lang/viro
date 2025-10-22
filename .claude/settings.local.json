@@ -19,7 +19,16 @@
       "Bash(awk:*)",
       "Read(//private/tmp/**)",
       "Bash(/tmp/viro:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(if [ -d \"/Users/marcin.radoszewski/dev-allegro/viro/specs/004-dynamic-function-invocation/checklists\" ])",
+      "Bash(then find \"/Users/marcin.radoszewski/dev-allegro/viro/specs/004-dynamic-function-invocation/checklists\" -name \"*.md\" -type f)",
+      "Bash(git rev-parse:*)",
+      "Bash(xargs:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(echo \"print 10 + 5 * 2\nx: [1 2 3]\nprint first x\nquit\")"
     ],
     "deny": [],
     "ask": []

@@ -3,8 +3,9 @@ package contract_test
 import (
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/test/contract"
 )
 
 func TestUserFunctionEvalFalse(t *testing.T) {
@@ -16,20 +17,20 @@ func TestUserFunctionEvalFalse(t *testing.T) {
 		x: 42
 		result: get-raw x
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
 	// result should be x (the word), fetched with get-word
-	if result.Type != 4 { // TypeWord
-		t.Errorf("Expected word!, got type %d", result.Type)
+	if result.GetType() != 4 { // TypeWord
+		t.Errorf("Expected word!, got type %d", result.GetType())
 	}
-	wordStr, ok := result.AsWord()
+	wordStr, ok := value.AsWord(result)
 	if !ok || wordStr != "x" {
 		t.Errorf("Expected word 'x', got %v", wordStr)
 	}
@@ -47,29 +48,29 @@ func TestUserFunctionMixedEval(t *testing.T) {
 		]
 		result: type-check (2 + 2) (3 + 3)
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
 	// result should be a block containing two words: [integer! paren!]
-	if result.Type != 8 { // TypeBlock
-		t.Errorf("Expected block!, got %d", result.Type)
+	if result.GetType() != 8 { // TypeBlock
+		t.Errorf("Expected block!, got %d", result.GetType())
 	}
-	block, ok := result.AsBlock()
+	block, ok := value.AsBlock(result)
 	if !ok || len(block.Elements) != 2 {
 		t.Fatalf("Expected block of 2 elements, got %d", len(block.Elements))
 	}
 	// Both elements should be words (type names)
-	if block.Elements[0].Type != 4 { // TypeWord
-		t.Errorf("Expected word (type name), got %d", block.Elements[0].Type)
+	if block.Elements[0].GetType() != 4 { // TypeWord
+		t.Errorf("Expected word (type name), got %d", block.Elements[0].GetType())
 	}
-	if block.Elements[1].Type != 4 { // TypeWord
-		t.Errorf("Expected word (type name), got %d", block.Elements[1].Type)
+	if block.Elements[1].GetType() != 4 { // TypeWord
+		t.Errorf("Expected word (type name), got %d", block.Elements[1].GetType())
 	}
 }
 
@@ -79,12 +80,12 @@ func TestNativeIfEvalArgs(t *testing.T) {
 		result: if (x > 5) [x: 1] [x: 2]
 		final: x
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -93,10 +94,10 @@ func TestNativeIfEvalArgs(t *testing.T) {
 	if !found {
 		t.Fatal("x not found")
 	}
-	if final.Type != 2 { // TypeInteger
-		t.Errorf("Expected integer type, got %d", final.Type)
+	if final.GetType() != 2 { // TypeInteger
+		t.Errorf("Expected integer type, got %d", final.GetType())
 	}
-	ival, ok := final.AsInteger()
+	ival, ok := value.AsInteger(final)
 	if !ok || ival != 1 {
 		t.Errorf("Expected x = 1, got %v", ival)
 	}
@@ -112,12 +113,12 @@ func TestRefinementsAlwaysEvaluated(t *testing.T) {
 		result1: test-fn 1 2 --flag x
 		result2: test-fn 1 2 --flag y
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
@@ -132,11 +133,11 @@ func TestRefinementsAlwaysEvaluated(t *testing.T) {
 		t.Fatal("result2 not found")
 	}
 	// Both should return word "integer!" (the type name)
-	if result1.Type != 4 { // TypeWord
-		t.Errorf("Expected word (type name), got %d", result1.Type)
+	if result1.GetType() != 4 { // TypeWord
+		t.Errorf("Expected word (type name), got %d", result1.GetType())
 	}
-	if result2.Type != 4 { // TypeWord
-		t.Errorf("Expected word (type name), got %d", result2.Type)
+	if result2.GetType() != 4 { // TypeWord
+		t.Errorf("Expected word (type name), got %d", result2.GetType())
 	}
 }
 
@@ -145,14 +146,14 @@ func TestLitWordRefinementError(t *testing.T) {
 	code := `
 		quote-ref: fn ['--invalid] []
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		// If parser rejects it, that's also acceptable
 		return
 	}
 	// Should fail during fn execution (ParseParamSpecs)
-	_, evalErr := e.Do_Blk(vals)
+	_, evalErr := e.DoBlock(vals)
 	if evalErr == nil {
 		t.Error("Expected error for lit-word refinement, got nil")
 	}
@@ -166,18 +167,18 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 		result: f word
 		type? result
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
 	// Should return word! type
-	if result.Type != 4 { // TypeWord
-		t.Errorf("Expected word (type name 'word!'), got %d", result.Type)
+	if result.GetType() != 4 { // TypeWord
+		t.Errorf("Expected word (type name 'word!'), got %d", result.GetType())
 	}
 	if result.String() != "word!" {
 		t.Errorf("Expected 'word!', got '%s'", result.String())
@@ -190,19 +191,19 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 		result: inc inc inc inc 1
 		result
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr != nil {
 		t.Fatal(evalErr)
 	}
-	if result.Type != 2 { // TypeInteger
-		t.Fatalf("Expected integer result, got type %d", result.Type)
+	if result.GetType() != 2 { // TypeInteger
+		t.Fatalf("Expected integer result, got type %d", result.GetType())
 	}
-	ival, ok := result.AsInteger()
+	ival, ok := value.AsInteger(result)
 	if !ok {
 		t.Fatal("Failed to extract integer value")
 	}
@@ -216,15 +217,15 @@ func TestTypeQueryLitWordArgument(t *testing.T) {
 		f: fn ['w] [w]
 		type? f word
 	`
-	e := eval.NewEvaluator()
+	e := contract.NewTestEvaluator()
 	vals, err := parse.Parse(code)
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	if evalErr == nil {
-		if result.Type != 4 {
-			t.Fatalf("Expected word! result, got type %d", result.Type)
+		if result.GetType() != 4 {
+			t.Fatalf("Expected word! result, got type %d", result.GetType())
 		}
 		if result.String() != "word!" {
 			t.Errorf("Expected 'word!', got '%s'", result.String())

@@ -9,5 +9,6 @@
     "chat.tools.terminal.autoApprove": {
         ".specify/scripts/bash/": true,
         ".specify/scripts/ps/": true
-    }
+    },
+    "makefile.configureOnOpen": false
 }

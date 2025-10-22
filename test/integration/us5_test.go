@@ -5,12 +5,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func TestUS5_ErrorScenarios(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
@@ -89,7 +88,11 @@ func TestUS5_ErrorScenarios(t *testing.T) {
 		t.Fatalf("expected call stack frames inner and outer, got %q", errorOutput)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "1 + 1")); output != "2" {
-		t.Fatalf("after errors REPL should still evaluate expressions, expected 2 got %q", output)
+	// Test that REPL still works after errors
+	out.Reset()
+	loop.EvalLineForTest("1 + 1")
+	result := strings.TrimSpace(out.String())
+	if result != "2" {
+		t.Errorf("expected '2', got %q", result)
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // Port represents a unified I/O abstraction for files, TCP, and HTTP (Feature 002).
@@ -17,10 +19,10 @@ import (
 //
 // Per FR-007: unified abstraction with open/close/read/write/query operations
 type Port struct {
-	Scheme  string      // "file", "tcp", "http", "https"
-	Spec    string      // Original port specification (URL/path)
-	Driver  PortDriver  // Scheme-specific implementation
-	State   PortState   // Current lifecycle state
+	Scheme  string         // "file", "tcp", "http", "https"
+	Spec    string         // Original port specification (URL/path)
+	Driver  PortDriver     // Scheme-specific implementation
+	State   PortState      // Current lifecycle state
 	Timeout *time.Duration // Optional timeout (nil = OS default)
 }
 
@@ -29,8 +31,8 @@ type PortState int
 
 const (
 	PortClosed PortState = iota // Initial/final state
-	PortOpen                     // Ready for I/O operations
-	PortError                    // Error state (requires close/reopen)
+	PortOpen                    // Ready for I/O operations
+	PortError                   // Error state (requires close/reopen)
 )
 
 func (s PortState) String() string {
@@ -84,11 +86,11 @@ func PortVal(port *Port) Value {
 }
 
 // AsPort extracts the Port from a Value, or returns nil if wrong type.
-func (v Value) AsPort() (*Port, bool) {
-	if v.Type != TypePort {
+func AsPort(v core.Value) (*Port, bool) {
+	if v.GetType() != TypePort {
 		return nil, false
 	}
-	port, ok := v.Payload.(*Port)
+	port, ok := v.GetPayload().(*Port)
 	return port, ok
 }
 

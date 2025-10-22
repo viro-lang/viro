@@ -1,7 +1,10 @@
 package value
 
 import (
+	"fmt"
+
 	"github.com/ericlagergren/decimal"
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // DecimalValue represents high-precision decimal floating point values (Feature 002).
@@ -22,7 +25,7 @@ type DecimalValue struct {
 // NewDecimal creates a DecimalValue with default context (34-digit precision, half-even rounding).
 func NewDecimal(magnitude *decimal.Big, scale int16) *DecimalValue {
 	ctx := decimal.Context{
-		Precision:   34, // decimal128 target per FR-001
+		Precision:    34,                    // decimal128 target per FR-001
 		RoundingMode: decimal.ToNearestEven, // Banker's rounding per FR-003
 	}
 	return &DecimalValue{
@@ -38,6 +41,10 @@ func (d *DecimalValue) String() string {
 		return "0.0"
 	}
 	// Use scale to format with correct decimal places
+	if f, ok := d.Magnitude.Float64(); ok {
+		return fmt.Sprintf("%.*f", d.Scale, f)
+	}
+	// Fallback to scientific notation if conversion fails
 	return d.Magnitude.String()
 }
 
@@ -50,10 +57,10 @@ func DecimalVal(magnitude *decimal.Big, scale int16) Value {
 }
 
 // AsDecimal extracts the DecimalValue from a Value, or returns nil if wrong type.
-func (v Value) AsDecimal() (*DecimalValue, bool) {
-	if v.Type != TypeDecimal {
+func AsDecimal(v core.Value) (*DecimalValue, bool) {
+	if v.GetType() != TypeDecimal {
 		return nil, false
 	}
-	dec, ok := v.Payload.(*DecimalValue)
+	dec, ok := v.GetPayload().(*DecimalValue)
 	return dec, ok
 }

@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 )
 
@@ -13,7 +12,7 @@ import (
 // complete in under 10 milliseconds, complex expressions (nested function calls) complete
 // in under 100 milliseconds on standard hardware
 func TestSC005_PerformanceBaselines(t *testing.T) {
-	evaluator := eval.NewEvaluator()
+	evaluator := NewTestEvaluator()
 
 	// Test 1: Simple expression performance (target: <10ms)
 	t.Run("SimpleExpressions", func(t *testing.T) {
@@ -31,7 +30,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 			}
 
 			start := time.Now()
-			_, err = evaluator.Do_Blk(values)
+			_, err = evaluator.DoBlock(values)
 			elapsed := time.Since(start)
 
 			if err != nil {
@@ -91,7 +90,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 				}
 
 				start := time.Now()
-				_, err = evaluator.Do_Blk(values)
+				_, err = evaluator.DoBlock(values)
 				elapsed := time.Since(start)
 
 				if err != nil {
