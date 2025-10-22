@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
@@ -16,13 +17,13 @@ func TestHelpVariableArity(t *testing.T) {
 	t.Run("HelpWithNoArgs_DirectCall", func(t *testing.T) {
 		// Direct call to Help() with no args should work - shows categories
 		e := NewTestEvaluator()
-		result, err := native.Help([]value.Value{}, e)
+		result, err := native.Help([]core.Value{}, map[string]core.Value{}, e)
 		if err != nil {
 			t.Fatalf("Direct call Help() with no args failed: %v", err)
 		}
 
-		if result.Type != value.TypeNone {
-			t.Errorf("Expected none!, got %v", result.Type)
+		if result.GetType() != value.TypeNone {
+			t.Errorf("Expected none!, got %v", result.GetType())
 		}
 	})
 
@@ -41,8 +42,8 @@ func TestHelpVariableArity(t *testing.T) {
 			}
 		}
 
-		if val.Type != value.TypeNone {
-			t.Errorf("Expected none!, got %v", val.Type)
+		if val.GetType() != value.TypeNone {
+			t.Errorf("Expected none!, got %v", val.GetType())
 		}
 	})
 
@@ -53,8 +54,8 @@ func TestHelpVariableArity(t *testing.T) {
 			t.Fatalf("Eval error for '? append': %v", err)
 		}
 
-		if val.Type != value.TypeNone {
-			t.Errorf("Expected none!, got %v", val.Type)
+		if val.GetType() != value.TypeNone {
+			t.Errorf("Expected none!, got %v", val.GetType())
 		}
 	})
 
@@ -73,8 +74,8 @@ func TestHelpVariableArity(t *testing.T) {
 		}
 
 		// Should return none regardless
-		if val.Type != value.TypeNone {
-			t.Errorf("Expected none! even on error, got %v", val.Type)
+		if val.GetType() != value.TypeNone {
+			t.Errorf("Expected none! even on error, got %v", val.GetType())
 		}
 	})
 
@@ -85,8 +86,8 @@ func TestHelpVariableArity(t *testing.T) {
 			t.Fatalf("Eval error: %v", err)
 		}
 
-		if val.Type != value.TypeNone {
-			t.Errorf("Expected none!, got %v", val.Type)
+		if val.GetType() != value.TypeNone {
+			t.Errorf("Expected none!, got %v", val.GetType())
 		}
 	})
 }
@@ -106,12 +107,12 @@ func TestHelpDocumentationMatchesImplementation(t *testing.T) {
 	t.Run("DirectCallSupportsNoArgs", func(t *testing.T) {
 		// The Help function itself supports 0 args (for REPL shortcut)
 		e := NewTestEvaluator()
-		result, err := native.Help([]value.Value{}, e)
+		result, err := native.Help([]core.Value{}, map[string]core.Value{}, e)
 		if err != nil {
 			t.Errorf("Direct Help() call with 0 args should work: %v", err)
 		}
-		if result.Type != value.TypeNone {
-			t.Errorf("Expected none!, got %v", result.Type)
+		if result.GetType() != value.TypeNone {
+			t.Errorf("Expected none!, got %v", result.GetType())
 		}
 	})
 }

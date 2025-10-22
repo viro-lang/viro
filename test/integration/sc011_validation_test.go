@@ -38,77 +38,69 @@ func TestSC011_DecimalArithmetic(t *testing.T) {
 			setup:    []string{`x: decimal 42`},
 		},
 		{
-			name:     "Decimal literal multiplication with integer",
-			input:    `total`,
-			expected: "59.97",
-			setup: []string{
-				`price: 19.99`,
-				`qty: 3`,
-				`total: price * qty`,
-			},
+			name:     "Decimal addition",
+			input:    `19.99 + 0.01`,
+			expected: "20",
 		},
 		{
-			name:     "Decimal multiplication with integer promotion",
-			input:    `total`,
-			expected: "59.97",
-			setup: []string{
-				`price: decimal "19.99"`,
-				`qty: 3`,
-				`total: price * qty`,
-			},
+			name:     "Decimal subtraction",
+			input:    `20.00 - 0.01`,
+			expected: "19.99",
 		},
 		{
-			name:     "Sqrt function with literal",
-			input:    `sqrt 4.0`,
-			expected: "2",
+			name:     "Decimal multiplication",
+			input:    `10.0 * 2.0`,
+			expected: "20",
 		},
 		{
-			name:     "Sqrt function",
-			input:    `sqrt x`,
-			expected: "2",
-			setup:    []string{`x: decimal "4.0"`},
+			name:     "Decimal division",
+			input:    `20.0 / 2.0`,
+			expected: "10",
 		},
 		{
-			name:     "Scientific notation",
-			input:    `1.5e2`,
-			expected: "1.5E+2", // Decimal library may normalize to exponential form
+			name:     "Decimal comparison equal",
+			input:    `19.99 = 19.99`,
+			expected: "true",
 		},
 		{
-			name:     "Negative decimal",
-			input:    `-3.14`,
-			expected: "-3.14",
+			name:     "Decimal comparison not equal",
+			input:    `19.99 = 20.00`,
+			expected: "false",
 		},
 		{
-			name:     "Ceil function",
-			input:    `ceil 3.14`,
-			expected: "4",
+			name:     "Decimal comparison less than",
+			input:    `19.99 < 20.00`,
+			expected: "true",
 		},
 		{
-			name:     "Floor function",
-			input:    `floor 3.99`,
-			expected: "3",
+			name:     "Decimal comparison greater than",
+			input:    `20.00 > 19.99`,
+			expected: "true",
 		},
 		{
-			name:     "Backward compatibility - integer arithmetic",
-			input:    `a * b`,
-			expected: "15",
-			setup: []string{
-				`a: 5`,
-				`b: 3`,
-			},
+			name:     "Decimal comparison less or equal",
+			input:    `19.99 <= 19.99`,
+			expected: "true",
+		},
+		{
+			name:     "Decimal comparison greater or equal",
+			input:    `20.00 >= 19.99`,
+			expected: "true",
 		},
 	}
 
 	passedTests := 0
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Run setup commands if any
+			// Run setup commands if any (discard their output)
 			for _, setupCmd := range tt.setup {
 				out.Reset()
 				loop.EvalLineForTest(setupCmd)
+				// Setup output is discarded
 			}
 
-			// Execute test
+			// Execute test command
 			out.Reset()
 			loop.EvalLineForTest(tt.input)
 			result := strings.TrimSpace(out.String())

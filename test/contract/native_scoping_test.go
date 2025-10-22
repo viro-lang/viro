@@ -3,18 +3,17 @@ package contract_test
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/test/contract"
 )
 
-// T009: Test that refinements can use native names without errors
-// This validates User Story 1: Define Functions with Names Matching Natives
 func TestRefinementWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -71,7 +70,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -90,12 +89,11 @@ func TestRefinementWithNativeName(t *testing.T) {
 	}
 }
 
-// T009: Test that local variables can use native names without conflicts
 func TestLocalVariableWithNativeName(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -174,7 +172,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -193,12 +191,11 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 	}
 }
 
-// T010: Test that nested scopes follow lexical scoping rules
 func TestNestedScopeShadowing(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -303,7 +300,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -322,9 +319,6 @@ func TestNestedScopeShadowing(t *testing.T) {
 	}
 }
 
-// Verify that native functions are still accessible via the registry
-// This test should pass initially (with registry), then fail when we remove native.Lookup(),
-// then pass again after we implement frame-based lookup
 func TestNativeFunctionsAccessible(t *testing.T) {
 	e := contract.NewTestEvaluator()
 
@@ -332,7 +326,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 	tests := []struct {
 		name     string
 		code     string
-		expected value.Value
+		expected core.Value
 	}{
 		{"math add", "3 + 4", value.IntVal(7)},
 		{"math multiply", "5 * 6", value.IntVal(30)},
@@ -346,7 +340,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, evalErr := e.DoBlock(tokens)
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
@@ -369,8 +363,8 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 		if !found {
 			t.Errorf("native '%s' should be in root frame", name)
 		}
-		if val.Type != value.TypeFunction {
-			t.Errorf("native '%s' should be a function, got type %v", name, val.Type)
+		if val.GetType() != value.TypeFunction {
+			t.Errorf("native '%s' should be a function, got type %v", name, value.TypeToString(val.GetType()))
 		}
 	}
 }

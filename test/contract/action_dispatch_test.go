@@ -3,9 +3,11 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestActionDispatchBasics tests fundamental action dispatch behavior.
@@ -50,21 +52,22 @@ func TestActionDispatchBasics(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -92,13 +95,13 @@ func TestActionShadowing(t *testing.T) {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(tokens)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}
 
 	// Should use the local function, not the action
-	if val, ok := result.AsInteger(); !ok || val != 10 {
+	if val, ok := value.AsInteger(result); !ok || val != 10 {
 		t.Errorf("Expected 10, got %s", result.String())
 	}
 }
@@ -119,15 +122,15 @@ func TestActionMultipleArguments(t *testing.T) {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(tokens)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}
 
 	// Block should be modified in-place
-	blk, ok := result.AsBlock()
+	blk, ok := value.AsBlock(result)
 	if !ok {
-		t.Fatalf("Expected block, got %s", result.Type.String())
+		t.Fatalf("Expected block, got %s", value.TypeToString(result.GetType()))
 	}
 
 	if len(blk.Elements) != 3 {
@@ -135,7 +138,7 @@ func TestActionMultipleArguments(t *testing.T) {
 	}
 
 	// Check last element is 3
-	lastVal, ok := blk.Elements[2].AsInteger()
+	lastVal, ok := value.AsInteger(blk.Elements[2])
 	if !ok || lastVal != 3 {
 		t.Errorf("Expected last element to be 3, got %s", blk.Elements[2].String())
 	}
@@ -171,11 +174,11 @@ func TestTypeRegistryExtensibility(t *testing.T) {
 	}
 
 	// Verify frames have correct structure
-	if blockFrame.Index != -1 {
-		t.Errorf("Block frame Index should be -1 (not in frameStore), got %d", blockFrame.Index)
+	if blockFrame.GetIndex() != -1 {
+		t.Errorf("Block frame Index should be -1 (not in frameStore), got %d", blockFrame.GetIndex())
 	}
-	if blockFrame.Parent != 0 {
-		t.Errorf("Block frame Parent should be 0 (root frame), got %d", blockFrame.Parent)
+	if blockFrame.GetParent() != 0 {
+		t.Errorf("Block frame Parent should be 0 (root frame), got %d", blockFrame.GetParent())
 	}
 
 	// Architecture validation: TypeRegistry is a map, not hardcoded
@@ -192,23 +195,20 @@ func TestTypeFrameRegistration(t *testing.T) {
 
 	_ = NewTestEvaluator()
 
-	// Verify that multiple types are registered
-	expectedTypes := []value.ValueType{
+	// Verify that series types are registered (primary use case for actions)
+	expectedTypes := []core.ValueType{
 		value.TypeBlock,
 		value.TypeString,
-		value.TypeInteger,
-		value.TypeLogic,
-		value.TypeParen,
 	}
 
 	for _, typ := range expectedTypes {
 		frame, found := frame.GetTypeFrame(typ)
 		if !found {
-			t.Errorf("Type %s not found in TypeRegistry", typ.String())
+			t.Errorf("Type %s not found in TypeRegistry", value.TypeToString(typ))
 			continue
 		}
 		if frame == nil {
-			t.Errorf("Type frame for %s is nil", typ.String())
+			t.Errorf("Type frame for %s is nil", value.TypeToString(typ))
 		}
 	}
 

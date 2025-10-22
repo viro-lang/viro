@@ -1,6 +1,7 @@
 package stack
 
 import (
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -42,7 +43,7 @@ func (s *Stack) NewFrame(fn *value.FunctionValue, argCount int) int {
 	s.Push(value.FuncVal(fn))                   // Function metadata
 
 	// Push placeholder none values for arguments (caller will set)
-	for i := 0; i < argCount; i++ {
+	for range argCount {
 		s.Push(value.NoneVal())
 	}
 
@@ -54,7 +55,7 @@ func (s *Stack) NewFrame(fn *value.FunctionValue, argCount int) int {
 
 // DestroyFrame unwinds the current frame and restores prior frame.
 // Returns the return value from the frame.
-func (s *Stack) DestroyFrame() value.Value {
+func (s *Stack) DestroyFrame() core.Value {
 	if s.CurrentFrame == -1 {
 		panic("no active frame to destroy")
 	}
@@ -64,7 +65,7 @@ func (s *Stack) DestroyFrame() value.Value {
 
 	// Get prior frame index
 	priorFrameVal := s.Get(s.CurrentFrame + FrameOffsetPrior)
-	priorFrame, ok := priorFrameVal.AsInteger()
+	priorFrame, ok := value.AsInteger(priorFrameVal)
 	if !ok {
 		panic("corrupted frame: invalid prior frame index")
 	}
@@ -80,7 +81,7 @@ func (s *Stack) DestroyFrame() value.Value {
 
 // GetFrameArg retrieves an argument from the current frame.
 // argIndex is 0-based (0 = first argument).
-func (s *Stack) GetFrameArg(argIndex int) value.Value {
+func (s *Stack) GetFrameArg(argIndex int) core.Value {
 	if s.CurrentFrame == -1 {
 		panic("no active frame")
 	}
@@ -89,7 +90,7 @@ func (s *Stack) GetFrameArg(argIndex int) value.Value {
 
 // SetFrameArg sets an argument in the current frame.
 // argIndex is 0-based.
-func (s *Stack) SetFrameArg(argIndex int, v value.Value) {
+func (s *Stack) SetFrameArg(argIndex int, v core.Value) {
 	if s.CurrentFrame == -1 {
 		panic("no active frame")
 	}
@@ -97,7 +98,7 @@ func (s *Stack) SetFrameArg(argIndex int, v value.Value) {
 }
 
 // GetFrameReturn retrieves the return value slot.
-func (s *Stack) GetFrameReturn() value.Value {
+func (s *Stack) GetFrameReturn() core.Value {
 	if s.CurrentFrame == -1 {
 		panic("no active frame")
 	}
@@ -105,7 +106,7 @@ func (s *Stack) GetFrameReturn() value.Value {
 }
 
 // SetFrameReturn sets the return value for the current frame.
-func (s *Stack) SetFrameReturn(v value.Value) {
+func (s *Stack) SetFrameReturn(v core.Value) {
 	if s.CurrentFrame == -1 {
 		panic("no active frame")
 	}
@@ -118,7 +119,7 @@ func (s *Stack) GetFrameFunction() *value.FunctionValue {
 		panic("no active frame")
 	}
 	fnVal := s.Get(s.CurrentFrame + FrameOffsetFunction)
-	fn, ok := fnVal.AsFunction()
+	fn, ok := value.AsFunction(fnVal)
 	if !ok {
 		panic("corrupted frame: invalid function metadata")
 	}
@@ -144,13 +145,13 @@ func (s *Stack) CaptureCallStack() []string {
 	for frameIdx != -1 {
 		// Get function from frame
 		fnVal := s.Get(frameIdx + FrameOffsetFunction)
-		if fn, ok := fnVal.AsFunction(); ok {
+		if fn, ok := value.AsFunction(fnVal); ok {
 			calls = append(calls, fn.Name)
 		}
 
 		// Get prior frame
 		priorVal := s.Get(frameIdx + FrameOffsetPrior)
-		if priorInt, ok := priorVal.AsInteger(); ok {
+		if priorInt, ok := value.AsInteger(priorVal); ok {
 			frameIdx = int(priorInt)
 		} else {
 			break

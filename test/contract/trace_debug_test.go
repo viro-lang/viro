@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -16,8 +17,8 @@ func TestTraceControls(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectType value.ValueType
-		checkFunc  func(*testing.T, value.Value)
+		expectType core.ValueType
+		checkFunc  func(*testing.T, core.Value)
 		wantErr    bool
 	}{
 		{
@@ -36,8 +37,8 @@ func TestTraceControls(t *testing.T) {
 			name:       "query trace status with trace?",
 			code:       "trace --on\ntrace?",
 			expectType: value.TypeLogic, // Returns boolean indicating trace state
-			checkFunc: func(t *testing.T, v value.Value) {
-				enabled, ok := v.AsLogic()
+			checkFunc: func(t *testing.T, v core.Value) {
+				enabled, ok := value.AsLogic(v)
 				if !ok {
 					t.Fatal("expected trace? to return boolean!")
 				}
@@ -51,9 +52,9 @@ func TestTraceControls(t *testing.T) {
 			name:       "trace? when disabled",
 			code:       "trace?",
 			expectType: value.TypeLogic,
-			checkFunc: func(t *testing.T, v value.Value) {
+			checkFunc: func(t *testing.T, v core.Value) {
 				// Should return false when disabled
-				enabled, ok := v.AsLogic()
+				enabled, ok := value.AsLogic(v)
 				if !ok {
 					t.Fatal("expected trace? to return boolean!")
 				}
@@ -86,8 +87,8 @@ func TestTraceControls(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.GetType())
 			}
 
 			if tt.checkFunc != nil {
@@ -153,8 +154,10 @@ func TestTraceFiltering(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != tt.errCat {
-					t.Errorf("expected error category %v, got %v", tt.errCat, err.Category)
+				if vErr, ok := err.(*verror.Error); ok {
+					if vErr.Category != tt.errCat {
+						t.Errorf("expected error category %v, got %v", tt.errCat, vErr.Category)
+					}
 				}
 				return
 			}
@@ -213,8 +216,10 @@ func TestTraceSinkConfiguration(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != tt.errCat {
-					t.Errorf("expected error category %v, got %v", tt.errCat, err.Category)
+				if vErr, ok := err.(*verror.Error); ok {
+					if vErr.Category != tt.errCat {
+						t.Errorf("expected error category %v, got %v", tt.errCat, vErr.Category)
+					}
 				}
 				return
 			}
@@ -287,11 +292,13 @@ func TestDebugBreakpoints(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
-				}
-				if tt.errMsg != "" && !strings.Contains(strings.ToLower(err.Message), tt.errMsg) {
-					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Message)
+				if vErr, ok := err.(*verror.Error); ok {
+					if vErr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", vErr.Category)
+					}
+					if tt.errMsg != "" && !strings.Contains(strings.ToLower(vErr.Message), tt.errMsg) {
+						t.Errorf("expected error message to contain %q, got %q", tt.errMsg, vErr.Message)
+					}
 				}
 				return
 			}
@@ -345,8 +352,10 @@ func TestDebugStepping(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				if vErr, ok := err.(*verror.Error); ok {
+					if vErr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", vErr.Category)
+					}
 				}
 				return
 			}
@@ -363,7 +372,7 @@ func TestDebugInspection(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectType value.ValueType
+		expectType core.ValueType
 		wantErr    bool
 	}{
 		{
@@ -404,8 +413,10 @@ func TestDebugInspection(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				if vErr, ok := err.(*verror.Error); ok {
+					if vErr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", vErr.Category)
+					}
 				}
 				return
 			}
@@ -414,8 +425,8 @@ func TestDebugInspection(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != tt.expectType {
-				t.Errorf("expected type %v, got %v", tt.expectType, result.Type)
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", tt.expectType, result.GetType())
 			}
 		})
 	}

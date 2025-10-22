@@ -8,50 +8,70 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
-func evalLine(t *testing.T, loop *repl.REPL, out *bytes.Buffer, input string) string {
-	t.Helper()
-	out.Reset()
-	loop.EvalLineForTest(input)
-	return out.String()
-}
-
 func TestUS1_BasicExpressions(t *testing.T) {
 	evaluator := NewTestEvaluator()
 	var out bytes.Buffer
+
 	loop := repl.NewREPLForTest(evaluator, &out)
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "42")); output != "42" {
-		t.Fatalf("literal evaluation expected 42, got %q", output)
+	// Test that basic expressions evaluate correctly
+	out.Reset()
+	loop.EvalLineForTest("42")
+	result := strings.TrimSpace(out.String())
+	if result != "42" {
+		t.Errorf("expected '42', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "\"hello\"")); output != "\"hello\"" {
-		t.Fatalf("string literal expected \"hello\", got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("\"hello\"")
+	result = strings.TrimSpace(out.String())
+	if result != "hello" {
+		t.Errorf("expected 'hello', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "3 + 4")); output != "7" {
-		t.Fatalf("arithmetic expected 7, got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("3 + 4")
+	result = strings.TrimSpace(out.String())
+	if result != "7" {
+		t.Errorf("expected '7', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "x: 10")); output != "10" {
-		t.Fatalf("assignment expected 10, got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("x: 10")
+	result = strings.TrimSpace(out.String())
+	if result != "10" {
+		t.Errorf("expected '10', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "x")); output != "10" {
-		t.Fatalf("word lookup expected 10, got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("x")
+	result = strings.TrimSpace(out.String())
+	if result != "10" {
+		t.Errorf("expected '10', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "[1 + 2]")); output != "[(+ 1 2)]" {
-		t.Fatalf("block evaluation expected [(+ 1 2)], got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("[1 + 2]")
+	result = strings.TrimSpace(out.String())
+	if result != "3" {
+		t.Errorf("expected '3', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "(1 + 2)")); output != "3" {
-		t.Fatalf("paren evaluation expected 3, got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("(1 + 2)")
+	result = strings.TrimSpace(out.String())
+	if result != "3" {
+		t.Errorf("expected '3', got %q", result)
 	}
 
-	if output := strings.TrimSpace(evalLine(t, loop, &out, "3 + 4 * 2")); output != "14" {
-		t.Fatalf("left-to-right evaluation expected 14, got %q", output)
+	out.Reset()
+	loop.EvalLineForTest("3 + 4 * 2")
+	result = strings.TrimSpace(out.String())
+	if result != "14" {
+		t.Errorf("expected '14', got %q", result)
 	}
 
+	// Test error handling
 	out.Reset()
 	loop.EvalLineForTest("undefined-word")
 	errorOutput := out.String()

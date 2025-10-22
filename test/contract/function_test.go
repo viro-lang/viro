@@ -3,10 +3,10 @@ package contract
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func TestFunction_Definition(t *testing.T) {
@@ -16,7 +16,7 @@ func TestFunction_Definition(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		fn, ok := result.AsFunction()
+		fn, ok := value.AsFunction(result)
 		if !ok {
 			t.Fatalf("expected function value, got %v", result)
 		}
@@ -38,8 +38,8 @@ func TestFunction_Definition(t *testing.T) {
 		if fn.Body == nil || len(fn.Body.Elements) != 1 {
 			t.Fatalf("expected body with one element, got %+v", fn.Body)
 		}
-		if fn.Body.Elements[0].Type != value.TypeParen {
-			t.Fatalf("expected first body element to be paren, got %v", fn.Body.Elements[0].Type)
+		if fn.Body.Elements[0].GetType() != value.TypeParen {
+			t.Fatalf("expected first body element to be paren, got %v", fn.Body.Elements[0].GetType())
 		}
 	})
 
@@ -64,7 +64,7 @@ func TestFunction_Call(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  value.Value
+		want  core.Value
 	}{
 		{
 			name: "single positional argument",
@@ -170,7 +170,7 @@ with-title`
 	if !ok {
 		t.Fatalf("expected no-title binding")
 	}
-	if noTitle.Type != value.TypeNone {
+	if noTitle.GetType() != value.TypeNone {
 		t.Fatalf("expected value refinement default none, got %v", noTitle)
 	}
 }
@@ -203,7 +203,7 @@ second`
 	if !ok {
 		t.Fatalf("expected third binding")
 	}
-	if third.Type != value.TypeNone {
+	if third.GetType() != value.TypeNone {
 		t.Fatalf("expected third call result none when no refinements, got %v", third)
 	}
 }
@@ -241,18 +241,18 @@ fact 5`)
 	}
 }
 
-func evalScriptWithEvaluator(src string) (*eval.Evaluator, value.Value, *verror.Error) {
+func evalScriptWithEvaluator(src string) (*eval.Evaluator, core.Value, error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
 		return nil, value.NoneVal(), err
 	}
 
 	e := NewTestEvaluator()
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 	return e, result, evalErr
 }
 
-func getGlobal(e *eval.Evaluator, name string) (value.Value, bool) {
+func getGlobal(e *eval.Evaluator, name string) (core.Value, bool) {
 	if len(e.Frames) == 0 {
 		return value.NoneVal(), false
 	}

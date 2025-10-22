@@ -3,13 +3,14 @@ package native_test
 import (
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 func TestParseParamSpecs_EvalFlag(t *testing.T) {
 	block := &value.BlockValue{
-		Elements: []value.Value{
+		Elements: []core.Value{
 			value.WordVal("a"),
 			value.LitWordVal("b"),
 			value.WordVal("c"),
@@ -29,7 +30,7 @@ func TestParseParamSpecs_EvalFlag(t *testing.T) {
 
 func TestParseParamSpecs_LitWordRefinementError(t *testing.T) {
 	block := &value.BlockValue{
-		Elements: []value.Value{
+		Elements: []core.Value{
 			value.LitWordVal("--flag"),
 		},
 	}

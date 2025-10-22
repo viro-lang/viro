@@ -4,15 +4,14 @@ package native
 import (
 	"fmt"
 
-	"github.com/marcin-radoszewski/viro/internal/frame"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // RegisterIONatives registers all I/O and port-related native functions to the root frame.
 //
 // Panics if any function is nil or if a duplicate name is detected during registration.
-func RegisterIONatives(rootFrame *frame.Frame) {
+func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
@@ -33,19 +32,19 @@ func RegisterIONatives(rootFrame *frame.Frame) {
 	}
 
 	// Helper function to wrap simple I/O functions (no evaluator needed)
-	registerSimpleIOFunc := func(name string, impl func([]value.Value) (value.Value, *verror.Error), arity int, doc *NativeDoc) {
+	registerSimpleIOFunc := func(name string, impl core.NativeFunc, arity int, doc *NativeDoc) {
 		// Extract parameter names from existing documentation
 		params := make([]value.ParamSpec, arity)
 
 		if doc != nil && len(doc.Parameters) == arity {
 			// Use parameter names from documentation
-			for i := 0; i < arity; i++ {
+			for i := range arity {
 				params[i] = value.NewParamSpec(doc.Parameters[i].Name, true)
 			}
 		} else {
 			// Fallback to generic names if documentation is missing or mismatched
 			paramNames := []string{"value", "source", "target", "file", "spec", "data", "port"}
-			for i := 0; i < arity; i++ {
+			for i := range arity {
 				if i < len(paramNames) {
 					params[i] = value.NewParamSpec(paramNames[i], true)
 				} else {
@@ -54,49 +53,36 @@ func RegisterIONatives(rootFrame *frame.Frame) {
 			}
 		}
 
-		fn := value.NewNativeFunction(
+		registerAndBind(name, value.NewNativeFunction(
 			name,
 			params,
-			func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-				result, err := impl(args)
-				if err == nil {
-					return result, nil
-				}
-				return result, err
-			},
-		)
-		fn.Doc = doc
-		registerAndBind(name, fn)
+			impl,
+			false,
+			doc,
+		))
 	}
 
 	// ===== Group 8: I/O operations (2 functions - print needs evaluator) =====
-	fn := value.NewNativeFunction(
+	registerAndBind("print", value.NewNativeFunction(
 		"print",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true), // evaluated
 		},
-		func(args []value.Value, refValues map[string]value.Value, eval value.Evaluator) (value.Value, error) {
-			reverseAdapter := &nativeEvaluatorAdapter{eval}
-			result, err := Print(args, refValues, reverseAdapter.unwrap())
-			if err == nil {
-				return result, nil
-			}
-			return result, err
-		},
-	)
-	fn.Doc = &NativeDoc{
-		Category: "I/O",
-		Summary:  "Prints a value to standard output",
-		Description: `Evaluates and prints a value to standard output, followed by a newline.
+		Print,
+		false,
+		&NativeDoc{
+			Category: "I/O",
+			Summary:  "Prints a value to standard output",
+			Description: `Evaluates and prints a value to standard output, followed by a newline.
 Blocks are formatted with spaces between elements. Returns none.`,
-		Parameters: []ParamDoc{
-			{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
+			},
+			Returns:  "[none!] Always returns none",
+			Examples: []string{`print "Hello, world!"  ; prints: Hello, world!`, "print 42  ; prints: 42", "print [1 2 3]  ; prints: 1 2 3"},
+			SeeAlso:  []string{"input"}, Tags: []string{"io", "output", "print", "display"},
 		},
-		Returns:  "[none!] Always returns none",
-		Examples: []string{`print "Hello, world!"  ; prints: Hello, world!`, "print 42  ; prints: 42", "print [1 2 3]  ; prints: 1 2 3"},
-		SeeAlso:  []string{"input"}, Tags: []string{"io", "output", "print", "display"},
-	}
-	registerAndBind("print", fn)
+	))
 
 	registerSimpleIOFunc("input", Input, 0, &NativeDoc{
 		Category: "I/O",
@@ -137,19 +123,36 @@ After closing, the port should not be used for further I/O operations. Returns n
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "close", "cleanup"},
 	})
 
-	registerSimpleIOFunc("read", ReadNative, 1, &NativeDoc{
-		Category: "Ports",
-		Summary:  "Reads data from a port or file",
-		Description: `Reads all data from a port or directly from a file path.
-If given a port, reads from that open port. If given a string (file path),
-opens the file, reads its contents, and closes it automatically. Returns the data as a string.`,
-		Parameters: []ParamDoc{
-			{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
+	registerAndBind("read", value.NewNativeFunction(
+		"read",
+		[]value.ParamSpec{
+			value.NewParamSpec("source", true),       // evaluated
+			value.NewRefinementSpec("binary", false), // --binary flag
 		},
-		Returns:  "[string!] The data read from the source",
-		Examples: []string{`content: read "file://data.txt"  ; read entire file`, `p: open "file://data.txt"\ndata: read p\nclose p`},
-		SeeAlso:  []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file"},
-	})
+		ReadNative,
+		false,
+		&NativeDoc{
+			Category: "Ports",
+			Summary:  "Reads data from a port or file",
+			Description: `Reads all data from a port or directly from a file path.
+If given a port, reads from that open port. If given a string (file path),
+opens the file, reads its contents, and closes it automatically.
+Returns the data as a string by default, or as binary! when --binary is used.
+
+Refinements:
+  --binary: Return data as binary! instead of string!`,
+			Parameters: []ParamDoc{
+				{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
+			},
+			Returns: "[string! binary!] The data read from the source",
+			Examples: []string{
+				`content: read "file://data.txt"  ; read as string`,
+				`data: read --binary "file://image.png"  ; read as binary`,
+				`p: open "file://data.txt"\ndata: read p\nclose p`,
+			},
+			SeeAlso: []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file", "binary"},
+		},
+	))
 
 	registerSimpleIOFunc("write", WriteNative, 2, &NativeDoc{
 		Category: "Ports",
@@ -221,4 +224,13 @@ Returns the port that became ready, or none if a timeout occurred.`,
 		Examples: []string{"wait 2  ; wait for 2 seconds", "wait 0.5  ; wait for half a second", `p: open "file://data.txt"\nwait p  ; wait until port is ready`},
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "wait", "delay", "timeout"},
 	})
+
+	// Create and bind standard I/O ports
+	stdoutPort := value.NewPort("stdio", "stdout", &stdioWriterDriver{writer: eval.GetOutputWriter()})
+	stderrPort := value.NewPort("stdio", "stderr", &stdioWriterDriver{writer: eval.GetErrorWriter()})
+	stdinPort := value.NewPort("stdio", "stdin", &stdioReaderDriver{reader: eval.GetInputReader()})
+
+	rootFrame.Bind("stdout", value.PortVal(stdoutPort))
+	rootFrame.Bind("stderr", value.PortVal(stderrPort))
+	rootFrame.Bind("stdin", value.PortVal(stdinPort))
 }

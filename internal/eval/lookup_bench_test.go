@@ -11,10 +11,10 @@ import (
 // Natives are stored in the root frame, so this tests root frame lookup performance.
 func BenchmarkLookupNative(b *testing.B) {
 	e := NewEvaluator()
-	b.ResetTimer()
+
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, ok := e.Lookup("+")
 		if !ok {
 			b.Fatal("native + not found")
@@ -43,10 +43,9 @@ func BenchmarkLookupNativeFromNested(b *testing.B) {
 	frame3.Bind("z", value.IntVal(3))
 	e.pushFrame(frame3)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, ok := e.Lookup("+")
 		if !ok {
 			b.Fatal("native + not found from nested scope")
@@ -67,10 +66,9 @@ func BenchmarkLookupUserDefined(b *testing.B) {
 	userFrame.Bind("y", value.LogicVal(true))
 	e.pushFrame(userFrame)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, ok := e.Lookup("myVar")
 		if !ok {
 			b.Fatal("user variable myVar not found")
@@ -95,10 +93,9 @@ func BenchmarkLookupUserDefinedFromParent(b *testing.B) {
 	childFrame.Bind("childVar", value.IntVal(200))
 	e.pushFrame(childFrame)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, ok := e.Lookup("parentVar")
 		if !ok {
 			b.Fatal("parent variable not found")

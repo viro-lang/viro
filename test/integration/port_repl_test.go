@@ -20,8 +20,8 @@ func TestPortNativesInREPL(t *testing.T) {
 	native.SandboxRoot = tmpDir
 
 	evaluator := NewTestEvaluator()
-	var out bytes.Buffer
-	loop := repl.NewREPLForTest(evaluator, &out)
+	var errOut bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &errOut)
 
 	tests := []struct {
 		name     string
@@ -38,7 +38,7 @@ func TestPortNativesInREPL(t *testing.T) {
 		{
 			name:     "Read from file",
 			input:    `read "data.txt"`,
-			contains: "\"Test data\"", // string values are quoted in REPL
+			contains: "Test data", // string values are not quoted in REPL Form output
 			setup: []string{
 				`write "data.txt" "Test data"`,
 			},
@@ -58,14 +58,15 @@ func TestPortNativesInREPL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Run setup commands
 			for _, setupCmd := range tt.setup {
-				out.Reset()
+				errOut.Reset()
 				loop.EvalLineForTest(setupCmd)
+				// Setup output is discarded
 			}
 
 			// Execute test
-			out.Reset()
+			errOut.Reset()
 			loop.EvalLineForTest(tt.input)
-			result := strings.TrimSpace(out.String())
+			result := strings.TrimSpace(errOut.String())
 
 			if !strings.Contains(result, tt.contains) {
 				t.Errorf("%s: expected to contain %q, got %q", tt.name, tt.contains, result)

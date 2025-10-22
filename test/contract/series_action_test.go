@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // TestActionFirst tests the 'first' action on blocks and strings.
@@ -39,21 +40,22 @@ func TestActionFirst(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -98,21 +100,22 @@ func TestActionLast(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -156,21 +159,22 @@ func TestActionAppend(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -214,21 +218,22 @@ func TestActionInsert(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 
@@ -272,21 +277,22 @@ func TestActionLength(t *testing.T) {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.Do_Blk(tokens)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
-				if evalErr == nil {
+				if err == nil {
 					t.Errorf("Expected error with ID %s, got nil", tt.errID)
 					return
 				}
+				evalErr := err.(*verror.Error)
 				if evalErr.ID != tt.errID {
 					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
 				}
 				return
 			}
 
-			if evalErr != nil {
-				t.Errorf("Unexpected error: %v", evalErr)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 

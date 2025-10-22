@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -335,26 +336,84 @@ func (d *httpDriver) Query() (map[string]interface{}, error) {
 	}, nil
 }
 
+// stdioWriterDriver implements PortDriver for standard output/error streams
+type stdioWriterDriver struct {
+	writer io.Writer
+}
+
+func (d *stdioWriterDriver) Open(ctx context.Context, spec string) error {
+	// Always open - stdio streams are always available
+	return nil
+}
+
+func (d *stdioWriterDriver) Read(buf []byte) (int, error) {
+	return 0, fmt.Errorf("stdio writer does not support reading")
+}
+
+func (d *stdioWriterDriver) Write(buf []byte) (int, error) {
+	return d.writer.Write(buf)
+}
+
+func (d *stdioWriterDriver) Close() error {
+	// Cannot close stdio streams
+	return nil
+}
+
+func (d *stdioWriterDriver) Query() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "stdio-writer",
+	}, nil
+}
+
+// stdioReaderDriver implements PortDriver for standard input stream
+type stdioReaderDriver struct {
+	reader io.Reader
+}
+
+func (d *stdioReaderDriver) Open(ctx context.Context, spec string) error {
+	// Always open - stdio streams are always available
+	return nil
+}
+
+func (d *stdioReaderDriver) Read(buf []byte) (int, error) {
+	return d.reader.Read(buf)
+}
+
+func (d *stdioReaderDriver) Write(buf []byte) (int, error) {
+	return 0, fmt.Errorf("stdio reader does not support writing")
+}
+
+func (d *stdioReaderDriver) Close() error {
+	// Cannot close stdio streams
+	return nil
+}
+
+func (d *stdioReaderDriver) Query() (map[string]interface{}, error) {
+	return map[string]interface{}{
+		"type": "stdio-reader",
+	}, nil
+}
+
 // Port native functions (T065-T072)
 
 // OpenPort implements the `open` native for Feature 002.
 // T065: Scheme dispatch and refinement handling
-func OpenPort(spec string, opts map[string]value.Value) (value.Value, error) {
+func OpenPort(spec string, opts map[string]core.Value) (core.Value, error) {
 	// Parse options
 	var timeout *time.Duration
 	insecure := false
 
 	if opts != nil {
 		if timeoutVal, ok := opts["timeout"]; ok {
-			if timeoutVal.Type == value.TypeInteger {
-				ms := timeoutVal.Payload.(int64)
+			if timeoutVal.GetType() == value.TypeInteger {
+				ms, _ := value.AsInteger(timeoutVal)
 				dur := time.Duration(ms) * time.Millisecond
 				timeout = &dur
 			}
 		}
 		if insecureVal, ok := opts["insecure"]; ok {
-			if insecureVal.Type == value.TypeLogic {
-				insecure = insecureVal.Payload.(bool)
+			if insecureVal.GetType() == value.TypeLogic {
+				insecure, _ = value.AsLogic(insecureVal)
 			}
 		}
 	}
@@ -415,8 +474,8 @@ func OpenPort(spec string, opts map[string]value.Value) (value.Value, error) {
 }
 
 // ClosePort implements the `close` native (T066)
-func ClosePort(portVal value.Value) error {
-	port, ok := portVal.AsPort()
+func ClosePort(portVal core.Value) error {
+	port, ok := value.AsPort(portVal)
 	if !ok {
 		return fmt.Errorf("expected port value")
 	}
@@ -436,24 +495,34 @@ func ClosePort(portVal value.Value) error {
 }
 
 // ReadPort implements the `read` native (T067)
-func ReadPort(spec string, opts map[string]value.Value) (value.Value, error) {
+func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
+	// Check if binary mode is requested
+	isBinary := false
+	if opts != nil {
+		if binaryVal, ok := opts["binary"]; ok {
+			if binaryVal.GetType() == value.TypeLogic {
+				isBinary, _ = value.AsLogic(binaryVal)
+			}
+		}
+	}
+
 	// Open temporary port
 	portVal, err := OpenPort(spec, opts)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
-	port, _ := portVal.AsPort()
+	port, _ := value.AsPort(portVal)
 
 	// Read all content
 	buf := make([]byte, 4096)
-	var result strings.Builder
+	var data []byte
 	totalBytes := 0
 
 	for {
 		n, err := port.Driver.Read(buf)
 		if n > 0 {
-			result.Write(buf[:n])
+			data = append(data, buf[:n]...)
 			totalBytes += n
 		}
 		if err == io.EOF {
@@ -468,28 +537,36 @@ func ReadPort(spec string, opts map[string]value.Value) (value.Value, error) {
 
 	trace.TracePortRead(port.Scheme, spec, totalBytes)
 	ClosePort(portVal)
-	return value.StrVal(result.String()), nil
+
+	// Return binary or string based on mode
+	if isBinary {
+		return value.BinaryVal(data), nil
+	}
+	return value.StrVal(string(data)), nil
 }
 
 // WritePort implements the `write` native (T068)
-func WritePort(spec string, data value.Value, opts map[string]value.Value) error {
+func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 	// Check for append mode
 	append := false
 	if opts != nil {
 		if appendVal, ok := opts["append"]; ok {
-			if appendVal.Type == value.TypeLogic {
-				append = appendVal.Payload.(bool)
+			if appendVal.GetType() == value.TypeLogic {
+				append, _ = value.AsLogic(appendVal)
 			}
 		}
 	}
 
-	// Get string content
-	var content string
-	if data.Type == value.TypeString {
-		str, _ := data.AsString()
-		content = str.String()
+	// Get content as bytes (handle both string and binary)
+	var contentBytes []byte
+	if data.GetType() == value.TypeBinary {
+		bin, _ := value.AsBinary(data)
+		contentBytes = bin.Bytes()
+	} else if data.GetType() == value.TypeString {
+		str, _ := value.AsString(data)
+		contentBytes = []byte(str.String())
 	} else {
-		content = data.String()
+		contentBytes = []byte(data.String())
 	}
 
 	// For file operations with append mode
@@ -520,11 +597,11 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 		}
 		defer file.Close()
 
-		_, err = file.WriteString(content)
+		_, err = file.Write(contentBytes)
 		if err != nil {
 			trace.TracePortError("file", spec, err)
 		} else {
-			trace.TracePortWrite("file", spec, len(content))
+			trace.TracePortWrite("file", spec, len(contentBytes))
 		}
 		return err
 	}
@@ -540,20 +617,20 @@ func WritePort(spec string, data value.Value, opts map[string]value.Value) error
 		return err
 	}
 
-	port, _ := portVal.AsPort()
-	_, err = port.Driver.Write([]byte(content))
+	port, _ := value.AsPort(portVal)
+	_, err = port.Driver.Write(contentBytes)
 	if err != nil {
 		trace.TracePortError(port.Scheme, spec, err)
 	} else {
-		trace.TracePortWrite(port.Scheme, spec, len(content))
+		trace.TracePortWrite(port.Scheme, spec, len(contentBytes))
 	}
 	ClosePort(portVal)
 	return err
 }
 
 // QueryPort implements the `query` native (T071)
-func QueryPort(portVal value.Value) (value.Value, error) {
-	port, ok := portVal.AsPort()
+func QueryPort(portVal core.Value) (core.Value, error) {
+	port, ok := value.AsPort(portVal)
 	if !ok {
 		return value.NoneVal(), fmt.Errorf("expected port value")
 	}
@@ -575,7 +652,7 @@ func QueryPort(portVal value.Value) (value.Value, error) {
 		Parent:     -1,
 		Manifest: value.ObjectManifest{
 			Words: make([]string, 0, len(metadata)),
-			Types: make([]value.ValueType, 0, len(metadata)),
+			Types: make([]core.ValueType, 0, len(metadata)),
 		},
 	}
 
@@ -590,7 +667,7 @@ func QueryPort(portVal value.Value) (value.Value, error) {
 
 // SavePort implements the `save` convenience native (T069)
 // Serializes a value using loadable format and writes to file
-func SavePort(spec string, val value.Value, opts map[string]value.Value) error {
+func SavePort(spec string, val core.Value, opts map[string]core.Value) error {
 	// Serialize value to string representation
 	serialized := serializeValue(val)
 
@@ -600,7 +677,7 @@ func SavePort(spec string, val value.Value, opts map[string]value.Value) error {
 
 // LoadPort implements the `load` convenience native (T070)
 // Reads file and parses into Viro values
-func LoadPort(spec string, opts map[string]value.Value) (value.Value, error) {
+func LoadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 	// Read file content
 	contentVal, err := ReadPort(spec, opts)
 	if err != nil {
@@ -615,10 +692,10 @@ func LoadPort(spec string, opts map[string]value.Value) (value.Value, error) {
 
 // WaitPort implements the `wait` native (T072)
 // Blocks until port is ready or timeout occurs
-func WaitPort(portOrBlock value.Value) (value.Value, error) {
+func WaitPort(portOrBlock core.Value) (core.Value, error) {
 	// Handle single port
-	if portOrBlock.Type == value.TypePort {
-		port, ok := portOrBlock.AsPort()
+	if portOrBlock.GetType() == value.TypePort {
+		port, ok := value.AsPort(portOrBlock)
 		if !ok {
 			return value.NoneVal(), fmt.Errorf("expected port value")
 		}
@@ -642,16 +719,16 @@ func WaitPort(portOrBlock value.Value) (value.Value, error) {
 	}
 
 	// Handle block of ports
-	if portOrBlock.Type == value.TypeBlock {
-		blk, ok := portOrBlock.AsBlock()
+	if portOrBlock.GetType() == value.TypeBlock {
+		blk, ok := value.AsBlock(portOrBlock)
 		if !ok {
 			return value.NoneVal(), fmt.Errorf("expected block value")
 		}
 
 		// Check each port and return first ready one
 		for _, elem := range blk.Elements {
-			if elem.Type == value.TypePort {
-				port, ok := elem.AsPort()
+			if elem.GetType() == value.TypePort {
+				port, ok := value.AsPort(elem)
 				if !ok {
 					continue
 				}
@@ -670,25 +747,26 @@ func WaitPort(portOrBlock value.Value) (value.Value, error) {
 }
 
 // serializeValue converts a value to its loadable string representation
-func serializeValue(val value.Value) string {
-	switch val.Type {
+func serializeValue(val core.Value) string {
+	switch val.GetType() {
 	case value.TypeInteger:
-		return formatInt(val.Payload.(int64))
+		intVal, _ := value.AsInteger(val)
+		return formatInt(intVal)
 	case value.TypeDecimal:
 		return val.String()
 	case value.TypeString:
-		str, _ := val.AsString()
-		// Quote the string to preserve it
+		str, _ := value.AsString(val)
 		return fmt.Sprintf(`"%s"`, str.String())
 	case value.TypeLogic:
-		if val.Payload.(bool) {
+		logicVal, _ := value.AsLogic(val)
+		if logicVal {
 			return "true"
 		}
 		return "false"
 	case value.TypeNone:
 		return "none"
 	case value.TypeBlock:
-		blk, _ := val.AsBlock()
+		blk, _ := value.AsBlock(val)
 		parts := make([]string, len(blk.Elements))
 		for i, elem := range blk.Elements {
 			parts[i] = serializeValue(elem)
@@ -706,7 +784,7 @@ func serializeValue(val value.Value) string {
 // - For blocks: reduce elements (evaluate each) and join with spaces
 // - Writes result to stdout followed by newline
 // - Returns none
-func Print(args []value.Value, refValues map[string]value.Value, eval Evaluator) (value.Value, *verror.Error) {
+func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("print", 1, len(args))
 	}
@@ -716,7 +794,8 @@ func Print(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 		return value.NoneVal(), err
 	}
 
-	if _, writeErr := fmt.Fprintln(os.Stdout, output); writeErr != nil {
+	writer := eval.GetOutputWriter()
+	if _, writeErr := fmt.Fprintln(writer, output); writeErr != nil {
 		return value.NoneVal(), verror.NewAccessError(
 			verror.ErrIDInvalidOperation,
 			[3]string{fmt.Sprintf("print output error: %v", writeErr), "", ""},
@@ -731,12 +810,12 @@ func Print(args []value.Value, refValues map[string]value.Value, eval Evaluator)
 // Contract: input
 // - Reads a line from stdin
 // - Returns the line as string value without trailing newline
-func Input(args []value.Value) (value.Value, *verror.Error) {
+func Input(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NoneVal(), arityError("input", 0, len(args))
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(eval.GetInputReader())
 	line, err := reader.ReadString('\n')
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
@@ -753,41 +832,23 @@ func Input(args []value.Value) (value.Value, *verror.Error) {
 	return value.StrVal(line), nil
 }
 
-func buildPrintOutput(val value.Value, eval Evaluator) (string, *verror.Error) {
-	if val.Type == value.TypeBlock {
-		blk, ok := val.AsBlock()
-		if !ok {
-			return "", verror.NewInternalError("block value missing payload in print", [3]string{})
-		}
-
-		if len(blk.Elements) == 0 {
-			return "", nil
-		}
-
-		parts := make([]string, 0, len(blk.Elements))
-		for idx, elem := range blk.Elements {
-			evaluated, err := eval.Do_Next(elem)
-			if err != nil {
-				if err.Near == "" {
-					err.SetNear(verror.CaptureNear(blk.Elements, idx))
-				}
-				return "", err
-			}
-			parts = append(parts, valueToPrintString(evaluated))
-		}
-		return strings.Join(parts, " "), nil
+func buildPrintOutput(val core.Value, eval core.Evaluator) (string, error) {
+	// Use reduce on any value (blocks get reduced, others returned as-is)
+	reduced, err := Reduce([]core.Value{val}, nil, eval)
+	if err != nil {
+		return "", err
 	}
 
-	return valueToPrintString(val), nil
-}
-
-func valueToPrintString(val value.Value) string {
-	if val.Type == value.TypeString {
-		if str, ok := val.AsString(); ok {
-			return str.String()
-		}
+	// Use form to format the result
+	formed, err := Form([]core.Value{reduced}, nil, eval)
+	if err != nil {
+		return "", err
 	}
-	return val.String()
+
+	if str, ok := value.AsString(formed); ok {
+		return str.String(), nil
+	}
+	return "", verror.NewInternalError("form did not return string", [3]string{})
 }
 
 // Native function wrappers for port operations (T073)
@@ -796,15 +857,15 @@ func valueToPrintString(val value.Value) string {
 // OpenNative is the native wrapper for open
 // Usage: open "file.txt" or open "http://example.com"
 // Note: Options/refinements not yet supported in native registry
-func OpenNative(args []value.Value) (value.Value, *verror.Error) {
+func OpenNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("open", 1, len(args))
 	}
 
 	// Get spec string
 	var spec string
-	if args[0].Type == value.TypeString {
-		str, _ := args[0].AsString()
+	if args[0].GetType() == value.TypeString {
+		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
 		spec = args[0].String()
@@ -823,12 +884,12 @@ func OpenNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // CloseNative is the native wrapper for close
-func CloseNative(args []value.Value) (value.Value, *verror.Error) {
+func CloseNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("close", 1, len(args))
 	}
 
-	if args[0].Type != value.TypePort {
+	if args[0].GetType() != value.TypePort {
 		return value.NoneVal(), typeError("close", "port!", args[0])
 	}
 
@@ -844,21 +905,29 @@ func CloseNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // ReadNative is the native wrapper for read
-func ReadNative(args []value.Value) (value.Value, *verror.Error) {
+func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("read", 1, len(args))
 	}
 
 	// Get spec string
 	var spec string
-	if args[0].Type == value.TypeString {
-		str, _ := args[0].AsString()
+	if args[0].GetType() == value.TypeString {
+		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
 		spec = args[0].String()
 	}
 
-	result, err := ReadPort(spec, nil)
+	// Build options map from refinements
+	opts := make(map[string]core.Value)
+	if refValues != nil {
+		for name, val := range refValues {
+			opts[name] = val
+		}
+	}
+
+	result, err := ReadPort(spec, opts)
 	if err != nil {
 		return value.NoneVal(), verror.NewAccessError(
 			verror.ErrIDInvalidOperation,
@@ -870,15 +939,15 @@ func ReadNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // WriteNative is the native wrapper for write
-func WriteNative(args []value.Value) (value.Value, *verror.Error) {
+func WriteNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("write", 2, len(args))
 	}
 
 	// Get spec string
 	var spec string
-	if args[0].Type == value.TypeString {
-		str, _ := args[0].AsString()
+	if args[0].GetType() == value.TypeString {
+		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
 		spec = args[0].String()
@@ -896,15 +965,15 @@ func WriteNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // SaveNative is the native wrapper for save
-func SaveNative(args []value.Value) (value.Value, *verror.Error) {
+func SaveNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NoneVal(), arityError("save", 2, len(args))
 	}
 
 	// Get spec string
 	var spec string
-	if args[0].Type == value.TypeString {
-		str, _ := args[0].AsString()
+	if args[0].GetType() == value.TypeString {
+		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
 		spec = args[0].String()
@@ -922,15 +991,15 @@ func SaveNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // LoadNative is the native wrapper for load
-func LoadNative(args []value.Value) (value.Value, *verror.Error) {
+func LoadNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("load", 1, len(args))
 	}
 
 	// Get spec string
 	var spec string
-	if args[0].Type == value.TypeString {
-		str, _ := args[0].AsString()
+	if args[0].GetType() == value.TypeString {
+		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
 		spec = args[0].String()
@@ -948,12 +1017,12 @@ func LoadNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // QueryNative is the native wrapper for query
-func QueryNative(args []value.Value) (value.Value, *verror.Error) {
+func QueryNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("query", 1, len(args))
 	}
 
-	if args[0].Type != value.TypePort {
+	if args[0].GetType() != value.TypePort {
 		return value.NoneVal(), typeError("query", "port!", args[0])
 	}
 
@@ -969,7 +1038,7 @@ func QueryNative(args []value.Value) (value.Value, *verror.Error) {
 }
 
 // WaitNative is the native wrapper for wait
-func WaitNative(args []value.Value) (value.Value, *verror.Error) {
+func WaitNative(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NoneVal(), arityError("wait", 1, len(args))
 	}

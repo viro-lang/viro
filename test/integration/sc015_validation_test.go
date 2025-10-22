@@ -552,11 +552,12 @@ func TestSC015_SourceNative(t *testing.T) {
 		result := strings.TrimSpace(out.String())
 
 		// Verify the source contains the function definition
-		if len(result) == 0 {
-			t.Error("source native returned empty result")
+		if result == "" {
+			t.Errorf("source native returned empty result")
+		} else if !strings.Contains(result, "name") {
+			t.Errorf("source should contain parameter name, got: %s", result)
 		} else {
-			t.Logf("source result: %s", result)
-			t.Log("PASS: source native executed")
+			t.Logf("PASS: source native returned: %s", result)
 		}
 	})
 

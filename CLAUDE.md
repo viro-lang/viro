@@ -87,11 +87,11 @@ internal/
 
 ### Value Type System
 
-All data is represented using `value.Value` with discriminated union:
+All data is represented using `core.Value` with discriminated union:
 
 ```go
 type Value struct {
-    Type    ValueType   // TypeNone, TypeInteger, TypeString, TypeBlock, etc.
+    Type    core.ValueType   // TypeNone, TypeInteger, TypeString, TypeBlock, etc.
     Payload interface{} // Type-specific data
 }
 ```
@@ -102,7 +102,7 @@ type Value struct {
 - `value.WordVal(symbol)`, `value.FuncVal(*FunctionValue)`
 
 **Type assertions** (safe extraction):
-- `val.AsInteger()`, `val.AsLogic()`, `val.AsString()`, `val.AsBlock()`, `val.AsFunction()`
+- `value.AsInteger(val)`, `value.AsLogic(val)`, `value.AsString(val)`, `value.AsBlock(val)`, `value.AsFunction(val)`
 
 ### Native Function System
 
@@ -115,7 +115,7 @@ Each native function:
 1. Has a `FunctionValue` with parameter specs and implementation
 2. Parameters marked as `Eval: true` are evaluated before call, `false` passed raw
 3. Refinements supported: `--flag` (boolean) or `--option []` (value)
-4. Implementation receives: `args []Value`, `refValues map[string]Value`, `eval Evaluator`
+4. Implementation receives: `args []core.Value`, `refValues map[string]core.Value`, `eval core.Evaluator`
 
 **Adding a new native**:
 1. Define contract in `specs/*/contracts/*.md`
@@ -132,14 +132,14 @@ Each native function:
 - `register_control.go` - Control flow (if, when, loop, while, fn)
 - `register_help.go` - Help and reflection (?, words, type-of, spec-of, debug, trace)
 
-**Note**: `native.Registry` still exists for backward compatibility with the help system, but the evaluator uses frame-based lookup exclusively
+**Note**: The help system dynamically builds its registry from the root frame at runtime
 
 ### Action System (Feature 004: Dynamic Function Invocation)
 
 **Actions** are polymorphic functions that dispatch to type-specific implementations based on the first argument's type. This enables REBOL-style series operations where `first [1 2 3]` and `first "hello"` both work correctly.
 
 **Architecture**:
-- **TypeRegistry**: Global map from `ValueType` → `*Frame` storing type frames
+- **TypeRegistry**: Global map from `core.ValueType` → `core.Frame` storing type frames
 - **Type Frames**: Regular frames containing type-specific implementations, stored in TypeRegistry (not on stack)
   - Parent = 0 (root frame index)
   - Index = -1 (not in frameStore)
@@ -173,12 +173,12 @@ Each native function:
 
 ### Evaluator Interface
 
-Two parallel interfaces exist due to import cycle constraints:
+The evaluator interface is defined in the `core` package:
 
-- `native.Evaluator`: returns `*verror.Error` (used by native implementations)
-- `value.Evaluator`: returns `error` (used by FunctionValue.Native field)
+- `core.Evaluator`: Full evaluator interface used by native functions and the evaluation engine
+- The actual implementation is `*eval.Evaluator` in the eval package
 
-Adapters bridge between them automatically in registry code.
+Native functions receive `core.Evaluator` through their implementation signature.
 
 ### Error Handling
 
@@ -204,12 +204,12 @@ Always use table-driven tests:
 func TestNativeAdd(t *testing.T) {
     tests := []struct {
         name     string
-        args     []value.Value
-        want     value.Value
+        args     []core.Value
+        want     core.Value
         wantErr  bool
     }{
-        {"add integers", []value.Value{value.IntVal(3), value.IntVal(4)}, value.IntVal(7), false},
-        {"add negative", []value.Value{value.IntVal(-5), value.IntVal(3)}, value.IntVal(-2), false},
+        {"add integers", []core.Value{value.IntVal(3), value.IntVal(4)}, value.IntVal(7), false},
+        {"add negative", []core.Value{value.IntVal(-5), value.IntVal(3)}, value.IntVal(-2), false},
     }
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
@@ -238,7 +238,7 @@ type Frame struct {
 
 // INCORRECT - DO NOT USE
 type Frame struct {
-    Parent *Frame  // pointer invalidates on stack expansion
+    Parent core.Frame  // pointer invalidates on stack expansion
 }
 ```
 

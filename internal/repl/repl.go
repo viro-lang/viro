@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
@@ -54,7 +55,7 @@ const (
 // - Print: Display results (suppress none per FR-044)
 // - Loop: Repeat until exit command
 type REPL struct {
-	evaluator      *eval.Evaluator
+	evaluator      core.Evaluator
 	rl             *readline.Instance
 	out            io.Writer
 	history        []string
@@ -89,12 +90,15 @@ func NewREPL() (*REPL, error) {
 	}
 
 	evaluator := eval.NewEvaluator()
+	evaluator.SetOutputWriter(os.Stdout)
+	evaluator.SetErrorWriter(os.Stderr)
+	evaluator.SetInputReader(os.Stdin)
 
 	rootFrame := evaluator.GetFrameByIndex(0)
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
@@ -114,7 +118,7 @@ func NewREPL() (*REPL, error) {
 }
 
 // NewREPLForTest creates a REPL with injected evaluator and writer for testing purposes.
-func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
+func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	// Initialize trace/debug sessions for tests (same as NewREPL)
 	// Use os.DevNull to avoid trace output pollution during tests
 	if err := trace.InitTrace(os.DevNull, 50); err != nil {
@@ -130,11 +134,16 @@ func NewREPLForTest(e *eval.Evaluator, out io.Writer) *REPL {
 		out = io.Discard
 	}
 
+	// Configure evaluator I/O
+	e.SetOutputWriter(out)
+	e.SetErrorWriter(out)                   // For tests, use same writer for both
+	e.SetInputReader(strings.NewReader("")) // Empty input for tests
+
 	rootFrame := e.GetFrameByIndex(0)
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
@@ -245,7 +254,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 	joined := strings.Join(r.pendingLines, "\n")
 	values, err := parse.Parse(joined)
 	if err != nil {
-		if shouldAwaitContinuation(err) {
+		if shouldAwaitContinuation(err.(*verror.Error)) {
 			r.awaitingCont = true
 			if interactive {
 				r.setPrompt(continuationPrompt)
@@ -272,72 +281,20 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.evalParsedValues(values)
 }
 
-// formatValue formats a value for display in the REPL.
-func (r *REPL) formatValue(v value.Value) string {
-	switch v.Type {
-	case value.TypeInteger:
-		if i, ok := v.AsInteger(); ok {
-			return fmt.Sprintf("%d", i)
-		}
-	case value.TypeString:
-		if s, ok := v.AsString(); ok {
-			return fmt.Sprintf("\"%s\"", s.String())
-		}
-	case value.TypeLogic:
-		if b, ok := v.AsLogic(); ok {
-			if b {
-				return "true"
-			}
-			return "false"
-		}
-	case value.TypeNone:
-		return ""
-	case value.TypeWord:
-		if w, ok := v.AsWord(); ok {
-			return w
-		}
-	case value.TypeSetWord:
-		if w, ok := v.AsWord(); ok {
-			return w + ":"
-		}
-	case value.TypeGetWord:
-		if w, ok := v.AsWord(); ok {
-			return ":" + w
-		}
-	case value.TypeLitWord:
-		if w, ok := v.AsWord(); ok {
-			return "'" + w
-		}
-	case value.TypeBlock:
-		if b, ok := v.AsBlock(); ok {
-			var parts []string
-			for _, elem := range b.Elements {
-				parts = append(parts, r.formatValue(elem))
-			}
-			return "[" + strings.Join(parts, " ") + "]"
-		}
-	case value.TypeParen:
-		if p, ok := v.AsBlock(); ok {
-			var parts []string
-			for _, elem := range p.Elements {
-				parts = append(parts, r.formatValue(elem))
-			}
-			return "(" + strings.Join(parts, " ") + ")"
-		}
-	}
-	return fmt.Sprintf("%v", v)
-}
-
 // printWelcome displays the welcome message.
 func (r *REPL) printWelcome() {
 	fmt.Fprint(r.out, WelcomeMessage())
 }
 
-func (r *REPL) printError(err *verror.Error) {
+func (r *REPL) printError(err error) {
 	if err == nil {
 		return
 	}
-	fmt.Fprintln(r.out, verror.FormatErrorWithContext(err))
+	if vErr, ok := err.(*verror.Error); ok {
+		fmt.Fprintln(r.out, verror.FormatErrorWithContext(vErr))
+	} else {
+		fmt.Fprintln(r.out, err.Error())
+	}
 }
 
 // HistoryEntries returns a copy of the recorded command history.
@@ -423,15 +380,19 @@ func (r *REPL) getCurrentPrompt() string {
 	return primaryPrompt
 }
 
-func (r *REPL) evalParsedValues(values []value.Value) {
-	result, err := r.evaluator.Do_Blk(values)
+func (r *REPL) evalParsedValues(values []core.Value) {
+	result, err := r.evaluator.DoBlock(values)
 	if err != nil {
 		r.printError(err)
 		return
 	}
 
-	if result.Type != value.TypeNone {
-		fmt.Fprintln(r.out, r.formatValue(result))
+	if result.GetType() != value.TypeNone {
+		_, err := native.Print([]core.Value{result}, nil, r.evaluator)
+		if err != nil {
+			r.printError(err)
+			return
+		}
 	}
 }
 
@@ -605,14 +566,14 @@ func (r *REPL) handleHelpShortcut() {
 	rOut, wOut, err := os.Pipe()
 	if err != nil {
 		// Fallback: call Help normally if pipe creation fails
-		_, _ = native.Help([]value.Value{}, r.evaluator)
+		_, _ = native.Help([]core.Value{}, map[string]core.Value{}, r.evaluator)
 		return
 	}
 
 	os.Stdout = wOut
 
 	// Call Help function directly with no arguments to show categories
-	result, helpErr := native.Help([]value.Value{}, r.evaluator)
+	result, helpErr := native.Help([]core.Value{}, map[string]core.Value{}, r.evaluator)
 
 	// Restore stdout immediately
 	wOut.Close()
@@ -632,7 +593,7 @@ func (r *REPL) handleHelpShortcut() {
 	}
 
 	// Help returns none, no need to print result
-	if result.Type != value.TypeNone {
-		fmt.Fprintln(r.out, r.formatValue(result))
+	if result.GetType() != value.TypeNone {
+		fmt.Fprintln(r.out, result.String())
 	}
 }

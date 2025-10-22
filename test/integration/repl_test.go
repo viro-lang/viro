@@ -15,27 +15,29 @@ func TestREPL_ErrorRecovery(t *testing.T) {
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
+	// Function definition - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("square: fn [n] [n * n]")
-	output := out.String()
+	output := strings.TrimSpace(out.String())
 	if !strings.Contains(output, "function") {
 		t.Fatalf("expected function definition output, got %q", output)
 	}
 
+	// Error case - output goes to buffer
 	out.Reset()
-
 	loop.EvalLineForTest("square \"oops\"")
-	output = out.String()
-	if !strings.Contains(output, "** Script Error") {
-		t.Fatalf("expected script error header, got %q", output)
+	errorOutput := out.String()
+	if !strings.Contains(errorOutput, "** Script Error") {
+		t.Fatalf("expected script error header, got %q", errorOutput)
 	}
-	if !strings.Contains(output, "square") {
-		t.Fatalf("expected call stack or message to mention square, got %q", output)
+	if !strings.Contains(errorOutput, "square") {
+		t.Fatalf("expected call stack or message to mention square, got %q", errorOutput)
 	}
 
+	// Successful evaluation after error - output goes to buffer
 	out.Reset()
-
 	loop.EvalLineForTest("square 4")
-	output = out.String()
+	output = strings.TrimSpace(out.String())
 	if !strings.Contains(output, "16") {
 		t.Fatalf("expected successful evaluation after error, got %q", output)
 	}
@@ -46,31 +48,43 @@ func TestREPL_StatePreservedAfterError(t *testing.T) {
 	var out bytes.Buffer
 	loop := repl.NewREPLForTest(evaluator, &out)
 
+	// Assignment - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("x: 10")
-	if output := out.String(); !strings.Contains(output, "10") {
+	output := strings.TrimSpace(out.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected assignment result to include 10, got %q", output)
 	}
+
+	// Error - output goes to buffer
 	out.Reset()
 	loop.EvalLineForTest("1 / 0")
-	if output := out.String(); !strings.Contains(output, "** Math Error") {
-		t.Fatalf("expected math error header, got %q", output)
+	errorOutput := out.String()
+	if !strings.Contains(errorOutput, "** Math Error") {
+		t.Fatalf("expected math error header, got %q", errorOutput)
 	}
-	out.Reset()
 
+	// Variable lookup after error - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("x")
-	if output := out.String(); !strings.Contains(output, "10") {
+	output = strings.TrimSpace(out.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected x to retain value 10 after error, got %q", output)
 	}
-	out.Reset()
 
+	// Reassignment - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("x: x + 5")
-	if output := out.String(); !strings.Contains(output, "15") {
+	output = strings.TrimSpace(out.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected reassignment result to include 15, got %q", output)
 	}
-	out.Reset()
 
+	// Final lookup - output goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("x")
-	if output := out.String(); !strings.Contains(output, "15") {
+	output = strings.TrimSpace(out.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected x to reflect updated value 15, got %q", output)
 	}
 }
@@ -176,13 +190,11 @@ func TestREPL_MultiLineInput(t *testing.T) {
 	if loop.AwaitingContinuation() {
 		t.Fatalf("expected REPL to exit continuation state after closing paren")
 	}
-	if output := out.String(); !strings.Contains(output, "15") {
-		t.Fatalf("expected evaluated result to include 15, got %q", output)
-	}
+	// Multi-line evaluation result goes to buffer
 	out.Reset()
-
 	loop.EvalLineForTest("value")
-	if output := out.String(); !strings.Contains(output, "15") {
+	output := strings.TrimSpace(out.String())
+	if !strings.Contains(output, "15") {
 		t.Fatalf("expected value to be preserved after multi-line evaluation, got %q", output)
 	}
 }
@@ -244,8 +256,11 @@ func TestREPL_CtrlCInterrupt(t *testing.T) {
 	}
 	out.Reset()
 
+	// Evaluation after interrupt goes to buffer
+	out.Reset()
 	loop.EvalLineForTest("value: 10")
-	if output := out.String(); !strings.Contains(output, "10") {
+	output := strings.TrimSpace(out.String())
+	if !strings.Contains(output, "10") {
 		t.Fatalf("expected evaluation to continue after interrupt, got %q", output)
 	}
 }

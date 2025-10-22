@@ -5,52 +5,54 @@ import (
 	"os"
 	"testing"
 
-	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func captureEvalOutput(t *testing.T, e *eval.Evaluator, script string) (string, value.Value, *verror.Error) {
+func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, core.Value, error) {
 	t.Helper()
 
-	oldStdout := os.Stdout
 	r, w, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("os.Pipe failed: %v", err)
 	}
-	os.Stdout = w
+
+	// Configure evaluator to write to our pipe
+	oldWriter := e.GetOutputWriter()
+	e.SetOutputWriter(w)
 
 	vals, parseErr := parse.Parse(script)
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
 
-	result, evalErr := e.Do_Blk(vals)
+	result, evalErr := e.DoBlock(vals)
 
 	if err := w.Close(); err != nil {
-		t.Fatalf("closing stdout writer failed: %v", err)
+		t.Fatalf("closing output writer failed: %v", err)
 	}
-	os.Stdout = oldStdout
+	// Restore original writer
+	e.SetOutputWriter(oldWriter)
 
 	data, readErr := io.ReadAll(r)
 	if readErr != nil {
-		t.Fatalf("reading captured stdout failed: %v", readErr)
+		t.Fatalf("reading captured output failed: %v", readErr)
 	}
 	if err := r.Close(); err != nil {
-		t.Fatalf("closing stdout reader failed: %v", err)
+		t.Fatalf("closing output reader failed: %v", err)
 	}
 
 	return string(data), result, evalErr
 }
 
-func runScript(t *testing.T, e *eval.Evaluator, script string) (value.Value, *verror.Error) {
+func runScript(t *testing.T, e core.Evaluator, script string) (core.Value, error) {
 	t.Helper()
 	vals, parseErr := parse.Parse(script)
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
-	return e.Do_Blk(vals)
+	return e.DoBlock(vals)
 }
 
 func TestUS2_ControlFlowScenarios(t *testing.T) {

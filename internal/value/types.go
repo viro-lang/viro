@@ -2,25 +2,25 @@
 // All data in Viro is represented as tagged union values with type discrimination.
 package value
 
+import "github.com/marcin-radoszewski/viro/internal/core"
+
 // ValueType identifies the runtime type of a Value.
 // Uses uint8 for compact representation (11 types fit in 8 bits).
-type ValueType uint8
 
 // Value type constants define all supported data types in Viro.
 // These align with REBOL's type system with Viro-specific additions (Paren).
 const (
-	TypeNone     ValueType = iota // Represents absence of value (nil/null)
-	TypeLogic                     // Boolean true/false
-	TypeInteger                   // 64-bit signed integer
-	TypeString                    // UTF-8 character sequence
-	TypeWord                      // Symbol identifier (evaluates to bound value)
-	TypeSetWord                   // Assignment symbol (x: value)
-	TypeGetWord                   // Fetch symbol (evaluates without evaluation)
-	TypeLitWord                   // Quoted symbol (returns word itself)
-	TypeBlock                     // Series of values (deferred evaluation)
-	TypeParen                     // Series of values (immediate evaluation)
-	TypeFunction                  // Executable function (native or user-defined)
-	TypeAction                    // Polymorphic function (type-based dispatch)
+	TypeNone     core.ValueType = iota // Represents absence of value (nil/null)
+	TypeLogic                          // Boolean true/false
+	TypeInteger                        // 64-bit signed integer
+	TypeString                         // UTF-8 character sequence
+	TypeWord                           // Symbol identifier (evaluates to bound value)
+	TypeSetWord                        // Assignment symbol (x: value)
+	TypeGetWord                        // Fetch symbol (evaluates without evaluation)
+	TypeLitWord                        // Quoted symbol (returns word itself)
+	TypeBlock                          // Series of values (deferred evaluation)
+	TypeParen                          // Series of values (immediate evaluation)
+	TypeFunction                       // Executable function (native or user-defined)
 
 	// Feature 002: Deferred Language Capabilities
 	TypeDecimal  // IEEE 754 decimal128 high-precision decimal
@@ -28,56 +28,56 @@ const (
 	TypePort     // I/O port abstraction (file, TCP, HTTP)
 	TypePath     // Path expression (transient evaluation type)
 	TypeDatatype // Datatype literal (e.g., object!, integer!)
+	TypeBinary   // Raw byte sequence
 )
 
-// String returns the type name for debugging and error messages.
-func (t ValueType) String() string {
+// TypeToString returns the type name for debugging and error messages.
+func TypeToString(t core.ValueType) string {
 	switch t {
 	case TypeNone:
-		return "none"
+		return "none!"
 	case TypeLogic:
-		return "logic"
+		return "logic!"
 	case TypeInteger:
-		return "integer"
+		return "integer!"
 	case TypeString:
-		return "string"
+		return "string!"
 	case TypeWord:
-		return "word"
+		return "word!"
 	case TypeSetWord:
-		return "set-word"
+		return "set-word!"
 	case TypeGetWord:
-		return "get-word"
+		return "get-word!"
 	case TypeLitWord:
-		return "lit-word"
+		return "lit-word!"
 	case TypeBlock:
-		return "block"
+		return "block!"
 	case TypeParen:
-		return "paren"
+		return "paren!"
 	case TypeFunction:
-		return "function"
-	case TypeAction:
-		return "action"
+		return "function!"
 	case TypeDecimal:
-		return "decimal"
+		return "decimal!"
 	case TypeObject:
-		return "object"
+		return "object!"
 	case TypePort:
-		return "port"
+		return "port!"
 	case TypePath:
-		return "path"
+		return "path!"
 	case TypeDatatype:
-		return "datatype"
+		return "datatype!"
+	case TypeBinary:
+		return "binary!"
 	default:
-		return "unknown"
+		return "unknown!"
 	}
 }
 
-// IsWord returns true if the type is any word variant.
-func (t ValueType) IsWord() bool {
+func IsWord(t core.ValueType) bool {
 	return t == TypeWord || t == TypeSetWord || t == TypeGetWord || t == TypeLitWord
 }
 
 // IsSeries returns true if the type supports series operations.
-func (t ValueType) IsSeries() bool {
-	return t == TypeBlock || t == TypeParen || t == TypeString
+func IsSeries(t core.ValueType) bool {
+	return t == TypeBlock || t == TypeParen || t == TypeString || t == TypeBinary
 }

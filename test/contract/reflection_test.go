@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -21,7 +22,7 @@ func TestTypeOf(t *testing.T) {
 	tests := []struct {
 		name       string
 		code       string
-		expectWord string // Expected type name as word
+		expectWord string
 		wantErr    bool
 	}{
 		{
@@ -113,11 +114,10 @@ func TestTypeOf(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.Type != value.TypeWord {
-				t.Errorf("expected type-of to return word!, got %v", result.Type)
+			if result.GetType() != value.TypeWord {
+				t.Errorf("expected type-of to return word!, got %v", value.TypeToString(result.GetType()))
 			}
 
-			// Check the word value
 			resultStr := result.String()
 			if !strings.Contains(resultStr, tt.expectWord) {
 				t.Errorf("expected type-of to return %q, got %q", tt.expectWord, resultStr)
@@ -131,19 +131,18 @@ func TestSpecOf(t *testing.T) {
 	tests := []struct {
 		name      string
 		code      string
-		checkFunc func(*testing.T, value.Value)
+		checkFunc func(*testing.T, core.Value)
 		wantErr   bool
 		errMsg    string
 	}{
 		{
 			name: "spec-of function",
 			code: "square: fn [x] [x * x]\nspec-of :square",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected spec-of to return block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				// Block should contain parameter spec
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok || len(blk.Elements) == 0 {
 					t.Error("expected spec-of to return non-empty block")
 				}
@@ -153,16 +152,14 @@ func TestSpecOf(t *testing.T) {
 		{
 			name: "spec-of native function",
 			code: "spec-of :print",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected spec-of to return block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				// Native functions should have generated spec
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok {
 					t.Error("expected spec-of to return block")
 				}
-				// Should contain parameter specifications
 				if len(blk.Elements) == 0 {
 					t.Error("expected native spec to have parameters")
 				}
@@ -172,12 +169,11 @@ func TestSpecOf(t *testing.T) {
 		{
 			name: "spec-of object",
 			code: "obj: object [name: \"Alice\" age: 30]\nspec-of obj",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected spec-of to return block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				// Object spec should contain field definitions
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok {
 					t.Error("expected spec-of to return block")
 				}
@@ -209,11 +205,15 @@ func TestSpecOf(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				verr, ok := err.(*verror.Error)
+				if !ok {
+					t.Fatalf("expected *verror.Error, got %T", err)
 				}
-				if tt.errMsg != "" && !strings.Contains(strings.ToLower(err.Message), tt.errMsg) {
-					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Message)
+				if verr.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", verr.Category)
+				}
+				if tt.errMsg != "" && !strings.Contains(strings.ToLower(verr.Message), tt.errMsg) {
+					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, verr.Message)
 				}
 				return
 			}
@@ -234,18 +234,18 @@ func TestBodyOf(t *testing.T) {
 	tests := []struct {
 		name      string
 		code      string
-		checkFunc func(*testing.T, value.Value)
+		checkFunc func(*testing.T, core.Value)
 		wantErr   bool
 		errMsg    string
 	}{
 		{
 			name: "body-of function returns block",
 			code: "square: fn [x] [x * x]\nbody-of :square",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected body-of to return block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected body-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok || len(blk.Elements) == 0 {
 					t.Error("expected body-of to return non-empty block")
 				}
@@ -259,22 +259,19 @@ func TestBodyOf(t *testing.T) {
 			       append body 999
 			       original: body-of :square
 			       length? original`,
-			checkFunc: func(t *testing.T, v value.Value) {
-				// Original function body should not be affected by modifications to returned copy
-				if v.Type != value.TypeInteger {
-					t.Errorf("expected length? to return integer!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeInteger {
+					t.Errorf("expected length? to return integer!, got %v", value.TypeToString(v.GetType()))
 				}
-				// The original body should still have its original length (3: x, *, x)
-				// Not increased by the append operation
 			},
 			wantErr: false,
 		},
 		{
 			name: "body-of object",
 			code: "obj: object [x: 10 y: 20]\nbody-of obj",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected body-of to return block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected body-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
 			},
 			wantErr: false,
@@ -283,7 +280,7 @@ func TestBodyOf(t *testing.T) {
 			name:    "body-of native (no body)",
 			code:    "body-of :print",
 			wantErr: true,
-			errMsg:  "body", // Should mention natives have no accessible body
+			errMsg:  "body",
 		},
 		{
 			name:    "body-of integer (unsupported)",
@@ -301,11 +298,15 @@ func TestBodyOf(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				verr, ok := err.(*verror.Error)
+				if !ok {
+					t.Fatalf("expected *verror.Error, got %T", err)
 				}
-				if tt.errMsg != "" && !strings.Contains(strings.ToLower(err.Message), tt.errMsg) {
-					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Message)
+				if verr.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", verr.Category)
+				}
+				if tt.errMsg != "" && !strings.Contains(strings.ToLower(verr.Message), tt.errMsg) {
+					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, verr.Message)
 				}
 				return
 			}
@@ -326,24 +327,23 @@ func TestWordsAndValues(t *testing.T) {
 	tests := []struct {
 		name      string
 		code      string
-		checkFunc func(*testing.T, value.Value)
+		checkFunc func(*testing.T, core.Value)
 		wantErr   bool
 	}{
 		{
 			name: "words-of and values-of for object",
 			code: "obj: object [name: \"Alice\" age: 30]\nwords-of obj",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Fatalf("expected block result, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Fatalf("expected block result, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Fatalf("expected block with 2 words, got %d elements", len(blk.Elements))
 				}
-				// Verify words are word types
 				for i, elem := range blk.Elements {
-					if elem.Type != value.TypeWord {
-						t.Errorf("element %d: expected word!, got %v", i, elem.Type)
+					if elem.GetType() != value.TypeWord {
+						t.Errorf("element %d: expected word!, got %v", i, value.TypeToString(elem.GetType()))
 					}
 				}
 			},
@@ -352,20 +352,19 @@ func TestWordsAndValues(t *testing.T) {
 		{
 			name: "values-of for object",
 			code: "obj: object [name: \"Alice\" age: 30]\nvalues-of obj",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Fatalf("expected block result, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Fatalf("expected block result, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Fatalf("expected block with 2 values, got %d elements", len(blk.Elements))
 				}
-				// Verify we have a string and an integer
-				if blk.Elements[0].Type != value.TypeString {
-					t.Errorf("first value: expected string!, got %v", blk.Elements[0].Type)
+				if blk.Elements[0].GetType() != value.TypeString {
+					t.Errorf("first value: expected string!, got %v", value.TypeToString(blk.Elements[0].GetType()))
 				}
-				if blk.Elements[1].Type != value.TypeInteger {
-					t.Errorf("second value: expected integer!, got %v", blk.Elements[1].Type)
+				if blk.Elements[1].GetType() != value.TypeInteger {
+					t.Errorf("second value: expected integer!, got %v", value.TypeToString(blk.Elements[1].GetType()))
 				}
 			},
 			wantErr: false,
@@ -373,11 +372,11 @@ func TestWordsAndValues(t *testing.T) {
 		{
 			name: "words-of and values-of length consistency",
 			code: "obj: object [name: \"Alice\" age: 30]\nwords-len: length? words-of obj\nvals-len: length? values-of obj\nwords-len = vals-len",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeLogic {
-					t.Fatalf("expected logic!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Fatalf("expected logic!, got %v", value.TypeToString(v.GetType()))
 				}
-				logic, _ := v.AsLogic()
+				logic, _ := value.AsLogic(v)
 				if !logic {
 					t.Error("words-of and values-of should return same length")
 				}
@@ -387,11 +386,11 @@ func TestWordsAndValues(t *testing.T) {
 		{
 			name: "words-of empty object",
 			code: "obj: object []\nwords-of obj",
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok {
 					t.Fatal("expected block type")
 				}
@@ -409,11 +408,10 @@ func TestWordsAndValues(t *testing.T) {
 			       append first-val 999
 			       obj-data: obj.data
 			       length? obj-data`,
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeInteger {
-					t.Errorf("expected integer!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeInteger {
+					t.Errorf("expected integer!, got %v", value.TypeToString(v.GetType()))
 				}
-				// Original object data should not be modified (length should be 3, not 4)
 			},
 			wantErr: false,
 		},
@@ -424,11 +422,11 @@ func TestWordsAndValues(t *testing.T) {
 			       ]
 			       inner: obj.address
 			       words-of inner`,
-			checkFunc: func(t *testing.T, v value.Value) {
-				if v.Type != value.TypeBlock {
-					t.Errorf("expected block!, got %v", v.Type)
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeBlock {
+					t.Errorf("expected block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := v.AsBlock()
+				blk, ok := value.AsBlock(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Error("expected 2 words for nested object")
 				}
@@ -445,8 +443,12 @@ func TestWordsAndValues(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				verr, ok := err.(*verror.Error)
+				if !ok {
+					t.Fatalf("expected *verror.Error, got %T", err)
+				}
+				if verr.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", verr.Category)
 				}
 				return
 			}
@@ -501,11 +503,15 @@ func TestSource(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if err.Category != verror.ErrScript {
-					t.Errorf("expected Script error, got %v", err.Category)
+				verr, ok := err.(*verror.Error)
+				if !ok {
+					t.Fatalf("expected *verror.Error, got %T", err)
 				}
-				if tt.errMsg != "" && !strings.Contains(strings.ToLower(err.Message), tt.errMsg) {
-					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, err.Message)
+				if verr.Category != verror.ErrScript {
+					t.Errorf("expected Script error, got %v", verr.Category)
+				}
+				if tt.errMsg != "" && !strings.Contains(strings.ToLower(verr.Message), tt.errMsg) {
+					t.Errorf("expected error message to contain %q, got %q", tt.errMsg, verr.Message)
 				}
 				return
 			}
@@ -514,9 +520,8 @@ func TestSource(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			// source should return a string
-			if result.Type != value.TypeString {
-				t.Errorf("expected source to return string!, got %v", result.Type)
+			if result.GetType() != value.TypeString {
+				t.Errorf("expected source to return string!, got %v", value.TypeToString(result.GetType()))
 			}
 		})
 	}

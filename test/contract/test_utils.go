@@ -3,13 +3,13 @@ package contract
 import (
 	"os"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func NewTestEvaluator() *eval.Evaluator {
@@ -34,7 +34,7 @@ func NewTestEvaluator() *eval.Evaluator {
 	native.RegisterMathNatives(rootFrame)
 	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame)
+	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
@@ -42,12 +42,12 @@ func NewTestEvaluator() *eval.Evaluator {
 }
 
 // Evaluate is a helper function to evaluate Viro code in tests.
-func Evaluate(src string) (value.Value, *verror.Error) {
+func Evaluate(src string) (core.Value, error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
 		return value.NoneVal(), err
 	}
 
 	e := NewTestEvaluator()
-	return e.Do_Blk(vals)
+	return e.DoBlock(vals)
 }
