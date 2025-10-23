@@ -567,7 +567,7 @@ func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 		str, _ := value.AsString(data)
 		contentBytes = []byte(str.String())
 	} else {
-		contentBytes = []byte(data.String())
+		contentBytes = []byte(data.Mold())
 	}
 
 	// For file operations with append mode
@@ -747,7 +747,7 @@ func serializeValue(val core.Value) string {
 		intVal, _ := value.AsInteger(val)
 		return formatInt(intVal)
 	case value.TypeDecimal:
-		return val.String()
+		return val.Mold()
 	case value.TypeString:
 		str, _ := value.AsString(val)
 		return fmt.Sprintf(`"%s"`, str.String())
@@ -767,7 +767,7 @@ func serializeValue(val core.Value) string {
 		}
 		return fmt.Sprintf("[%s]", strings.Join(parts, " "))
 	default:
-		return val.String()
+		return val.Mold()
 	}
 }
 
@@ -862,7 +862,7 @@ func OpenNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	// Call OpenPort with no options (for basic REPL usage)
@@ -910,7 +910,7 @@ func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	// Build options map from refinements
@@ -942,7 +942,7 @@ func WriteNative(args []core.Value, refValues map[string]core.Value, eval core.E
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	err := WritePort(spec, args[1], nil)
@@ -968,7 +968,7 @@ func SaveNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	err := SavePort(spec, args[1], nil)
@@ -994,7 +994,7 @@ func LoadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	result, err := LoadPort(spec, nil)

@@ -594,6 +594,6 @@ func (r *REPL) handleHelpShortcut() {
 
 	// Help returns none, no need to print result
 	if result.GetType() != value.TypeNone {
-		fmt.Fprintln(r.out, result.String())
+		fmt.Fprintln(r.out, result.Form())
 	}
 }

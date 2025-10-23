@@ -82,7 +82,7 @@ func (b *BlockValue) StringElements() string {
 	}
 	parts := make([]string, len(b.Elements))
 	for i, elem := range b.Elements {
-		parts[i] = elem.String()
+		parts[i] = elem.Form()
 	}
 	return strings.Join(parts, " ")
 }
@@ -184,7 +184,7 @@ func SortBlock(b *BlockValue) {
 		case TypeString:
 			iVal, _ := AsString(elemI)
 			jVal, _ := AsString(elemJ)
-			return iVal.String() < jVal.String()
+			return iVal.Form() < jVal.Form()
 		default:
 			return false
 		}

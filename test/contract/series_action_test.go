@@ -59,7 +59,7 @@ func TestActionFirst(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}
@@ -119,7 +119,7 @@ func TestActionLast(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}
@@ -178,7 +178,7 @@ func TestActionAppend(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}
@@ -237,7 +237,7 @@ func TestActionInsert(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}
@@ -296,7 +296,7 @@ func TestActionLength(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}

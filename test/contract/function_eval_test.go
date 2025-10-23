@@ -180,8 +180,8 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 	if result.GetType() != 4 { // TypeWord
 		t.Errorf("Expected word (type name 'word!'), got %d", result.GetType())
 	}
-	if result.String() != "word!" {
-		t.Errorf("Expected 'word!', got '%s'", result.String())
+	if result.Mold() != "word!" {
+		t.Errorf("Expected 'word!', got '%s'", result.Mold())
 	}
 }
 
@@ -227,8 +227,8 @@ func TestTypeQueryLitWordArgument(t *testing.T) {
 		if result.GetType() != 4 {
 			t.Fatalf("Expected word! result, got type %d", result.GetType())
 		}
-		if result.String() != "word!" {
-			t.Errorf("Expected 'word!', got '%s'", result.String())
+		if result.Mold() != "word!" {
+			t.Errorf("Expected 'word!', got '%s'", result.Mold())
 		}
 		return
 	}

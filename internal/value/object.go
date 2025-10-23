@@ -53,7 +53,7 @@ func (o *ObjectInstance) String() string {
 	var fields []string
 	for _, fieldName := range o.Manifest.Words {
 		if val, found := o.GetField(fieldName); found {
-			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.String()))
+			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.Form()))
 		} else {
 			fields = append(fields, fmt.Sprintf("%s: <missing>", fieldName))
 		}

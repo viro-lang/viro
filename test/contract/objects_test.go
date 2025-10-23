@@ -311,7 +311,7 @@ func TestPathReadTraversal(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
@@ -349,7 +349,7 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("name field not found")
 				}
 
-				str := nameVal.String()
+				str := nameVal.Form()
 				if !strings.Contains(str, "Bob") {
 					t.Errorf("expected name to be Bob, got %s", str)
 				}
@@ -388,7 +388,7 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("city not found")
 				}
 
-				str := cityVal.String()
+				str := cityVal.Form()
 				if !strings.Contains(str, "Seattle") {
 					t.Errorf("expected city to be Seattle, got %s", str)
 				}
@@ -509,7 +509,7 @@ func TestPathIndexing(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
@@ -577,7 +577,7 @@ func TestParentPrototype(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}

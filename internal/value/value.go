@@ -52,78 +52,9 @@ func (v Value) GetPayload() any {
 }
 
 // String returns a string representation of the value for debugging and display.
+// Alias to Form() for consistency with the codebase's formatting approach.
 func (v Value) String() string {
-	switch v.Type {
-	case TypeNone:
-		return "none"
-	case TypeLogic:
-		if v.Payload.(bool) {
-			return "true"
-		}
-		return "false"
-	case TypeInteger:
-		return fmt.Sprintf("%d", v.Payload.(int64))
-	case TypeString:
-		if str, ok := v.Payload.(*StringValue); ok {
-			return fmt.Sprintf(`"%s"`, str.String())
-		}
-		return fmt.Sprintf(`"%v"`, v.Payload)
-	case TypeWord:
-		return v.Payload.(string)
-	case TypeSetWord:
-		return v.Payload.(string) + ":"
-	case TypeGetWord:
-		return ":" + v.Payload.(string)
-	case TypeLitWord:
-		return "'" + v.Payload.(string)
-	case TypeBlock:
-		if blk, ok := v.Payload.(*BlockValue); ok {
-			return blk.String()
-		}
-		return "[...]"
-	case TypeParen:
-		if blk, ok := v.Payload.(*BlockValue); ok {
-			return "(" + blk.StringElements() + ")"
-		}
-		return "(...)"
-	case TypeFunction:
-		if fn, ok := v.Payload.(*FunctionValue); ok {
-			return fn.String()
-		}
-		return "function"
-	case TypeDecimal:
-		if dec, ok := v.Payload.(*DecimalValue); ok {
-			return dec.String()
-		}
-		return "0.0"
-	case TypeObject:
-		if obj, ok := v.Payload.(*ObjectInstance); ok {
-			return obj.String()
-		}
-		return "object[]"
-	case TypePort:
-		if port, ok := v.Payload.(*Port); ok {
-			return port.String()
-		}
-		return "port[closed]"
-	case TypePath:
-		if path, ok := v.Payload.(*PathExpression); ok {
-			return path.String()
-		}
-		return "path[]"
-	case TypeDatatype:
-		if name, ok := v.Payload.(string); ok {
-			return name
-		}
-		return "datatype!"
-	case TypeBinary:
-		if bin, ok := v.Payload.(*BinaryValue); ok {
-			return bin.String()
-		}
-		return "#{...}"
-	default:
-		return fmt.Sprintf("<%s>", TypeToString(v.Type))
-	}
+	return v.Form()
 }
 
 // Mold returns a string representation of the value for serialization (mold format).

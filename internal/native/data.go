@@ -491,7 +491,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
-	trace.TraceObjectFieldWrite(fieldName, newVal.String())
+	trace.TraceObjectFieldWrite(fieldName, newVal.Form())
 
 	return newVal, nil
 }

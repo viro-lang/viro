@@ -73,8 +73,8 @@ func TestSelectWithDefaultRefinement(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if result.String() != tt.expected {
-				t.Fatalf("expected %s, got %s", tt.expected, result.String())
+			if result.Mold() != tt.expected {
+				t.Fatalf("expected %s, got %s", tt.expected, result.Mold())
 			}
 		})
 	}

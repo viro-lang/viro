@@ -250,7 +250,7 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 func formatBlock(elements []core.Value) string {
 	parts := make([]string, len(elements))
 	for i, elem := range elements {
-		parts[i] = elem.String()
+		parts[i] = elem.Mold()
 	}
 	return "[" + strings.Join(parts, " ") + "]"
 }

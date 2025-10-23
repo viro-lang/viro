@@ -411,7 +411,7 @@ func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
 		duration := time.Since(traceStart)
 		trace.GlobalTraceSession.Emit(trace.TraceEvent{
 			Timestamp: traceStart,
-			Value:     result.String(),
+			Value:     result.Form(),
 			Word:      traceWord,
 			Duration:  duration.Nanoseconds(),
 		})

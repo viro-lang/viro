@@ -234,10 +234,10 @@ func TestValueTypeDispatch(t *testing.T) {
 				t.Errorf("expected type %v, got %v", tt.expected, tt.val.GetType())
 			}
 
-			// Verify String() method works
-			str := tt.val.String()
+			// Verify Form() method works
+			str := tt.val.Form()
 			if str == "" {
-				t.Errorf("Value.String() returned empty for type %v", tt.expected)
+				t.Errorf("Value.Form() returned empty for type %v", tt.expected)
 			}
 		})
 	}
