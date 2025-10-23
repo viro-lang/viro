@@ -24,9 +24,10 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// Moldable interface for payload types that implement custom mold formatting
-type Moldable interface {
+// Showable interface for payload types that implement custom formatting
+type Showable interface {
 	Mold() string
+	Form() string
 }
 
 // Value is the universal data representation in Viro.
@@ -127,12 +128,48 @@ func (v Value) String() string {
 
 // Mold returns a string representation of the value for serialization (mold format).
 func (v Value) Mold() string {
-	// First try to cast Payload to Moldable interface
-	if moldable, ok := v.Payload.(Moldable); ok {
-		return moldable.Mold()
+	// First try to cast Payload to Showable interface
+	if showable, ok := v.Payload.(Showable); ok {
+		return showable.Mold()
 	}
 
 	// Handle simple types with primitive payloads
+	switch v.Type {
+	case TypeNone:
+		return "none"
+	case TypeLogic:
+		if v.Payload.(bool) {
+			return "true"
+		}
+		return "false"
+	case TypeInteger:
+		return fmt.Sprintf("%d", v.Payload.(int64))
+	case TypeWord:
+		return v.Payload.(string)
+	case TypeSetWord:
+		return v.Payload.(string) + ":"
+	case TypeGetWord:
+		return ":" + v.Payload.(string)
+	case TypeLitWord:
+		return "'" + v.Payload.(string)
+	case TypeDatatype:
+		if name, ok := v.Payload.(string); ok {
+			return name
+		}
+		return "datatype!"
+	default:
+		return fmt.Sprintf("<%s>", TypeToString(v.Type))
+	}
+}
+
+// Form returns a string representation of the value for display (form format).
+func (v Value) Form() string {
+	// First try to cast Payload to Showable interface
+	if showable, ok := v.Payload.(Showable); ok {
+		return showable.Form()
+	}
+
+	// Handle simple types with primitive payloads (same as Mold for these)
 	switch v.Type {
 	case TypeNone:
 		return "none"

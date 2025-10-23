@@ -42,7 +42,23 @@ func (b *BlockValue) Mold() string {
 	if len(b.Elements) == 0 {
 		return "[]"
 	}
-	return "[" + b.MoldElements() + "]"
+	parts := make([]string, len(b.Elements))
+	for i, elem := range b.Elements {
+		parts[i] = elem.Mold()
+	}
+	return "[" + strings.Join(parts, " ") + "]"
+}
+
+// Form returns the form-formatted block representation (without brackets).
+func (b *BlockValue) Form() string {
+	if len(b.Elements) == 0 {
+		return ""
+	}
+	parts := make([]string, len(b.Elements))
+	for i, elem := range b.Elements {
+		parts[i] = elem.Form()
+	}
+	return strings.Join(parts, " ")
 }
 
 // MoldElements returns space-separated molded element representations.

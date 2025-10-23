@@ -34,6 +34,11 @@ func (b *BinaryValue) Mold() string {
 	return "#{" + string(b.data) + "}" // Simplified for now
 }
 
+// Form returns the form-formatted binary representation (same as mold for binary).
+func (b *BinaryValue) Form() string {
+	return b.Mold()
+}
+
 // Equals performs deep equality comparison.
 func (b *BinaryValue) Equals(other *BinaryValue) bool {
 	if len(b.data) != len(other.data) {

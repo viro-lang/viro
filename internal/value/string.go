@@ -36,6 +36,11 @@ func (s *StringValue) Mold() string {
 	return fmt.Sprintf(`"%s"`, s.String())
 }
 
+// Form returns the form-formatted string representation (without quotes).
+func (s *StringValue) Form() string {
+	return s.String()
+}
+
 // Equals performs deep equality comparison.
 func (s *StringValue) Equals(other *StringValue) bool {
 	if len(s.runes) != len(other.runes) {

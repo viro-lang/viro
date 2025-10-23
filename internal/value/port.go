@@ -82,6 +82,11 @@ func (p *Port) Mold() string {
 	return fmt.Sprintf("port[%s %s %s]", p.Scheme, p.State, p.Spec)
 }
 
+// Form returns the form-formatted port representation (same as mold for ports).
+func (p *Port) Form() string {
+	return p.Mold()
+}
+
 // PortVal creates a Value wrapping a Port.
 func PortVal(port *Port) Value {
 	return Value{

@@ -89,6 +89,29 @@ func (o *ObjectInstance) Mold() string {
 	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " "))
 }
 
+// Form returns the form-formatted object representation (multi-line field display).
+func (o *ObjectInstance) Form() string {
+	if o == nil {
+		return ""
+	}
+
+	// Build field display lines using owned frame
+	fieldLines := []string{}
+	for _, fieldName := range o.Manifest.Words {
+		if fieldVal, found := o.GetField(fieldName); found {
+			// Use Form() for human-readable field values
+			displayVal := fieldVal.Form()
+			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
+		}
+	}
+
+	if len(fieldLines) == 0 {
+		return ""
+	}
+
+	return strings.Join(fieldLines, "\n")
+}
+
 // ObjectVal creates a Value wrapping an ObjectInstance.
 func ObjectVal(obj *ObjectInstance) Value {
 	return Value{

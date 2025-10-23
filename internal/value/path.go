@@ -106,6 +106,11 @@ func (p *PathExpression) Mold() string {
 	return result
 }
 
+// Form returns the form-formatted path representation (same as mold for paths).
+func (p *PathExpression) Form() string {
+	return p.Mold()
+}
+
 // PathVal creates a Value wrapping a PathExpression.
 func PathVal(path *PathExpression) Value {
 	return Value{

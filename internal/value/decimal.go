@@ -53,6 +53,11 @@ func (d *DecimalValue) Mold() string {
 	return d.Magnitude.String()
 }
 
+// Form returns the form-formatted decimal representation (same as mold for decimals).
+func (d *DecimalValue) Form() string {
+	return d.Mold()
+}
+
 // DecimalVal creates a Value wrapping a DecimalValue.
 func DecimalVal(magnitude *decimal.Big, scale int16) Value {
 	return Value{

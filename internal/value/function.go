@@ -139,6 +139,11 @@ func (f *FunctionValue) Mold() string {
 	return fmt.Sprintf("function[%s]", f.Name)
 }
 
+// Form returns the form-formatted function representation (same as mold for functions).
+func (f *FunctionValue) Form() string {
+	return f.Mold()
+}
+
 // Arity returns the number of required positional parameters.
 func (f *FunctionValue) Arity() int {
 	count := 0

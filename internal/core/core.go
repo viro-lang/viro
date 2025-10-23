@@ -11,6 +11,7 @@ type Value interface {
 	GetPayload() any
 	String() string
 	Mold() string
+	Form() string
 	Equals(other Value) bool
 }
 

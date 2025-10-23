@@ -1,7 +1,6 @@
 package native
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -77,17 +76,7 @@ func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	}
 
 	val := args[0]
-
-	// Special handling for objects - return multi-line field display
-	if val.GetType() == value.TypeObject {
-		formatted, err := formatObjectForDisplay(val)
-		if err != nil {
-			return value.NoneVal(), err
-		}
-		return value.StrVal(formatted), nil
-	}
-
-	return value.StrVal(formatForDisplay(val)), nil
+	return value.StrVal(val.Form()), nil
 }
 
 // Mold implements the `mold` native.
@@ -102,68 +91,6 @@ func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	val := args[0]
 
 	return value.StrVal(val.Mold()), nil
-}
-
-// formatForDisplay creates human-readable string representation for form function
-func formatForDisplay(v core.Value) string {
-	switch v.GetType() {
-	case value.TypeBlock:
-		if blk, ok := value.AsBlock(v); ok {
-			if len(blk.Elements) == 0 {
-				return ""
-			}
-			parts := make([]string, len(blk.Elements))
-			for i, elem := range blk.Elements {
-				// For strings: remove quotes, for blocks: keep brackets, for others: standard format
-				if elem.GetType() == value.TypeString {
-					if str, ok := value.AsString(elem); ok {
-						parts[i] = str.String()
-					} else {
-						parts[i] = elem.String()
-					}
-				} else {
-					parts[i] = elem.String()
-				}
-			}
-			return strings.Join(parts, " ")
-		}
-	case value.TypeString:
-		if str, ok := value.AsString(v); ok {
-			return str.String() // Raw string content, no quotes
-		}
-	case value.TypeObject:
-		if obj, ok := value.AsObject(v); ok {
-			if obj == nil {
-				return "object[]"
-			}
-			return fmt.Sprintf("object[%s]", strings.Join(obj.Manifest.Words, " "))
-		}
-	}
-	return v.String() // Default formatting for other types
-}
-
-// formatObjectForDisplay creates human-readable multi-line display for objects
-func formatObjectForDisplay(objVal core.Value) (string, error) {
-	obj, ok := value.AsObject(objVal)
-	if !ok || obj == nil {
-		return "", nil
-	}
-
-	// Build field display lines using owned frame
-	fieldLines := []string{}
-	for _, fieldName := range obj.Manifest.Words {
-		if fieldVal, found := obj.GetField(fieldName); found {
-			// Use formatForDisplay for human-readable field values
-			displayVal := formatForDisplay(fieldVal)
-			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
-		}
-	}
-
-	if len(fieldLines) == 0 {
-		return "", nil
-	}
-
-	return strings.Join(fieldLines, "\n"), nil
 }
 
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
