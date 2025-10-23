@@ -53,8 +53,8 @@ func TestUS1_BasicExpressions(t *testing.T) {
 	out.Reset()
 	loop.EvalLineForTest("[1 + 2]")
 	result = strings.TrimSpace(out.String())
-	if result != "3" {
-		t.Errorf("expected '3', got %q", result)
+	if result != "+ 1 2" {
+		t.Errorf("expected '+ 1 2', got %q", result)
 	}
 
 	out.Reset()

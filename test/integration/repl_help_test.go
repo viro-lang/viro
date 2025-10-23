@@ -118,7 +118,7 @@ func TestREPL_HelpIntegration(t *testing.T) {
 			name:          "words returns block",
 			input:         "words",
 			checkOutput:   true,
-			shouldContain: "native[", // Returns a block of words in Form format
+			shouldContain: "print ", // Returns a block of words in Form format
 		},
 		{
 			name:          "Help in sequence",
