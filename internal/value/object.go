@@ -66,6 +66,29 @@ func (o *ObjectInstance) String() string {
 	return fmt.Sprintf("object[%s]", strings.Join(fields, " "))
 }
 
+// Mold returns the mold-formatted object representation (make object! format).
+func (o *ObjectInstance) Mold() string {
+	if o == nil {
+		return "make object! []"
+	}
+
+	// Build field assignments using owned frame
+	fieldAssignments := []string{}
+	for _, fieldName := range o.Manifest.Words {
+		if fieldVal, found := o.GetField(fieldName); found {
+			// Recursively mold the field value
+			moldedVal := fieldVal.Mold() // Use Mold() for proper recursive molding
+			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
+		}
+	}
+
+	if len(fieldAssignments) == 0 {
+		return "make object! []"
+	}
+
+	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " "))
+}
+
 // ObjectVal creates a Value wrapping an ObjectInstance.
 func ObjectVal(obj *ObjectInstance) Value {
 	return Value{

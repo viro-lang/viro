@@ -71,6 +71,11 @@ func NewPort(scheme, spec string, driver PortDriver) *Port {
 
 // String returns a debug representation of the port.
 func (p *Port) String() string {
+	return p.Mold()
+}
+
+// Mold returns the mold-formatted port representation.
+func (p *Port) Mold() string {
 	if p == nil {
 		return "port[closed]"
 	}

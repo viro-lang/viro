@@ -23,6 +23,11 @@ func (b *BinaryValue) Bytes() []byte {
 
 // String converts BinaryValue to hex string representation.
 func (b *BinaryValue) String() string {
+	return b.Mold()
+}
+
+// Mold returns the mold-formatted binary representation.
+func (b *BinaryValue) Mold() string {
 	if len(b.data) == 0 {
 		return "#{}"
 	}

@@ -128,6 +128,11 @@ func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFr
 
 // String returns a string representation for debugging.
 func (f *FunctionValue) String() string {
+	return f.Mold()
+}
+
+// Mold returns the mold-formatted function representation.
+func (f *FunctionValue) Mold() string {
 	if f.Type == FuncNative {
 		return fmt.Sprintf("native[%s]", f.Name)
 	}

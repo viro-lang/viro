@@ -1,6 +1,9 @@
 package value
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // StringValue represents a UTF-8 character sequence.
 // Stored as []rune internally for proper REBOL series semantics
@@ -26,6 +29,11 @@ func NewStringValue(s string) *StringValue {
 // String converts StringValue to Go string for display and I/O.
 func (s *StringValue) String() string {
 	return string(s.runes)
+}
+
+// Mold returns the mold-formatted string representation (with quotes).
+func (s *StringValue) Mold() string {
+	return fmt.Sprintf(`"%s"`, s.String())
 }
 
 // Equals performs deep equality comparison.
