@@ -2,6 +2,7 @@
 package peg
 
 import (
+    "fmt"
     "strconv"
     "strings"
     "github.com/ericlagergren/decimal"
@@ -32,8 +33,24 @@ func calculateScale(s string) int16 {
     return 0
 }
 
-func buildPath(segments []value.PathSegment) core.Value {
-    return value.PathVal(value.NewPath(segments, value.NoneVal()))
+func buildPath(segments []value.PathSegment, isSet bool) core.Value {
+    if isSet {
+        pathStr := ""
+        for i, seg := range segments {
+            if i > 0 {
+                pathStr += "."
+            }
+            switch seg.Type {
+            case value.PathSegmentWord:
+                pathStr += seg.Value.(string)
+            case value.PathSegmentIndex:
+                pathStr += fmt.Sprintf("%d", seg.Value.(int64))
+            }
+        }
+        return value.SetWordVal(pathStr)
+    }
+    path := value.NewPath(segments, value.NoneVal())
+    return value.PathVal(path)
 }
 
 func toSlice(v any) []any {
@@ -72,7 +89,7 @@ Integer <- '-'? [0-9]+ !DecimalStart {
 
 DecimalStart <- [.eE]
 
-Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? {
+Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? !'.' {
     d, scale := toDecimal(string(c.text))
     return value.DecimalVal(d, scale), nil
 } / '-'? [0-9]+ [eE] [+-]? [0-9]+ {
@@ -98,7 +115,7 @@ LitWord <- '\'' word:WordChars {
     return value.LitWordVal(word.(string)), nil
 }
 
-Path <- first:WordChars rest:('.' PathElement)+ {
+Path <- first:WordChars rest:('.' PathElement)+ isSet:':'? !':' {
     segments := make([]value.PathSegment, 0)
     segments = append(segments, value.PathSegment{
         Type: value.PathSegmentWord,
@@ -132,7 +149,7 @@ Path <- first:WordChars rest:('.' PathElement)+ {
         }
     }
     
-    return buildPath(segments), nil
+    return buildPath(segments, isSet != nil), nil
 }
 
 PathElement <- WordChars / [0-9]+ {
@@ -143,7 +160,7 @@ Word <- word:WordChars {
     return value.WordVal(word.(string)), nil
 }
 
-WordChars <- [a-zA-Z_?+*/<>=-] [a-zA-Z0-9_?+*/<>=-]* {
+WordChars <- [\p{L}_?+*/<>=-] [\p{L}\p{N}_?+*/<>=-]* {
     return string(c.text), nil
 }
 

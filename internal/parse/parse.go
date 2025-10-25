@@ -11,7 +11,16 @@ import (
 func Parse(input string) ([]core.Value, error) {
 	result, err := peg.ParseReader("", strings.NewReader(input))
 	if err != nil {
-		vErr := verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
+		errMsg := err.Error()
+		errID := verror.ErrIDInvalidSyntax
+
+		if strings.Contains(errMsg, "expected:") && strings.Contains(errMsg, "\"]\"") {
+			errID = verror.ErrIDUnclosedBlock
+		} else if strings.Contains(errMsg, "expected:") && strings.Contains(errMsg, "\")\"") {
+			errID = verror.ErrIDUnclosedParen
+		}
+
+		vErr := verror.NewSyntaxError(errID, [3]string{errMsg, "", ""})
 		if input != "" {
 			vErr.SetNear(input)
 		}

@@ -86,18 +86,10 @@ func TestComplexNumberParsing(t *testing.T) {
 		{
 			name:        "multiple decimal points as path",
 			input:       "1.2.3",
-			expectError: false,
-			expected:    nil, // Will be checked by checkResult
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse multiple decimal points as a path",
+			expectError: true,
+			expected:    nil,
+			checkResult: nil,
+			desc:        "Should reject multiple decimal points (paths can't start with numbers)",
 		},
 		{
 			name:        "number at start of input",
@@ -167,32 +159,16 @@ func TestAdvancedPathTokenization(t *testing.T) {
 		{
 			name:        "path starting with number",
 			input:       "1.field",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse paths starting with numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject paths starting with numbers",
 		},
 		{
 			name:        "decimal path",
 			input:       "42.0.field",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse paths with decimal numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject paths with decimal numbers at start",
 		},
 		{
 			name:        "complex nested path",
@@ -232,17 +208,9 @@ func TestAdvancedPathTokenization(t *testing.T) {
 		{
 			name:        "set-path with number",
 			input:       "1.field:",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypeSetWord {
-					t.Errorf("Expected set-word, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse set-paths starting with numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject set-paths starting with numbers",
 		},
 		{
 			name:        "regular path vs set-path",
