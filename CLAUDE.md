@@ -29,6 +29,9 @@ go build -o viro ./cmd/viro  # Alternative (without grammar generation)
 go test ./...
 make test
 
+# Test summary (shows total, passed, failed counts)
+make test-summary
+
 # Run specific test package
 go test -v ./test/contract/...
 go test -v ./internal/native/...
