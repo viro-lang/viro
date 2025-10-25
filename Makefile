@@ -1,9 +1,11 @@
-.PHONY: build test clean all install
+.PHONY: build test clean all install grammar
 
 # Binary name
 BINARY_NAME=viro
 BUILD_DIR=.
 CMD_DIR=./cmd/viro
+GRAMMAR_FILE=grammar/viro.peg
+PARSER_OUTPUT=internal/parse/peg/parser.go
 
 # Go parameters
 GOCMD=go
@@ -15,7 +17,10 @@ GOMOD=$(GOCMD) mod
 
 all: test build
 
-build:
+grammar:
+	pigeon -o $(PARSER_OUTPUT) $(GRAMMAR_FILE)
+
+build: grammar
 	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 
 test:
