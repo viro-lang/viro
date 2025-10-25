@@ -21,122 +21,105 @@ func TestExpressionParsing(t *testing.T) {
 			input:       "3 + 4",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren (expression), got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeInteger || vals[1].GetType() != value.TypeWord || vals[2].GetType() != value.TypeInteger {
+					t.Errorf("Expected [int, word, int], got [%s, %s, %s]",
+						value.TypeToString(vals[0].GetType()),
+						value.TypeToString(vals[1].GetType()),
+						value.TypeToString(vals[2].GetType()))
 				}
 			},
-			desc: "Should parse simple addition expression",
+			desc: "Should parse as flat sequence [3, +, 4]",
 		},
 		{
 			name:        "left to right evaluation",
 			input:       "2 + 3 * 4",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (flat sequence), got %d", len(vals))
 					return
 				}
-				// Should parse as (+ 2 (* 3 4)) = 20, not 14
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should demonstrate left-to-right operator evaluation (no precedence)",
+			desc: "Should parse as flat sequence [2, +, 3, *, 4] - evaluator handles precedence",
 		},
 		{
 			name:        "complex expression",
 			input:       "1 + 2 * 3 - 4 / 2",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 9 {
+					t.Errorf("Expected 9 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse complex multi-operator expression",
+			desc: "Should parse as flat sequence [1, +, 2, *, 3, -, 4, /, 2]",
 		},
 		{
 			name:        "comparison operators",
 			input:       "x < y and y > z",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 7 {
+					t.Errorf("Expected 7 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse comparison and logical operators",
+			desc: "Should parse comparison and logical operators as flat sequence",
 		},
 		{
 			name:        "mixed operators",
 			input:       "a + b < c * d",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 7 {
+					t.Errorf("Expected 7 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse mixed arithmetic and comparison operators",
+			desc: "Should parse mixed operators as flat sequence",
 		},
 		{
 			name:        "nested expressions with parens",
 			input:       "3 + (4 * 2)",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values, got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[2].GetType() != value.TypeParen {
+					t.Errorf("Expected third element to be paren, got %s", value.TypeToString(vals[2].GetType()))
 				}
 			},
-			desc: "Should parse nested expressions with parentheses",
+			desc: "Should parse as [3, +, (4 * 2)] with paren containing flat sequence",
 		},
 		{
 			name:        "operator associativity",
 			input:       "1 - 2 - 3",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (flat sequence), got %d", len(vals))
 					return
 				}
-				// Should parse as (- (- 1 2) 3) = -4, not (- 1 (- 2 3)) = 0
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should demonstrate left-associative operators",
+			desc: "Should parse as flat sequence [1, -, 2, -, 3] - evaluator handles associativity",
 		},
 		{
 			name:        "expression with decimals",
 			input:       "1.5 + 2.5 * 3.0",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse expressions with decimal numbers",
+			desc: "Should parse expressions with decimals as flat sequence",
 		},
 	}
 
@@ -434,15 +417,12 @@ func TestPrimaryExpressionEdgeCases(t *testing.T) {
 			input:       "+ + +",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value (expression), got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren (expression), got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse multiple consecutive operators as an expression",
+			desc: "Should parse as flat sequence of operator words",
 		},
 		{
 			name:        "mixed valid and invalid tokens",
@@ -509,11 +489,11 @@ func TestPrimaryExpressionEdgeCases(t *testing.T) {
 			input:       "a + b",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value (expression), got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values (flat sequence), got %d", len(vals))
 				}
 			},
-			desc: "Should parse single character identifiers and operators",
+			desc: "Should parse as flat sequence [a, +, b]",
 		},
 	}
 

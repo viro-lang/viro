@@ -244,15 +244,21 @@ func TestParseEvalFunction(t *testing.T) {
 			input:       "42 + 24",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeInteger {
+					t.Errorf("Expected integer, got %s", value.TypeToString(vals[0].GetType()))
+				}
+				if vals[1].GetType() != value.TypeWord {
+					t.Errorf("Expected word (+), got %s", value.TypeToString(vals[1].GetType()))
+				}
+				if vals[2].GetType() != value.TypeInteger {
+					t.Errorf("Expected integer, got %s", value.TypeToString(vals[2].GetType()))
 				}
 			},
-			desc: "Should parse single expressions",
+			desc: "Should parse expressions as flat sequences",
 		},
 		{
 			name:        "simple value",
