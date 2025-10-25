@@ -1,0 +1,166 @@
+{
+package parse
+
+import (
+    "strconv"
+    "strings"
+    "github.com/ericlagergren/decimal"
+    "github.com/marcin-radoszewski/viro/internal/core"
+    "github.com/marcin-radoszewski/viro/internal/value"
+)
+
+func toInt(s string) int64 {
+    n, _ := strconv.ParseInt(s, 10, 64)
+    return n
+}
+
+func toDecimal(s string) (*decimal.Big, int16) {
+    d := new(decimal.Big)
+    d.SetString(s)
+    scale := calculateScale(s)
+    return d, scale
+}
+
+func calculateScale(s string) int16 {
+    if idx := strings.Index(s, "."); idx >= 0 {
+        endIdx := len(s)
+        if eIdx := strings.IndexAny(s, "eE"); eIdx > idx {
+            endIdx = eIdx
+        }
+        return int16(endIdx - idx - 1)
+    }
+    return 0
+}
+
+func buildPath(segments []value.PathSegment) core.Value {
+    return value.PathVal(value.NewPath(segments, value.NoneVal()))
+}
+
+func toSlice(v any) []any {
+    if v == nil { return nil }
+    return v.([]any)
+}
+
+func flattenValues(v any) []core.Value {
+    if v == nil {
+        return []core.Value{}
+    }
+    slice := toSlice(v)
+    result := make([]core.Value, 0, len(slice))
+    for _, item := range slice {
+        if val, ok := item.(core.Value); ok {
+            result = append(result, val)
+        }
+    }
+    return result
+}
+}
+
+Input <- _ vals:Value* _ EOF {
+    return flattenValues(vals), nil
+}
+
+Value <- _ val:(Decimal / Integer / String / Block / Paren / 
+                SetWord / GetWord / LitWord / Path / 
+                Datatype / Word) _ {
+    return val, nil
+}
+
+Integer <- '-'? [0-9]+ !DecimalStart {
+    return value.IntVal(toInt(string(c.text))), nil
+}
+
+DecimalStart <- [.eE]
+
+Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? {
+    d, scale := toDecimal(string(c.text))
+    return value.DecimalVal(d, scale), nil
+} / '-'? [0-9]+ [eE] [+-]? [0-9]+ {
+    d, scale := toDecimal(string(c.text))
+    return value.DecimalVal(d, scale), nil
+}
+
+String <- '"' [^"]* '"' {
+    text := string(c.text)
+    content := text[1:len(text)-1]
+    return value.StrVal(content), nil
+}
+
+SetWord <- word:WordChars ':' !':' {
+    return value.SetWordVal(word.(string)), nil
+}
+
+GetWord <- ':' word:WordChars {
+    return value.GetWordVal(word.(string)), nil
+}
+
+LitWord <- '\'' word:WordChars {
+    return value.LitWordVal(word.(string)), nil
+}
+
+Path <- first:WordChars rest:('.' PathElement)+ {
+    segments := make([]value.PathSegment, 0)
+    segments = append(segments, value.PathSegment{
+        Type: value.PathSegmentWord,
+        Value: first.(string),
+    })
+    
+    for _, item := range toSlice(rest) {
+        parts := toSlice(item)
+        segment := parts[1]
+        
+        var segStr string
+        switch v := segment.(type) {
+        case string:
+            segStr = v
+        case []byte:
+            segStr = string(v)
+        default:
+            segStr = ""
+        }
+        
+        if num, err := strconv.ParseInt(segStr, 10, 64); err == nil {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentIndex,
+                Value: num,
+            })
+        } else {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentWord,
+                Value: segStr,
+            })
+        }
+    }
+    
+    return buildPath(segments), nil
+}
+
+PathElement <- WordChars / [0-9]+ {
+    return string(c.text), nil
+}
+
+Word <- word:WordChars {
+    return value.WordVal(word.(string)), nil
+}
+
+WordChars <- [a-zA-Z_?!] [a-zA-Z0-9_?!-]* {
+    return string(c.text), nil
+}
+
+Block <- '[' _ vals:Value* _ ']' {
+    return value.BlockVal(flattenValues(vals)), nil
+}
+
+Paren <- '(' _ vals:Value* _ ')' {
+    return value.ParenVal(flattenValues(vals)), nil
+}
+
+Datatype <- word:WordChars '!' {
+    return value.DatatypeVal(word.(string) + "!"), nil
+}
+
+_ <- ([ \t\n\r] / Comment)*
+
+Comment <- ';' [^\n]* '\n'?
+
+EOF <- !.
