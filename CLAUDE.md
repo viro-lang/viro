@@ -14,9 +14,13 @@ Viro is a REBOL-inspired language interpreter implemented in Go. **It is NOT a R
 
 ### Building and Running
 ```bash
-# Build the interpreter
-go build -o viro ./cmd/viro
-make build  # Alternative using Makefile
+# Generate parser from PEG grammar
+make grammar
+pigeon -o internal/parse/peg/parser.go grammar/viro.peg  # Alternative
+
+# Build the interpreter (includes grammar generation)
+make build
+go build -o viro ./cmd/viro  # Alternative (without grammar generation)
 
 # Run REPL
 ./viro
@@ -55,7 +59,9 @@ internal/
 ├── frame/       - Frame and context system (local-by-default scoping)
 ├── native/      - Native function implementations and Registry
 ├── verror/      - Structured error system with categories (Syntax, Script, Math, etc.)
-├── parse/       - Parser and dialect engine
+├── parse/       - Parser (PEG-based, single-stage)
+│   ├── peg/     - Generated parser from Pigeon
+│   ├── parse.go - Parser wrapper and API
 └── repl/        - REPL implementation
 ```
 

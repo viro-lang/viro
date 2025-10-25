@@ -1,7 +1,8 @@
 # Agent Guidelines for Viro
 
 ## Build & Test Commands
-- Build: `go build -o viro ./cmd/viro` or `make build`
+- Generate grammar: `make grammar` or `pigeon -o internal/parse/peg/parser.go grammar/viro.peg`
+- Build: `make build` (includes grammar generation) or `go build -o viro ./cmd/viro`
 - Test all: `go test ./...` or `make test`
 - Test package: `go test -v ./test/contract/...` or `go test -v ./internal/native/...`
 - Single test: `go test -v ./test/contract -run TestNativeAdd`
