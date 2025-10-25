@@ -242,12 +242,29 @@ type Frame struct {
 }
 ```
 
-### Series Operations
+### Object System (Feature 002)
 
-Blocks and strings implement series interface:
-- `First()`, `Last()`, `At(index)`, `Length()` - access
-- `Append(value)`, `Insert(value)`, `Remove()` - modification
-- Series are mutable (in-place operations)
+**Self-Contained Objects**: Objects own their frames directly, eliminating evaluator coupling.
+
+```go
+type ObjectInstance struct {
+    Frame       core.Frame      // Owned frame for field storage
+    ParentProto *ObjectInstance // Prototype inheritance chain
+    Manifest    ObjectManifest  // Field metadata
+}
+```
+
+**Key Features**:
+- **Portable**: Objects work across evaluator instances, can be serialized
+- **Owned Frames**: Direct frame ownership, no frameStore dependency
+- **Prototype Inheritance**: ParentProto enables field inheritance
+- **Type Safety**: Optional type hints per field with validation
+
+**Operations**:
+- `object [name: "Alice" age: 30]` - Create object with owned frame
+- `obj.name` - Access field via owned frame
+- `obj.age: 31` - Update field in owned frame
+- `make parent [child: true]` - Prototype-based inheritance
 
 ## Feature Development
 

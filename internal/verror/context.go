@@ -60,10 +60,10 @@ func formatValueWithMetadata(v core.Value) string {
 	if v.GetType() == value.TypeDecimal {
 		if dec, ok := value.AsDecimal(v); ok && dec != nil {
 			// Include scale metadata for decimal diagnostics
-			return fmt.Sprintf("%s[scale:%d]", dec.String(), dec.Scale)
+			return fmt.Sprintf("%s[scale:%d]", dec.Mold(), dec.Scale)
 		}
 	}
-	return v.String()
+	return v.Mold()
 }
 
 // CaptureWhere creates a call stack trace from frame chain.

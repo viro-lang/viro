@@ -10,6 +10,8 @@ type Value interface {
 	GetType() ValueType
 	GetPayload() any
 	String() string
+	Mold() string
+	Form() string
 	Equals(other Value) bool
 }
 

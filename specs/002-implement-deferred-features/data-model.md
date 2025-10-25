@@ -82,30 +82,33 @@ const (
 **Structure**:
 ```go
 type ObjectInstance struct {
-    FrameIndex int    // index into frame registry/stack (reuses frame infrastructure)
-    Parent     int    // index of parent object frame (-1 if none)
-    Manifest   ObjectManifest
-}
-
-type ObjectManifest struct {
-    Words  []string  // published field names (case-sensitive)
-    Types  []ValueType // optional type hints (TypeNone = any)
+    Frame       core.Frame      // owned frame for self-contained field storage
+    ParentProto *ObjectInstance // parent prototype object (nil if none)
+    Manifest    ObjectManifest  // field metadata
 }
 ```
 
+**Key Changes (Phase 3 Refactor)**:
+- **Owned Frames**: Objects now own their frames directly instead of referencing evaluator frameStore
+- **Self-Contained**: Objects are portable and serializable (no evaluator coupling)
+- **Prototype Chain**: ParentProto enables inheritance without frame index dependencies
+
 **Operations**:
-- Construction via native `object [spec]` – creates new Frame, binds words, evaluates initializers lazily.
-- Path traversal: `object.field` resolves by looking up word within object's frame; cascades to parent if missing.
-- Mutation: `object.field: value` performs Frame.Set with validation.
+- Construction via native `object [spec]` – creates owned Frame, binds words, evaluates initializers
+- Field access: `GetField(name)` searches owned frame; `GetFieldWithProto(name)` traverses prototype chain
+- Path traversal: `object.field` uses owned frame lookup with prototype inheritance
+- Mutation: `object.field: value` updates owned frame with validation
 
 **Validation Rules**:
-- Field names unique within object; duplicates raise Script error (300).
-- Type hints (when provided) enforced on assignment.
-- Parent chain must be acyclic to prevent infinite lookup loops.
+- Field names unique within object; duplicates raise Script error (300)
+- Type hints (when provided) enforced on assignment
+- Parent chain must be acyclic to prevent infinite lookup loops
 
 **Relationships**:
-- Backed by `Frame` entries; ObjectInstance simply references frame index (keeping index-based safety).
-- Path expressions use ObjectInstance to resolve segments.
+- **Self-Contained**: No evaluator dependency - objects can be created, passed, and serialized independently
+- **Portable**: Objects work across evaluator instances and can be saved/loaded
+- **Memory Managed**: Object frames managed by object lifecycle, not evaluator frameStore
+- Path expressions use ObjectInstance.GetFieldWithProto() for resolution
 
 ---
 

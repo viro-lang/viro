@@ -71,7 +71,7 @@ func TestActionDispatchBasics(t *testing.T) {
 				return
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.want {
 				t.Errorf("Got %s, want %s", got, tt.want)
 			}
@@ -102,7 +102,7 @@ func TestActionShadowing(t *testing.T) {
 
 	// Should use the local function, not the action
 	if val, ok := value.AsInteger(result); !ok || val != 10 {
-		t.Errorf("Expected 10, got %s", result.String())
+		t.Errorf("Expected 10, got %s", result.Mold())
 	}
 }
 

@@ -37,6 +37,11 @@ func NewDecimal(magnitude *decimal.Big, scale int16) *DecimalValue {
 
 // String returns formatted decimal string preserving scale.
 func (d *DecimalValue) String() string {
+	return d.Mold()
+}
+
+// Mold returns the mold-formatted decimal representation.
+func (d *DecimalValue) Mold() string {
 	if d == nil || d.Magnitude == nil {
 		return "0.0"
 	}
@@ -46,6 +51,11 @@ func (d *DecimalValue) String() string {
 	}
 	// Fallback to scientific notation if conversion fails
 	return d.Magnitude.String()
+}
+
+// Form returns the form-formatted decimal representation (same as mold for decimals).
+func (d *DecimalValue) Form() string {
+	return d.Mold()
 }
 
 // DecimalVal creates a Value wrapping a DecimalValue.

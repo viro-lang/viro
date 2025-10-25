@@ -37,6 +37,43 @@ func (b *BlockValue) String() string {
 	return "[" + b.StringElements() + "]"
 }
 
+// Mold returns the mold-formatted block representation (with brackets).
+func (b *BlockValue) Mold() string {
+	if len(b.Elements) == 0 {
+		return "[]"
+	}
+	parts := make([]string, len(b.Elements))
+	for i, elem := range b.Elements {
+		parts[i] = elem.Mold()
+	}
+	return "[" + strings.Join(parts, " ") + "]"
+}
+
+// Form returns the form-formatted block representation (without brackets).
+func (b *BlockValue) Form() string {
+	if len(b.Elements) == 0 {
+		return ""
+	}
+	parts := make([]string, len(b.Elements))
+	for i, elem := range b.Elements {
+		parts[i] = elem.Form()
+	}
+	return strings.Join(parts, " ")
+}
+
+// MoldElements returns space-separated molded element representations.
+// Used by Paren mold formatting.
+func (b *BlockValue) MoldElements() string {
+	if len(b.Elements) == 0 {
+		return ""
+	}
+	parts := make([]string, len(b.Elements))
+	for i, elem := range b.Elements {
+		parts[i] = elem.Mold()
+	}
+	return strings.Join(parts, " ")
+}
+
 // StringElements returns space-separated element representations.
 // Used by both Block and Paren string formatting.
 func (b *BlockValue) StringElements() string {
@@ -45,7 +82,7 @@ func (b *BlockValue) StringElements() string {
 	}
 	parts := make([]string, len(b.Elements))
 	for i, elem := range b.Elements {
-		parts[i] = elem.String()
+		parts[i] = elem.Form()
 	}
 	return strings.Join(parts, " ")
 }
@@ -147,7 +184,7 @@ func SortBlock(b *BlockValue) {
 		case TypeString:
 			iVal, _ := AsString(elemI)
 			jVal, _ := AsString(elemJ)
-			return iVal.String() < jVal.String()
+			return iVal.Form() < jVal.Form()
 		default:
 			return false
 		}

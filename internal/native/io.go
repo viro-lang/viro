@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"os"
@@ -125,7 +126,7 @@ func (d *fileDriver) Close() error {
 	return err
 }
 
-func (d *fileDriver) Query() (map[string]interface{}, error) {
+func (d *fileDriver) Query() (map[string]any, error) {
 	if d.file == nil {
 		return nil, fmt.Errorf("file not open")
 	}
@@ -133,7 +134,7 @@ func (d *fileDriver) Query() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"size":     info.Size(),
 		"modified": info.ModTime(),
 		"mode":     info.Mode().String(),
@@ -190,13 +191,13 @@ func (d *tcpDriver) Close() error {
 	return err
 }
 
-func (d *tcpDriver) Query() (map[string]interface{}, error) {
+func (d *tcpDriver) Query() (map[string]any, error) {
 	if d.conn == nil {
 		return nil, fmt.Errorf("connection not open")
 	}
 	localAddr := d.conn.LocalAddr().String()
 	remoteAddr := d.conn.RemoteAddr().String()
-	return map[string]interface{}{
+	return map[string]any{
 		"local-address":  localAddr,
 		"remote-address": remoteAddr,
 		"state":          "connected",
@@ -325,11 +326,11 @@ func (d *httpDriver) Close() error {
 	return nil
 }
 
-func (d *httpDriver) Query() (map[string]interface{}, error) {
+func (d *httpDriver) Query() (map[string]any, error) {
 	if d.response == nil {
 		return nil, fmt.Errorf("no response available")
 	}
-	return map[string]interface{}{
+	return map[string]any{
 		"status":         d.response.StatusCode,
 		"content-length": d.response.ContentLength,
 		"headers":        d.response.Header,
@@ -359,8 +360,8 @@ func (d *stdioWriterDriver) Close() error {
 	return nil
 }
 
-func (d *stdioWriterDriver) Query() (map[string]interface{}, error) {
-	return map[string]interface{}{
+func (d *stdioWriterDriver) Query() (map[string]any, error) {
+	return map[string]any{
 		"type": "stdio-writer",
 	}, nil
 }
@@ -388,8 +389,8 @@ func (d *stdioReaderDriver) Close() error {
 	return nil
 }
 
-func (d *stdioReaderDriver) Query() (map[string]interface{}, error) {
-	return map[string]interface{}{
+func (d *stdioReaderDriver) Query() (map[string]any, error) {
+	return map[string]any{
 		"type": "stdio-reader",
 	}, nil
 }
@@ -566,7 +567,7 @@ func WritePort(spec string, data core.Value, opts map[string]core.Value) error {
 		str, _ := value.AsString(data)
 		contentBytes = []byte(str.String())
 	} else {
-		contentBytes = []byte(data.String())
+		contentBytes = []byte(data.Mold())
 	}
 
 	// For file operations with append mode
@@ -647,14 +648,7 @@ func QueryPort(portVal core.Value) (core.Value, error) {
 	// Convert metadata map to object
 	// For now, create a simple object representation
 	// Full implementation would use ObjectInstance with proper frame
-	obj := &value.ObjectInstance{
-		FrameIndex: -1, // Temporary object without frame
-		Parent:     -1,
-		Manifest: value.ObjectManifest{
-			Words: make([]string, 0, len(metadata)),
-			Types: make([]core.ValueType, 0, len(metadata)),
-		},
-	}
+	obj := value.NewObject(nil, make([]string, 0, len(metadata)), make([]core.ValueType, 0, len(metadata)))
 
 	// Store metadata keys
 	for key := range metadata {
@@ -753,7 +747,7 @@ func serializeValue(val core.Value) string {
 		intVal, _ := value.AsInteger(val)
 		return formatInt(intVal)
 	case value.TypeDecimal:
-		return val.String()
+		return val.Mold()
 	case value.TypeString:
 		str, _ := value.AsString(val)
 		return fmt.Sprintf(`"%s"`, str.String())
@@ -773,7 +767,7 @@ func serializeValue(val core.Value) string {
 		}
 		return fmt.Sprintf("[%s]", strings.Join(parts, " "))
 	default:
-		return val.String()
+		return val.Mold()
 	}
 }
 
@@ -868,7 +862,7 @@ func OpenNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	// Call OpenPort with no options (for basic REPL usage)
@@ -916,15 +910,13 @@ func ReadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	// Build options map from refinements
 	opts := make(map[string]core.Value)
 	if refValues != nil {
-		for name, val := range refValues {
-			opts[name] = val
-		}
+		maps.Copy(opts, refValues)
 	}
 
 	result, err := ReadPort(spec, opts)
@@ -950,7 +942,7 @@ func WriteNative(args []core.Value, refValues map[string]core.Value, eval core.E
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	err := WritePort(spec, args[1], nil)
@@ -976,7 +968,7 @@ func SaveNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	err := SavePort(spec, args[1], nil)
@@ -1002,7 +994,7 @@ func LoadNative(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		str, _ := value.AsString(args[0])
 		spec = str.String()
 	} else {
-		spec = args[0].String()
+		spec = args[0].Mold()
 	}
 
 	result, err := LoadPort(spec, nil)

@@ -182,19 +182,10 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	obj, _ := value.AsObject(val)
 
-	// Get object's frame
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"values-of", "invalid-frame-index", ""},
-		)
-	}
-
-	// Build block of values
+	// Build block of values using owned frame
 	valueElements := make([]core.Value, len(obj.Manifest.Words))
 	for i, field := range obj.Manifest.Words {
-		if fieldVal, found := objFrame.Get(field); found {
+		if fieldVal, found := obj.GetField(field); found {
 			// Deep copy the value to prevent mutation
 			valueElements[i] = fieldVal
 		} else {
@@ -259,7 +250,7 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 func formatBlock(elements []core.Value) string {
 	parts := make([]string, len(elements))
 	for i, elem := range elements {
-		parts[i] = elem.String()
+		parts[i] = elem.Mold()
 	}
 	return "[" + strings.Join(parts, " ") + "]"
 }

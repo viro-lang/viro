@@ -80,12 +80,7 @@ func TestObjectConstruction(t *testing.T) {
 					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
 				}
 
-				objFrame := e.GetFrameByIndex(obj.FrameIndex)
-				if objFrame == nil {
-					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
-				}
-
-				nameVal, found := objFrame.Get("name")
+				nameVal, found := obj.GetField("name")
 				if !found {
 					t.Error("field 'name' not found in frame")
 				}
@@ -93,7 +88,7 @@ func TestObjectConstruction(t *testing.T) {
 					t.Errorf("expected name to be string, got %v", value.TypeToString(nameVal.GetType()))
 				}
 
-				ageVal, found := objFrame.Get("age")
+				ageVal, found := obj.GetField("age")
 				if !found {
 					t.Error("field 'age' not found in frame")
 				}
@@ -166,11 +161,7 @@ func TestNestedObjects(t *testing.T) {
 					t.Fatal("expected object type")
 				}
 
-				objFrame := e.GetFrameByIndex(obj.FrameIndex)
-				if objFrame == nil {
-					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
-				}
-				addrVal, found := objFrame.Get("address")
+				addrVal, found := obj.GetField("address")
 				if !found {
 					t.Fatal("address field not found")
 				}
@@ -184,11 +175,8 @@ func TestNestedObjects(t *testing.T) {
 					t.Fatal("address is not an object")
 				}
 
-				addrFrame := e.GetFrameByIndex(addrObj.FrameIndex)
-				if addrFrame == nil {
-					t.Fatalf("invalid frame index: %d", addrObj.FrameIndex)
-				}
-				cityVal, found := addrFrame.Get("city")
+				// Check city field in nested object
+				cityVal, found := addrObj.GetField("city")
 				if !found {
 					t.Error("city field not found in nested object")
 				}
@@ -214,21 +202,13 @@ func TestNestedObjects(t *testing.T) {
 					t.Fatal("expected object type")
 				}
 
-				frame1 := e.GetFrameByIndex(obj.FrameIndex)
-				if frame1 == nil {
-					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
-				}
-				deptVal, found := frame1.Get("dept")
+				deptVal, found := obj.GetField("dept")
 				if !found || deptVal.GetType() != value.TypeObject {
 					t.Fatal("dept not found or not an object")
 				}
 
 				deptObj, _ := value.AsObject(deptVal)
-				frame2 := e.GetFrameByIndex(deptObj.FrameIndex)
-				if frame2 == nil {
-					t.Fatalf("invalid frame index: %d", deptObj.FrameIndex)
-				}
-				teamVal, found := frame2.Get("team")
+				teamVal, found := deptObj.GetField("team")
 				if !found || teamVal.GetType() != value.TypeObject {
 					t.Fatal("team not found or not an object")
 				}
@@ -331,7 +311,7 @@ func TestPathReadTraversal(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
@@ -364,16 +344,12 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("obj is not an object")
 				}
 
-				objFrame := e.GetFrameByIndex(obj.FrameIndex)
-				if objFrame == nil {
-					t.Fatalf("invalid frame index: %d", obj.FrameIndex)
-				}
-				nameVal, found := objFrame.Get("name")
+				nameVal, found := obj.GetField("name")
 				if !found {
 					t.Fatal("name field not found")
 				}
 
-				str := nameVal.String()
+				str := nameVal.Form()
 				if !strings.Contains(str, "Bob") {
 					t.Errorf("expected name to be Bob, got %s", str)
 				}
@@ -396,11 +372,7 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("user is not an object")
 				}
 
-				userFrame := e.GetFrameByIndex(user.FrameIndex)
-				if userFrame == nil {
-					t.Fatalf("invalid frame index: %d", user.FrameIndex)
-				}
-				addrVal, found := userFrame.Get("address")
+				addrVal, found := user.GetField("address")
 				if !found {
 					t.Fatal("address not found")
 				}
@@ -410,16 +382,13 @@ func TestPathWriteMutation(t *testing.T) {
 					t.Fatal("address is not an object")
 				}
 
-				addrFrame := e.GetFrameByIndex(addr.FrameIndex)
-				if addrFrame == nil {
-					t.Fatalf("invalid frame index: %d", addr.FrameIndex)
-				}
-				cityVal, found := addrFrame.Get("city")
+				// Check city field in nested object
+				cityVal, found := addr.GetField("city")
 				if !found {
 					t.Fatal("city not found")
 				}
 
-				str := cityVal.String()
+				str := cityVal.Form()
 				if !strings.Contains(str, "Seattle") {
 					t.Errorf("expected city to be Seattle, got %s", str)
 				}
@@ -540,7 +509,7 @@ func TestPathIndexing(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
@@ -608,7 +577,7 @@ func TestParentPrototype(t *testing.T) {
 			}
 
 			if tt.expectStr != "" {
-				str := result.String()
+				str := result.Form()
 				if !strings.Contains(str, tt.expectStr) {
 					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}

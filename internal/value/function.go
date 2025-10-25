@@ -128,10 +128,20 @@ func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFr
 
 // String returns a string representation for debugging.
 func (f *FunctionValue) String() string {
+	return f.Mold()
+}
+
+// Mold returns the mold-formatted function representation.
+func (f *FunctionValue) Mold() string {
 	if f.Type == FuncNative {
 		return fmt.Sprintf("native[%s]", f.Name)
 	}
 	return fmt.Sprintf("function[%s]", f.Name)
+}
+
+// Form returns the form-formatted function representation (same as mold for functions).
+func (f *FunctionValue) Form() string {
+	return f.Mold()
 }
 
 // Arity returns the number of required positional parameters.

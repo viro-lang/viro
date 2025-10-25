@@ -388,11 +388,12 @@ func (r *REPL) evalParsedValues(values []core.Value) {
 	}
 
 	if result.GetType() != value.TypeNone {
-		_, err := native.Print([]core.Value{result}, nil, r.evaluator)
+		formResult, err := native.Form([]core.Value{result}, nil, r.evaluator)
 		if err != nil {
 			r.printError(err)
 			return
 		}
+		fmt.Fprintln(r.out, formResult.Form())
 	}
 }
 
@@ -594,6 +595,6 @@ func (r *REPL) handleHelpShortcut() {
 
 	// Help returns none, no need to print result
 	if result.GetType() != value.TypeNone {
-		fmt.Fprintln(r.out, result.String())
+		fmt.Fprintln(r.out, result.Form())
 	}
 }

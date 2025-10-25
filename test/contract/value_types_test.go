@@ -5,6 +5,7 @@ import (
 
 	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
@@ -67,18 +68,10 @@ func TestObjectInstanceConstruction(t *testing.T) {
 	words := []string{"name", "age"}
 	types := []core.ValueType{value.TypeString, value.TypeInteger}
 
-	obj := value.NewObject(1, words, types)
+	obj := value.NewObject(nil, words, types)
 
 	if obj == nil {
 		t.Fatal("NewObject returned nil")
-	}
-
-	if obj.FrameIndex != 1 {
-		t.Errorf("expected frame index 1, got %d", obj.FrameIndex)
-	}
-
-	if obj.Parent != -1 {
-		t.Errorf("expected parent -1, got %d", obj.Parent)
 	}
 
 	if len(obj.Manifest.Words) != 2 {
@@ -94,7 +87,7 @@ func TestObjectInstanceConstruction(t *testing.T) {
 
 // TestObjectValueWrapping validates Value wrapping for objects
 func TestObjectValueWrapping(t *testing.T) {
-	obj := value.NewObject(0, []string{"x"}, nil)
+	obj := value.NewObject(nil, []string{"x"}, nil)
 	val := value.ObjectVal(obj)
 
 	if val.Type != value.TypeObject {
@@ -225,15 +218,20 @@ func TestPathValueWrapping(t *testing.T) {
 
 // TestValueTypeDispatch validates type dispatch for new types
 func TestValueTypeDispatch(t *testing.T) {
+	// Create object with a field
+	objFrame := frame.NewObjectFrame(0, []string{"name"}, []core.ValueType{value.TypeString})
+	obj := value.NewObject(objFrame, []string{"name"}, []core.ValueType{value.TypeString})
+	obj.SetField("name", value.StrVal("Alice"))
+
 	tests := []struct {
 		name     string
 		val      core.Value
 		expected core.ValueType
 	}{
 		{"decimal", value.DecimalVal(decimal.New(42, 0), 0), value.TypeDecimal},
-		{"object", value.ObjectVal(value.NewObject(0, nil, nil)), value.TypeObject},
+		{"object", value.ObjectVal(obj), value.TypeObject},
 		{"port", value.PortVal(value.NewPort("file", "test", nil)), value.TypePort},
-		{"path", value.PathVal(value.NewPath(nil, value.NoneVal())), value.TypePath},
+		{"path", value.PathVal(value.NewPath([]value.PathSegment{{Type: value.PathSegmentWord, Value: "test"}}, value.NoneVal())), value.TypePath},
 	}
 
 	for _, tt := range tests {
@@ -242,10 +240,10 @@ func TestValueTypeDispatch(t *testing.T) {
 				t.Errorf("expected type %v, got %v", tt.expected, tt.val.GetType())
 			}
 
-			// Verify String() method works
-			str := tt.val.String()
+			// Verify Form() method works
+			str := tt.val.Form()
 			if str == "" {
-				t.Errorf("Value.String() returned empty for type %v", tt.expected)
+				t.Errorf("Value.Form() returned empty for type %v", tt.expected)
 			}
 		})
 	}

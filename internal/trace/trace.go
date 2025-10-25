@@ -226,7 +226,7 @@ func TracePortError(scheme, spec string, err error) {
 }
 
 // TraceObjectCreate emits a trace event for object creation (Feature 002, US3).
-func TraceObjectCreate(frameIndex int, fieldCount int) {
+func TraceObjectCreate(fieldCount int) {
 	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
 		return
 	}
@@ -234,14 +234,14 @@ func TraceObjectCreate(frameIndex int, fieldCount int) {
 	event := TraceEvent{
 		Timestamp: time.Now(),
 		Word:      "object",
-		Value:     fmt.Sprintf("object created: frame:%d fields:%d", frameIndex, fieldCount),
+		Value:     fmt.Sprintf("object created: fields:%d", fieldCount),
 		Duration:  0,
 	}
 	GlobalTraceSession.Emit(event)
 }
 
 // TraceObjectFieldRead emits a trace event for object field access (Feature 002, US3).
-func TraceObjectFieldRead(frameIndex int, field string, found bool) {
+func TraceObjectFieldRead(field string, found bool) {
 	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
 		return
 	}
@@ -254,14 +254,14 @@ func TraceObjectFieldRead(frameIndex int, field string, found bool) {
 	event := TraceEvent{
 		Timestamp: time.Now(),
 		Word:      "select",
-		Value:     fmt.Sprintf("object field read: frame:%d field:%s (%s)", frameIndex, field, status),
+		Value:     fmt.Sprintf("object field read: field:%s (%s)", field, status),
 		Duration:  0,
 	}
 	GlobalTraceSession.Emit(event)
 }
 
 // TraceObjectFieldWrite emits a trace event for object field mutation (Feature 002, US3).
-func TraceObjectFieldWrite(frameIndex int, field string, newValue string) {
+func TraceObjectFieldWrite(field string, newValue string) {
 	if GlobalTraceSession == nil || !GlobalTraceSession.IsEnabled() {
 		return
 	}
@@ -269,7 +269,7 @@ func TraceObjectFieldWrite(frameIndex int, field string, newValue string) {
 	event := TraceEvent{
 		Timestamp: time.Now(),
 		Word:      "put",
-		Value:     fmt.Sprintf("object field write: frame:%d field:%s value:%s", frameIndex, field, newValue),
+		Value:     fmt.Sprintf("object field write: field:%s value:%s", field, newValue),
 		Duration:  0,
 	}
 	GlobalTraceSession.Emit(event)

@@ -118,7 +118,7 @@ func TestTypeOf(t *testing.T) {
 				t.Errorf("expected type-of to return word!, got %v", value.TypeToString(result.GetType()))
 			}
 
-			resultStr := result.String()
+			resultStr := result.Mold()
 			if !strings.Contains(resultStr, tt.expectWord) {
 				t.Errorf("expected type-of to return %q, got %q", tt.expectWord, resultStr)
 			}

@@ -23,10 +23,20 @@ func (b *BinaryValue) Bytes() []byte {
 
 // String converts BinaryValue to hex string representation.
 func (b *BinaryValue) String() string {
+	return b.Mold()
+}
+
+// Mold returns the mold-formatted binary representation.
+func (b *BinaryValue) Mold() string {
 	if len(b.data) == 0 {
 		return "#{}"
 	}
 	return "#{" + string(b.data) + "}" // Simplified for now
+}
+
+// Form returns the form-formatted binary representation (same as mold for binary).
+func (b *BinaryValue) Form() string {
+	return b.Mold()
 }
 
 // Equals performs deep equality comparison.

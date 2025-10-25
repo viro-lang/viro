@@ -2,6 +2,7 @@ package value
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
@@ -9,18 +10,15 @@ import (
 // ObjectInstance represents an object with frame-based field storage (Feature 002).
 //
 // Design per data-model.md:
-// - FrameIndex: index into frame registry/stack (reuses frame infrastructure)
+// - Frame: owned frame for self-contained field storage
 // - ParentProto: reference to parent prototype object (nil if none) for prototype chain
 // - Manifest: published field names and optional type hints
 //
 // Per FR-009: captures word/value pairs into dedicated frame with nested object support
 type ObjectInstance struct {
-	FrameIndex  int             // Index into frame storage
+	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
 	Manifest    ObjectManifest  // Field metadata
-
-	// Deprecated: Parent field kept for backward compatibility
-	Parent int // Parent object frame index (-1 = no parent)
 }
 
 // ObjectManifest describes the fields exposed by an object.
@@ -29,16 +27,15 @@ type ObjectManifest struct {
 	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
-// NewObject creates an ObjectInstance with the given frame and field manifest.
-func NewObject(frameIndex int, words []string, types []core.ValueType) *ObjectInstance {
+// NewObject creates an ObjectInstance with owned frame for self-contained storage.
+func NewObject(ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
 	if types == nil {
 		// Default to TypeNone (any type) for all fields
 		types = make([]core.ValueType, len(words))
 	}
 	return &ObjectInstance{
-		FrameIndex:  frameIndex,
+		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
-		Parent:      -1,  // Deprecated field
 		Manifest: ObjectManifest{
 			Words: words,
 			Types: types,
@@ -51,7 +48,68 @@ func (o *ObjectInstance) String() string {
 	if o == nil {
 		return "object[]"
 	}
-	return fmt.Sprintf("object[frame:%d fields:%d]", o.FrameIndex, len(o.Manifest.Words))
+
+	// Build field representation using owned frame
+	var fields []string
+	for _, fieldName := range o.Manifest.Words {
+		if val, found := o.GetField(fieldName); found {
+			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.Form()))
+		} else {
+			fields = append(fields, fmt.Sprintf("%s: <missing>", fieldName))
+		}
+	}
+
+	if len(fields) == 0 {
+		return "object[]"
+	}
+
+	return fmt.Sprintf("object[%s]", strings.Join(fields, " "))
+}
+
+// Mold returns the mold-formatted object representation (make object! format).
+func (o *ObjectInstance) Mold() string {
+	if o == nil {
+		return "make object! []"
+	}
+
+	// Build field assignments using owned frame
+	fieldAssignments := []string{}
+	for _, fieldName := range o.Manifest.Words {
+		if fieldVal, found := o.GetField(fieldName); found {
+			// Recursively mold the field value
+			moldedVal := fieldVal.Mold() // Use Mold() for proper recursive molding
+			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
+		}
+	}
+
+	if len(fieldAssignments) == 0 {
+		return "make object! []"
+	}
+
+	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " "))
+}
+
+// Form returns the form-formatted object representation (multi-line field display).
+func (o *ObjectInstance) Form() string {
+	if o == nil {
+		return ""
+	}
+
+	// Build field display lines using owned frame
+	fieldLines := []string{}
+	for _, fieldName := range o.Manifest.Words {
+		if fieldVal, found := o.GetField(fieldName); found {
+			// Use Form() for human-readable field values
+			displayVal := fieldVal.Form()
+			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
+		}
+	}
+
+	if len(fieldLines) == 0 {
+		return ""
+	}
+
+	return strings.Join(fieldLines, "\n")
 }
 
 // ObjectVal creates a Value wrapping an ObjectInstance.
@@ -69,4 +127,42 @@ func AsObject(v core.Value) (*ObjectInstance, bool) {
 	}
 	obj, ok := v.GetPayload().(*ObjectInstance)
 	return obj, ok
+}
+
+// GetField retrieves a field value from the owned frame.
+// Returns (value, true) if found, (NoneVal, false) if not.
+func (obj *ObjectInstance) GetField(name string) (core.Value, bool) {
+	if obj.Frame == nil {
+		return NoneVal(), false
+	}
+	return obj.Frame.Get(name)
+}
+
+// SetField sets a field value in the owned frame.
+// Creates new binding if field doesn't exist.
+func (obj *ObjectInstance) SetField(name string, val core.Value) {
+	if obj.Frame == nil {
+		return // No-op if no owned frame
+	}
+	obj.Frame.Bind(name, val)
+}
+
+// GetFieldWithProto retrieves a field value, searching through prototype chain.
+// Returns (value, true) if found, (NoneVal, false) if not.
+func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
+	// First check owned frame
+	if val, found := obj.GetField(name); found {
+		return val, true
+	}
+
+	// Then check prototype chain
+	current := obj.ParentProto
+	for current != nil {
+		if val, found := current.GetField(name); found {
+			return val, true
+		}
+		current = current.ParentProto
+	}
+
+	return NoneVal(), false
 }

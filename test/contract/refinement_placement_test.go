@@ -100,7 +100,7 @@ func TestRefinementPlacement(t *testing.T) {
 				t.Fatalf("Evaluation error: %v", err)
 			}
 
-			got := result.String()
+			got := result.Mold()
 			if got != tt.expected {
 				t.Errorf("Expected %s, got %s", tt.expected, got)
 			}
@@ -184,7 +184,7 @@ func TestInfixWithRefinements(t *testing.T) {
 	}
 
 	expected := "15"
-	if result.String() != expected {
-		t.Errorf("Expected %s, got %s", expected, result.String())
+	if result.Mold() != expected {
+		t.Errorf("Expected %s, got %s", expected, result.Mold())
 	}
 }

@@ -259,7 +259,7 @@ func TestData_Form(t *testing.T) {
 		{
 			name:     "form nested block",
 			input:    "form [a [b c] d]",
-			expected: value.StrVal("a [b c] d"),
+			expected: value.StrVal("a b c d"),
 		},
 		{
 			name:     "form empty object",

@@ -411,7 +411,7 @@ func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
 		duration := time.Since(traceStart)
 		trace.GlobalTraceSession.Emit(trace.TraceEvent{
 			Timestamp: traceStart,
-			Value:     result.String(),
+			Value:     result.Form(),
 			Word:      traceWord,
 			Duration:  duration.Nanoseconds(),
 		})
@@ -910,31 +910,10 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 				return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
 			}
 
-			objFrame := e.GetFrameByIndex(obj.FrameIndex)
-			if objFrame == nil {
-				return nil, verror.NewInternalError("object frame not found", [3]string{})
-			}
-
-			// Search field in object and prototype chain
-			fieldVal, found := objFrame.Get(fieldName)
+			// Search field in object and prototype chain using owned frames
+			fieldVal, found := obj.GetFieldWithProto(fieldName)
 			if !found {
-				currentProto := obj.ParentProto
-				for currentProto != nil && !found {
-					protoFrame := e.GetFrameByIndex(currentProto.FrameIndex)
-					if protoFrame == nil {
-						break
-					}
-					fieldVal, found = protoFrame.Get(fieldName)
-					if found {
-						break
-					}
-
-					currentProto = currentProto.ParentProto
-				}
-
-				if !found {
-					return nil, verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
-				}
+				return nil, verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
 			}
 
 			tr.values = append(tr.values, fieldVal)
@@ -1057,26 +1036,15 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 		}
 
 		obj, _ := value.AsObject(container)
-		objFrame := e.GetFrameByIndex(obj.FrameIndex)
-		if objFrame == nil {
-			return value.NoneVal(), verror.NewInternalError("object frame not found", [3]string{})
-		}
 
-		// Check if field exists in object or prototype chain
-		_, found := objFrame.Get(fieldName)
+		// Check if field exists in object or prototype chain using owned frames
+		_, found := obj.GetFieldWithProto(fieldName)
 		if !found {
-			if obj.ParentProto != nil {
-				parentFrame := e.GetFrameByIndex(obj.ParentProto.FrameIndex)
-				if parentFrame != nil {
-					_, found = parentFrame.Get(fieldName)
-				}
-			}
-
-			if !found {
-				return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
-			}
+			return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
 		}
-		objFrame.Bind(fieldName, newVal)
+
+		// Set field using owned frame
+		obj.SetField(fieldName, newVal)
 
 	default:
 		return value.NoneVal(), verror.NewInternalError("unsupported path segment type for assignment", [3]string{})

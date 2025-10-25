@@ -1,7 +1,6 @@
 package native
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -77,17 +76,7 @@ func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	}
 
 	val := args[0]
-
-	// Special handling for objects - return multi-line field display
-	if val.GetType() == value.TypeObject {
-		formatted, err := formatObjectForDisplay(val, eval)
-		if err != nil {
-			return value.NoneVal(), err
-		}
-		return value.StrVal(formatted), nil
-	}
-
-	return value.StrVal(formatForDisplay(val)), nil
+	return value.StrVal(val.Form()), nil
 }
 
 // Mold implements the `mold` native.
@@ -101,120 +90,7 @@ func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	val := args[0]
 
-	// Special handling for objects - return loadable "make object! [...]" format
-	if val.GetType() == value.TypeObject {
-		molded, err := formatObjectForMold(val, eval)
-		if err != nil {
-			return value.NoneVal(), err
-		}
-		return value.StrVal(molded), nil
-	}
-
-	return value.StrVal(val.String()), nil
-}
-
-// formatForDisplay creates human-readable string representation for form function
-func formatForDisplay(v core.Value) string {
-	switch v.GetType() {
-	case value.TypeBlock:
-		if blk, ok := value.AsBlock(v); ok {
-			if len(blk.Elements) == 0 {
-				return ""
-			}
-			parts := make([]string, len(blk.Elements))
-			for i, elem := range blk.Elements {
-				// For strings: remove quotes, for blocks: keep brackets, for others: standard format
-				if elem.GetType() == value.TypeString {
-					if str, ok := value.AsString(elem); ok {
-						parts[i] = str.String()
-					} else {
-						parts[i] = elem.String()
-					}
-				} else {
-					parts[i] = elem.String()
-				}
-			}
-			return strings.Join(parts, " ")
-		}
-	case value.TypeString:
-		if str, ok := value.AsString(v); ok {
-			return str.String() // Raw string content, no quotes
-		}
-	case value.TypeObject:
-		if obj, ok := value.AsObject(v); ok {
-			if obj == nil {
-				return "object[]"
-			}
-			return fmt.Sprintf("object[%s]", strings.Join(obj.Manifest.Words, " "))
-		}
-	}
-	return v.String() // Default formatting for other types
-}
-
-// formatObjectForDisplay creates human-readable multi-line display for objects
-func formatObjectForDisplay(objVal core.Value, eval core.Evaluator) (string, error) {
-	obj, ok := value.AsObject(objVal)
-	if !ok || obj == nil {
-		return "", nil
-	}
-
-	// Get the object's frame to access field values
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return "", verror.NewInternalError(
-			"internal-error",
-			[3]string{"form", "invalid-object-frame", ""},
-		)
-	}
-
-	// Build field display lines
-	fieldLines := []string{}
-	for _, fieldName := range obj.Manifest.Words {
-		if fieldVal, found := objFrame.Get(fieldName); found {
-			// Use formatForDisplay for human-readable field values
-			displayVal := formatForDisplay(fieldVal)
-			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
-		}
-	}
-
-	if len(fieldLines) == 0 {
-		return "", nil
-	}
-
-	return strings.Join(fieldLines, "\n"), nil
-}
-
-// formatObjectForMold creates loadable Viro code for objects: make object! [field1: value1 field2: value2 ...]
-func formatObjectForMold(objVal core.Value, eval core.Evaluator) (string, error) {
-	obj, ok := value.AsObject(objVal)
-	if !ok || obj == nil {
-		return "make object! []", nil
-	}
-
-	// Get the object's frame to access field values
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return "", verror.NewInternalError(
-			"internal-error",
-			[3]string{"mold", "invalid-object-frame", ""},
-		)
-	}
-
-	// Build field assignments
-	fieldAssignments := []string{}
-	for _, fieldName := range obj.Manifest.Words {
-		if fieldVal, found := objFrame.Get(fieldName); found {
-			// Recursively mold the field value
-			moldedVal := fieldVal.String() // Use the standard String() which handles mold formatting
-			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
-		}
-	}
-
-	if len(fieldAssignments) == 0 {
-		return "make object! []", nil
-	}
-
-	return fmt.Sprintf("make object! [%s]", strings.Join(fieldAssignments, " ")), nil
+	return value.StrVal(val.Mold()), nil
 }
 
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
@@ -294,12 +170,10 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 }
 
 func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.ObjectInstance, fields []string, initializers map[string][]core.Value) (core.Value, error) {
-	objFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
+	ownedFrame := frame.NewObjectFrame(lexicalParent, fields, nil)
 
-	frameIdx := eval.RegisterFrame(objFrame)
-	eval.MarkFrameCaptured(frameIdx)
-
-	eval.PushFrameContext(objFrame)
+	// Evaluate initializers in a temporary frame context
+	eval.PushFrameContext(ownedFrame)
 	defer eval.PopFrameContext()
 
 	for _, field := range fields {
@@ -310,17 +184,15 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 			return value.NoneVal(), err
 		}
 
-		objFrame.Bind(field, evaled)
+		ownedFrame.Bind(field, evaled)
 	}
 
-	obj := value.NewObject(frameIdx, fields, nil)
+	obj := value.NewObject(ownedFrame, fields, nil)
 	if prototype != nil {
 		obj.ParentProto = prototype
-		eval.MarkFrameCaptured(prototype.FrameIndex)
 	}
 
-	// Emit trace event for object creation (Feature 002, T097)
-	trace.TraceObjectCreate(frameIdx, len(fields))
+	trace.TraceObjectCreate(len(fields))
 
 	return value.ObjectVal(obj), nil
 }
@@ -503,36 +375,14 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	if targetVal.GetType() == value.TypeObject {
 		obj, _ := value.AsObject(targetVal)
 
-		// Look up field in object's frame
-		objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-		if objFrame == nil {
-			return value.NoneVal(), verror.NewInternalError(
-				"internal-error",
-				[3]string{"select", "invalid-frame-index", ""},
-			)
-		}
-
-		// Try to get the field value
-		if result, found := objFrame.Get(fieldName); found {
-			trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, true)
+		// Use owned frame to get field value with prototype chain traversal
+		if result, found := obj.GetFieldWithProto(fieldName); found {
+			trace.TraceObjectFieldRead(fieldName, true)
 			return result, nil
 		}
 
-		// Check parent prototype chain
-		current := obj.ParentProto
-		for current != nil {
-			parentFrame := eval.GetFrameByIndex(current.FrameIndex)
-			if parentFrame != nil {
-				if result, found := parentFrame.Get(fieldName); found {
-					trace.TraceObjectFieldRead(current.FrameIndex, fieldName, true)
-					return result, nil
-				}
-			}
-			current = current.ParentProto
-		}
-
 		// Field not found - return default or none (not an error)
-		trace.TraceObjectFieldRead(obj.FrameIndex, fieldName, false)
+		trace.TraceObjectFieldRead(fieldName, false) // FrameIndex removed
 		if hasDefault {
 			return defaultVal, nil
 		}
@@ -611,15 +461,6 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	obj, _ := value.AsObject(targetVal)
 
-	// Get object's frame
-	objFrame := eval.GetFrameByIndex(obj.FrameIndex)
-	if objFrame == nil {
-		return value.NoneVal(), verror.NewInternalError(
-			"internal-error",
-			[3]string{"put", "invalid-frame-index", ""},
-		)
-	}
-
 	// Check if field exists in manifest
 	fieldIndex := -1
 	for i, word := range obj.Manifest.Words {
@@ -646,11 +487,11 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 		)
 	}
 
-	// Update the field in the frame
-	objFrame.Set(fieldName, newVal)
+	// Update the field using owned frame
+	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)
-	trace.TraceObjectFieldWrite(obj.FrameIndex, fieldName, newVal.String())
+	trace.TraceObjectFieldWrite(fieldName, newVal.Form())
 
 	return newVal, nil
 }

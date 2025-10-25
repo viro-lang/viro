@@ -24,6 +24,12 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
+// Showable interface for payload types that implement custom formatting
+type Showable interface {
+	Mold() string
+	Form() string
+}
+
 // Value is the universal data representation in Viro.
 // All data (literals, words, blocks, functions) are represented as Values
 // with a type tag and type-specific payload.
@@ -46,7 +52,19 @@ func (v Value) GetPayload() any {
 }
 
 // String returns a string representation of the value for debugging and display.
+// Alias to Form() for consistency with the codebase's formatting approach.
 func (v Value) String() string {
+	return v.Form()
+}
+
+// Mold returns a string representation of the value for serialization (mold format).
+func (v Value) Mold() string {
+	// First try to cast Payload to Showable interface
+	if showable, ok := v.Payload.(Showable); ok {
+		return showable.Mold()
+	}
+
+	// Handle simple types with primitive payloads
 	switch v.Type {
 	case TypeNone:
 		return "none"
@@ -57,11 +75,6 @@ func (v Value) String() string {
 		return "false"
 	case TypeInteger:
 		return fmt.Sprintf("%d", v.Payload.(int64))
-	case TypeString:
-		if str, ok := v.Payload.(*StringValue); ok {
-			return fmt.Sprintf(`"%s"`, str.String())
-		}
-		return fmt.Sprintf(`"%v"`, v.Payload)
 	case TypeWord:
 		return v.Payload.(string)
 	case TypeSetWord:
@@ -70,51 +83,47 @@ func (v Value) String() string {
 		return ":" + v.Payload.(string)
 	case TypeLitWord:
 		return "'" + v.Payload.(string)
-	case TypeBlock:
-		if blk, ok := v.Payload.(*BlockValue); ok {
-			return blk.String()
-		}
-		return "[...]"
-	case TypeParen:
-		if blk, ok := v.Payload.(*BlockValue); ok {
-			return "(" + blk.StringElements() + ")"
-		}
-		return "(...)"
-	case TypeFunction:
-		if fn, ok := v.Payload.(*FunctionValue); ok {
-			return fn.String()
-		}
-		return "function"
-	case TypeDecimal:
-		if dec, ok := v.Payload.(*DecimalValue); ok {
-			return dec.String()
-		}
-		return "0.0"
-	case TypeObject:
-		if obj, ok := v.Payload.(*ObjectInstance); ok {
-			return obj.String()
-		}
-		return "object[]"
-	case TypePort:
-		if port, ok := v.Payload.(*Port); ok {
-			return port.String()
-		}
-		return "port[closed]"
-	case TypePath:
-		if path, ok := v.Payload.(*PathExpression); ok {
-			return path.String()
-		}
-		return "path[]"
 	case TypeDatatype:
 		if name, ok := v.Payload.(string); ok {
 			return name
 		}
 		return "datatype!"
-	case TypeBinary:
-		if bin, ok := v.Payload.(*BinaryValue); ok {
-			return bin.String()
+	default:
+		return fmt.Sprintf("<%s>", TypeToString(v.Type))
+	}
+}
+
+// Form returns a string representation of the value for display (form format).
+func (v Value) Form() string {
+	// First try to cast Payload to Showable interface
+	if showable, ok := v.Payload.(Showable); ok {
+		return showable.Form()
+	}
+
+	// Handle simple types with primitive payloads (same as Mold for these)
+	switch v.Type {
+	case TypeNone:
+		return "none"
+	case TypeLogic:
+		if v.Payload.(bool) {
+			return "true"
 		}
-		return "#{...}"
+		return "false"
+	case TypeInteger:
+		return fmt.Sprintf("%d", v.Payload.(int64))
+	case TypeWord:
+		return v.Payload.(string)
+	case TypeSetWord:
+		return v.Payload.(string) + ":"
+	case TypeGetWord:
+		return ":" + v.Payload.(string)
+	case TypeLitWord:
+		return "'" + v.Payload.(string)
+	case TypeDatatype:
+		if name, ok := v.Payload.(string); ok {
+			return name
+		}
+		return "datatype!"
 	default:
 		return fmt.Sprintf("<%s>", TypeToString(v.Type))
 	}

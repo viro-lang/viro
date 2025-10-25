@@ -22,7 +22,7 @@ type PathExpression struct {
 // PathSegment represents a single step in a path traversal.
 type PathSegment struct {
 	Type  PathSegmentType // word, index, or refinement
-	Value interface{}     // string (word/refinement) or int64 (index)
+	Value any             // string (word/refinement) or int64 (index)
 }
 
 // PathSegmentType identifies the kind of path segment.
@@ -76,6 +76,39 @@ func (p *PathExpression) String() string {
 	}
 	result += "]"
 	return result
+}
+
+// Mold returns the mold-formatted path representation.
+func (p *PathExpression) Mold() string {
+	if p == nil || len(p.Segments) == 0 {
+		return ""
+	}
+	result := ""
+	for i, seg := range p.Segments {
+		if i > 0 {
+			// Use appropriate separator based on segment type
+			switch seg.Type {
+			case PathSegmentRefinement:
+				result += "/"
+			default:
+				result += "."
+			}
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += seg.Value.(string)
+		}
+	}
+	return result
+}
+
+// Form returns the form-formatted path representation (same as mold for paths).
+func (p *PathExpression) Form() string {
+	return p.Mold()
 }
 
 // PathVal creates a Value wrapping a PathExpression.

@@ -71,10 +71,20 @@ func NewPort(scheme, spec string, driver PortDriver) *Port {
 
 // String returns a debug representation of the port.
 func (p *Port) String() string {
+	return p.Mold()
+}
+
+// Mold returns the mold-formatted port representation.
+func (p *Port) Mold() string {
 	if p == nil {
 		return "port[closed]"
 	}
 	return fmt.Sprintf("port[%s %s %s]", p.Scheme, p.State, p.Spec)
+}
+
+// Form returns the form-formatted port representation (same as mold for ports).
+func (p *Port) Form() string {
+	return p.Mold()
 }
 
 // PortVal creates a Value wrapping a Port.
