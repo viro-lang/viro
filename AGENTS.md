@@ -22,3 +22,7 @@
 - Every code change MUST have test coverage
 - Automated tests ONLY; avoid running `./viro` manually
 - No real network calls in tests; use 127.0.0.1 mocked servers only
+
+## Planning
+- Store plans in `plans/` directory with sequential numbering: `001_description.md`, `002_description.md`, etc.
+- Check existing plans to determine the next sequence number
