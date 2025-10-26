@@ -214,11 +214,20 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	lastResult := value.NoneVal()
 
 	for position < len(vals) {
-		newPos, result, err := eval.EvaluateExpression(vals, position, lastResult)
+		newPos, result, consumedLast, err := eval.EvaluateExpression(vals, position, lastResult)
 		if err != nil {
 			return value.NoneVal(), err
 		}
-		reducedElements = append(reducedElements, result)
+
+		if consumedLast {
+			// This was an infix operation - replace the last element with the result
+			if len(reducedElements) > 0 {
+				reducedElements[len(reducedElements)-1] = result
+			}
+		} else {
+			// This is a new value - add it
+			reducedElements = append(reducedElements, result)
+		}
 		position = newPos
 		lastResult = result
 	}

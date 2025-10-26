@@ -1,6 +1,6 @@
 # Plan 008: Fix Reduce Function Infix Evaluation Bug
 
-STATUS: Planned
+STATUS: Implemented
 
 ## Overview
 
