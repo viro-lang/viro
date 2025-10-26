@@ -202,21 +202,22 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		return value.NoneVal(), arityError("reduce", 1, len(args))
 	}
 
-	// If not a block, return as-is
 	if args[0].GetType() != value.TypeBlock {
 		return args[0], nil
 	}
 
 	block, _ := value.AsBlock(args[0])
-	reducedElements := make([]core.Value, len(block.Elements))
+	elements := block.Elements
+	reducedElements := make([]core.Value, 0, len(elements))
 
-	// Evaluate each element in the block
-	for i, elem := range block.Elements {
-		result, err := eval.DoNext(elem)
+	pos := 0
+	for pos < len(elements) {
+		result, newPos, err := eval.EvalExpressionFromTokens(elements, pos)
 		if err != nil {
 			return value.NoneVal(), err
 		}
-		reducedElements[i] = result
+		reducedElements = append(reducedElements, result)
+		pos = newPos
 	}
 
 	return value.BlockVal(reducedElements), nil

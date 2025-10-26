@@ -454,6 +454,13 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	return lastResult, nil
 }
 
+// EvalExpressionFromTokens evaluates a single expression from a token sequence starting at the given position.
+// This is a public wrapper for use by native functions that need to evaluate expressions sequentially.
+// Returns the result, new position after the expression, and any error encountered.
+func (e *Evaluator) EvalExpressionFromTokens(tokens []core.Value, startPos int) (core.Value, int, error) {
+	return e.evalExpressionFromTokens(tokens, startPos, value.NoneVal())
+}
+
 // evalExpressionFromTokens evaluates a single expression from a token sequence starting at the given position.
 // Handles both set-word assignments and regular evaluations.
 // Returns the result, new position, and any error encountered.

@@ -51,6 +51,7 @@ type Evaluator interface {
 	Lookup(symbol string) (Value, bool)
 	DoNext(value Value) (Value, error)
 	DoBlock(vals []Value) (Value, error)
+	EvalExpressionFromTokens(tokens []Value, startPos int) (Value, int, error)
 	SetOutputWriter(writer io.Writer)
 	GetOutputWriter() io.Writer
 	SetErrorWriter(writer io.Writer)
