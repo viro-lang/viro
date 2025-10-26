@@ -321,8 +321,44 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	resolved, _ := e.Lookup(word)
 	fn, _ := value.AsFunction(resolved)
 
-	newPos, result, err := e.invokeFunctionExpression(block, position, fn, leftOperand)
-	return newPos, result, err
+	name := functionDisplayName(fn)
+	e.pushCall(name)
+	defer e.popCall()
+
+	positional := make([]value.ParamSpec, 0, len(fn.Params))
+	for _, spec := range fn.Params {
+		if !spec.Refinement {
+			positional = append(positional, spec)
+		}
+	}
+
+	if len(positional) == 0 {
+		return position, value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{functionDisplayName(fn), "0", "1 (infix requires at least one parameter)"},
+		)
+	}
+
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 1, true)
+	if err != nil {
+		return position, value.NoneVal(), e.annotateError(err, block, position)
+	}
+
+	posArgs[0] = leftOperand
+
+	if fn.Type == value.FuncNative {
+		result, err := e.callNative(fn, posArgs, refValues)
+		if err != nil {
+			return position, value.NoneVal(), e.annotateError(err, block, position)
+		}
+		return newPos, result, nil
+	}
+
+	result, err := e.executeFunction(fn, posArgs, refValues)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+	return newPos, result, nil
 }
 
 // evaluateElement evaluates a single element without lookahead
@@ -419,7 +455,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 
 		if resolved.GetType() == value.TypeFunction {
 			fn, _ := value.AsFunction(resolved)
-			newPos, result, err := e.invokeFunctionExpression(block, position, fn, value.NoneVal())
+			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
 
 			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
 				duration := time.Since(traceStart)
@@ -499,12 +535,12 @@ func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, path
 
 // invokeFunctionExpression invokes a function starting at the given position in a block.
 // Returns the new position after consuming the function and its arguments, the result value, and any error.
-func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue, lastResult core.Value) (int, core.Value, error) {
+func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue) (int, core.Value, error) {
 	name := functionDisplayName(fn)
 	e.pushCall(name)
 	defer e.popCall()
 
-	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, lastResult)
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 0, false)
 	if err != nil {
 		return position, value.NoneVal(), e.annotateError(err, block, position)
 	}
@@ -525,8 +561,9 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 }
 
 // collectFunctionArgs collects arguments for a function starting at the given position.
+// startParamIndex indicates which parameter to start collecting from (0 for normal calls, 1 for infix).
 // Returns positional arguments, refinement values, new position, and any error.
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, startParamIndex int, useElementEval bool) ([]core.Value, map[string]core.Value, int, error) {
 	positional := make([]value.ParamSpec, 0, len(fn.Params))
 	refSpecs := make(map[string]value.ParamSpec)
 	refValues := make(map[string]core.Value)
@@ -547,19 +584,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 
 	posArgs := make([]core.Value, len(positional))
 	position := startPosition
-	paramIndex := 0
-
-	useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
-	if useInfix {
-		if len(positional) == 0 {
-			return nil, nil, position, verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{functionDisplayName(fn), "0", "1 (infix requires at least one parameter)"},
-			)
-		}
-		posArgs[0] = lastResult
-		paramIndex = 1
-	}
+	paramIndex := startParamIndex
 
 	for paramIndex < len(positional) {
 		paramSpec := positional[paramIndex]
@@ -580,9 +605,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		var arg core.Value
 		if paramSpec.Eval {
 			var newPos int
-			// For infix functions, use evaluateElement (no lookahead) for subsequent arguments
-			// to prevent nested infix consumption, differing from normal evaluation which uses EvaluateExpression.
-			if useInfix {
+			if useElementEval {
 				newPos, arg, err = e.evaluateElement(block, position)
 			} else {
 				newPos, arg, err = e.EvaluateExpression(block, position)
