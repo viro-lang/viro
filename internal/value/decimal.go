@@ -84,11 +84,8 @@ func (d *DecimalValue) Equals(other core.Value) bool {
 }
 
 // DecimalVal creates a Value wrapping a DecimalValue.
-func DecimalVal(magnitude *decimal.Big, scale int16) Value {
-	return Value{
-		Type:    TypeDecimal,
-		Payload: NewDecimal(magnitude, scale),
-	}
+func DecimalVal(magnitude *decimal.Big, scale int16) core.Value {
+	return NewDecimal(magnitude, scale)
 }
 
 // AsDecimal extracts the DecimalValue from a Value, or returns nil if wrong type.

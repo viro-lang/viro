@@ -1,180 +1,31 @@
 // Package value defines the core value types for the Viro interpreter.
 //
-// All data in Viro is represented using the Value type, which is a type-tagged
-// union. The Type field discriminates between different value types, and the
-// Payload field holds the type-specific data.
+// All data in Viro is represented as implementations of the core.Value interface.
+// Each value type implements the interface directly for maximum performance.
 //
 // Value types:
-//   - None: Represents absence of value
-//   - Logic: Boolean true/false
-//   - Integer: 64-bit signed integers
-//   - String: Character sequences (runes)
-//   - Word types: word, set-word, get-word, lit-word
-//   - Block: Series of values (deferred evaluation)
-//   - Paren: Series of values (immediate evaluation)
-//   - Function: Native or user-defined functions
+//   - None: Represents absence of value (NoneValue)
+//   - Logic: Boolean true/false (LogicValue)
+//   - Integer: 64-bit signed integers (IntValue)
+//   - String: Character sequences (*StringValue)
+//   - Word types: word, set-word, get-word, lit-word (WordValue, SetWordValue, etc.)
+//   - Block: Series of values - deferred evaluation (*BlockValue)
+//   - Paren: Series of values - immediate evaluation (*BlockValue with TypeParen)
+//   - Function: Native or user-defined functions (*FunctionValue)
+//   - Decimal: High-precision decimals (*DecimalValue)
+//   - Binary: Raw byte sequences (*BinaryValue)
+//   - Object: Object instances (*ObjectInstance)
+//   - Port: I/O port abstraction (*Port)
+//   - Path: Path expressions (*PathExpression)
+//   - Datatype: Type literals (DatatypeValue)
 //
 // Constructor functions (IntVal, StrVal, etc.) provide type-safe value creation.
-// Type assertion helpers (AsInteger, AsString, etc.) enable safe payload access.
+// Type assertion helpers (AsInteger, AsString, etc.) enable safe type extraction.
 package value
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
-
-// Showable interface for payload types that implement custom formatting
-type Showable interface {
-	Mold() string
-	Form() string
-}
-
-// Value is the universal data representation in Viro.
-// All data (literals, words, blocks, functions) are represented as Values
-// with a type tag and type-specific payload.
-//
-// Design per Constitution Principle III: Type Dispatch Fidelity
-// - Type tag enables efficient type-based dispatch during evaluation
-// - Payload is type-erased interface{} (discriminated union pattern)
-// - Constructor functions ensure type/payload consistency
-type Value struct {
-	Type    core.ValueType // Discriminator identifying value type
-	Payload any            // Type-specific data (int64, string, *BlockValue, etc.)
-}
-
-func (v Value) GetType() core.ValueType {
-	return v.Type
-}
-
-func (v Value) GetPayload() any {
-	return v.Payload
-}
-
-// String returns a string representation of the value for debugging and display.
-// Alias to Form() for consistency with the codebase's formatting approach.
-func (v Value) String() string {
-	return v.Form()
-}
-
-// Mold returns a string representation of the value for serialization (mold format).
-func (v Value) Mold() string {
-	// First try to cast Payload to Showable interface
-	if showable, ok := v.Payload.(Showable); ok {
-		return showable.Mold()
-	}
-
-	// Handle simple types with primitive payloads
-	switch v.Type {
-	case TypeNone:
-		return "none"
-	case TypeLogic:
-		if v.Payload.(bool) {
-			return "true"
-		}
-		return "false"
-	case TypeInteger:
-		return fmt.Sprintf("%d", v.Payload.(int64))
-	case TypeWord:
-		return v.Payload.(string)
-	case TypeSetWord:
-		return v.Payload.(string) + ":"
-	case TypeGetWord:
-		return ":" + v.Payload.(string)
-	case TypeLitWord:
-		return "'" + v.Payload.(string)
-	case TypeDatatype:
-		if name, ok := v.Payload.(string); ok {
-			return name
-		}
-		return "datatype!"
-	default:
-		return fmt.Sprintf("<%s>", TypeToString(v.Type))
-	}
-}
-
-// Form returns a string representation of the value for display (form format).
-func (v Value) Form() string {
-	// First try to cast Payload to Showable interface
-	if showable, ok := v.Payload.(Showable); ok {
-		return showable.Form()
-	}
-
-	// Handle simple types with primitive payloads (same as Mold for these)
-	switch v.Type {
-	case TypeNone:
-		return "none"
-	case TypeLogic:
-		if v.Payload.(bool) {
-			return "true"
-		}
-		return "false"
-	case TypeInteger:
-		return fmt.Sprintf("%d", v.Payload.(int64))
-	case TypeWord:
-		return v.Payload.(string)
-	case TypeSetWord:
-		return v.Payload.(string) + ":"
-	case TypeGetWord:
-		return ":" + v.Payload.(string)
-	case TypeLitWord:
-		return "'" + v.Payload.(string)
-	case TypeDatatype:
-		if name, ok := v.Payload.(string); ok {
-			return name
-		}
-		return "datatype!"
-	default:
-		return fmt.Sprintf("<%s>", TypeToString(v.Type))
-	}
-}
-
-// Equals performs deep equality comparison between two values.
-// Used for the = native function and testing.
-func (v Value) Equals(other core.Value) bool {
-	if v.Type != other.GetType() {
-		return false
-	}
-
-	switch v.Type {
-	case TypeNone:
-		return true // all none values are equal
-	case TypeLogic:
-		return v.Payload.(bool) == other.GetPayload().(bool)
-	case TypeInteger:
-		return v.Payload.(int64) == other.GetPayload().(int64)
-	case TypeString:
-		vStr, vOk := v.Payload.(*StringValue)
-		oStr, oOk := other.GetPayload().(*StringValue)
-		if !vOk || !oOk {
-			return false
-		}
-		return vStr.EqualsString(oStr)
-	case TypeWord, TypeSetWord, TypeGetWord, TypeLitWord:
-		return v.Payload.(string) == other.GetPayload().(string)
-	case TypeDatatype:
-		return v.Payload.(string) == other.GetPayload().(string)
-	case TypeBlock, TypeParen:
-		vBlk, vOk := v.Payload.(*BlockValue)
-		oBlk, oOk := other.GetPayload().(*BlockValue)
-		if !vOk || !oOk {
-			return false
-		}
-		return vBlk.EqualsBlock(oBlk)
-	case TypeFunction:
-		// Functions compared by identity (pointer equality)
-		return v.Payload == other.GetPayload()
-	case TypeBinary:
-		vBin, vOk := v.Payload.(*BinaryValue)
-		oBin, oOk := other.GetPayload().(*BinaryValue)
-		if !vOk || !oOk {
-			return false
-		}
-		return vBin.EqualsBinary(oBin)
-	default:
-		return false
-	}
-}
 
 // Constructor functions ensure type/payload consistency.
 // These are the ONLY way to create values (no direct struct construction).

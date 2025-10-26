@@ -113,11 +113,8 @@ func (o *ObjectInstance) Form() string {
 }
 
 // ObjectVal creates a Value wrapping an ObjectInstance.
-func ObjectVal(obj *ObjectInstance) Value {
-	return Value{
-		Type:    TypeObject,
-		Payload: obj,
-	}
+func ObjectVal(obj *ObjectInstance) core.Value {
+	return obj
 }
 
 // AsObject extracts the ObjectInstance from a Value, or returns nil if wrong type.

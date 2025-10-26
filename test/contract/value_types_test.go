@@ -42,8 +42,8 @@ func TestDecimalValueWrapping(t *testing.T) {
 	mag := decimal.New(42, 0)
 	val := value.DecimalVal(mag, 0)
 
-	if val.Type != value.TypeDecimal {
-		t.Errorf("expected TypeDecimal, got %v", val.Type)
+	if val.GetType() != value.TypeDecimal {
+		t.Errorf("expected TypeDecimal, got %v", val.GetType())
 	}
 
 	// Test AsDecimal extraction
@@ -90,8 +90,8 @@ func TestObjectValueWrapping(t *testing.T) {
 	obj := value.NewObject(nil, []string{"x"}, nil)
 	val := value.ObjectVal(obj)
 
-	if val.Type != value.TypeObject {
-		t.Errorf("expected TypeObject, got %v", val.Type)
+	if val.GetType() != value.TypeObject {
+		t.Errorf("expected TypeObject, got %v", val.GetType())
 	}
 
 	// Test AsObject extraction
@@ -140,8 +140,8 @@ func TestPortValueWrapping(t *testing.T) {
 	port := value.NewPort("tcp", "localhost:8080", nil)
 	val := value.PortVal(port)
 
-	if val.Type != value.TypePort {
-		t.Errorf("expected TypePort, got %v", val.Type)
+	if val.GetType() != value.TypePort {
+		t.Errorf("expected TypePort, got %v", val.GetType())
 	}
 
 	// Test AsPort extraction
@@ -195,8 +195,8 @@ func TestPathValueWrapping(t *testing.T) {
 	path := value.NewPath(segments, value.NoneVal())
 	val := value.PathVal(path)
 
-	if val.Type != value.TypePath {
-		t.Errorf("expected TypePath, got %v", val.Type)
+	if val.GetType() != value.TypePath {
+		t.Errorf("expected TypePath, got %v", val.GetType())
 	}
 
 	// Test AsPath extraction

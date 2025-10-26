@@ -88,11 +88,8 @@ func (p *Port) Form() string {
 }
 
 // PortVal creates a Value wrapping a Port.
-func PortVal(port *Port) Value {
-	return Value{
-		Type:    TypePort,
-		Payload: port,
-	}
+func PortVal(port *Port) core.Value {
+	return port
 }
 
 // AsPort extracts the Port from a Value, or returns nil if wrong type.

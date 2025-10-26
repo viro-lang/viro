@@ -112,11 +112,8 @@ func (p *PathExpression) Form() string {
 }
 
 // PathVal creates a Value wrapping a PathExpression.
-func PathVal(path *PathExpression) Value {
-	return Value{
-		Type:    TypePath,
-		Payload: path,
-	}
+func PathVal(path *PathExpression) core.Value {
+	return path
 }
 
 // AsPath extracts the PathExpression from a Value, or returns nil if wrong type.
