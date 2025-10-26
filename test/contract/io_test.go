@@ -94,7 +94,7 @@ func TestIO_Print(t *testing.T) {
 			captured, result, evalErr := captureOutput(t, e, func() (core.Value, error) {
 				val, derr := e.DoBlock(vals)
 				if derr != nil {
-					return value.NoneVal(), derr
+					return value.NewNoneVal(), derr
 				}
 				return val, nil
 			})
@@ -107,7 +107,7 @@ func TestIO_Print(t *testing.T) {
 				t.Fatalf("Unexpected stdout. want %q, got %q", tt.expected, captured)
 			}
 
-			if !result.Equals(value.NoneVal()) {
+			if !result.Equals(value.NewNoneVal()) {
 				t.Fatalf("print should return none, got %v", result)
 			}
 		})
@@ -123,17 +123,17 @@ func TestIO_Input(t *testing.T) {
 		{
 			name:     "simple word",
 			provided: "Alice\n",
-			expected: value.StrVal("Alice"),
+			expected: value.NewStrVal("Alice"),
 		},
 		{
 			name:     "numeric input remains string",
 			provided: "123\n",
-			expected: value.StrVal("123"),
+			expected: value.NewStrVal("123"),
 		},
 		{
 			name:     "empty line",
 			provided: "\n",
-			expected: value.StrVal(""),
+			expected: value.NewStrVal(""),
 		},
 	}
 

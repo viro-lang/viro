@@ -182,7 +182,7 @@ func (f *Frame) Get(symbol string) (core.Value, bool) {
 			return f.Values[i], true
 		}
 	}
-	return value.NoneVal(), false
+	return value.NewNoneVal(), false
 }
 
 // Set updates an existing binding in this frame.

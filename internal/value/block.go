@@ -210,12 +210,12 @@ func SortBlock(b *BlockValue) {
 		elemJ := b.Elements[j]
 		switch elemI.GetType() {
 		case TypeInteger:
-			iVal, _ := AsInteger(elemI)
-			jVal, _ := AsInteger(elemJ)
+			iVal, _ := AsIntValue(elemI)
+			jVal, _ := AsIntValue(elemJ)
 			return iVal < jVal
 		case TypeString:
-			iVal, _ := AsString(elemI)
-			jVal, _ := AsString(elemJ)
+			iVal, _ := AsStringValue(elemI)
+			jVal, _ := AsStringValue(elemJ)
 			return iVal.Form() < jVal.Form()
 		default:
 			return false

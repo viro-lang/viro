@@ -30,17 +30,17 @@ func BenchmarkLookupNativeFromNested(b *testing.B) {
 	// Create 3 nested frames
 	frame1 := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, 0, 5)
 	frame1.Name = "level1"
-	frame1.Bind("x", value.IntVal(1))
+	frame1.Bind("x", value.NewIntVal(1))
 	frame1Idx := e.PushFrameContext(frame1)
 
 	frame2 := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, frame1Idx, 5)
 	frame2.Name = "level2"
-	frame2.Bind("y", value.IntVal(2))
+	frame2.Bind("y", value.NewIntVal(2))
 	frame2Idx := e.PushFrameContext(frame2)
 
 	frame3 := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, frame2Idx, 5)
 	frame3.Name = "level3"
-	frame3.Bind("z", value.IntVal(3))
+	frame3.Bind("z", value.NewIntVal(3))
 	e.PushFrameContext(frame3)
 
 	b.ReportAllocs()
@@ -61,9 +61,9 @@ func BenchmarkLookupUserDefined(b *testing.B) {
 	// Create a frame with a local variable
 	userFrame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, 0, 10)
 	userFrame.Name = "userFunc"
-	userFrame.Bind("myVar", value.IntVal(42))
-	userFrame.Bind("x", value.StrVal("test"))
-	userFrame.Bind("y", value.LogicVal(true))
+	userFrame.Bind("myVar", value.NewIntVal(42))
+	userFrame.Bind("x", value.NewStrVal("test"))
+	userFrame.Bind("y", value.NewLogicVal(true))
 	e.PushFrameContext(userFrame)
 
 	b.ReportAllocs()
@@ -84,13 +84,13 @@ func BenchmarkLookupUserDefinedFromParent(b *testing.B) {
 	// Create parent frame with a variable
 	parentFrame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, 0, 10)
 	parentFrame.Name = "parent"
-	parentFrame.Bind("parentVar", value.IntVal(100))
+	parentFrame.Bind("parentVar", value.NewIntVal(100))
 	parentIdx := e.PushFrameContext(parentFrame)
 
 	// Create child frame without the variable
 	childFrame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, parentIdx, 5)
 	childFrame.Name = "child"
-	childFrame.Bind("childVar", value.IntVal(200))
+	childFrame.Bind("childVar", value.NewIntVal(200))
 	e.PushFrameContext(childFrame)
 
 	b.ReportAllocs()

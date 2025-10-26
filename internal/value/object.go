@@ -127,10 +127,10 @@ func AsObject(v core.Value) (*ObjectInstance, bool) {
 }
 
 // GetField retrieves a field value from the owned frame.
-// Returns (value, true) if found, (NoneVal, false) if not.
+// Returns (value, true) if found, (NewNoneVal, false) if not.
 func (obj *ObjectInstance) GetField(name string) (core.Value, bool) {
 	if obj.Frame == nil {
-		return NoneVal(), false
+		return NewNoneVal(), false
 	}
 	return obj.Frame.Get(name)
 }
@@ -161,7 +161,7 @@ func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
 		current = current.ParentProto
 	}
 
-	return NoneVal(), false
+	return NewNoneVal(), false
 }
 
 func (obj *ObjectInstance) GetType() core.ValueType {

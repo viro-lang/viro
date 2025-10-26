@@ -21,8 +21,8 @@ func TestCaptureNear_DecimalMetadata(t *testing.T) {
 		{
 			name: "decimal with scale in error position",
 			values: []core.Value{
-				value.IntVal(1),
-				value.IntVal(2),
+				value.NewIntVal(1),
+				value.NewIntVal(2),
 				value.DecimalVal(decimal.New(1999, -2), 2),
 			},
 			index: 2,
@@ -36,7 +36,7 @@ func TestCaptureNear_DecimalMetadata(t *testing.T) {
 			name: "decimal with zero scale",
 			values: []core.Value{
 				value.DecimalVal(decimal.New(42, 0), 0),
-				value.IntVal(10),
+				value.NewIntVal(10),
 			},
 			index: 0,
 			wantSubstr: []string{

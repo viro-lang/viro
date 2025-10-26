@@ -47,9 +47,9 @@ func buildPath(segments []value.PathSegment, isSet bool) core.Value {
                 pathStr += fmt.Sprintf("%d", seg.Value.(int64))
             }
         }
-        return value.SetWordVal(pathStr)
+        return value.NewSetWordVal(pathStr)
     }
-    path := value.NewPath(segments, value.NoneVal())
+    path := value.NewPath(segments, value.NewNoneVal())
     return value.PathVal(path)
 }
 
@@ -84,7 +84,7 @@ Value <- _ val:(Decimal / Integer / String / Block / Paren /
 }
 
 Integer <- '-'? [0-9]+ !DecimalStart {
-    return value.IntVal(toInt(string(c.text))), nil
+    return value.NewIntVal(toInt(string(c.text))), nil
 }
 
 DecimalStart <- [.eE]
@@ -100,19 +100,19 @@ Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? !'.' {
 String <- '"' [^"]* '"' {
     text := string(c.text)
     content := text[1:len(text)-1]
-    return value.StrVal(content), nil
+    return value.NewStrVal(content), nil
 }
 
 SetWord <- word:WordChars ':' !':' {
-    return value.SetWordVal(word.(string)), nil
+    return value.NewSetWordVal(word.(string)), nil
 }
 
 GetWord <- ':' word:WordChars {
-    return value.GetWordVal(word.(string)), nil
+    return value.NewGetWordVal(word.(string)), nil
 }
 
 LitWord <- '\'' word:WordChars {
-    return value.LitWordVal(word.(string)), nil
+    return value.NewLitWordVal(word.(string)), nil
 }
 
 Path <- first:WordChars rest:('.' PathElement)+ isSet:':'? !':' {
@@ -157,7 +157,7 @@ PathElement <- WordChars / [0-9]+ {
 }
 
 Word <- word:WordChars {
-    return value.WordVal(word.(string)), nil
+    return value.NewWordVal(word.(string)), nil
 }
 
 WordChars <- [\p{L}_?+*/<>=-] [\p{L}\p{N}_?+*/<>=-]* {
@@ -165,15 +165,15 @@ WordChars <- [\p{L}_?+*/<>=-] [\p{L}\p{N}_?+*/<>=-]* {
 }
 
 Block <- '[' _ vals:Value* _ ']' {
-    return value.BlockVal(flattenValues(vals)), nil
+    return value.NewBlockVal(flattenValues(vals)), nil
 }
 
 Paren <- '(' _ vals:Value* _ ')' {
-    return value.ParenVal(flattenValues(vals)), nil
+    return value.NewParenVal(flattenValues(vals)), nil
 }
 
 Datatype <- word:WordChars '!' {
-    return value.DatatypeVal(word.(string) + "!"), nil
+    return value.NewDatatypeVal(word.(string) + "!"), nil
 }
 
 _ <- ([ \t\n\r] / Comment)*

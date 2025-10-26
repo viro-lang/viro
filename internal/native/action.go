@@ -24,7 +24,7 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 	dispatcher := func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 		// Validate we have at least one argument for dispatch
 		if len(args) == 0 {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDArgCount,
 				[3]string{name, "at least 1", "0"},
 			)
@@ -38,7 +38,7 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 		typeFrame, found := frame.GetTypeFrame(firstArgType)
 		if !found {
 			// Type has no type frame - no implementations registered
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDActionNoImpl,
 				[3]string{name, value.TypeToString(firstArgType), ""},
 			)
@@ -48,17 +48,17 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 		impl, found := typeFrame.Get(name)
 		if !found {
 			// Type frame exists but doesn't have this action
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDActionNoImpl,
 				[3]string{name, value.TypeToString(firstArgType), ""},
 			)
 		}
 
 		// Extract function from value
-		fn, ok := value.AsFunction(impl)
+		fn, ok := value.AsFunctionValue(impl)
 		if !ok {
 			// Internal error: type frame contains non-function value
-			return value.NoneVal(), verror.NewInternalError(
+			return value.NewNoneVal(), verror.NewInternalError(
 				"action-frame-corrupt",
 				[3]string{name, value.TypeToString(firstArgType), "type frame binding is not a function"},
 			)
@@ -69,7 +69,7 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 	}
 
 	// Create regular native function with dispatcher as implementation
-	return value.FuncVal(value.NewNativeFunction(name, params, dispatcher, false, doc))
+	return value.NewFuncVal(value.NewNativeFunction(name, params, dispatcher, false, doc))
 }
 
 // RegisterActionImpl registers a type-specific implementation for an action.
@@ -92,5 +92,5 @@ func RegisterActionImpl(typ core.ValueType, actionName string, fn *value.Functio
 	}
 
 	// Bind the function into the type frame
-	typeFrame.Bind(actionName, value.FuncVal(fn))
+	typeFrame.Bind(actionName, value.NewFuncVal(fn))
 }

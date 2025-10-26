@@ -24,7 +24,7 @@ func TestArityError(t *testing.T) {
 }
 
 func TestTypeError(t *testing.T) {
-	val := value.IntVal(10)
+	val := value.NewIntVal(10)
 	err := typeError("add", "integer", val).(*verror.Error)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -41,7 +41,7 @@ func TestTypeError(t *testing.T) {
 }
 
 func TestMathTypeError(t *testing.T) {
-	val := value.StrVal("oops")
+	val := value.NewStrVal("oops")
 	err := mathTypeError("/", val).(*verror.Error)
 	if err == nil {
 		t.Fatalf("expected error, got nil")

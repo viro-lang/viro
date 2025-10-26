@@ -22,7 +22,7 @@ import (
 // This is a special native that needs access to evaluator to evaluate blocks.
 func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("when", 2, len(args))
+		return value.NewNoneVal(), arityError("when", 2, len(args))
 	}
 
 	// First argument is condition (already evaluated)
@@ -30,7 +30,7 @@ func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	// Second argument must be a block (NOT evaluated yet)
 	if args[1].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("when", "block", args[1])
+		return value.NewNoneVal(), typeError("when", "block", args[1])
 	}
 
 	// Convert condition to truthy/falsy
@@ -39,12 +39,12 @@ func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	if isTruthy {
 		// Evaluate the block
-		block, _ := value.AsBlock(args[1])
+		block, _ := value.AsBlockValue(args[1])
 		return eval.DoBlock(block.Elements)
 	}
 
 	// Condition is falsy, return none
-	return value.NoneVal(), nil
+	return value.NewNoneVal(), nil
 }
 
 // If implements the 'if' conditional native.
@@ -56,7 +56,7 @@ func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 // - Both blocks required (error if missing)
 func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
-		return value.NoneVal(), arityError("if", 3, len(args))
+		return value.NewNoneVal(), arityError("if", 3, len(args))
 	}
 
 	// First argument is condition (already evaluated)
@@ -64,12 +64,12 @@ func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 
 	// Second argument must be a block (true branch)
 	if args[1].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("if", "block for true branch", args[1])
+		return value.NewNoneVal(), typeError("if", "block for true branch", args[1])
 	}
 
 	// Third argument must be a block (false branch)
 	if args[2].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("if", "block for false branch", args[2])
+		return value.NewNoneVal(), typeError("if", "block for false branch", args[2])
 	}
 
 	// Convert condition to truthy/falsy
@@ -77,12 +77,12 @@ func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 
 	if isTruthy {
 		// Evaluate true-block
-		block, _ := value.AsBlock(args[1])
+		block, _ := value.AsBlockValue(args[1])
 		return eval.DoBlock(block.Elements)
 	}
 
 	// Evaluate false-block
-	block, _ := value.AsBlock(args[2])
+	block, _ := value.AsBlockValue(args[2])
 	return eval.DoBlock(block.Elements)
 }
 
@@ -94,18 +94,18 @@ func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 // - Returns result of last iteration, or none if count is 0
 func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("loop", 2, len(args))
+		return value.NewNoneVal(), arityError("loop", 2, len(args))
 	}
 
 	// First argument must be an integer
-	count, ok := value.AsInteger(args[0])
+	count, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NoneVal(), typeError("loop", "integer for count", args[0])
+		return value.NewNoneVal(), typeError("loop", "integer for count", args[0])
 	}
 
 	// Count must be non-negative
 	if count < 0 {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"loop count must be non-negative", "", ""},
 		)
@@ -113,14 +113,14 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	// Second argument must be a block
 	if args[1].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("loop", "block for body", args[1])
+		return value.NewNoneVal(), typeError("loop", "block for body", args[1])
 	}
 
-	block, _ := value.AsBlock(args[1])
+	block, _ := value.AsBlockValue(args[1])
 
 	// If count is 0, return none without executing
 	if count == 0 {
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// Execute block count times
@@ -129,7 +129,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	for range count {
 		result, err = eval.DoBlock(block.Elements)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NewNoneVal(), err
 		}
 	}
 
@@ -145,30 +145,30 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 // - Returns result of last iteration, or none if never executed
 func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("while", 2, len(args))
+		return value.NewNoneVal(), arityError("while", 2, len(args))
 	}
 
 	// First argument must be a block (condition)
 	if args[0].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("while", "block for condition", args[0])
+		return value.NewNoneVal(), typeError("while", "block for condition", args[0])
 	}
 
 	// Second argument must be a block (body)
 	if args[1].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("while", "block for body", args[1])
+		return value.NewNoneVal(), typeError("while", "block for body", args[1])
 	}
 
-	conditionBlock, _ := value.AsBlock(args[0])
-	bodyBlock, _ := value.AsBlock(args[1])
+	conditionBlock, _ := value.AsBlockValue(args[0])
+	bodyBlock, _ := value.AsBlockValue(args[1])
 
-	result := value.NoneVal()
+	result := value.NewNoneVal()
 
 	// Loop while condition is truthy
 	for {
 		// Evaluate condition block
 		conditionResult, err := eval.DoBlock(conditionBlock.Elements)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NewNoneVal(), err
 		}
 
 		// Check if condition is truthy
@@ -179,7 +179,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		// Evaluate body block
 		result, err = eval.DoBlock(bodyBlock.Elements)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NewNoneVal(), err
 		}
 	}
 
@@ -199,14 +199,14 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // - Building data structures dynamically
 func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("reduce", 1, len(args))
+		return value.NewNoneVal(), arityError("reduce", 1, len(args))
 	}
 
 	if args[0].GetType() != value.TypeBlock {
 		return args[0], nil
 	}
 
-	block, _ := value.AsBlock(args[0])
+	block, _ := value.AsBlockValue(args[0])
 	vals := block.Elements
 	reducedElements := make([]core.Value, 0)
 
@@ -215,14 +215,14 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	for position < len(vals) {
 		newPos, result, err := eval.EvaluateExpression(vals, position)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NewNoneVal(), err
 		}
 
 		reducedElements = append(reducedElements, result)
 		position = newPos
 	}
 
-	return value.BlockVal(reducedElements), nil
+	return value.NewBlockVal(reducedElements), nil
 }
 
 // ToTruthy converts a value to truthy/falsy per Viro semantics.
@@ -236,7 +236,7 @@ func ToTruthy(val core.Value) bool {
 	case value.TypeNone:
 		return false
 	case value.TypeLogic:
-		b, _ := value.AsLogic(val)
+		b, _ := value.AsLogicValue(val)
 		return b
 	default:
 		// All other values are truthy (including 0, "", [])
@@ -265,14 +265,14 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	}
 
 	if !hasOn && !hasOff {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"trace requires --on or --off refinement", "", ""},
 		)
 	}
 
 	if hasOn && hasOff {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"trace cannot have both --on and --off", "", ""},
 		)
@@ -283,12 +283,12 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		if trace.GlobalTraceSession != nil {
 			trace.GlobalTraceSession.Disable()
 		}
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// Handle --on case
 	if trace.GlobalTraceSession == nil {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"trace session not initialized", "", ""},
 		)
@@ -299,20 +299,20 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	// Handle --only refinement
 	if onlyVal, ok := refValues["only"]; ok && onlyVal.GetType() != value.TypeNone {
 		if onlyVal.GetType() != value.TypeBlock {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--only requires block of words", "", ""},
 			)
 		}
-		onlyBlk, _ := value.AsBlock(onlyVal)
+		onlyBlk, _ := value.AsBlockValue(onlyVal)
 		for _, elem := range onlyBlk.Elements {
 			if elem.GetType() != value.TypeWord {
-				return value.NoneVal(), verror.NewScriptError(
+				return value.NewNoneVal(), verror.NewScriptError(
 					verror.ErrIDTypeMismatch,
 					[3]string{"--only block must contain only words", "", ""},
 				)
 			}
-			word, _ := value.AsWord(elem)
+			word, _ := value.AsWordValue(elem)
 			filters.IncludeWords = append(filters.IncludeWords, word)
 		}
 	}
@@ -320,20 +320,20 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	// Handle --exclude refinement
 	if excludeVal, ok := refValues["exclude"]; ok && excludeVal.GetType() != value.TypeNone {
 		if excludeVal.GetType() != value.TypeBlock {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--exclude requires block of words", "", ""},
 			)
 		}
-		excludeBlk, _ := value.AsBlock(excludeVal)
+		excludeBlk, _ := value.AsBlockValue(excludeVal)
 		for _, elem := range excludeBlk.Elements {
 			if elem.GetType() != value.TypeWord {
-				return value.NoneVal(), verror.NewScriptError(
+				return value.NewNoneVal(), verror.NewScriptError(
 					verror.ErrIDTypeMismatch,
 					[3]string{"--exclude block must contain only words", "", ""},
 				)
 			}
-			word, _ := value.AsWord(elem)
+			word, _ := value.AsWordValue(elem)
 			filters.ExcludeWords = append(filters.ExcludeWords, word)
 		}
 	}
@@ -341,18 +341,18 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	// Handle --file refinement with sandbox validation
 	if fileVal, ok := refValues["file"]; ok && fileVal.GetType() != value.TypeNone {
 		if fileVal.GetType() != value.TypeString {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
 				[3]string{"--file requires string path", "", ""},
 			)
 		}
-		fileStr, _ := value.AsString(fileVal)
+		fileStr, _ := value.AsStringValue(fileVal)
 		filePath := fileStr.String()
 
 		// Validate path is within sandbox
 		_, err := resolveSandboxPath(filePath)
 		if err != nil {
-			return value.NoneVal(), verror.NewAccessError(
+			return value.NewNoneVal(), verror.NewAccessError(
 				verror.ErrIDSandboxViolation,
 				[3]string{"trace file path escapes sandbox", filePath, ""},
 			)
@@ -364,7 +364,7 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	} // Handle --append refinement (validates file must also be provided)
 	if appendVal, ok := refValues["append"]; ok && ToTruthy(appendVal) {
 		if _, hasFile := refValues["file"]; !hasFile || refValues["file"].GetType() == value.TypeNone {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDInvalidOperation,
 				[3]string{"--append requires --file to be specified", "", ""},
 			)
@@ -372,7 +372,7 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	}
 
 	trace.GlobalTraceSession.Enable(filters)
-	return value.NoneVal(), nil
+	return value.NewNoneVal(), nil
 }
 
 // TraceQuery implements the 'trace?' query native (Feature 002, FR-020).
@@ -383,16 +383,16 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // T146: Implements trace? query
 func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
-		return value.NoneVal(), arityError("trace?", 0, len(args))
+		return value.NewNoneVal(), arityError("trace?", 0, len(args))
 	}
 
 	// Return simple boolean indicating trace state
 	if trace.GlobalTraceSession == nil {
-		return value.LogicVal(false), nil
+		return value.NewLogicVal(false), nil
 	}
 
 	enabled := trace.GlobalTraceSession.IsEnabled()
-	return value.LogicVal(enabled), nil
+	return value.NewLogicVal(enabled), nil
 }
 
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).
@@ -404,7 +404,7 @@ func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // T148-T152: Implements debug commands
 func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if debug.GlobalDebugger == nil {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"debugger not initialized", "", ""},
 		)
@@ -414,19 +414,19 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	if val, ok := refValues["on"]; ok && ToTruthy(val) {
 		// Enable debugger
 		debug.GlobalDebugger.Enable()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["off"]; ok && ToTruthy(val) {
 		// Disable debugger
 		debug.GlobalDebugger.Disable()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// For all other operations, debugger must be enabled
 	// Check before processing any other refinement
 	if debug.GlobalDebugger.Mode() == debug.DebugModeOff {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidOperation,
 			[3]string{"debugger not enabled - use debug --on first", "", ""},
 		)
@@ -437,62 +437,62 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		var word string
 		switch val.GetType() {
 		case value.TypeLitWord, value.TypeGetWord, value.TypeWord:
-			word, _ = value.AsWord(val)
+			word, _ = value.AsWordValue(val)
 		default:
-			return value.NoneVal(), typeError("debug --breakpoint", "word", val)
+			return value.NewNoneVal(), typeError("debug --breakpoint", "word", val)
 		}
 
 		// Validate word exists in current context (lookup covers all scopes)
 		var found bool
 		_, found = eval.Lookup(word)
 		if !found {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDNoValue,
 				[3]string{"cannot set breakpoint on unknown word", word, ""},
 			)
 		}
 
 		id := debug.GlobalDebugger.SetBreakpoint(word)
-		return value.IntVal(int64(id)), nil
+		return value.NewIntVal(int64(id)), nil
 	}
 
 	if val, ok := refValues["remove"]; ok && val.GetType() != value.TypeNone {
 		// Remove breakpoint by ID
-		id, ok := value.AsInteger(val)
+		id, ok := value.AsIntValue(val)
 		if !ok {
-			return value.NoneVal(), typeError("debug --remove", "integer ID", val)
+			return value.NewNoneVal(), typeError("debug --remove", "integer ID", val)
 		}
 
 		// Find and remove breakpoint by ID
 		found := debug.GlobalDebugger.RemoveBreakpointByID(id)
 
 		if !found {
-			return value.NoneVal(), verror.NewScriptError(
+			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDNoSuchBreakpoint,
 				[3]string{"breakpoint not found", "", ""},
 			)
 		}
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["step"]; ok && ToTruthy(val) {
 		debug.GlobalDebugger.EnableStepping()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["next"]; ok && ToTruthy(val) {
 		debug.GlobalDebugger.EnableStepping()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["finish"]; ok && ToTruthy(val) {
 		debug.GlobalDebugger.DisableStepping()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["continue"]; ok && ToTruthy(val) {
 		debug.GlobalDebugger.DisableStepping()
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	if val, ok := refValues["locals"]; ok && ToTruthy(val) {
@@ -505,10 +505,10 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	if val, ok := refValues["stack"]; ok && ToTruthy(val) {
 		// Return block with call stack entries
 		// For now, return empty block
-		return value.BlockVal([]core.Value{}), nil
+		return value.NewBlockVal([]core.Value{}), nil
 	}
 
-	return value.NoneVal(), verror.NewScriptError(
+	return value.NewNoneVal(), verror.NewScriptError(
 		verror.ErrIDInvalidOperation,
 		[3]string{"debug requires a valid refinement", "", ""},
 	)

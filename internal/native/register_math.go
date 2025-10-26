@@ -25,7 +25,7 @@ func RegisterMathNatives(rootFrame core.Frame) {
 		}
 
 		// Bind to root frame
-		rootFrame.Bind(name, value.FuncVal(fn))
+		rootFrame.Bind(name, value.NewFuncVal(fn))
 
 		// Mark as registered
 		registered[name] = true

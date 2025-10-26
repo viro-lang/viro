@@ -19,7 +19,7 @@ func RegisterHelpNatives(rootFrame core.Frame) {
 	}
 
 	// Group 12: Help system (2 functions)
-	rootFrame.Bind("?", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("?", value.NewFuncVal(value.NewNativeFunction(
 		"?",
 		[]value.ParamSpec{
 			value.NewParamSpec("topic", false), // NOT evaluated (word/string)
@@ -45,7 +45,7 @@ In scripts, you must provide an argument: '? math' or '? append'.`,
 		},
 	)))
 
-	rootFrame.Bind("words", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("words", value.NewFuncVal(value.NewNativeFunction(
 		"words",
 		[]value.ParamSpec{},
 		Words,
@@ -64,7 +64,7 @@ Useful for programmatic access to available functionality.`,
 	)))
 
 	// Group 13: Trace/Debug/Reflection (9 functions - Feature 002, FR-020 to FR-022)
-	rootFrame.Bind("trace", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("trace", value.NewFuncVal(value.NewNativeFunction(
 		"trace",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -95,7 +95,7 @@ and other execution events to a log file. Supports filtering and custom output d
 		},
 	)))
 
-	rootFrame.Bind("trace?", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("trace?", value.NewFuncVal(value.NewNativeFunction(
 		"trace?",
 		[]value.ParamSpec{},
 		TraceQuery,
@@ -111,7 +111,7 @@ and other execution events to a log file. Supports filtering and custom output d
 		},
 	)))
 
-	rootFrame.Bind("debug", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("debug", value.NewFuncVal(value.NewNativeFunction(
 		"debug",
 		[]value.ParamSpec{
 			value.NewRefinementSpec("on", false),
@@ -156,7 +156,7 @@ with stepping commands. Inspect state with --locals and --stack.`,
 		},
 	)))
 
-	rootFrame.Bind("type-of", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("type-of", value.NewFuncVal(value.NewNativeFunction(
 		"type-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
@@ -177,7 +177,7 @@ Type names follow the pattern 'type!' (e.g., integer!, string!, block!).`,
 		},
 	)))
 
-	rootFrame.Bind("spec-of", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("spec-of", value.NewFuncVal(value.NewNativeFunction(
 		"spec-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
@@ -199,7 +199,7 @@ returns the field names and type hints.`,
 		},
 	)))
 
-	rootFrame.Bind("body-of", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("body-of", value.NewFuncVal(value.NewNativeFunction(
 		"body-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),
@@ -221,7 +221,7 @@ returns a block of set-word/value pairs.`,
 		},
 	)))
 
-	rootFrame.Bind("words-of", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("words-of", value.NewFuncVal(value.NewNativeFunction(
 		"words-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
@@ -242,7 +242,7 @@ the object's manifest. Returns an immutable block of words.`,
 		},
 	)))
 
-	rootFrame.Bind("values-of", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("values-of", value.NewFuncVal(value.NewNativeFunction(
 		"values-of",
 		[]value.ParamSpec{
 			value.NewParamSpec("object", true),
@@ -263,7 +263,7 @@ manifest and corresponds to words-of. Returns deep copies to prevent mutation.`,
 		},
 	)))
 
-	rootFrame.Bind("source", value.FuncVal(value.NewNativeFunction(
+	rootFrame.Bind("source", value.NewFuncVal(value.NewNativeFunction(
 		"source",
 		[]value.ParamSpec{
 			value.NewParamSpec("value", true),

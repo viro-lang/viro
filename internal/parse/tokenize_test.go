@@ -71,7 +71,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			name:        "invalid exponent format",
 			input:       "1.5e",
 			expectError: false,
-			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1), value.WordVal("e")},
+			expected:    []core.Value{value.DecimalVal(decimalValue("1.5"), 1), value.NewWordVal("e")},
 			checkResult: nil,
 			desc:        "Should tokenize incomplete exponent as separate tokens",
 		},
@@ -79,7 +79,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			name:        "number at end of input",
 			input:       "value 42",
 			expectError: false,
-			expected:    []core.Value{value.WordVal("value"), value.IntVal(42)},
+			expected:    []core.Value{value.NewWordVal("value"), value.NewIntVal(42)},
 			checkResult: nil,
 			desc:        "Should parse number at end of input",
 		},
@@ -95,7 +95,7 @@ func TestComplexNumberParsing(t *testing.T) {
 			name:        "number at start of input",
 			input:       "123 rest",
 			expectError: false,
-			expected:    []core.Value{value.IntVal(123), value.WordVal("rest")},
+			expected:    []core.Value{value.NewIntVal(123), value.NewWordVal("rest")},
 			checkResult: nil,
 			desc:        "Should parse number at start of input",
 		},
@@ -308,7 +308,7 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "--flag" {
 					t.Errorf("Expected '--flag', got %q", word)
 				}
@@ -387,7 +387,7 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "true" {
 					t.Errorf("Expected word 'true', got %v", word)
 				}
@@ -406,7 +406,7 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "false" {
 					t.Errorf("Expected word 'false', got %v", word)
 				}
@@ -425,7 +425,7 @@ func TestWordVariants(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "none" {
 					t.Errorf("Expected word 'none', got %v", word)
 				}
@@ -508,7 +508,7 @@ func TestOperatorTokenization(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "<=" {
 					t.Errorf("Expected '<=', got %q", word)
 				}
@@ -527,7 +527,7 @@ func TestOperatorTokenization(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != ">=" {
 					t.Errorf("Expected '>=', got %q", word)
 				}
@@ -546,7 +546,7 @@ func TestOperatorTokenization(t *testing.T) {
 				if vals[0].GetType() != value.TypeWord {
 					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "<>" {
 					t.Errorf("Expected '<>', got %q", word)
 				}

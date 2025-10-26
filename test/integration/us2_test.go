@@ -65,7 +65,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if output != "yes\n" {
 		t.Fatalf("expected print output 'yes', got %q", output)
 	}
-	if !result.Equals(value.NoneVal()) {
+	if !result.Equals(value.NewNoneVal()) {
 		t.Fatalf("when should return none, got %v", result)
 	}
 
@@ -76,7 +76,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if output != "" {
 		t.Fatalf("when false should not emit output, got %q", output)
 	}
-	if !result.Equals(value.NoneVal()) {
+	if !result.Equals(value.NewNoneVal()) {
 		t.Fatalf("when false should return none, got %v", result)
 	}
 
@@ -84,7 +84,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("if true branch failed: %v", err)
 	}
-	if !val.Equals(value.StrVal("less")) {
+	if !val.Equals(value.NewStrVal("less")) {
 		t.Fatalf("expected if true branch to return \"less\", got %v", val)
 	}
 
@@ -92,7 +92,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("if false branch failed: %v", err)
 	}
-	if !val.Equals(value.StrVal("no")) {
+	if !val.Equals(value.NewStrVal("no")) {
 		t.Fatalf("expected if false branch to return \"no\", got %v", val)
 	}
 
@@ -103,7 +103,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if output != "hi\nhi\nhi\n" {
 		t.Fatalf("loop print expected three lines of hi, got %q", output)
 	}
-	if !result.Equals(value.NoneVal()) {
+	if !result.Equals(value.NewNoneVal()) {
 		t.Fatalf("loop with print should return none, got %v", result)
 	}
 
@@ -111,7 +111,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("nested control flow failed: %v", err)
 	}
-	if !val.Equals(value.StrVal("nested")) {
+	if !val.Equals(value.NewStrVal("nested")) {
 		t.Fatalf("expected nested control flow to return \"nested\", got %v", val)
 	}
 
@@ -119,7 +119,7 @@ func TestUS2_ControlFlowScenarios(t *testing.T) {
 	if err != nil {
 		t.Fatalf("when false with nested block should succeed: %v", err)
 	}
-	if !val.Equals(value.NoneVal()) {
+	if !val.Equals(value.NewNoneVal()) {
 		t.Fatalf("when false should return none even with nested block, got %v", val)
 	}
 }

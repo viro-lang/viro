@@ -20,43 +20,43 @@ func TestLiteralEvaluation(t *testing.T) {
 	}{
 		{
 			name:     "integer literal",
-			input:    value.IntVal(42),
-			expected: value.IntVal(42),
+			input:    value.NewIntVal(42),
+			expected: value.NewIntVal(42),
 		},
 		{
 			name:     "negative integer",
-			input:    value.IntVal(-100),
-			expected: value.IntVal(-100),
+			input:    value.NewIntVal(-100),
+			expected: value.NewIntVal(-100),
 		},
 		{
 			name:     "zero",
-			input:    value.IntVal(0),
-			expected: value.IntVal(0),
+			input:    value.NewIntVal(0),
+			expected: value.NewIntVal(0),
 		},
 		{
 			name:     "string literal",
-			input:    value.StrVal("hello"),
-			expected: value.StrVal("hello"),
+			input:    value.NewStrVal("hello"),
+			expected: value.NewStrVal("hello"),
 		},
 		{
 			name:     "empty string",
-			input:    value.StrVal(""),
-			expected: value.StrVal(""),
+			input:    value.NewStrVal(""),
+			expected: value.NewStrVal(""),
 		},
 		{
 			name:     "logic true",
-			input:    value.LogicVal(true),
-			expected: value.LogicVal(true),
+			input:    value.NewLogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "logic false",
-			input:    value.LogicVal(false),
-			expected: value.LogicVal(false),
+			input:    value.NewLogicVal(false),
+			expected: value.NewLogicVal(false),
 		},
 		{
 			name:     "none",
-			input:    value.NoneVal(),
-			expected: value.NoneVal(),
+			input:    value.NewNoneVal(),
+			expected: value.NewNoneVal(),
 		},
 	}
 
@@ -88,34 +88,34 @@ func TestBlockEvaluation(t *testing.T) {
 	}{
 		{
 			name:     "empty block",
-			input:    value.BlockVal([]core.Value{}),
-			expected: value.BlockVal([]core.Value{}),
+			input:    value.NewBlockVal([]core.Value{}),
+			expected: value.NewBlockVal([]core.Value{}),
 		},
 		{
 			name: "block with integers",
-			input: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.IntVal(2),
-				value.IntVal(3),
+			input: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
 			}),
-			expected: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.IntVal(2),
-				value.IntVal(3),
+			expected: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
 			}),
 		},
 		{
 			name: "block with unevaluated expression",
-			input: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.WordVal("+"),
-				value.IntVal(2),
+			input: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewWordVal("+"),
+				value.NewIntVal(2),
 			}),
 			// Block returns self - does NOT evaluate to 3
-			expected: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.WordVal("+"),
-				value.IntVal(2),
+			expected: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewWordVal("+"),
+				value.NewIntVal(2),
 			}),
 		},
 	}
@@ -148,25 +148,25 @@ func TestParenEvaluation(t *testing.T) {
 	}{
 		{
 			name:     "empty paren",
-			input:    value.ParenVal([]core.Value{}),
-			expected: value.NoneVal(), // Empty block returns none
+			input:    value.NewParenVal([]core.Value{}),
+			expected: value.NewNoneVal(), // Empty block returns none
 		},
 		{
 			name: "paren with single value",
-			input: value.ParenVal([]core.Value{
-				value.IntVal(42),
+			input: value.NewParenVal([]core.Value{
+				value.NewIntVal(42),
 			}),
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 		},
 		{
 			name: "paren evaluates like block with extra tokens",
-			input: value.ParenVal([]core.Value{
-				value.WordVal("+"),
-				value.IntVal(1),
-				value.IntVal(2),
-				value.IntVal(4),
+			input: value.NewParenVal([]core.Value{
+				value.NewWordVal("+"),
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(4),
 			}),
-			expected: value.IntVal(4),
+			expected: value.NewIntVal(4),
 		},
 		// More complex tests require arithmetic implementation
 	}
@@ -203,15 +203,15 @@ func TestWordEvaluation(t *testing.T) {
 		{
 			name:      "bound word",
 			setupWord: "x",
-			setupVal:  value.IntVal(10),
-			input:     value.WordVal("x"),
-			expected:  value.IntVal(10),
+			setupVal:  value.NewIntVal(10),
+			input:     value.NewWordVal("x"),
+			expected:  value.NewIntVal(10),
 			wantErr:   false,
 		},
 		{
 			name:     "unbound word error",
-			input:    value.WordVal("undefined"),
-			expected: value.NoneVal(),
+			input:    value.NewWordVal("undefined"),
+			expected: value.NewNoneVal(),
 			wantErr:  true, // Should error: no value for word
 		},
 	}
@@ -253,20 +253,20 @@ func TestSetWordEvaluation(t *testing.T) {
 		{
 			name: "set integer",
 			sequence: []core.Value{
-				value.SetWordVal("x"),
-				value.IntVal(42),
+				value.NewSetWordVal("x"),
+				value.NewIntVal(42),
 			},
 			checkWord: "x",
-			expected:  value.IntVal(42),
+			expected:  value.NewIntVal(42),
 		},
 		{
 			name: "set string",
 			sequence: []core.Value{
-				value.SetWordVal("name"),
-				value.StrVal("Alice"),
+				value.NewSetWordVal("name"),
+				value.NewStrVal("Alice"),
 			},
 			checkWord: "name",
-			expected:  value.StrVal("Alice"),
+			expected:  value.NewStrVal("Alice"),
 		},
 	}
 

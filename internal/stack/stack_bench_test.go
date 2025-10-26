@@ -9,7 +9,7 @@ import (
 
 func BenchmarkStackPushPop(b *testing.B) {
 	st := stack.NewStack(1024)
-	v := value.IntVal(42)
+	v := value.NewIntVal(42)
 	b.ReportAllocs()
 
 	for b.Loop() {
@@ -20,8 +20,8 @@ func BenchmarkStackPushPop(b *testing.B) {
 
 func BenchmarkStackGetSet(b *testing.B) {
 	st := stack.NewStack(1024)
-	idx := st.Push(value.IntVal(1))
-	v := value.IntVal(99)
+	idx := st.Push(value.NewIntVal(1))
+	v := value.NewIntVal(99)
 	b.ReportAllocs()
 
 	for b.Loop() {

@@ -38,7 +38,7 @@ func TestTraceControls(t *testing.T) {
 			code:       "trace --on\ntrace?",
 			expectType: value.TypeLogic, // Returns boolean indicating trace state
 			checkFunc: func(t *testing.T, v core.Value) {
-				enabled, ok := value.AsLogic(v)
+				enabled, ok := value.AsLogicValue(v)
 				if !ok {
 					t.Fatal("expected trace? to return boolean!")
 				}
@@ -54,7 +54,7 @@ func TestTraceControls(t *testing.T) {
 			expectType: value.TypeLogic,
 			checkFunc: func(t *testing.T, v core.Value) {
 				// Should return false when disabled
-				enabled, ok := value.AsLogic(v)
+				enabled, ok := value.AsLogicValue(v)
 				if !ok {
 					t.Fatal("expected trace? to return boolean!")
 				}

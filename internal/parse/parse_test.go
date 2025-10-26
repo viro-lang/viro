@@ -163,37 +163,37 @@ func TestCommentParsing(t *testing.T) {
 		{
 			name:     "Comment at start of line",
 			input:    "; this is a comment\n42",
-			expected: []core.Value{value.IntVal(42)},
+			expected: []core.Value{value.NewIntVal(42)},
 			desc:     "Should ignore comment and parse the number",
 		},
 		{
 			name:     "Comment after code",
 			input:    "42 ; this is a comment",
-			expected: []core.Value{value.IntVal(42)},
+			expected: []core.Value{value.NewIntVal(42)},
 			desc:     "Should parse number and ignore trailing comment",
 		},
 		{
 			name:     "Multiple comments",
 			input:    "; first comment\n42 ; second comment\n; third comment",
-			expected: []core.Value{value.IntVal(42)},
+			expected: []core.Value{value.NewIntVal(42)},
 			desc:     "Should ignore all comments and parse the number",
 		},
 		{
 			name:     "Comment in expression",
 			input:    "3 ; comment\n+ ; another comment\n4",
-			expected: []core.Value{value.IntVal(3), value.WordVal("+"), value.IntVal(4)},
+			expected: []core.Value{value.NewIntVal(3), value.NewWordVal("+"), value.NewIntVal(4)},
 			desc:     "Should parse as flat sequence with comments removed",
 		},
 		{
 			name:     "Empty comment",
 			input:    "42 ;",
-			expected: []core.Value{value.IntVal(42)},
+			expected: []core.Value{value.NewIntVal(42)},
 			desc:     "Should handle empty comments",
 		},
 		{
 			name:     "Comment at EOF",
 			input:    "42 ; comment at end",
-			expected: []core.Value{value.IntVal(42)},
+			expected: []core.Value{value.NewIntVal(42)},
 			desc:     "Should handle comments at end of input",
 		},
 		{

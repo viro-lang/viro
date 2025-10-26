@@ -66,8 +66,8 @@ func GetTypeFrame(typ core.ValueType) (core.Frame, bool) {
 //	customFrame.SetName("custom-type!")
 //
 //	// 2. Add type-specific implementations
-//	customFrame.Bind("first", value.FuncVal(customFirstImpl))
-//	customFrame.Bind("last", value.FuncVal(customLastImpl))
+//	customFrame.Bind("first", value.NewFuncVal(customFirstImpl))
+//	customFrame.Bind("last", value.NewFuncVal(customLastImpl))
 //
 //	// 3. Register the type frame
 //	frame.RegisterTypeFrame(value.TypeCustom, customFrame)

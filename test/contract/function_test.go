@@ -16,7 +16,7 @@ func TestFunction_Definition(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		fn, ok := value.AsFunction(result)
+		fn, ok := value.AsFunctionValue(result)
 		if !ok {
 			t.Fatalf("expected function value, got %v", result)
 		}
@@ -70,19 +70,19 @@ func TestFunction_Call(t *testing.T) {
 			name: "single positional argument",
 			input: `square: fn [n] [(* n n)]
     square 5`,
-			want: value.IntVal(25),
+			want: value.NewIntVal(25),
 		},
 		{
 			name: "multiple positional arguments",
 			input: `add: fn [a b] [(+ a b)]
     add 3 4`,
-			want: value.IntVal(7),
+			want: value.NewIntVal(7),
 		},
 		{
 			name: "no arguments",
 			input: `forty-two: fn [] [42]
     forty-two`,
-			want: value.IntVal(42),
+			want: value.NewIntVal(42),
 		},
 	}
 
@@ -114,7 +114,7 @@ counter`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.IntVal(10)) {
+	if !result.Equals(value.NewIntVal(10)) {
 		t.Fatalf("expected global counter to remain 10, got %v", result)
 	}
 
@@ -122,7 +122,7 @@ counter`
 	if !ok {
 		t.Fatalf("expected result binding")
 	}
-	if !local.Equals(value.IntVal(1)) {
+	if !local.Equals(value.NewIntVal(1)) {
 		t.Fatalf("expected function return 1, got %v", local)
 	}
 }
@@ -138,7 +138,7 @@ with`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.LogicVal(true)) {
+	if !result.Equals(value.NewLogicVal(true)) {
 		t.Fatalf("expected final result true, got %v", result)
 	}
 
@@ -146,7 +146,7 @@ with`
 	if !ok {
 		t.Fatalf("expected without binding")
 	}
-	if !without.Equals(value.LogicVal(false)) {
+	if !without.Equals(value.NewLogicVal(false)) {
 		t.Fatalf("expected flag default false, got %v", without)
 	}
 }
@@ -162,7 +162,7 @@ with-title`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.StrVal("Dr.")) {
+	if !result.Equals(value.NewStrVal("Dr.")) {
 		t.Fatalf("expected final result Dr., got %v", result)
 	}
 
@@ -187,7 +187,7 @@ second`
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.IntVal(7)) {
+	if !result.Equals(value.NewIntVal(7)) {
 		t.Fatalf("expected second call result 7, got %v", result)
 	}
 
@@ -195,7 +195,7 @@ second`
 	if !ok {
 		t.Fatalf("expected first binding")
 	}
-	if !first.Equals(value.IntVal(5)) {
+	if !first.Equals(value.NewIntVal(5)) {
 		t.Fatalf("expected first call result 5, got %v", first)
 	}
 
@@ -220,7 +220,7 @@ add5 7`)
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.IntVal(12)) {
+	if !result.Equals(value.NewIntVal(12)) {
 		t.Fatalf("expected closure to capture x=5, got %v", result)
 	}
 }
@@ -236,7 +236,7 @@ fact 5`)
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !result.Equals(value.IntVal(120)) {
+	if !result.Equals(value.NewIntVal(120)) {
 		t.Fatalf("expected factorial 120, got %v", result)
 	}
 }
@@ -244,7 +244,7 @@ fact 5`)
 func evalScriptWithEvaluator(src string) (*eval.Evaluator, core.Value, error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
-		return nil, value.NoneVal(), err
+		return nil, value.NewNoneVal(), err
 	}
 
 	e := NewTestEvaluator()
@@ -254,7 +254,7 @@ func evalScriptWithEvaluator(src string) (*eval.Evaluator, core.Value, error) {
 
 func getGlobal(e *eval.Evaluator, name string) (core.Value, bool) {
 	if len(e.Frames) == 0 {
-		return value.NoneVal(), false
+		return value.NewNoneVal(), false
 	}
 
 	val, ok := e.Frames[0].Get(name)

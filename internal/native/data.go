@@ -18,19 +18,19 @@ import (
 // - Binds word in current frame and returns the value
 func Set(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("set", 2, len(args))
+		return value.NewNoneVal(), arityError("set", 2, len(args))
 	}
 
 	if args[0].GetType() != value.TypeLitWord {
-		return value.NoneVal(), typeError("set", "lit-word", args[0])
+		return value.NewNoneVal(), typeError("set", "lit-word", args[0])
 	}
 
-	symbol, _ := value.AsWord(args[0])
-	assignment := []core.Value{value.SetWordVal(symbol), args[1]}
+	symbol, _ := value.AsWordValue(args[0])
+	assignment := []core.Value{value.NewSetWordVal(symbol), args[1]}
 
 	result, err := eval.DoBlock(assignment)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NewNoneVal(), err
 	}
 
 	return result, nil
@@ -43,15 +43,15 @@ func Set(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 // - Returns bound value from current frame chain
 func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("get", 1, len(args))
+		return value.NewNoneVal(), arityError("get", 1, len(args))
 	}
 
 	if args[0].GetType() != value.TypeLitWord {
-		return value.NoneVal(), typeError("get", "lit-word", args[0])
+		return value.NewNoneVal(), typeError("get", "lit-word", args[0])
 	}
 
-	symbol, _ := value.AsWord(args[0])
-	_, result, err := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0)
+	symbol, _ := value.AsWordValue(args[0])
+	_, result, err := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, 0)
 	return result, err
 }
 
@@ -60,11 +60,11 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 // Contract: type? value -> word representing type name
 func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("type?", 1, len(args))
+		return value.NewNoneVal(), arityError("type?", 1, len(args))
 	}
 
 	typeName := value.TypeToString(args[0].GetType())
-	return value.WordVal(typeName), nil
+	return value.NewWordVal(typeName), nil
 }
 
 // Form implements the `form` native.
@@ -73,11 +73,11 @@ func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // Returns display-friendly string format (no brackets on blocks, no quotes on strings, objects as multi-line field display)
 func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("form", 1, len(args))
+		return value.NewNoneVal(), arityError("form", 1, len(args))
 	}
 
 	val := args[0]
-	return value.StrVal(val.Form()), nil
+	return value.NewStrVal(val.Form()), nil
 }
 
 // Mold implements the `mold` native.
@@ -86,12 +86,12 @@ func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 // Returns serialization-friendly string format (brackets on blocks, quotes on strings, objects as make object! [...])
 func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("mold", 1, len(args))
+		return value.NewNoneVal(), arityError("mold", 1, len(args))
 	}
 
 	val := args[0]
 
-	return value.StrVal(val.Mold()), nil
+	return value.NewStrVal(val.Mold()), nil
 }
 
 func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[string][]core.Value, error) {
@@ -104,7 +104,7 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 
 		switch val.GetType() {
 		case value.TypeWord:
-			word, _ := value.AsWord(val)
+			word, _ := value.AsWordValue(val)
 			if isReservedField(word) {
 				return nil, nil, verror.NewScriptError(
 					verror.ErrIDReservedField,
@@ -119,10 +119,10 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 			}
 			fields = append(fields, word)
 			seenFields[word] = true
-			initializers[word] = []core.Value{value.NoneVal()}
+			initializers[word] = []core.Value{value.NewNoneVal()}
 
 		case value.TypeSetWord:
-			word, _ := value.AsWord(val)
+			word, _ := value.AsWordValue(val)
 			if isReservedField(word) {
 				return nil, nil, verror.NewScriptError(
 					verror.ErrIDReservedField,
@@ -158,7 +158,7 @@ func buildObjectSpec(nativeName string, spec *value.BlockValue) ([]string, map[s
 			}
 
 			if len(initVals) == 0 {
-				initVals = []core.Value{value.NoneVal()}
+				initVals = []core.Value{value.NewNoneVal()}
 			}
 			initializers[word] = initVals
 
@@ -182,7 +182,7 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 
 		evaled, err := eval.DoBlock(initVals)
 		if err != nil {
-			return value.NoneVal(), err
+			return value.NewNoneVal(), err
 		}
 
 		ownedFrame.Bind(field, evaled)
@@ -217,18 +217,18 @@ func isReservedField(name string) bool {
 //   - Evaluates initializers in object's context
 func Object(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("object", 1, len(args))
+		return value.NewNoneVal(), arityError("object", 1, len(args))
 	}
 
 	if args[0].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("object", "block", args[0])
+		return value.NewNoneVal(), typeError("object", "block", args[0])
 	}
 
-	spec, _ := value.AsBlock(args[0])
+	spec, _ := value.AsBlockValue(args[0])
 
 	fields, initializers, err := buildObjectSpec("object", spec)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NewNoneVal(), err
 	}
 
 	// Create object frame with parent set to current frame
@@ -245,18 +245,18 @@ func Object(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 // - Returns object! instance with isolated frame
 func Context(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("context", 1, len(args))
+		return value.NewNoneVal(), arityError("context", 1, len(args))
 	}
 
 	if args[0].GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("context", "block", args[0])
+		return value.NewNoneVal(), typeError("context", "block", args[0])
 	}
 
-	spec, _ := value.AsBlock(args[0])
+	spec, _ := value.AsBlockValue(args[0])
 
 	fields, initializers, err := buildObjectSpec("context", spec)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NewNoneVal(), err
 	}
 
 	return instantiateObject(eval, -1, nil, fields, initializers)
@@ -270,22 +270,22 @@ func Context(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 // - Spec must be block describing fields/initializers (same as object)
 func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("make", 2, len(args))
+		return value.NewNoneVal(), arityError("make", 2, len(args))
 	}
 
 	specVal := args[1]
 	if specVal.GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("make spec", "block", specVal)
+		return value.NewNoneVal(), typeError("make spec", "block", specVal)
 	}
 
-	specBlock, ok := value.AsBlock(specVal)
+	specBlock, ok := value.AsBlockValue(specVal)
 	if !ok {
-		return value.NoneVal(), verror.NewInternalError("make spec missing block payload", [3]string{})
+		return value.NewNoneVal(), verror.NewInternalError("make spec missing block payload", [3]string{})
 	}
 
 	fields, initializers, err := buildObjectSpec("make", specBlock)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NewNoneVal(), err
 	}
 
 	var prototype *value.ObjectInstance
@@ -293,12 +293,12 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	// Handle datatype literal like object!
 	if target.GetType() == value.TypeDatatype {
-		dtName, _ := value.AsDatatype(target)
+		dtName, _ := value.AsDatatypeValue(target)
 		if strings.EqualFold(dtName, "object!") {
 			prototype = nil
 			goto instantiate
 		}
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDTypeMismatch,
 			[3]string{"make", "object!", dtName},
 		)
@@ -308,19 +308,19 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	for {
 		switch target.GetType() {
 		case value.TypeWord:
-			word, _ := value.AsWord(target)
-			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.WordVal(word)}, 0)
+			word, _ := value.AsWordValue(target)
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewWordVal(word)}, 0)
 			if evalErr != nil {
-				return value.NoneVal(), evalErr
+				return value.NewNoneVal(), evalErr
 			}
 			target = evaluated
 			continue
 
 		case value.TypeGetWord:
-			symbol, _ := value.AsWord(target)
-			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0)
+			symbol, _ := value.AsWordValue(target)
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, 0)
 			if evalErr != nil {
-				return value.NoneVal(), evalErr
+				return value.NewNoneVal(), evalErr
 			}
 			target = evaluated
 			continue
@@ -329,7 +329,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 			obj, _ := value.AsObject(target)
 			prototype = obj
 		default:
-			return value.NoneVal(), typeError("make target", "object", target)
+			return value.NewNoneVal(), typeError("make target", "object", target)
 		}
 		break
 	}
@@ -348,7 +348,7 @@ instantiate:
 // - Returns field value or default (or none! if no default provided)
 func Select(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
-		return value.NoneVal(), arityError("select", 2, len(args))
+		return value.NewNoneVal(), arityError("select", 2, len(args))
 	}
 
 	targetVal := args[0]
@@ -358,18 +358,18 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	var fieldName string
 	switch fieldVal.GetType() {
 	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-		fieldName, _ = value.AsWord(fieldVal)
+		fieldName, _ = value.AsWordValue(fieldVal)
 	case value.TypeString:
-		str, _ := value.AsString(fieldVal)
+		str, _ := value.AsStringValue(fieldVal)
 		fieldName = str.String()
 	default:
-		return value.NoneVal(), typeError("select field", "word or string", fieldVal)
+		return value.NewNoneVal(), typeError("select field", "word or string", fieldVal)
 	}
 
 	// Check for --default refinement value
 	defaultVal, hasDefault := refValues["default"]
 	if !hasDefault {
-		defaultVal = value.NoneVal()
+		defaultVal = value.NewNoneVal()
 	}
 
 	// Handle object selection
@@ -388,12 +388,12 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 			return defaultVal, nil
 		}
 
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// Handle block selection (key-value pairs)
 	if targetVal.GetType() == value.TypeBlock {
-		block, _ := value.AsBlock(targetVal)
+		block, _ := value.AsBlockValue(targetVal)
 		elements := block.Elements
 
 		// Search for key-value pairs
@@ -403,9 +403,9 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 			switch key.GetType() {
 			case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-				keyStr, _ = value.AsWord(key)
+				keyStr, _ = value.AsWordValue(key)
 			case value.TypeString:
-				str, _ := value.AsString(key)
+				str, _ := value.AsStringValue(key)
 				keyStr = str.String()
 			default:
 				continue
@@ -420,10 +420,10 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		if hasDefault {
 			return defaultVal, nil
 		}
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
-	return value.NoneVal(), typeError("select target", "object or block", targetVal)
+	return value.NewNoneVal(), typeError("select target", "object or block", targetVal)
 }
 
 // Put implements the `put` native for object field mutation.
@@ -436,7 +436,7 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 // - Returns the assigned value
 func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
-		return value.NoneVal(), arityError("put", 3, len(args))
+		return value.NewNoneVal(), arityError("put", 3, len(args))
 	}
 
 	targetVal := args[0]
@@ -447,17 +447,17 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	var fieldName string
 	switch fieldVal.GetType() {
 	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-		fieldName, _ = value.AsWord(fieldVal)
+		fieldName, _ = value.AsWordValue(fieldVal)
 	case value.TypeString:
-		str, _ := value.AsString(fieldVal)
+		str, _ := value.AsStringValue(fieldVal)
 		fieldName = str.String()
 	default:
-		return value.NoneVal(), typeError("put field", "word or string", fieldVal)
+		return value.NewNoneVal(), typeError("put field", "word or string", fieldVal)
 	}
 
 	// Only support objects for now
 	if targetVal.GetType() != value.TypeObject {
-		return value.NoneVal(), typeError("put target", "object", targetVal)
+		return value.NewNoneVal(), typeError("put target", "object", targetVal)
 	}
 
 	obj, _ := value.AsObject(targetVal)
@@ -473,7 +473,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	if fieldIndex == -1 {
 		// Field doesn't exist - error per contract (no dynamic field addition)
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDNoSuchField,
 			[3]string{fieldName, "", ""},
 		)
@@ -482,7 +482,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	// Optional: Type validation if type hint is present
 	expectedType := obj.Manifest.Types[fieldIndex]
 	if expectedType != value.TypeNone && expectedType != newVal.GetType() {
-		return value.NoneVal(), verror.NewScriptError(
+		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDTypeMismatch,
 			[3]string{value.TypeToString(expectedType), value.TypeToString(newVal.GetType()), fieldName},
 		)

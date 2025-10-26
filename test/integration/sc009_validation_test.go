@@ -16,7 +16,7 @@ func TestSC009_StackExpansionPerformance(t *testing.T) {
 	// Pre-fill stack to force expansion
 	initialSize := 100
 	for i := 0; i < initialSize; i++ {
-		s.Push(value.IntVal(int64(i)))
+		s.Push(value.NewIntVal(int64(i)))
 	}
 
 	// Measure expansion time
@@ -32,13 +32,13 @@ func TestSC009_StackExpansionPerformance(t *testing.T) {
 
 			// Fill to near capacity
 			for i := 0; i < 50; i++ {
-				s.Push(value.IntVal(int64(i)))
+				s.Push(value.NewIntVal(int64(i)))
 			}
 
 			// Measure time for expansion during push
 			start := time.Now()
 			for i := 0; i < targetSize; i++ {
-				s.Push(value.IntVal(int64(i)))
+				s.Push(value.NewIntVal(int64(i)))
 			}
 			elapsed := time.Since(start)
 
@@ -60,7 +60,7 @@ func TestSC009_StackExpansionPerformance(t *testing.T) {
 
 	start := time.Now()
 	for i := 0; i < largeCount; i++ {
-		s.Push(value.IntVal(int64(i)))
+		s.Push(value.NewIntVal(int64(i)))
 	}
 	elapsed := time.Since(start)
 
@@ -70,7 +70,7 @@ func TestSC009_StackExpansionPerformance(t *testing.T) {
 	// Verify all values are correct
 	for i := largeCount - 1; i >= 0; i-- {
 		val := s.Pop()
-		if num, ok := value.AsInteger(val); !ok || num != int64(i) {
+		if num, ok := value.AsIntValue(val); !ok || num != int64(i) {
 			t.Fatalf("Expected %d, got %v", i, val)
 		}
 	}

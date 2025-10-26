@@ -20,7 +20,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("append")}, map[string]core.Value{}, e)
+	val, err = native.Help([]core.Value{value.NewWordVal("append")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with 'append' failed: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("math")}, map[string]core.Value{}, e)
+	val, err = native.Help([]core.Value{value.NewWordVal("math")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with 'math' failed: %v", err)
 	}
@@ -36,7 +36,7 @@ func TestHelpDirectCall(t *testing.T) {
 		t.Errorf("Expected none!, got %v", val.GetType())
 	}
 
-	val, err = native.Help([]core.Value{value.WordVal("+")}, map[string]core.Value{}, e)
+	val, err = native.Help([]core.Value{value.NewWordVal("+")}, map[string]core.Value{}, e)
 	if err != nil {
 		t.Fatalf("Help with '+' failed: %v", err)
 	}
@@ -55,7 +55,7 @@ func TestWords(t *testing.T) {
 		t.Fatalf("Expected block!, got %v", val.GetType())
 	}
 
-	block, ok := value.AsBlock(val)
+	block, ok := value.AsBlockValue(val)
 	if !ok {
 		t.Fatal("Failed to convert to BlockValue")
 	}
@@ -68,7 +68,7 @@ func TestWords(t *testing.T) {
 
 	names := make(map[string]bool)
 	for _, elem := range block.Elements {
-		word, _ := value.AsWord(elem)
+		word, _ := value.AsWordValue(elem)
 		names[word] = true
 	}
 
@@ -91,7 +91,7 @@ func TestWordsDirectCall(t *testing.T) {
 		t.Fatalf("Expected block!, got %v", val.GetType())
 	}
 
-	block, ok := value.AsBlock(val)
+	block, ok := value.AsBlockValue(val)
 	if !ok {
 		t.Fatal("Failed to convert to BlockValue")
 	}
@@ -110,7 +110,7 @@ func TestHelpFunctionExists(t *testing.T) {
 		t.Fatal("? function not found in root frame")
 	}
 
-	fn, ok := value.AsFunction(fnValue)
+	fn, ok := value.AsFunctionValue(fnValue)
 	if !ok {
 		t.Fatal("? value is not a function")
 	}
@@ -135,7 +135,7 @@ func TestHelpFormatterOutput(t *testing.T) {
 	registry := make(map[string]*value.FunctionValue)
 	for _, binding := range rootFrame.GetAll() {
 		if binding.Value.GetType() == value.TypeFunction {
-			if fn, ok := value.AsFunction(binding.Value); ok {
+			if fn, ok := value.AsFunctionValue(binding.Value); ok {
 				registry[binding.Symbol] = fn
 			}
 		}
@@ -165,7 +165,7 @@ func TestHelpFunctionDetail(t *testing.T) {
 		t.Fatal("+ function not found in root frame")
 	}
 
-	fn, ok := value.AsFunction(fnValue)
+	fn, ok := value.AsFunctionValue(fnValue)
 	if !ok {
 		t.Fatal("+ value is not a function")
 	}

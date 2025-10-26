@@ -11,16 +11,16 @@ import (
 // Feature: 004-dynamic-function-invocation
 func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
 	return blk.Elements[0], nil
@@ -30,16 +30,16 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // Feature: 004-dynamic-function-invocation
 func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
 	return blk.Elements[len(blk.Elements)-1], nil
@@ -50,12 +50,12 @@ func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Eva
 // Feature: 004-dynamic-function-invocation
 func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// Append the value to the block
@@ -70,12 +70,12 @@ func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.E
 // Feature: 004-dynamic-function-invocation
 func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// Insert the value at the beginning
@@ -89,27 +89,27 @@ func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.E
 // Feature: 004-dynamic-function-invocation
 func BlockLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	return value.IntVal(int64(len(blk.Elements))), nil
+	return value.NewIntVal(int64(len(blk.Elements))), nil
 }
 
 // BlockCopy implements copy action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// --part refinement: copy only first N elements
@@ -118,70 +118,70 @@ func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	if hasPart {
 		if partVal.GetType() != value.TypeInteger {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
-		count64, ok := value.AsInteger(partVal)
+		count64, ok := value.AsIntValue(partVal)
 		if !ok {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
 		count := int(count64)
 		if count < 0 || count > len(blk.Elements) {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
 		}
 		elems := make([]core.Value, count)
 		copy(elems, blk.Elements[:count])
-		return value.BlockVal(elems), nil
+		return value.NewBlockVal(elems), nil
 	}
 
 	// Full copy
-	return value.BlockVal(append([]core.Value{}, blk.Elements...)), nil
+	return value.NewBlockVal(append([]core.Value{}, blk.Elements...)), nil
 }
 
 // BlockFind implements find action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	sought := args[1]
 
 	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
-	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
+	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
 	if isLast {
 		for i := len(blk.Elements) - 1; i >= 0; i-- {
 			if blk.Elements[i].Equals(sought) {
-				return value.IntVal(int64(i + 1)), nil
+				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
 	} else {
 		for i, v := range blk.Elements {
 			if v.Equals(sought) {
-				return value.IntVal(int64(i + 1)), nil
+				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
 	}
 
-	return value.NoneVal(), nil
+	return value.NewNoneVal(), nil
 }
 
 // BlockRemove implements remove action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// --part refinement: remove N elements
@@ -191,14 +191,14 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 	count := 1
 	if hasPart {
 		if partVal.GetType() != value.TypeInteger {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
-		count64, _ := value.AsInteger(partVal)
+		count64, _ := value.AsIntValue(partVal)
 		count = int(count64)
 	}
 
 	if count < 0 || count > len(blk.Elements) {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
 	}
 
 	blk.SetIndex(0)
@@ -210,20 +210,20 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 // Feature: 004-dynamic-function-invocation
 func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	countVal := args[1]
 	if countVal.GetType() != value.TypeInteger {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
 	}
 
-	count64, _ := value.AsInteger(countVal)
+	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
 	newIndex := blk.GetIndex() + count
@@ -239,20 +239,20 @@ func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Eva
 // Feature: 004-dynamic-function-invocation
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	countVal := args[1]
 	if countVal.GetType() != value.TypeInteger {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
 	}
 
-	count64, _ := value.AsInteger(countVal)
+	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
 	start := blk.GetIndex()
@@ -260,19 +260,19 @@ func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	newElements := blk.Elements[start:end]
 	blk.SetIndex(end)
 
-	return value.BlockVal(newElements), nil
+	return value.NewBlockVal(newElements), nil
 }
 
 // BlockSort implements sort action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	if len(blk.Elements) == 0 {
@@ -283,7 +283,7 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	firstType := blk.Elements[0].GetType()
 	for _, v := range blk.Elements {
 		if v.GetType() != firstType || (v.GetType() != value.TypeInteger && v.GetType() != value.TypeString) {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 		}
 	}
 
@@ -295,12 +295,12 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 // Feature: 004-dynamic-function-invocation
 func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
 	}
 
-	blk, ok := value.AsBlock(args[0])
+	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	for i, j := 0, len(blk.Elements)-1; i < j; i, j = i+1, j-1 {
