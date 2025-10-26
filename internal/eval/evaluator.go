@@ -341,15 +341,38 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 			return e.evalSetPathExpression(block, position, wordStr)
 		}
 
-		currentFrame := e.currentFrame()
-		if currentFrame == nil {
-			currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
-			e.PushFrameContext(currentFrame)
+		if position+1 >= len(block) {
+			return position, value.NoneVal(), false, verror.NewScriptError(
+				verror.ErrIDNoValue,
+				[3]string{wordStr, "set-word-without-value", wordStr},
+			)
 		}
 
-		newPos, result, _, err := e.EvaluateExpression(block, position+1, lastResult)
+		newPos, result, _, err := e.EvaluateExpression(block, position+1, value.NoneVal())
 		if err != nil {
 			return position, value.NoneVal(), false, e.annotateError(err, block, position)
+		}
+
+		// Look ahead: if next element is infix, continue evaluation to capture full expression
+		for newPos < len(block) {
+			nextElement := block[newPos]
+			if nextElement.GetType() == value.TypeWord {
+				if nextWord, ok := value.AsWord(nextElement); ok {
+					if resolved, found := e.Lookup(nextWord); found {
+						if fn, ok := value.AsFunction(resolved); ok && fn.Infix {
+							// Next is infix - continue evaluation
+							nextPos, nextResult, _, nextErr := e.EvaluateExpression(block, newPos, result)
+							if nextErr != nil {
+								return position, value.NoneVal(), false, e.annotateError(nextErr, block, newPos)
+							}
+							newPos = nextPos
+							result = nextResult
+							continue
+						}
+					}
+				}
+			}
+			break
 		}
 
 		if result.GetType() == value.TypeFunction {
@@ -358,7 +381,10 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 			}
 		}
 
-		currentFrame.Bind(wordStr, result)
+		currentFrame := e.currentFrame()
+		if currentFrame != nil {
+			currentFrame.Bind(wordStr, result)
+		}
 		return newPos, result, false, nil
 
 	case value.TypeWord:
