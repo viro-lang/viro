@@ -212,7 +212,7 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	pos := 0
 	for pos < len(elements) {
-		result, newPos, err := eval.EvalExpressionFromTokens(elements, pos)
+		newPos, result, err := eval.EvaluateExpression(elements, pos, value.NoneVal())
 		if err != nil {
 			return value.NoneVal(), err
 		}

@@ -271,21 +271,36 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 // This is a wrapper that maintains backward compatibility with existing code.
 // Returns the evaluated result and any error encountered during evaluation.
 func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
-	_, result, err := e.evaluateExpression([]core.Value{val}, 0, value.NoneVal())
+	_, result, err := e.EvaluateExpression([]core.Value{val}, 0, value.NoneVal())
 	return result, err
 }
 
-// DoBlock evaluates a sequence of values as a block using the new position-based evaluateBlock method.
-// This is a wrapper that maintains backward compatibility with existing code.
+// DoBlock evaluates a sequence of values as a block using position tracking.
 // Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
-	return e.evaluateBlock(vals)
+	if len(vals) == 0 {
+		return value.NoneVal(), nil
+	}
+
+	position := 0
+	lastResult := value.NoneVal()
+
+	for position < len(vals) {
+		newPos, result, err := e.EvaluateExpression(vals, position, lastResult)
+		if err != nil {
+			return value.NoneVal(), e.annotateError(err, vals, position)
+		}
+		position = newPos
+		lastResult = result
+	}
+
+	return lastResult, nil
 }
 
-// evaluateExpression evaluates a single expression from a block starting at the given position.
+// EvaluateExpression evaluates a single expression from a block starting at the given position.
 // Returns the new position after consuming the expression, the result value, and any error.
 // This method implements the core execution model where expressions consume positions sequentially.
-func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, error) {
+func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, error) {
 	if position >= len(block) {
 		return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
 	}
@@ -312,7 +327,7 @@ func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastRes
 
 	case value.TypeParen:
 		block, _ := value.AsBlock(element)
-		result, err := e.evaluateBlock(block.Elements)
+		result, err := e.DoBlock(block.Elements)
 		return position + 1, result, err
 
 	case value.TypeLitWord:
@@ -339,7 +354,7 @@ func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastRes
 			e.PushFrameContext(currentFrame)
 		}
 
-		newPos, result, err := e.evaluateExpression(block, position+1, lastResult)
+		newPos, result, err := e.EvaluateExpression(block, position+1, lastResult)
 		if err != nil {
 			return position, value.NoneVal(), e.annotateError(err, block, position)
 		}
@@ -399,28 +414,6 @@ func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastRes
 	default:
 		return position, value.NoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
 	}
-}
-
-// evaluateBlock evaluates a block of values using position tracking.
-// Returns the result of the last expression or none value for empty blocks.
-func (e *Evaluator) evaluateBlock(block []core.Value) (core.Value, error) {
-	if len(block) == 0 {
-		return value.NoneVal(), nil
-	}
-
-	position := 0
-	lastResult := value.NoneVal()
-
-	for position < len(block) {
-		newPos, result, err := e.evaluateExpression(block, position, lastResult)
-		if err != nil {
-			return value.NoneVal(), e.annotateError(err, block, position)
-		}
-		position = newPos
-		lastResult = result
-	}
-
-	return lastResult, nil
 }
 
 // invokeFunctionExpression invokes a function starting at the given position in a block.
@@ -506,7 +499,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		var arg core.Value
 		if paramSpec.Eval {
 			var newPos int
-			newPos, arg, err = e.evaluateExpression(block, position, value.NoneVal())
+			newPos, arg, err = e.EvaluateExpression(block, position, value.NoneVal())
 			if err != nil {
 				return nil, nil, position, err
 			}
@@ -546,7 +539,7 @@ func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, path
 		return position, value.NoneVal(), err
 	}
 
-	newPos, result, err := e.evaluateExpression(block, position+1, value.NoneVal())
+	newPos, result, err := e.EvaluateExpression(block, position+1, value.NoneVal())
 	if err != nil {
 		return position, value.NoneVal(), e.annotateError(err, block, position)
 	}
@@ -562,14 +555,6 @@ func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, path
 	}
 
 	return newPos, result, nil
-}
-
-// EvalExpressionFromTokens evaluates a single expression from a token sequence starting at the given position.
-// This is a public wrapper for use by native functions that need to evaluate expressions sequentially.
-// Returns the result, new position after the expression, and any error encountered.
-func (e *Evaluator) EvalExpressionFromTokens(tokens []core.Value, startPos int) (core.Value, int, error) {
-	newPos, result, err := e.evaluateExpression(tokens, startPos, value.NoneVal())
-	return result, newPos, err
 }
 
 // callNative invokes a native function with positional and refinement arguments.
@@ -642,7 +627,7 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 			}
 			var arg core.Value
 			var err error
-			pos, arg, err = e.evaluateExpression(tokens, pos+1, value.NoneVal())
+			pos, arg, err = e.EvaluateExpression(tokens, pos+1, value.NoneVal())
 			if err != nil {
 				return pos, err
 			}
