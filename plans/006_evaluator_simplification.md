@@ -1,5 +1,7 @@
 # Plan 006: Evaluator Simplification
 
+STATUS: Implemented
+
 ## Overview
 
 Refactor the evaluator implementation in `internal/eval/evaluator.go` to follow the correct execution model as documented in `docs/execution-model.md`. The current implementation deviates from the fundamental position-tracking pattern required by Viro's sequential evaluation model.
