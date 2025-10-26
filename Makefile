@@ -29,6 +29,8 @@ test:
 clean:
 	$(GOCLEAN)
 	rm -f $(BUILD_DIR)/$(BINARY_NAME)
+
+install:
 	$(GOBUILD) -o $(GOPATH)/bin/$(BINARY_NAME) $(CMD_DIR)
 
 deps:
