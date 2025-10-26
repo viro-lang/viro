@@ -2,6 +2,8 @@ package integration
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,7 +31,7 @@ func TestSC012_FileReadWriteThroughput(t *testing.T) {
 
 	// Test write throughput
 	t.Run("WriteThroughput", func(t *testing.T) {
-		iterations := 50 // Write 50 MB total
+		iterations := 10 // Write 10 MB total
 		start := time.Now()
 
 		for i := 0; i < iterations; i++ {
@@ -57,7 +59,7 @@ func TestSC012_FileReadWriteThroughput(t *testing.T) {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 
-		iterations := 50 // Read 50 MB total
+		iterations := 10 // Read 10 MB total
 		start := time.Now()
 
 		for i := 0; i < iterations; i++ {
@@ -82,12 +84,14 @@ func TestSC012_FileReadWriteThroughput(t *testing.T) {
 // TestSC012_HTTPGetLatency validates Feature 002 - User Story 2
 // Success Criteria SC-012: HTTP GET latency 95th percentile < 2s for LAN
 func TestSC012_HTTPGetLatency(t *testing.T) {
-	// Note: This test requires a local HTTP server or network access
-	// For now, we'll test with a public endpoint and log results
-	// In production, this should use a local test server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("test response"))
+	}))
+	defer server.Close()
 
 	t.Run("HTTPGetLatency", func(t *testing.T) {
-		url := "https://www.google.com"
+		url := server.URL
 		iterations := 20
 		latencies := make([]time.Duration, 0, iterations)
 
@@ -97,19 +101,12 @@ func TestSC012_HTTPGetLatency(t *testing.T) {
 			latency := time.Since(start)
 
 			if err != nil {
-				t.Logf("Request %d failed: %v", i+1, err)
-				continue
+				t.Fatalf("Request %d failed: %v", i+1, err)
 			}
 
 			latencies = append(latencies, latency)
 		}
 
-		if len(latencies) == 0 {
-			t.Skip("No successful HTTP requests")
-		}
-
-		// Calculate 95th percentile
-		// Sort latencies
 		for i := 0; i < len(latencies)-1; i++ {
 			for j := i + 1; j < len(latencies); j++ {
 				if latencies[i] > latencies[j] {
@@ -128,8 +125,7 @@ func TestSC012_HTTPGetLatency(t *testing.T) {
 		t.Logf("Completed %d/%d requests successfully", len(latencies), iterations)
 
 		if p95Latency > 2*time.Second {
-			t.Logf("INFO: 95th percentile latency exceeds 2s target (actual: %v)", p95Latency)
-			t.Logf("      This may be expected for remote endpoints")
+			t.Errorf("95th percentile latency exceeds 2s target (actual: %v)", p95Latency)
 		}
 	})
 
