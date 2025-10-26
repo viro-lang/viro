@@ -314,7 +314,6 @@ func (e *Evaluator) isNextInfixOperator(block []core.Value, position int) bool {
 	return ok && fn.Infix
 }
 
-// consumeInfixOperator evaluates an infix operator with given left operand
 func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftOperand core.Value) (int, core.Value, error) {
 	wordElement := block[position]
 	word, _ := value.AsWord(wordElement)
@@ -325,13 +324,7 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	e.pushCall(name)
 	defer e.popCall()
 
-	positional := make([]value.ParamSpec, 0, len(fn.Params))
-	for _, spec := range fn.Params {
-		if !spec.Refinement {
-			positional = append(positional, spec)
-		}
-	}
-
+	positional, _ := e.separateParameters(fn)
 	if len(positional) == 0 {
 		return position, value.NoneVal(), verror.NewScriptError(
 			verror.ErrIDArgCount,
@@ -560,35 +553,61 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 	return newPos, result, nil
 }
 
-// collectFunctionArgs collects arguments for a function starting at the given position.
-// startParamIndex indicates which parameter to start collecting from (0 for normal calls, 1 for infix).
-// Returns positional arguments, refinement values, new position, and any error.
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, startParamIndex int, useElementEval bool) ([]core.Value, map[string]core.Value, int, error) {
+func (e *Evaluator) collectParameter(block []core.Value, position int, paramSpec value.ParamSpec, useElementEval bool) (int, core.Value, error) {
+	if position >= len(block) {
+		return position, value.NoneVal(), verror.NewScriptError(
+			verror.ErrIDNoValue,
+			[3]string{"parameter expected", "", ""},
+		)
+	}
+
+	if paramSpec.Eval {
+		if useElementEval {
+			return e.evaluateElement(block, position)
+		}
+		return e.EvaluateExpression(block, position)
+	}
+
+	return position + 1, block[position], nil
+}
+
+func (e *Evaluator) separateParameters(fn *value.FunctionValue) ([]value.ParamSpec, map[string]value.ParamSpec) {
 	positional := make([]value.ParamSpec, 0, len(fn.Params))
-	refSpecs := make(map[string]value.ParamSpec)
-	refValues := make(map[string]core.Value)
-	refProvided := make(map[string]bool)
+	refinements := make(map[string]value.ParamSpec)
 
 	for _, spec := range fn.Params {
 		if spec.Refinement {
-			refSpecs[spec.Name] = spec
-			if spec.TakesValue {
-				refValues[spec.Name] = value.NoneVal()
-			} else {
-				refValues[spec.Name] = value.LogicVal(false)
-			}
-			continue
+			refinements[spec.Name] = spec
+		} else {
+			positional = append(positional, spec)
 		}
-		positional = append(positional, spec)
 	}
+
+	return positional, refinements
+}
+
+func (e *Evaluator) initializeRefinements(refSpecs map[string]value.ParamSpec) map[string]core.Value {
+	refValues := make(map[string]core.Value, len(refSpecs))
+	for name, spec := range refSpecs {
+		if spec.TakesValue {
+			refValues[name] = value.NoneVal()
+		} else {
+			refValues[name] = value.LogicVal(false)
+		}
+	}
+	return refValues
+}
+
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, startParamIndex int, useElementEval bool) ([]core.Value, map[string]core.Value, int, error) {
+	positional, refSpecs := e.separateParameters(fn)
+	refValues := e.initializeRefinements(refSpecs)
+	refProvided := make(map[string]bool)
 
 	posArgs := make([]core.Value, len(positional))
 	position := startPosition
 	paramIndex := startParamIndex
 
 	for paramIndex < len(positional) {
-		paramSpec := positional[paramIndex]
-
 		var err error
 		position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
 		if err != nil {
@@ -602,24 +621,12 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 			)
 		}
 
-		var arg core.Value
-		if paramSpec.Eval {
-			var newPos int
-			if useElementEval {
-				newPos, arg, err = e.evaluateElement(block, position)
-			} else {
-				newPos, arg, err = e.EvaluateExpression(block, position)
-			}
-			if err != nil {
-				return nil, nil, position, err
-			}
-			position = newPos
-		} else {
-			arg = block[position]
-			position++
+		paramSpec := positional[paramIndex]
+		position, posArgs[paramIndex], err = e.collectParameter(block, position, paramSpec, useElementEval)
+		if err != nil {
+			return nil, nil, position, err
 		}
 
-		posArgs[paramIndex] = arg
 		paramIndex++
 	}
 
