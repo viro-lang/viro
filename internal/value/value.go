@@ -181,68 +181,68 @@ func (v Value) Equals(other core.Value) bool {
 
 // NoneVal creates a none value (represents absence/null).
 func NoneVal() core.Value {
-	return Value{Type: TypeNone, Payload: nil}
+	return NewNoneVal()
 }
 
 // LogicVal creates a logic value (true/false).
-func LogicVal(b bool) Value {
-	return Value{Type: TypeLogic, Payload: b}
+func LogicVal(b bool) core.Value {
+	return NewLogicVal(b)
 }
 
 // IntVal creates an integer value (64-bit signed).
-func IntVal(i int64) Value {
-	return Value{Type: TypeInteger, Payload: i}
+func IntVal(i int64) core.Value {
+	return NewIntVal(i)
 }
 
 // StrVal creates a string value from a Go string.
 // Converts to StringValue (rune array) for series operations.
-func StrVal(s string) Value {
-	return Value{Type: TypeString, Payload: NewStringValue(s)}
+func StrVal(s string) core.Value {
+	return NewStrVal(s)
 }
 
 // WordVal creates a word value (symbol that evaluates to bound value).
-func WordVal(symbol string) Value {
-	return Value{Type: TypeWord, Payload: symbol}
+func WordVal(symbol string) core.Value {
+	return NewWordVal(symbol)
 }
 
 // SetWordVal creates a set-word value (assignment symbol).
-func SetWordVal(symbol string) Value {
-	return Value{Type: TypeSetWord, Payload: symbol}
+func SetWordVal(symbol string) core.Value {
+	return NewSetWordVal(symbol)
 }
 
 // GetWordVal creates a get-word value (fetch without evaluation).
-func GetWordVal(symbol string) Value {
-	return Value{Type: TypeGetWord, Payload: symbol}
+func GetWordVal(symbol string) core.Value {
+	return NewGetWordVal(symbol)
 }
 
 // LitWordVal creates a lit-word value (quoted symbol).
-func LitWordVal(symbol string) Value {
-	return Value{Type: TypeLitWord, Payload: symbol}
+func LitWordVal(symbol string) core.Value {
+	return NewLitWordVal(symbol)
 }
 
 // BlockVal creates a block value (deferred evaluation series).
-func BlockVal(elements []core.Value) Value {
-	return Value{Type: TypeBlock, Payload: NewBlockValue(elements)}
+func BlockVal(elements []core.Value) core.Value {
+	return NewBlockVal(elements)
 }
 
 // ParenVal creates a paren value (immediate evaluation series).
-func ParenVal(elements []core.Value) Value {
-	return Value{Type: TypeParen, Payload: NewBlockValue(elements)}
+func ParenVal(elements []core.Value) core.Value {
+	return NewParenVal(elements)
 }
 
 // FuncVal creates a function value.
-func FuncVal(fn *FunctionValue) Value {
-	return Value{Type: TypeFunction, Payload: fn}
+func FuncVal(fn *FunctionValue) core.Value {
+	return NewFuncVal(fn)
 }
 
 // DatatypeVal creates a datatype value (e.g., object!, integer!).
-func DatatypeVal(name string) Value {
-	return Value{Type: TypeDatatype, Payload: name}
+func DatatypeVal(name string) core.Value {
+	return NewDatatypeVal(name)
 }
 
 // BinaryVal creates a binary value from a byte slice.
-func BinaryVal(data []byte) Value {
-	return Value{Type: TypeBinary, Payload: NewBinaryValue(data)}
+func BinaryVal(data []byte) core.Value {
+	return NewBinaryVal(data)
 }
 
 // Type assertion helpers for safe payload extraction.
@@ -250,71 +250,39 @@ func BinaryVal(data []byte) Value {
 
 // AsInteger extracts integer payload if value is TypeInteger.
 func AsInteger(v core.Value) (int64, bool) {
-	if v.GetType() != TypeInteger {
-		return 0, false
-	}
-	i, ok := v.GetPayload().(int64)
-	return i, ok
+	return AsIntValue(v)
 }
 
 // AsLogic extracts boolean payload if value is TypeLogic.
 func AsLogic(v core.Value) (bool, bool) {
-	if v.GetType() != TypeLogic {
-		return false, false
-	}
-	b, ok := v.GetPayload().(bool)
-	return b, ok
+	return AsLogicValue(v)
 }
 
 // AsString extracts StringValue if value is TypeString.
 func AsString(v core.Value) (*StringValue, bool) {
-	if v.GetType() != TypeString {
-		return nil, false
-	}
-	s, ok := v.GetPayload().(*StringValue)
-	return s, ok
+	return AsStringValue(v)
 }
 
 // AsWord extracts symbol string if value is any word type.
 func AsWord(v core.Value) (string, bool) {
-	if !IsWord(v.GetType()) {
-		return "", false
-	}
-	sym, ok := v.GetPayload().(string)
-	return sym, ok
+	return AsWordValue(v)
 }
 
 func AsBlock(v core.Value) (*BlockValue, bool) {
-	if v.GetType() != TypeBlock && v.GetType() != TypeParen {
-		return nil, false
-	}
-	blk, ok := v.GetPayload().(*BlockValue)
-	return blk, ok
+	return AsBlockValue(v)
 }
 
 func AsFunction(v core.Value) (*FunctionValue, bool) {
-	if v.GetType() != TypeFunction {
-		return nil, false
-	}
-	fn, ok := v.GetPayload().(*FunctionValue)
-	return fn, ok
+	return AsFunctionValue(v)
 }
 
 func AsDatatype(v core.Value) (string, bool) {
-	if v.GetType() != TypeDatatype {
-		return "", false
-	}
-	name, ok := v.GetPayload().(string)
-	return name, ok
+	return AsDatatypeValue(v)
 }
 
 // AsBinary extracts BinaryValue if value is TypeBinary.
 func AsBinary(v core.Value) (*BinaryValue, bool) {
-	if v.GetType() != TypeBinary {
-		return nil, false
-	}
-	b, ok := v.GetPayload().(*BinaryValue)
-	return b, ok
+	return AsBinaryValue(v)
 }
 
 // IsTruthy returns true if value is considered "true" in conditional contexts.

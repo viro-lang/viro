@@ -386,7 +386,8 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		return position + 1, result, err
 
 	case value.TypeLitWord:
-		return position + 1, value.WordVal(element.GetPayload().(string)), nil
+		wordStr, _ := value.AsWord(element)
+		return position + 1, value.WordVal(wordStr), nil
 
 	case value.TypeGetWord:
 		wordStr, _ := value.AsWord(element)

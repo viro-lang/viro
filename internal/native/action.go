@@ -19,7 +19,7 @@ import (
 // Returns a function value ready to be bound into the root frame.
 //
 // Feature: 004-dynamic-function-invocation
-func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) value.Value {
+func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Value {
 	// Create dispatcher closure that captures the action name
 	dispatcher := func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 		// Validate we have at least one argument for dispatch

@@ -18,7 +18,7 @@ func TestData_Set(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		check    string
 		wantErr  bool
 	}{
@@ -75,7 +75,7 @@ func TestData_Get(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
@@ -131,7 +131,7 @@ func TestData_TypeQ(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "integer type",
@@ -214,7 +214,7 @@ func TestData_Form(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "form block removes brackets",
@@ -297,7 +297,7 @@ func TestData_Mold(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 	}{
 		{
 			name:     "mold block includes brackets",
@@ -381,7 +381,7 @@ func TestData_Reduce(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected value.Value
+		expected core.Value
 		wantErr  bool
 	}{
 		{
