@@ -581,6 +581,8 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		var arg core.Value
 		if paramSpec.Eval {
 			var newPos int
+			// For infix functions, use evaluateElement (no lookahead) for subsequent arguments
+			// to prevent nested infix consumption, differing from normal evaluation which uses EvaluateExpression.
 			if useInfix {
 				newPos, arg, err = e.evaluateElement(block, position)
 			} else {
