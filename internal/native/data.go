@@ -51,7 +51,7 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	}
 
 	symbol, _ := value.AsWord(args[0])
-	_, result, _, err := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0, value.NoneVal())
+	_, result, err := eval.EvaluateExpressionV2([]core.Value{value.GetWordVal(symbol)}, 0)
 	return result, err
 }
 
@@ -309,7 +309,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		switch target.GetType() {
 		case value.TypeWord:
 			word, _ := value.AsWord(target)
-			_, evaluated, _, evalErr := eval.EvaluateExpression([]core.Value{value.WordVal(word)}, 0, value.NoneVal())
+			_, evaluated, evalErr := eval.EvaluateExpressionV2([]core.Value{value.WordVal(word)}, 0)
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}
@@ -318,7 +318,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		case value.TypeGetWord:
 			symbol, _ := value.AsWord(target)
-			_, evaluated, _, evalErr := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0, value.NoneVal())
+			_, evaluated, evalErr := eval.EvaluateExpressionV2([]core.Value{value.GetWordVal(symbol)}, 0)
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}

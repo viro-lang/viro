@@ -278,7 +278,7 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	lastResult := value.NoneVal()
 
 	for position < len(vals) {
-		newPos, result, _, err := e.EvaluateExpression(vals, position, lastResult)
+		newPos, result, err := e.EvaluateExpressionV2(vals, position)
 		if err != nil {
 			return value.NoneVal(), e.annotateError(err, vals, position)
 		}
@@ -289,13 +289,46 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	return lastResult, nil
 }
 
-// EvaluateExpression evaluates a single expression from a block starting at the given position.
-// Returns the new position after consuming the expression, the result value, a boolean indicating
-// if lastResult was consumed as an infix operand, and any error.
-// This method implements the core execution model where expressions consume positions sequentially.
-func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, bool, error) {
+// isNextInfixOperator checks if the next element is an infix operator
+func (e *Evaluator) isNextInfixOperator(block []core.Value, position int) bool {
 	if position >= len(block) {
-		return position, value.NoneVal(), false, verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
+		return false
+	}
+
+	nextElement := block[position]
+	if nextElement.GetType() != value.TypeWord {
+		return false
+	}
+
+	word, ok := value.AsWord(nextElement)
+	if !ok {
+		return false
+	}
+
+	resolved, found := e.Lookup(word)
+	if !found {
+		return false
+	}
+
+	fn, ok := value.AsFunction(resolved)
+	return ok && fn.Infix
+}
+
+// consumeInfixOperator evaluates an infix operator with given left operand
+func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftOperand core.Value) (int, core.Value, error) {
+	wordElement := block[position]
+	word, _ := value.AsWord(wordElement)
+	resolved, _ := e.Lookup(word)
+	fn, _ := value.AsFunction(resolved)
+
+	newPos, result, _, err := e.invokeFunctionExpression(block, position, fn, leftOperand)
+	return newPos, result, err
+}
+
+// evaluateElement evaluates a single element without lookahead
+func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core.Value, error) {
+	if position >= len(block) {
+		return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
 	}
 
 	element := block[position]
@@ -316,63 +349,41 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype, value.TypeBlock,
 		value.TypeFunction:
-		return position + 1, element, false, nil
+		return position + 1, element, nil
 
 	case value.TypeParen:
 		block, _ := value.AsBlock(element)
 		result, err := e.DoBlock(block.Elements)
-		return position + 1, result, false, err
+		return position + 1, result, err
 
 	case value.TypeLitWord:
-		return position + 1, value.WordVal(element.GetPayload().(string)), false, nil
+		return position + 1, value.WordVal(element.GetPayload().(string)), nil
 
 	case value.TypeGetWord:
 		wordStr, _ := value.AsWord(element)
 		result, ok := e.Lookup(wordStr)
 		if !ok {
-			return position, value.NoneVal(), false, verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 		}
-		return position + 1, result, false, nil
+		return position + 1, result, nil
 
 	case value.TypeSetWord:
 		wordStr, _ := value.AsWord(element)
 
 		if strings.Contains(wordStr, ".") {
-			return e.evalSetPathExpression(block, position, wordStr)
+			return e.evalSetPathExpressionV2(block, position, wordStr)
 		}
 
 		if position+1 >= len(block) {
-			return position, value.NoneVal(), false, verror.NewScriptError(
+			return position, value.NoneVal(), verror.NewScriptError(
 				verror.ErrIDNoValue,
 				[3]string{wordStr, "set-word-without-value", wordStr},
 			)
 		}
 
-		newPos, result, _, err := e.EvaluateExpression(block, position+1, value.NoneVal())
+		newPos, result, err := e.EvaluateExpressionV2(block, position+1)
 		if err != nil {
-			return position, value.NoneVal(), false, e.annotateError(err, block, position)
-		}
-
-		// Look ahead: if next element is infix, continue evaluation to capture full expression
-		for newPos < len(block) {
-			nextElement := block[newPos]
-			if nextElement.GetType() == value.TypeWord {
-				if nextWord, ok := value.AsWord(nextElement); ok {
-					if resolved, found := e.Lookup(nextWord); found {
-						if fn, ok := value.AsFunction(resolved); ok && fn.Infix {
-							// Next is infix - continue evaluation
-							nextPos, nextResult, _, nextErr := e.EvaluateExpression(block, newPos, result)
-							if nextErr != nil {
-								return position, value.NoneVal(), false, e.annotateError(nextErr, block, newPos)
-							}
-							newPos = nextPos
-							result = nextResult
-							continue
-						}
-					}
-				}
-			}
-			break
+			return position, value.NoneVal(), e.annotateError(err, block, position)
 		}
 
 		if result.GetType() == value.TypeFunction {
@@ -385,7 +396,7 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 		if currentFrame != nil {
 			currentFrame.Bind(wordStr, result)
 		}
-		return newPos, result, false, nil
+		return newPos, result, nil
 
 	case value.TypeWord:
 		wordStr, _ := value.AsWord(element)
@@ -403,12 +414,12 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 
 		resolved, found := e.Lookup(wordStr)
 		if !found {
-			return position, value.NoneVal(), false, verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 		}
 
 		if resolved.GetType() == value.TypeFunction {
 			fn, _ := value.AsFunction(resolved)
-			newPos, result, consumedLast, err := e.invokeFunctionExpression(block, position, fn, lastResult)
+			newPos, result, _, err := e.invokeFunctionExpression(block, position, fn, value.NoneVal())
 
 			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
 				duration := time.Since(traceStart)
@@ -420,19 +431,80 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastRes
 				})
 			}
 
-			return newPos, result, consumedLast, err
+			return newPos, result, err
 		}
 
-		return position + 1, resolved, false, nil
+		return position + 1, resolved, nil
 
 	case value.TypePath:
 		path, _ := value.AsPath(element)
 		result, err := e.evalPathValue(path)
-		return position + 1, result, false, err
+		return position + 1, result, err
 
 	default:
-		return position, value.NoneVal(), false, verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
+		return position, value.NoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
 	}
+}
+
+// EvaluateExpressionV2 evaluates a single expression from a block starting at the given position.
+// This version handles infix operator lookahead internally, eliminating the need for lastResult
+// parameter and consumedLast return value.
+// Returns the new position after consuming the expression, the result value, and any error.
+func (e *Evaluator) EvaluateExpressionV2(block []core.Value, position int) (int, core.Value, error) {
+	newPos, result, err := e.evaluateElement(block, position)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	for newPos < len(block) {
+		if !e.isNextInfixOperator(block, newPos) {
+			break
+		}
+
+		nextPos, nextResult, err := e.consumeInfixOperator(block, newPos, result)
+		if err != nil {
+			return position, value.NoneVal(), err
+		}
+
+		newPos = nextPos
+		result = nextResult
+	}
+
+	return newPos, result, nil
+}
+
+// evalSetPathExpressionV2 handles set-path assignment for V2 evaluation.
+func (e *Evaluator) evalSetPathExpressionV2(block []core.Value, position int, pathStr string) (int, core.Value, error) {
+	path, err := parsePathString(pathStr)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	newPos, result, err := e.EvaluateExpressionV2(block, position+1)
+	if err != nil {
+		return position, value.NoneVal(), e.annotateError(err, block, position)
+	}
+
+	tr, err := traversePath(e, path, true)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	result, err = e.assignToPathTarget(tr, result, pathStr)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	return newPos, result, nil
+}
+
+// EvaluateExpression evaluates a single expression from a block starting at the given position.
+// This is a compatibility shim for the old API. New code should not depend on this signature.
+// Returns the new position after consuming the expression, the result value, a boolean indicating
+// if lastResult was consumed as an infix operand, and any error.
+func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, bool, error) {
+	newPos, result, err := e.EvaluateExpressionV2(block, position)
+	return newPos, result, false, err
 }
 
 // invokeFunctionExpression invokes a function starting at the given position in a block.
@@ -519,7 +591,11 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		var arg core.Value
 		if paramSpec.Eval {
 			var newPos int
-			newPos, arg, _, err = e.EvaluateExpression(block, position, value.NoneVal())
+			if useInfix {
+				newPos, arg, err = e.evaluateElement(block, position)
+			} else {
+				newPos, arg, err = e.EvaluateExpressionV2(block, position)
+			}
 			if err != nil {
 				return nil, nil, position, false, err
 			}
@@ -549,32 +625,6 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 		return value.NoneVal(), err
 	}
 	return tr.values[len(tr.values)-1], nil
-}
-
-// evalSetPathExpression handles set-path assignment in expression evaluation.
-// Returns the new position after consuming the set-path and its value, the result, a boolean indicating if lastResult was consumed, and any error.
-func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, pathStr string) (int, core.Value, bool, error) {
-	path, err := parsePathString(pathStr)
-	if err != nil {
-		return position, value.NoneVal(), false, err
-	}
-
-	newPos, result, _, err := e.EvaluateExpression(block, position+1, value.NoneVal())
-	if err != nil {
-		return position, value.NoneVal(), false, e.annotateError(err, block, position)
-	}
-
-	tr, err := traversePath(e, path, true)
-	if err != nil {
-		return position, value.NoneVal(), false, err
-	}
-
-	result, err = e.assignToPathTarget(tr, result, pathStr)
-	if err != nil {
-		return position, value.NoneVal(), false, err
-	}
-
-	return newPos, result, false, nil
 }
 
 // callNative invokes a native function with positional and refinement arguments.
@@ -647,7 +697,7 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 			}
 			var arg core.Value
 			var err error
-			pos, arg, _, err = e.EvaluateExpression(tokens, pos+1, value.NoneVal())
+			pos, arg, err = e.evaluateElement(tokens, pos+1)
 			if err != nil {
 				return pos, err
 			}
