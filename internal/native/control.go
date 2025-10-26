@@ -207,17 +207,20 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 
 	block, _ := value.AsBlock(args[0])
-	elements := block.Elements
-	reducedElements := make([]core.Value, 0, len(elements))
+	vals := block.Elements
+	reducedElements := make([]core.Value, 0)
 
-	pos := 0
-	for pos < len(elements) {
-		newPos, result, err := eval.EvaluateExpression(elements, pos, value.NoneVal())
+	position := 0
+	lastResult := value.NoneVal()
+
+	for position < len(vals) {
+		newPos, result, err := eval.EvaluateExpression(vals, position, lastResult)
 		if err != nil {
 			return value.NoneVal(), err
 		}
 		reducedElements = append(reducedElements, result)
-		pos = newPos
+		position = newPos
+		lastResult = result
 	}
 
 	return value.BlockVal(reducedElements), nil
