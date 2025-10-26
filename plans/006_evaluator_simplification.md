@@ -1,21 +1,68 @@
 # Plan 006: Evaluator Simplification
 
-STATUS: In Review
-
 ## Overview
 
-Simplify the evaluator implementation in `internal/eval/evaluator.go` by reducing code complexity and line count while maintaining functionality and test coverage. This plan addresses four specific simplifications based on comparison with the Lua prototype implementation.
+Refactor the evaluator implementation in `internal/eval/evaluator.go` to follow the correct execution model as documented in `docs/execution-model.md`. The current implementation deviates from the fundamental position-tracking pattern required by Viro's sequential evaluation model.
+
+## Critical Issue Identified
+
+**The current evaluator violates the execution model's core principle:**
+
+> "evaluate_expression() returns (position, value)"
+
+**Current implementation (WRONG):**
+```go
+func (e *Evaluator) DoNext(val core.Value) (core.Value, error)  // ❌ No position returned
+func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
+    for i := 0; i < len(vals); i++ {  // ❌ Traditional for-loop
+        lastResult, err = e.evaluateWithFunctionCall(val, vals, &i, lastResult)  // ❌ Mutates &i
+    }
+}
+```
+
+**Correct pattern (per execution-model.md):**
+```go
+func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, error)
+func (e *Evaluator) evaluateBlock(block []core.Value) (core.Value, error) {
+    position := 0
+    lastResult := value.NoneVal()
+    
+    for position < len(block) {
+        newPos, result, err := e.evaluateExpression(block, position, lastResult)
+        if err != nil {
+            return value.NoneVal(), err
+        }
+        position = newPos
+        lastResult = result
+    }
+    
+    return lastResult, nil
+}
+```
+
+**Why this matters:**
+- Function calls consume multiple positions (function word + arguments)
+- Set-words consume multiple positions (set-word + expression)
+- Position tracking enables proper sequential consumption
+- Index mutation via pointer is an anti-pattern that obscures control flow
 
 ## Goals
 
-- Reduce evaluator.go from ~1,114 to ~700-800 lines
-- Simplify core evaluation logic for better maintainability
+- Refactor evaluator to follow position-returning pattern
+- Reduce evaluator.go complexity while fixing architectural issues
 - Maintain 100% test coverage
 - Keep all existing functionality working
 
 ## Current State Analysis
 
 ### File: internal/eval/evaluator.go (1,114 lines)
+
+**Architectural problems:**
+1. **DoNext doesn't return position** - violates execution model (lines 389-421)
+2. **DoBlock uses traditional for-loop** - should use position tracking (lines 426-454)
+3. **Index mutation via &i pointer** - passed to evalSetWord, evaluateWithFunctionCall
+4. **Multiple evaluation entry points** - DoNext, evaluateWithFunctionCall, evalExpressionFromTokens doing similar things
+5. **Dispatch map instead of switch** - unnecessary indirection (lines 138-161)
 
 **Complexity breakdown:**
 - Core evaluation dispatch: ~420 lines (DoNext, DoBlock, dispatch functions)
@@ -24,434 +71,589 @@ Simplify the evaluator implementation in `internal/eval/evaluator.go` by reducin
 - Frame management: ~150 lines (push/pop/lookup/capture)
 - Helper functions: ~134 lines (error annotation, call stack, etc.)
 
-**Key complexity drivers:**
-1. **Separate dispatch functions** (lines 143-234): 10 different `eval*Dispatch` functions
-2. **Complex argument collection** (lines 636-719): 86 lines for collectFunctionArgsWithInfix
-3. **Multiple evaluation paths** (lines 386-489): DoNext, evaluateWithFunctionCall, evalExpressionFromTokens
-4. **Trivial dispatch handlers** (lines 165-179): evalLiteral, evalBlock, evalFunction just return input
+## Refactoring Strategy
 
-## Simplifications to Implement
+### Phase 1: Fix Core Execution Model (CRITICAL)
 
-### 1. Merge Evaluation Dispatchers
+This is the foundational fix that enables all other simplifications.
 
-**Current:** 10 separate dispatch functions (lines 163-234)
+#### 1.1 Create New `evaluateExpression` Method
+
+**Signature:**
 ```go
-func evalLiteral(e core.Evaluator, val core.Value) (core.Value, error)
-func evalBlock(e core.Evaluator, val core.Value) (core.Value, error)
-func evalFunction(e core.Evaluator, val core.Value) (core.Value, error)
-func evalParenDispatch(e core.Evaluator, val core.Value) (core.Value, error)
-func evalWordDispatch(e core.Evaluator, val core.Value) (core.Value, error)
-func evalSetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error)
-func evalGetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error)
-func evalLitWordDispatch(e core.Evaluator, val core.Value) (core.Value, error)
-func evalPathDispatch(e core.Evaluator, val core.Value) (core.Value, error)
+func (e *Evaluator) evaluateExpression(
+    block []core.Value,
+    position int,
+    lastResult core.Value,
+) (newPosition int, result core.Value, err error)
 ```
 
-**Target:** Single `evalValue` function with switch statement
+**Implementation pattern (per execution-model.md lines 56-91):**
 ```go
-func (e *Evaluator) evalValue(val core.Value) (core.Value, error) {
-    switch val.GetType() {
+func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, error) {
+    if position >= len(block) {
+        return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
+    }
+    
+    element := block[position]
+    
+    // Add tracing if enabled
+    var traceStart time.Time
+    var traceWord string
+    if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+        traceStart = time.Now()
+        if value.IsWord(element.GetType()) {
+            if w, ok := value.AsWord(element); ok {
+                traceWord = w
+            }
+        }
+    }
+    
+    switch element.GetType() {
+    // Literals evaluate to themselves, advance position by 1
     case value.TypeInteger, value.TypeString, value.TypeLogic, 
          value.TypeNone, value.TypeDecimal, value.TypeObject,
          value.TypePort, value.TypeDatatype, value.TypeBlock, 
          value.TypeFunction:
-        return val, nil
+        return position + 1, element, nil
     
+    // Paren: evaluate block immediately
     case value.TypeParen:
-        block, _ := value.AsBlock(val)
-        return e.DoBlock(block.Elements)
+        block, _ := value.AsBlock(element)
+        result, err := e.evaluateBlock(block.Elements)
+        return position + 1, result, err
     
-    case value.TypeWord:
-        return e.evalWord(val)
-    
-    case value.TypeSetWord:
-        wordStr, _ := value.AsWord(val)
-        return value.NoneVal(), verror.NewScriptError(...)
-    
-    case value.TypeGetWord:
-        return e.evalGetWord(val)
-    
+    // LitWord: return word value
     case value.TypeLitWord:
-        return value.WordVal(val.GetPayload().(string)), nil
+        return position + 1, value.WordVal(element.GetPayload().(string)), nil
     
+    // GetWord: lookup without invocation
+    case value.TypeGetWord:
+        wordStr, _ := value.AsWord(element)
+        result, ok := e.Lookup(wordStr)
+        if !ok {
+            return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+        }
+        return position + 1, result, nil
+    
+    // SetWord: evaluate next expression and bind
+    case value.TypeSetWord:
+        wordStr, _ := value.AsWord(element)
+        
+        // Handle path-based assignment
+        if strings.Contains(wordStr, ".") {
+            return e.evalSetPathExpression(block, position, wordStr)
+        }
+        
+        // Ensure we have a frame to bind to
+        currentFrame := e.currentFrame()
+        if currentFrame == nil {
+            currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
+            e.pushFrame(currentFrame)
+        }
+        
+        // Evaluate next expression
+        newPos, result, err := e.evaluateExpression(block, position+1, lastResult)
+        if err != nil {
+            return position, value.NoneVal(), e.annotateError(err, block, position)
+        }
+        
+        // Auto-name anonymous functions
+        if result.GetType() == value.TypeFunction {
+            if fnVal, ok := value.AsFunction(result); ok && fnVal.Name == "" {
+                fnVal.Name = wordStr
+            }
+        }
+        
+        currentFrame.Bind(wordStr, result)
+        return newPos, result, nil
+    
+    // Word: lookup and potentially invoke
+    case value.TypeWord:
+        wordStr, _ := value.AsWord(element)
+        
+        // Check for breakpoint (debugging)
+        if debug.GlobalDebugger != nil && debug.GlobalDebugger.HasBreakpoint(wordStr) {
+            if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+                trace.GlobalTraceSession.Emit(trace.TraceEvent{
+                    Timestamp: time.Now(),
+                    Word:      "debug",
+                    Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
+                    Duration:  0,
+                })
+            }
+        }
+        
+        resolved, found := e.Lookup(wordStr)
+        if !found {
+            return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+        }
+        
+        // If it's a function, invoke it
+        if resolved.GetType() == value.TypeFunction {
+            fn, _ := value.AsFunction(resolved)
+            newPos, result, err := e.invokeFunctionExpression(block, position, fn, lastResult)
+            
+            // Emit trace
+            if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
+                duration := time.Since(traceStart)
+                trace.GlobalTraceSession.Emit(trace.TraceEvent{
+                    Timestamp: traceStart,
+                    Value:     result.Form(),
+                    Word:      traceWord,
+                    Duration:  duration.Nanoseconds(),
+                })
+            }
+            
+            return newPos, result, err
+        }
+        
+        // Not a function, just return the value
+        return position + 1, resolved, nil
+    
+    // Path: evaluate path expression
     case value.TypePath:
-        return e.evalPath(val)
+        path, _ := value.AsPath(element)
+        result, err := e.evalPathValue(path)
+        return position + 1, result, err
     
     default:
-        return value.NoneVal(), verror.NewInternalError(...)
+        return position, value.NoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
     }
 }
 ```
 
-**Benefits:**
-- Eliminate init() function and evalDispatch map
-- Inline trivial cases directly
-- Easier to read - all logic in one place
-- ~60 lines reduced
+#### 1.2 Create New `evaluateBlock` Method
 
-**Testing:**
-- All existing eval tests should pass
-- No new tests needed (behavioral equivalence)
-
----
-
-### 2. Simplify Function Argument Collection
-
-**Current:** `collectFunctionArgsWithInfix` (lines 636-719, 86 lines)
-- Interleaves refinement parsing between positional args
-- Complex state tracking with multiple indices
-- Handles infix detection inline
-
-**Target:** Two-pass approach like Lua
+**Signature:**
 ```go
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, tokens []core.Value, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
-    // Pass 1: Collect positional args (handling infix)
-    posArgs, pos := e.collectPositionalArgs(fn, tokens, lastResult)
+func (e *Evaluator) evaluateBlock(block []core.Value) (core.Value, error)
+```
+
+**Implementation (per execution-model.md lines 102-111):**
+```go
+func (e *Evaluator) evaluateBlock(block []core.Value) (core.Value, error) {
+    if len(block) == 0 {
+        return value.NoneVal(), nil
+    }
     
-    // Pass 2: Collect refinements at end
-    refValues, pos := e.collectRefinements(fn, tokens, pos)
+    position := 0
+    lastResult := value.NoneVal()
     
-    return posArgs, refValues, pos, nil
+    for position < len(block) {
+        newPos, result, err := e.evaluateExpression(block, position, lastResult)
+        if err != nil {
+            return value.NoneVal(), e.annotateError(err, block, position)
+        }
+        position = newPos
+        lastResult = result
+    }
+    
+    return lastResult, nil
 }
 ```
 
-**Key changes:**
-- Split into two smaller functions (~30 lines each)
-- Remove interleaved refinement parsing
-- Simpler state management
-- ~25 lines reduced overall
+#### 1.3 Update Function Invocation to Return Position
 
-**Caveat:** This changes refinement syntax!
-- **Current:** `foo 1 --bar 2 3 --baz 4` (interleaved)
-- **New:** `foo 1 2 3 --bar --baz 4` (refinements at end)
+**Current:** `invokeFunction` mutates `*idx` pointer
+**Target:** Return new position
 
-**Decision needed:** Is this syntax change acceptable?
-- If YES: proceed with simplification
-- If NO: keep current implementation for this item
-
-**Testing:**
-- Update test/contract/action_dispatch_test.go refinement tests
-- Verify all function calls work with new syntax
-- Add tests for refinement ordering
-
----
-
-### 3. Combine Evaluation Paths
-
-**Current:** Three similar functions
-- `DoNext` (lines 389-421): Main entry point, handles tracing
-- `evaluateWithFunctionCall` (lines 549-570): Checks if word is function
-- `evalExpressionFromTokens` (lines 464-489): Evaluates single expression from sequence
-
-**Target:** Unified evaluation with context parameter
 ```go
-// Main entry point
+func (e *Evaluator) invokeFunctionExpression(
+    block []core.Value,
+    position int,  // Position of function word
+    fn *value.FunctionValue,
+    lastResult core.Value,
+) (newPosition int, result core.Value, err error) {
+    
+    name := functionDisplayName(fn)
+    e.pushCall(name)
+    defer e.popCall()
+    
+    // Collect arguments starting from position+1
+    posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, lastResult)
+    if err != nil {
+        return position, value.NoneVal(), e.annotateError(err, block, position)
+    }
+    
+    // Invoke function
+    if fn.Type == value.FuncNative {
+        result, err := e.callNative(fn, posArgs, refValues)
+        if err != nil {
+            return position, value.NoneVal(), e.annotateError(err, block, position)
+        }
+        return newPos, result, nil
+    }
+    
+    result, err := e.executeFunction(fn, posArgs, refValues)
+    if err != nil {
+        return position, value.NoneVal(), err
+    }
+    return newPos, result, nil
+}
+```
+
+#### 1.4 Update Argument Collection to Return Position
+
+**Current:** `collectFunctionArgsWithInfix` returns `consumed` count
+**Target:** Return actual new position
+
+```go
+func (e *Evaluator) collectFunctionArgs(
+    fn *value.FunctionValue,
+    block []core.Value,
+    startPosition int,  // Position after function word
+    lastResult core.Value,
+) (posArgs []core.Value, refValues map[string]core.Value, newPosition int, err error) {
+    
+    // Separate positional and refinement parameters
+    positional := make([]value.ParamSpec, 0, len(fn.Params))
+    refSpecs := make(map[string]value.ParamSpec)
+    refValues = make(map[string]core.Value)
+    refProvided := make(map[string]bool)
+    
+    for _, spec := range fn.Params {
+        if spec.Refinement {
+            refSpecs[spec.Name] = spec
+            if spec.TakesValue {
+                refValues[spec.Name] = value.NoneVal()
+            } else {
+                refValues[spec.Name] = value.LogicVal(false)
+            }
+            continue
+        }
+        positional = append(positional, spec)
+    }
+    
+    posArgs = make([]core.Value, len(positional))
+    position := startPosition
+    paramIndex := 0
+    
+    // Handle infix
+    useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
+    if useInfix {
+        if len(positional) == 0 {
+            return nil, nil, position, verror.NewScriptError(
+                verror.ErrIDArgCount,
+                [3]string{functionDisplayName(fn), "0", "1 (infix requires at least one parameter)"},
+            )
+        }
+        posArgs[0] = lastResult
+        paramIndex = 1
+    }
+    
+    // Collect positional arguments
+    for paramIndex < len(positional) {
+        paramSpec := positional[paramIndex]
+        
+        // Read refinements before this argument
+        position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+        if err != nil {
+            return nil, nil, position, err
+        }
+        
+        if position >= len(block) {
+            return nil, nil, position, verror.NewScriptError(
+                verror.ErrIDArgCount,
+                [3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
+            )
+        }
+        
+        // Evaluate or use literal
+        var arg core.Value
+        if paramSpec.Eval {
+            var newPos int
+            newPos, arg, err = e.evaluateExpression(block, position, value.NoneVal())
+            if err != nil {
+                return nil, nil, position, err
+            }
+            position = newPos
+        } else {
+            arg = block[position]
+            position++
+        }
+        
+        posArgs[paramIndex] = arg
+        paramIndex++
+    }
+    
+    // Read trailing refinements
+    position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+    if err != nil {
+        return nil, nil, position, err
+    }
+    
+    return posArgs, refValues, position, nil
+}
+```
+
+#### 1.5 Update `readRefinements` to Return Position
+
+**Current:** Returns `int` for new position
+**Target:** Keep same signature but ensure it's used correctly
+
+```go
+func (e *Evaluator) readRefinements(
+    block []core.Value,
+    position int,
+    refSpecs map[string]value.ParamSpec,
+    refValues map[string]core.Value,
+    refProvided map[string]bool,
+) (newPosition int, err error) {
+    
+    for position < len(block) && isRefinement(block[position]) {
+        wordStr, _ := value.AsWord(block[position])
+        refName := strings.TrimPrefix(wordStr, "--")
+        
+        spec, exists := refSpecs[refName]
+        if !exists {
+            return position, verror.NewScriptError(
+                verror.ErrIDInvalidOperation,
+                [3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
+            )
+        }
+        
+        if refProvided[refName] {
+            return position, verror.NewScriptError(
+                verror.ErrIDInvalidOperation,
+                [3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
+            )
+        }
+        
+        if spec.TakesValue {
+            if position+1 >= len(block) {
+                return position, verror.NewScriptError(
+                    verror.ErrIDInvalidOperation,
+                    [3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
+                )
+            }
+            var arg core.Value
+            position, arg, err = e.evaluateExpression(block, position+1, value.NoneVal())
+            if err != nil {
+                return position, err
+            }
+            refValues[refName] = arg
+        } else {
+            refValues[refName] = value.LogicVal(true)
+            position++
+        }
+        
+        refProvided[refName] = true
+    }
+    
+    return position, nil
+}
+```
+
+### Phase 2: Maintain Public API Compatibility
+
+The public API (DoNext, DoBlock, EvalExpressionFromTokens) must remain for backward compatibility with native functions.
+
+#### 2.1 Update DoNext as Wrapper
+
+```go
 func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
-    return e.evalWithContext(val, nil, nil, value.NoneVal())
-}
-
-// Internal unified evaluator
-func (e *Evaluator) evalWithContext(val core.Value, seq []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
-    // Handle tracing if needed
-    // Handle set-word case
-    // Evaluate value
-    // If word and function, invoke it
-    // Return result
-}
-
-// For sequential evaluation
-func (e *Evaluator) evalNextInSequence(seq []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
-    return e.evalWithContext(seq[*idx], seq, idx, lastResult)
+    _, result, err := e.evaluateExpression([]core.Value{val}, 0, value.NoneVal())
+    return result, err
 }
 ```
 
-**Benefits:**
-- Single evaluation codepath
-- Less duplication
-- Clearer control flow
-- ~40 lines reduced
+#### 2.2 Update DoBlock as Wrapper
 
-**Testing:**
-- All eval_test.go tests should pass
-- Function call tests in function_eval_test.go
-- No new behavior, existing coverage sufficient
-
----
-
-### 4. Inline Simple Dispatchers
-
-**Current:** Three functions that just return their input (lines 165-179)
 ```go
-func evalLiteral(e core.Evaluator, val core.Value) (core.Value, error) {
-    return val, nil
-}
-
-func evalBlock(e core.Evaluator, val core.Value) (core.Value, error) {
-    return val, nil
-}
-
-func evalFunction(e core.Evaluator, val core.Value) (core.Value, error) {
-    return val, nil
+func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
+    return e.evaluateBlock(vals)
 }
 ```
 
-**Target:** Inline into evalValue switch (see Simplification #1)
+#### 2.3 Update EvalExpressionFromTokens
+
 ```go
-case value.TypeInteger, value.TypeString, value.TypeLogic, 
-     value.TypeNone, value.TypeDecimal, value.TypeObject,
-     value.TypePort, value.TypeDatatype, value.TypeBlock, 
-     value.TypeFunction:
-    return val, nil
+func (e *Evaluator) EvalExpressionFromTokens(tokens []core.Value, startPos int) (core.Value, int, error) {
+    newPos, result, err := e.evaluateExpression(tokens, startPos, value.NoneVal())
+    return result, newPos, err
+}
 ```
 
-**Benefits:**
-- No separate functions needed
-- Clearer that these types self-evaluate
-- ~15 lines reduced
+### Phase 3: Remove Obsolete Code
 
-**Note:** This is automatically handled by Simplification #1
+After Phase 1 & 2 are working:
 
----
+1. Delete `evalDispatch` map (lines 138-161)
+2. Delete dispatch functions (lines 163-234):
+   - evalLiteral
+   - evalBlock  
+   - evalFunction
+   - evalParenDispatch
+   - evalWordDispatch
+   - evalSetWordDispatch
+   - evalGetWordDispatch
+   - evalLitWordDispatch
+   - evalPathDispatch
+3. Delete `evaluateWithFunctionCall` (lines 549-570)
+4. Delete `evalExpressionFromTokens` internal (keep public wrapper)
+5. Rename internal helpers:
+   - `evalWord` → `evalWordValue` (just lookup logic)
+   - `evalGetWord` → `evalGetWordValue`
+   - `evalPath` → `evalPathValue`
+   - `evalSetPath` → `evalSetPathExpression`
 
 ## Implementation Steps
 
-### Phase 1: Preparation (Read-only)
+### Phase 1: Core Refactoring
 
-1. **Analyze test coverage**
+1. **Create new methods (keep old ones)**
+   - Add `evaluateExpression(block, position, lastResult) (newPos, result, error)`
+   - Add `evaluateBlock(block) (result, error)`
+   - Add `invokeFunctionExpression(block, position, fn, lastResult) (newPos, result, error)`
+   - Add `collectFunctionArgs(fn, block, startPos, lastResult) (args, refs, newPos, error)`
+   - Update `readRefinements` signature to `(block, pos, ...) (newPos, error)`
+
+2. **Test new implementation in parallel**
+   - Create test file `internal/eval/evaluator_v2_test.go`
+   - Port key tests to use new methods directly
+   - Verify position tracking is correct
+
+3. **Update public API methods to use new internals**
+   - Modify `DoNext` to call `evaluateExpression`
+   - Modify `DoBlock` to call `evaluateBlock`
+   - Modify `EvalExpressionFromTokens` to call `evaluateExpression`
+   - Run full test suite: `make test`
+
+4. **Remove old implementation**
+   - Delete dispatch map and init()
+   - Delete individual dispatch functions
+   - Delete `evaluateWithFunctionCall`
+   - Delete old `evalExpressionFromTokens`
+   - Delete old `collectFunctionArgsWithInfix`
+   - Run full test suite: `make test`
+
+### Phase 2: Path Expression Updates
+
+5. **Update path evaluation to position-based**
+   - Modify `evalSetPath` to `evalSetPathExpression(block, position, pathStr) (newPos, result, error)`
+   - Ensure path operations return position
+
+### Phase 3: Validation
+
+6. **Full test suite**
    ```bash
-   go test -coverprofile=coverage.out ./internal/eval/...
-   go tool cover -func=coverage.out
+   make grammar
+   make build
+   make test
+   go test -coverprofile=coverage.out ./...
    ```
-   - Ensure >90% coverage before starting
-   - Identify any untested paths
 
-2. **Document current behavior**
-   - Run all tests: `go test -v ./test/contract/... ./test/integration/...`
-   - Capture baseline: `make test-summary`
+7. **Integration tests**
+   ```bash
+   go test -v ./test/integration/...
+   go test -v ./test/contract/...
+   ```
 
-### Phase 2: Simplification #1 - Merge Dispatchers
-
-3. **Create new evalValue method**
-   - Add `func (e *Evaluator) evalValue(val core.Value) (core.Value, error)` with switch
-   - Keep old dispatch functions temporarily
-
-4. **Update DoNext to use evalValue**
-   - Change line 401 from `evalFn, found := evalDispatch[val.GetType()]` to `return e.evalValue(val)`
-   - Run tests to verify equivalence
-
-5. **Remove old dispatch infrastructure**
-   - Delete lines 138-161 (evalDispatch map and init())
-   - Delete lines 165-234 (individual dispatch functions)
-   - Run tests: `go test ./internal/eval/...`
-
-6. **Clean up**
-   - Remove unused imports if any
-   - Run: `make grammar && make build && make test`
-
-### Phase 3: Simplification #4 - Inline Simple Dispatchers
-
-7. **Verify inlining in evalValue**
-   - Already done in step 3
-   - Confirm literal types use single case statement
-   - Run tests: `go test ./internal/eval/...`
-
-### Phase 4: Simplification #3 - Combine Eval Paths
-
-8. **Create evalWithContext method**
-   - Implement unified evaluator with tracing, set-word, function call handling
-   - Keep existing functions initially
-
-9. **Update DoNext to delegate**
-   - Modify to call `e.evalWithContext(val, nil, nil, value.NoneVal())`
-   - Run tests
-
-10. **Update DoBlock**
-    - Use evalWithContext instead of evaluateWithFunctionCall
-    - Run tests
-
-11. **Remove old evaluation functions**
-    - Delete evaluateWithFunctionCall (lines 549-570)
-    - Delete evalExpressionFromTokens (lines 464-489)
-    - Keep EvalExpressionFromTokens as public wrapper
-    - Run: `make test`
-
-### Phase 5: Simplification #2 - Function Arguments (OPTIONAL)
-
-**Decision point:** Discuss with team about refinement syntax change
-
-If approved:
-
-12. **Create collectPositionalArgs**
-    - Extract positional argument logic
-    - Handle infix case
-    - ~30 lines
-
-13. **Simplify readRefinements**
-    - Already exists (lines 588-631)
-    - Modify to work as standalone pass
-    - ~30 lines
-
-14. **Create new collectFunctionArgs**
-    - Call collectPositionalArgs
-    - Call readRefinements
-    - ~15 lines wrapper
-
-15. **Update invokeFunction**
-    - Use new collectFunctionArgs
-    - Run tests
-
-16. **Update all refinement tests**
-    - Modify test/contract/action_dispatch_test.go
-    - Change syntax to refinements-at-end
-    - Verify all pass
-
-17. **Delete old collectFunctionArgsWithInfix**
-    - Remove lines 636-719
-    - Run: `make test`
-
-### Phase 6: Validation
-
-18. **Full test suite**
-    ```bash
-    make grammar
-    make build
-    make test
-    go test -coverprofile=coverage.out ./...
-    ```
-
-19. **Integration tests**
-    ```bash
-    go test -v ./test/integration/...
-    ```
-
-20. **Contract tests**
-    ```bash
-    go test -v ./test/contract/...
-    ```
-
-21. **Verify LOC reduction**
-    ```bash
-    wc -l internal/eval/evaluator.go
-    # Target: 700-800 lines (from 1,114)
-    ```
-
----
+8. **Verify correct execution model**
+   - Position tracking is consistent
+   - Function calls consume correct number of values
+   - Infix operations work correctly
+   - Set-words consume next expression
+   - Refinements work in all positions
 
 ## Expected Outcomes
 
-### Line Count Reduction
+### Architectural Improvements
 
-| Simplification | Lines Saved | Notes |
-|---------------|-------------|-------|
-| #1 Merge dispatchers | ~60 | Remove 10 functions + init + map |
-| #4 Inline trivial | ~0 | Covered by #1 |
-| #3 Combine eval paths | ~40 | Remove duplicate logic |
-| #2 Function args | ~25 | Two simpler functions vs one complex |
-| **Total** | **~125** | **1,114 → ~990 lines** |
+✅ **Follows execution-model.md specification**
+- evaluateExpression returns (position, value, error)
+- evaluateBlock uses position tracking loop
+- No index mutation via pointers
+- Clear sequential evaluation model
 
-With additional cleanup: **~700-800 lines** (removing duplicated logic, simplifying)
+### Code Reduction
 
-### Complexity Reduction
+| Component | Before | After | Reduction |
+|-----------|--------|-------|-----------|
+| Dispatch infrastructure | ~100 lines | 0 lines | -100 |
+| Core evaluation | ~420 lines | ~250 lines | -170 |
+| Position tracking clarity | Low | High | N/A |
+| **Total** | **1,114 lines** | **~850 lines** | **~260 lines** |
 
-- **Cyclomatic complexity:** Reduce from ~45 to ~30
-- **Function count:** Reduce from ~30 to ~20
-- **Average function length:** Reduce from ~37 to ~35 lines
+### Maintainability
 
-### Maintainability Improvements
-
-- Single evaluation codepath easier to trace
-- Fewer dispatch mechanisms to understand
-- More similar to Lua reference implementation
-- Easier to add new value types
-
----
+- Single evaluation path (evaluateExpression)
+- Clear position tracking (no hidden mutations)
+- Matches documented execution model
+- Easier to understand control flow
+- Simpler debugging (position is explicit)
 
 ## Risks and Mitigations
 
-### Risk 1: Breaking existing tests
-- **Mitigation:** Run tests after each step, fix immediately
-- **Fallback:** Use git to revert individual steps
+### Risk 1: Breaking position tracking
+- **Mitigation:** Test position returns at each step
+- **Test:** Verify `1 + 2 + 3` returns position 3 (consumed all)
+- **Test:** Verify `x: add 5 3` returns correct position
 
 ### Risk 2: Performance regression
 - **Mitigation:** Benchmark before/after
-  ```bash
-  go test -bench=. ./internal/eval/... > before.txt
-  # After changes
-  go test -bench=. ./internal/eval/... > after.txt
-  diff before.txt after.txt
-  ```
-- **Acceptable:** <5% regression for 40% code reduction
+- **Acceptable:** <5% for cleaner architecture
 
-### Risk 3: Refinement syntax change (Simplification #2)
-- **Mitigation:** Make this optional, get team approval first
-- **Fallback:** Skip #2 if syntax change unacceptable
-- **Documentation:** Update docs/repl-usage.md if implemented
+### Risk 3: Native function compatibility
+- **Mitigation:** Public API (DoNext, DoBlock, EvalExpressionFromTokens) unchanged
+- **Test:** All native function tests pass
 
-### Risk 4: Debugging harder with unified evaluator
-- **Mitigation:** Keep detailed tracing, error annotation
-- **Test:** Verify error messages still show "near" context
+## Testing Strategy
 
----
+### Position Tracking Tests
 
-## Testing Strategy (TDD Approach)
+```go
+// Test: evaluateExpression returns correct position
+block := []core.Value{value.IntVal(42)}
+newPos, result, err := e.evaluateExpression(block, 0, value.NoneVal())
+assert.Equal(t, 1, newPos)  // Consumed 1 value
+assert.Equal(t, int64(42), result.GetPayload().(int64))
 
-### Test First
+// Test: set-word consumes expression
+block = []core.Value{value.SetWordVal("x"), value.IntVal(10)}
+newPos, result, err = e.evaluateExpression(block, 0, value.NoneVal())
+assert.Equal(t, 2, newPos)  // Consumed set-word + value
+assert.Equal(t, int64(10), result.GetPayload().(int64))
 
-1. **Before any changes:** Capture baseline
-   ```bash
-   go test ./... > tests_before.txt
-   go test -json ./... > tests_before.json
-   ```
+// Test: function call consumes arguments
+// add 5 3 → should consume 3 positions
+block = []core.Value{value.WordVal("add"), value.IntVal(5), value.IntVal(3)}
+// (assuming 'add' is bound to a 2-arg function)
+newPos, result, err = e.evaluateExpression(block, 0, value.NoneVal())
+assert.Equal(t, 3, newPos)  // Consumed function + 2 args
+```
 
-2. **After each phase:** Verify equivalence
-   ```bash
-   go test ./... > tests_after.txt
-   diff tests_before.txt tests_after.txt
-   # Should show: PASS everywhere
-   ```
+### Infix Tests
 
-### Coverage Requirements
-
-- Maintain >90% coverage in internal/eval/
-- Any new functions must have tests
-- No reduction in integration test coverage
-
-### Test Files to Monitor
-
-- `test/contract/eval_test.go` - Core evaluation
-- `test/contract/function_eval_test.go` - Function calls
-- `test/contract/action_dispatch_test.go` - Refinements (will change for #2)
-- `test/integration/eval_bench_test.go` - Performance benchmarks
-
----
+```go
+// Test: infix uses lastResult
+// Block: [1, +, 2]
+// Step 1: eval 1 → (pos=1, result=1)
+// Step 2: eval + with lastResult=1 → consumes 2, returns (pos=3, result=3)
+```
 
 ## Success Criteria
 
-- [ ] All existing tests pass
-- [ ] Code coverage remains >90%
-- [ ] evaluator.go reduced to <900 lines (or <800 with #2)
+- [ ] All tests pass
+- [ ] evaluateExpression returns (position, value, error)
+- [ ] evaluateBlock uses position-based loop
+- [ ] No pointer-based index mutation
+- [ ] Code reduced by ~250 lines
+- [ ] Execution model matches docs/execution-model.md
 - [ ] No performance regression >5%
-- [ ] All four simplifications implemented (#1, #3, #4, and optionally #2)
-- [ ] Code review approved
-- [ ] Documentation updated (if refinement syntax changed)
-
----
 
 ## Timeline Estimate
 
-- Phase 1 (Preparation): 30 minutes
-- Phase 2 (Simplification #1): 2 hours
-- Phase 3 (Simplification #4): 30 minutes (included in #1)
-- Phase 4 (Simplification #3): 3 hours
-- Phase 5 (Simplification #2): 4 hours (OPTIONAL)
-- Phase 6 (Validation): 1 hour
+- Phase 1 (Core refactoring): 6 hours
+- Phase 2 (Path updates): 2 hours
+- Phase 3 (Validation): 2 hours
 
-**Total:** ~7 hours (or ~11 hours with #2)
-
----
+**Total:** ~10 hours
 
 ## References
 
+- **Execution model:** `docs/execution-model.md`
 - Current implementation: `internal/eval/evaluator.go`
 - Lua reference: `https://github.com/marad/viro-lang/blob/main/experiments/test.lua`
 - Test suite: `test/contract/*_test.go`, `test/integration/*_test.go`
