@@ -267,14 +267,6 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	return value.NoneVal(), false
 }
 
-// DoNext evaluates a single value using the new position-based evaluateExpression method.
-// This is a wrapper that maintains backward compatibility with existing code.
-// Returns the evaluated result and any error encountered during evaluation.
-func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
-	_, result, _, err := e.EvaluateExpression([]core.Value{val}, 0, value.NoneVal())
-	return result, err
-}
-
 // DoBlock evaluates a sequence of values as a block using position tracking.
 // Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
