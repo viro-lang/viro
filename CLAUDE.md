@@ -39,6 +39,9 @@ go test -v ./internal/native/...
 # Run single test
 go test -v ./test/contract -run TestNativeAdd
 
+# Run tests with JSON output for structured analysis
+go test -json ./... | jq
+
 # Run with coverage
 go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out

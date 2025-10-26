@@ -7,6 +7,7 @@
 - Test summary: `make test-summary` (shows total, passed, and failed test counts)
 - Test package: `go test -v ./test/contract/...` or `go test -v ./internal/native/...`
 - Single test: `go test -v ./test/contract -run TestNativeAdd`
+- Test with JSON output: `go test -json ./... | jq` (structured output for better analysis)
 - Coverage: `go test -coverprofile=coverage.out ./...`
 
 ## Code Style
