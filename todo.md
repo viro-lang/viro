@@ -1,5 +1,8 @@
 List of things to implement:
 
+- simplify the evaluator
+- remove the Value wrapper with payload and use the values directly
+
 - remove all the tracing and debugging to add later, after the architecture settles
   STATUS: NOT IMPLEMENTED - Extensive tracing and debugging code exists throughout the codebase (trace package, debug package, evaluator integration)
 

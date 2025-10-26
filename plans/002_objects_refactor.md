@@ -1,5 +1,7 @@
 # Plan: Object-Owned Frames Architecture Refactor
 
+STATUS: Implemented
+
 ## Executive Summary
 
 **Problem**: ObjectInstance currently uses FrameIndex to reference frames stored in evaluator.frameStore, creating tight coupling between objects and evaluators. This violates object self-containment.
