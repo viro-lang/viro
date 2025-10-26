@@ -23,9 +23,8 @@ grammar:
 build: grammar
 	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 
-test-summary:
-	@echo "Running tests and summarizing results..."
-	@$(GOTEST) -v ./... 2>&1 | awk '/^--- (PASS|FAIL):/ {total++; if ($$2 ~ /^FAIL/) failed++} END {passed = total - failed; print "Total tests:", total ", Passed:", passed ", Failed:", failed}'
+test:
+	@$(GOTEST) ./...
 
 clean:
 	$(GOCLEAN)
