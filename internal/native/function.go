@@ -24,32 +24,32 @@ type frameProvider interface {
 // - Returns a user-defined function with captured lexical parent
 func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("fn", 2, len(args))
+		return value.NewNoneVal(), arityError("fn", 2, len(args))
 	}
 
 	paramsVal := args[0]
 	if paramsVal.GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("fn parameters", "block", paramsVal)
+		return value.NewNoneVal(), typeError("fn parameters", "block", paramsVal)
 	}
 
-	paramsBlock, ok := value.AsBlock(paramsVal)
+	paramsBlock, ok := value.AsBlockValue(paramsVal)
 	if !ok {
-		return value.NoneVal(), verror.NewInternalError("fn parameters missing block payload", [3]string{})
+		return value.NewNoneVal(), verror.NewInternalError("fn parameters missing block payload", [3]string{})
 	}
 
 	specs, err := ParseParamSpecs(paramsBlock)
 	if err != nil {
-		return value.NoneVal(), err
+		return value.NewNoneVal(), err
 	}
 
 	bodyVal := args[1]
 	if bodyVal.GetType() != value.TypeBlock {
-		return value.NoneVal(), typeError("fn body", "block", bodyVal)
+		return value.NewNoneVal(), typeError("fn body", "block", bodyVal)
 	}
 
-	bodyBlock, ok := value.AsBlock(bodyVal)
+	bodyBlock, ok := value.AsBlockValue(bodyVal)
 	if !ok {
-		return value.NoneVal(), verror.NewInternalError("fn body missing block payload", [3]string{})
+		return value.NewNoneVal(), verror.NewInternalError("fn body missing block payload", [3]string{})
 	}
 
 	bodyClone := bodyBlock.Clone()
@@ -64,7 +64,7 @@ func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 	}
 
 	fnValue := value.NewUserFunction("", specs, bodyClone, parentIndex, nil)
-	return value.FuncVal(fnValue), nil
+	return value.NewFuncVal(fnValue), nil
 }
 
 func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
@@ -78,14 +78,14 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 
 		// Obsługa lit-wordów
 		if elem.GetType() == value.TypeLitWord {
-			wordStr, ok := value.AsWord(elem)
+			wordStr, ok := value.AsWordValue(elem)
 			if !ok {
 				return nil, invalidParamSpecError(elem.String())
 			}
 			eval = false
 			paramName = wordStr
 		} else if elem.GetType() == value.TypeWord {
-			wordStr, ok := value.AsWord(elem)
+			wordStr, ok := value.AsWordValue(elem)
 			if !ok {
 				return nil, invalidParamSpecError(elem.String())
 			}

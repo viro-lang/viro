@@ -88,11 +88,8 @@ func (p *Port) Form() string {
 }
 
 // PortVal creates a Value wrapping a Port.
-func PortVal(port *Port) Value {
-	return Value{
-		Type:    TypePort,
-		Payload: port,
-	}
+func PortVal(port *Port) core.Value {
+	return port
 }
 
 // AsPort extracts the Port from a Value, or returns nil if wrong type.
@@ -131,4 +128,19 @@ func (a *PortAdapter) Close() error {
 		return fmt.Errorf("port driver not initialized")
 	}
 	return a.Port.Driver.Close()
+}
+
+func (p *Port) GetType() core.ValueType {
+	return TypePort
+}
+
+func (p *Port) GetPayload() any {
+	return p
+}
+
+func (p *Port) Equals(other core.Value) bool {
+	if other.GetType() != TypePort {
+		return false
+	}
+	return other.GetPayload() == p
 }

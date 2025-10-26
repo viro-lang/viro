@@ -17,7 +17,7 @@ import (
 func evalObjectScriptWithEvaluator(src string) (core.Evaluator, core.Value, error) {
 	vals, err := parse.Parse(src)
 	if err != nil {
-		return nil, value.NoneVal(), err
+		return nil, value.NewNoneVal(), err
 	}
 
 	e := NewTestEvaluator()

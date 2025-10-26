@@ -24,7 +24,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				]
 				test-fn 5 --debug
 			`,
-			expected: value.IntVal(10),
+			expected: value.NewIntVal(10),
 			wantErr:  false,
 		},
 		{
@@ -35,7 +35,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				]
 				test-fn 5
 			`,
-			expected: value.IntVal(5),
+			expected: value.NewIntVal(5),
 			wantErr:  false,
 		},
 		{
@@ -46,7 +46,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				]
 				test-fn 42 --type "integer"
 			`,
-			expected: value.StrVal("integer"),
+			expected: value.NewStrVal("integer"),
 			wantErr:  false,
 		},
 		{
@@ -57,7 +57,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 				]
 				test-fn "hello" --print
 			`,
-			expected: value.StrVal("hello"),
+			expected: value.NewStrVal("hello"),
 			wantErr:  false,
 		},
 	}
@@ -105,7 +105,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				]
 				test-fn
 			`,
-			expected: value.StrVal("custom-type"),
+			expected: value.NewStrVal("custom-type"),
 			wantErr:  false,
 		},
 		{
@@ -117,7 +117,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				]
 				test-fn
 			`,
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 		{
@@ -129,7 +129,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				]
 				test-fn
 			`,
-			expected: value.IntVal(100),
+			expected: value.NewIntVal(100),
 			wantErr:  false,
 		},
 		{
@@ -145,7 +145,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				]
 				outer
 			`,
-			expected: value.StrVal("shadowed"),
+			expected: value.NewStrVal("shadowed"),
 			wantErr:  false,
 		},
 		{
@@ -159,7 +159,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 				]
 				test-fn
 			`,
-			expected: value.IntVal(6),
+			expected: value.NewIntVal(6),
 			wantErr:  false,
 		},
 	}
@@ -215,7 +215,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				]
 				level1
 			`,
-			expected: value.IntVal(3),
+			expected: value.NewIntVal(3),
 			wantErr:  false,
 		},
 		{
@@ -230,7 +230,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				]
 				outer
 			`,
-			expected: value.IntVal(100),
+			expected: value.NewIntVal(100),
 			wantErr:  false,
 		},
 		{
@@ -246,7 +246,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				]
 				outer
 			`,
-			expected: value.IntVal(200),
+			expected: value.NewIntVal(200),
 			wantErr:  false,
 		},
 		{
@@ -267,7 +267,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				]
 				level1
 			`,
-			expected: value.StrVal("level3"),
+			expected: value.NewStrVal("level3"),
 			wantErr:  false,
 		},
 		{
@@ -287,7 +287,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 				]
 				outer
 			`,
-			expected: value.IntVal(3),
+			expected: value.NewIntVal(3),
 			wantErr:  false,
 		},
 	}
@@ -328,9 +328,9 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 		code     string
 		expected core.Value
 	}{
-		{"math add", "3 + 4", value.IntVal(7)},
-		{"math multiply", "5 * 6", value.IntVal(30)},
-		{"print function", `print "test" "ok"`, value.StrVal("ok")},
+		{"math add", "3 + 4", value.NewIntVal(7)},
+		{"math multiply", "5 * 6", value.NewIntVal(30)},
+		{"print function", `print "test" "ok"`, value.NewStrVal("ok")},
 	}
 
 	for _, tt := range tests {

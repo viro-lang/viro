@@ -23,31 +23,31 @@ func TestControlFlow_When(t *testing.T) {
 		{
 			name:     "when true evaluates block",
 			input:    "when true [42]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 		{
 			name:     "when false returns none",
 			input:    "when false [99]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 		{
 			name:     "when none returns none",
 			input:    "when none [42]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 		{
 			name:     "when integer (truthy) evaluates block",
 			input:    "when 1 [99]",
-			expected: value.IntVal(99),
+			expected: value.NewIntVal(99),
 			wantErr:  false,
 		},
 		{
 			name:     "when with expression in block",
 			input:    "when true [(+ 1 1)]",
-			expected: value.IntVal(2),
+			expected: value.NewIntVal(2),
 			wantErr:  false,
 		},
 	}
@@ -91,31 +91,31 @@ func TestControlFlow_If(t *testing.T) {
 		{
 			name:     "if true evaluates first block",
 			input:    "if true [42] [99]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 		{
 			name:     "if false evaluates second block",
 			input:    "if false [42] [99]",
-			expected: value.IntVal(99),
+			expected: value.NewIntVal(99),
 			wantErr:  false,
 		},
 		{
 			name:     "if with comparison",
 			input:    "if (< 1 2) [10] [20]",
-			expected: value.IntVal(10),
+			expected: value.NewIntVal(10),
 			wantErr:  false,
 		},
 		{
 			name:     "if none is falsy",
 			input:    "if none [10] [20]",
-			expected: value.IntVal(20),
+			expected: value.NewIntVal(20),
 			wantErr:  false,
 		},
 		{
 			name:     "if with expressions in blocks",
 			input:    "if true [(+ 1 1)] [(+ 2 2)]",
-			expected: value.IntVal(2),
+			expected: value.NewIntVal(2),
 			wantErr:  false,
 		},
 	}
@@ -159,19 +159,19 @@ func TestControlFlow_Loop(t *testing.T) {
 		{
 			name:     "loop 3 times",
 			input:    "loop 3 [42]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 		{
 			name:     "loop 0 times returns none",
 			input:    "loop 0 [42]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 		{
 			name:     "loop 1 time",
 			input:    "loop 1 [99]",
-			expected: value.IntVal(99),
+			expected: value.NewIntVal(99),
 			wantErr:  false,
 		},
 		{
@@ -215,7 +215,7 @@ count`
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	expected := value.IntVal(5)
+	expected := value.NewIntVal(5)
 	if !result.Equals(expected) {
 		t.Errorf("Expected count=5, got %v", result)
 	}
@@ -238,14 +238,14 @@ func TestControlFlow_While(t *testing.T) {
 		{
 			name:     "while false returns none",
 			input:    "while [false] [42]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 		{
 			name: "while with counter",
 			input: `n: 0
 while [(< n 3)] [n: (+ n 1)]`,
-			expected: value.IntVal(3),
+			expected: value.NewIntVal(3),
 			wantErr:  false,
 		},
 	}
@@ -283,32 +283,32 @@ func TestControlFlow_TruthyConversion(t *testing.T) {
 		{
 			name:     "none is falsy",
 			input:    "when none [42]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 		},
 		{
 			name:     "false is falsy",
 			input:    "when false [42]",
-			expected: value.NoneVal(),
+			expected: value.NewNoneVal(),
 		},
 		{
 			name:     "true is truthy",
 			input:    "when true [42]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 		},
 		{
 			name:     "zero is truthy",
 			input:    "when 0 [42]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 		},
 		{
 			name:     "empty string is truthy",
 			input:    `when "" [42]`,
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 		},
 		{
 			name:     "empty block is truthy",
 			input:    "when [] [42]",
-			expected: value.IntVal(42),
+			expected: value.NewIntVal(42),
 		},
 	}
 
@@ -337,37 +337,37 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 		{
 			name:     "less than true",
 			input:    "< 3 5",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "less than false",
 			input:    "< 5 3",
-			expected: value.LogicVal(false),
+			expected: value.NewLogicVal(false),
 		},
 		{
 			name:     "greater than true",
 			input:    "> 5 3",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "less or equal true (equal)",
 			input:    "<= 3 3",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "greater or equal true",
 			input:    ">= 5 3",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "equal true",
 			input:    "= 3 3",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 		{
 			name:     "not equal true",
 			input:    "<> 3 5",
-			expected: value.LogicVal(true),
+			expected: value.NewLogicVal(true),
 		},
 	}
 

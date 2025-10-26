@@ -11,40 +11,40 @@ import (
 // Feature: 004-dynamic-function-invocation
 func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	strVal := str.String()
 	if len(strVal) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	return value.StrVal(string(strVal[0])), nil
+	return value.NewStrVal(string(strVal[0])), nil
 }
 
 // StringLast returns the last character of a string.
 // Feature: 004-dynamic-function-invocation
 func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	strVal := str.String()
 	if len(strVal) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	return value.StrVal(string(strVal[len(strVal)-1])), nil
+	return value.NewStrVal(string(strVal[len(strVal)-1])), nil
 }
 
 // StringAppend appends a string to the end of another string.
@@ -52,17 +52,17 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // Feature: 004-dynamic-function-invocation
 func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	appendStr, ok := value.AsString(args[1])
+	appendStr, ok := value.AsStringValue(args[1])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
 	}
 
 	str.Append(appendStr)
@@ -75,17 +75,17 @@ func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.
 // Feature: 004-dynamic-function-invocation
 func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) < 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	insertStr, ok := value.AsString(args[1])
+	insertStr, ok := value.AsStringValue(args[1])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
 	}
 
 	str.Insert(insertStr)
@@ -97,27 +97,27 @@ func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.
 // Feature: 004-dynamic-function-invocation
 func StringLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	return value.IntVal(int64(len(str.String()))), nil
+	return value.NewIntVal(int64(len(str.String()))), nil
 }
 
 // StringCopy implements copy action for string values.
 // Feature: 004-dynamic-function-invocation
 func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// --part refinement: copy only first N characters
@@ -126,51 +126,51 @@ func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	if hasPart {
 		if partVal.GetType() != value.TypeInteger {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
-		count64, ok := value.AsInteger(partVal)
+		count64, ok := value.AsIntValue(partVal)
 		if !ok {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
 		count := int(count64)
 		if count < 0 || count > len(str.String()) {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "string", "out of range"})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "string", "out of range"})
 		}
 		// Use substring
 		runes := []rune(str.String())
-		return value.StrVal(string(runes[:count])), nil
+		return value.NewStrVal(string(runes[:count])), nil
 	}
 
 	// Full copy
-	return value.StrVal(str.String()), nil
+	return value.NewStrVal(str.String()), nil
 }
 
 // StringFind implements find action for string values.
 // Feature: 004-dynamic-function-invocation
 func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	sought, ok := value.AsString(args[1])
+	sought, ok := value.AsStringValue(args[1])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
 	}
 
 	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
-	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.LogicVal(true))
+	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
 	runes := []rune(str.String())
 	soughtRunes := []rune(sought.String())
 
 	if len(soughtRunes) == 0 {
-		return value.NoneVal(), nil // Empty string not found
+		return value.NewNoneVal(), nil // Empty string not found
 	}
 
 	if isLast {
@@ -183,7 +183,7 @@ func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 				}
 			}
 			if match {
-				return value.IntVal(int64(i + 1)), nil
+				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
 	} else {
@@ -196,24 +196,24 @@ func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 				}
 			}
 			if match {
-				return value.IntVal(int64(i + 1)), nil
+				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
 	}
 
-	return value.NoneVal(), nil
+	return value.NewNoneVal(), nil
 }
 
 // StringRemove implements remove action for string values.
 // Feature: 004-dynamic-function-invocation
 func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	// --part refinement: remove N characters
@@ -223,14 +223,14 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 	count := 1
 	if hasPart {
 		if partVal.GetType() != value.TypeInteger {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
 		}
-		count64, _ := value.AsInteger(partVal)
+		count64, _ := value.AsIntValue(partVal)
 		count = int(count64)
 	}
 
 	if count < 0 || count > len(str.String()) {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
 	}
 
 	str.SetIndex(0)
@@ -242,20 +242,20 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 // Feature: 004-dynamic-function-invocation
 func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	countVal := args[1]
 	if countVal.GetType() != value.TypeInteger {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
 	}
 
-	count64, _ := value.AsInteger(countVal)
+	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
 	newIndex := str.Index() + count
@@ -271,20 +271,20 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // Feature: 004-dynamic-function-invocation
 func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	countVal := args[1]
 	if countVal.GetType() != value.TypeInteger {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
 	}
 
-	count64, _ := value.AsInteger(countVal)
+	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
 	start := str.Index()
@@ -292,19 +292,19 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	newRunes := str.Runes()[start:end]
 	str.SetIndex(end)
 
-	return value.StrVal(string(newRunes)), nil
+	return value.NewStrVal(string(newRunes)), nil
 }
 
 // StringReverse implements reverse action for string values.
 // Feature: 004-dynamic-function-invocation
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	r := str.Runes()
@@ -320,12 +320,12 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 // Feature: 004-dynamic-function-invocation
 func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
 	}
 
-	str, ok := value.AsString(args[0])
+	str, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	value.SortString(str)

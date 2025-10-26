@@ -83,7 +83,7 @@ func TestHTTPPortTLS(t *testing.T) {
 
 		// Test with --insecure flag (should succeed)
 		opts := map[string]core.Value{
-			"insecure": value.LogicVal(true),
+			"insecure": value.NewLogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
@@ -109,14 +109,14 @@ func TestHTTPPortTLS(t *testing.T) {
 
 		// Read from HTTPS port
 		opts := map[string]core.Value{
-			"insecure": value.LogicVal(true),
+			"insecure": value.NewLogicVal(true),
 		}
 		content, err := native.ReadPort(server.URL, opts)
 		if err != nil {
 			t.Errorf("Expected successful HTTPS read, got: %v", err)
 		}
 
-		str, ok := value.AsString(content)
+		str, ok := value.AsStringValue(content)
 		if !ok {
 			t.Fatal("Expected string response")
 		}
@@ -131,7 +131,7 @@ func TestTCPPortTimeout(t *testing.T) {
 	t.Run("TCPWithTimeout", func(t *testing.T) {
 		// Test TCP connection with custom timeout
 		opts := map[string]core.Value{
-			"timeout": value.IntVal(100), // 100ms timeout
+			"timeout": value.NewIntVal(100), // 100ms timeout
 		}
 		_, err := native.OpenPort("tcp://localhost:9999", opts)
 		// Connection should fail or timeout, but should not panic
@@ -162,7 +162,7 @@ func TestFilePortOperations(t *testing.T) {
 	t.Run("WriteAndReadFile", func(t *testing.T) {
 		testFile := "test-write.txt"
 		// Write data to file
-		data := value.StrVal("Hello, Viro!")
+		data := value.NewStrVal("Hello, Viro!")
 		err := native.WritePort(testFile, data, nil)
 		if err != nil {
 			t.Fatalf("Failed to write file: %v", err)
@@ -175,7 +175,7 @@ func TestFilePortOperations(t *testing.T) {
 			t.Fatalf("Failed to read file: %v", err)
 		}
 
-		str, ok := value.AsString(content)
+		str, ok := value.AsStringValue(content)
 		if !ok {
 			t.Fatal("Expected string result from read")
 		}
@@ -188,7 +188,7 @@ func TestFilePortOperations(t *testing.T) {
 		testFile := "test-binary.txt"
 		// Write binary data to file
 		binaryData := []byte{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01, 0x02}
-		data := value.BinaryVal(binaryData)
+		data := value.NewBinaryVal(binaryData)
 		err := native.WritePort(testFile, data, nil)
 		if err != nil {
 			t.Fatalf("Failed to write binary file: %v", err)
@@ -197,14 +197,14 @@ func TestFilePortOperations(t *testing.T) {
 
 		// Read data back as binary
 		opts := map[string]core.Value{
-			"binary": value.LogicVal(true),
+			"binary": value.NewLogicVal(true),
 		}
 		content, err := native.ReadPort(testFile, opts)
 		if err != nil {
 			t.Fatalf("Failed to read binary file: %v", err)
 		}
 
-		bin, ok := value.AsBinary(content)
+		bin, ok := value.AsBinaryValue(content)
 		if !ok {
 			t.Fatalf("Expected binary result from read, got type: %s", value.TypeToString(content.GetType()))
 		}
@@ -224,16 +224,16 @@ func TestFilePortOperations(t *testing.T) {
 	t.Run("AppendToFile", func(t *testing.T) {
 		testFile := "test-append.txt"
 		// Write initial data
-		data1 := value.StrVal("Line 1\n")
+		data1 := value.NewStrVal("Line 1\n")
 		if err := native.WritePort(testFile, data1, nil); err != nil {
 			t.Fatalf("Failed to write initial data: %v", err)
 		}
 		defer os.Remove(filepath.Join(tmpDir, testFile))
 
 		// Append more data
-		data2 := value.StrVal("Line 2\n")
+		data2 := value.NewStrVal("Line 2\n")
 		opts := map[string]core.Value{
-			"append": value.LogicVal(true),
+			"append": value.NewLogicVal(true),
 		}
 		if err := native.WritePort(testFile, data2, opts); err != nil {
 			t.Fatalf("Failed to append data: %v", err)
@@ -245,7 +245,7 @@ func TestFilePortOperations(t *testing.T) {
 			t.Fatalf("Failed to read file: %v", err)
 		}
 
-		str, _ := value.AsString(content)
+		str, _ := value.AsStringValue(content)
 		expected := "Line 1\nLine 2\n"
 		if str.String() != expected {
 			t.Errorf("Expected '%s', got '%s'", expected, str.String())
@@ -274,7 +274,7 @@ func TestHTTPMethods(t *testing.T) {
 		if content.GetType() != value.TypeString {
 			t.Errorf("Expected string response, got %v", content.GetType())
 		}
-		str, _ := value.AsString(content)
+		str, _ := value.AsStringValue(content)
 		if !strings.Contains(str.String(), "GET response") {
 			t.Errorf("Expected 'GET response' in content, got: %s", str.String())
 		}
@@ -322,9 +322,9 @@ func TestHTTPMethods(t *testing.T) {
 		defer server.Close()
 
 		// Test HTTP POST request
-		data := value.StrVal("test data")
+		data := value.NewStrVal("test data")
 		opts := map[string]core.Value{
-			"method": value.WordVal("POST"),
+			"method": value.NewWordVal("POST"),
 		}
 		err := native.WritePort(server.URL, data, opts)
 		if err != nil {
@@ -348,7 +348,7 @@ func TestPortQuery(t *testing.T) {
 	// Create test file
 	testFile := "query-test.txt"
 	testContent := "test content"
-	if err := native.WritePort(testFile, value.StrVal(testContent), nil); err != nil {
+	if err := native.WritePort(testFile, value.NewStrVal(testContent), nil); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 	defer os.Remove(filepath.Join(tmpDir, testFile))
@@ -447,7 +447,7 @@ func TestTLSInsecureFlag(t *testing.T) {
 
 		// Test with --insecure flag (should succeed and emit warning)
 		opts := map[string]core.Value{
-			"insecure": value.LogicVal(true),
+			"insecure": value.NewLogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
@@ -467,7 +467,7 @@ func TestTLSInsecureFlag(t *testing.T) {
 
 		// --insecure should be allowed but has no effect on HTTP
 		opts := map[string]core.Value{
-			"insecure": value.LogicVal(true),
+			"insecure": value.NewLogicVal(true),
 		}
 		port, err := native.OpenPort(server.URL, opts)
 		if err != nil {
@@ -488,7 +488,7 @@ func TestTLSInsecureFlag(t *testing.T) {
 
 		// --insecure on file:// should raise error
 		opts := map[string]core.Value{
-			"insecure": value.LogicVal(true),
+			"insecure": value.NewLogicVal(true),
 		}
 		_, err := native.OpenPort("test.txt", opts)
 		if err == nil {

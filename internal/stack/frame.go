@@ -38,13 +38,13 @@ func (s *Stack) NewFrame(fn *value.FunctionValue, argCount int) int {
 	s.Reserve(frameSize)
 
 	// Initialize frame layout
-	s.Push(value.NoneVal())                     // Return slot
-	s.Push(value.IntVal(int64(s.CurrentFrame))) // Prior frame index
-	s.Push(value.FuncVal(fn))                   // Function metadata
+	s.Push(value.NewNoneVal())                     // Return slot
+	s.Push(value.NewIntVal(int64(s.CurrentFrame))) // Prior frame index
+	s.Push(value.NewFuncVal(fn))                   // Function metadata
 
 	// Push placeholder none values for arguments (caller will set)
 	for range argCount {
-		s.Push(value.NoneVal())
+		s.Push(value.NewNoneVal())
 	}
 
 	// Update current frame pointer
@@ -65,7 +65,7 @@ func (s *Stack) DestroyFrame() core.Value {
 
 	// Get prior frame index
 	priorFrameVal := s.Get(s.CurrentFrame + FrameOffsetPrior)
-	priorFrame, ok := value.AsInteger(priorFrameVal)
+	priorFrame, ok := value.AsIntValue(priorFrameVal)
 	if !ok {
 		panic("corrupted frame: invalid prior frame index")
 	}
@@ -119,7 +119,7 @@ func (s *Stack) GetFrameFunction() *value.FunctionValue {
 		panic("no active frame")
 	}
 	fnVal := s.Get(s.CurrentFrame + FrameOffsetFunction)
-	fn, ok := value.AsFunction(fnVal)
+	fn, ok := value.AsFunctionValue(fnVal)
 	if !ok {
 		panic("corrupted frame: invalid function metadata")
 	}
@@ -145,13 +145,13 @@ func (s *Stack) CaptureCallStack() []string {
 	for frameIdx != -1 {
 		// Get function from frame
 		fnVal := s.Get(frameIdx + FrameOffsetFunction)
-		if fn, ok := value.AsFunction(fnVal); ok {
+		if fn, ok := value.AsFunctionValue(fnVal); ok {
 			calls = append(calls, fn.Name)
 		}
 
 		// Get prior frame
 		priorVal := s.Get(frameIdx + FrameOffsetPrior)
-		if priorInt, ok := value.AsInteger(priorVal); ok {
+		if priorInt, ok := value.AsIntValue(priorVal); ok {
 			frameIdx = int(priorInt)
 		} else {
 			break

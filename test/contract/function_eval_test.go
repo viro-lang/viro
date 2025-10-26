@@ -30,7 +30,7 @@ func TestUserFunctionEvalFalse(t *testing.T) {
 	if result.GetType() != 4 { // TypeWord
 		t.Errorf("Expected word!, got type %d", result.GetType())
 	}
-	wordStr, ok := value.AsWord(result)
+	wordStr, ok := value.AsWordValue(result)
 	if !ok || wordStr != "x" {
 		t.Errorf("Expected word 'x', got %v", wordStr)
 	}
@@ -61,7 +61,7 @@ func TestUserFunctionMixedEval(t *testing.T) {
 	if result.GetType() != 8 { // TypeBlock
 		t.Errorf("Expected block!, got %d", result.GetType())
 	}
-	block, ok := value.AsBlock(result)
+	block, ok := value.AsBlockValue(result)
 	if !ok || len(block.Elements) != 2 {
 		t.Fatalf("Expected block of 2 elements, got %d", len(block.Elements))
 	}
@@ -97,7 +97,7 @@ func TestNativeIfEvalArgs(t *testing.T) {
 	if final.GetType() != 2 { // TypeInteger
 		t.Errorf("Expected integer type, got %d", final.GetType())
 	}
-	ival, ok := value.AsInteger(final)
+	ival, ok := value.AsIntValue(final)
 	if !ok || ival != 1 {
 		t.Errorf("Expected x = 1, got %v", ival)
 	}
@@ -203,7 +203,7 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 	if result.GetType() != 2 { // TypeInteger
 		t.Fatalf("Expected integer result, got type %d", result.GetType())
 	}
-	ival, ok := value.AsInteger(result)
+	ival, ok := value.AsIntValue(result)
 	if !ok {
 		t.Fatal("Failed to extract integer value")
 	}

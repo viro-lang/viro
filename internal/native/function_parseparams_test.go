@@ -11,9 +11,9 @@ import (
 func TestParseParamSpecs_EvalFlag(t *testing.T) {
 	block := &value.BlockValue{
 		Elements: []core.Value{
-			value.WordVal("a"),
-			value.LitWordVal("b"),
-			value.WordVal("c"),
+			value.NewWordVal("a"),
+			value.NewLitWordVal("b"),
+			value.NewWordVal("c"),
 		},
 	}
 	params, err := native.ParseParamSpecs(block)
@@ -31,7 +31,7 @@ func TestParseParamSpecs_EvalFlag(t *testing.T) {
 func TestParseParamSpecs_LitWordRefinementError(t *testing.T) {
 	block := &value.BlockValue{
 		Elements: []core.Value{
-			value.LitWordVal("--flag"),
+			value.NewLitWordVal("--flag"),
 		},
 	}
 	_, err := native.ParseParamSpecs(block)

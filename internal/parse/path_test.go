@@ -168,7 +168,7 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 					t.Errorf("Expected TypeSetWord for set-path, got %s", value.TypeToString(vals[0].GetType()))
 				}
 				// The set-word should contain the full path string
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "obj.name" {
 					t.Errorf("Expected set-word to be 'obj.name', got %q", word)
 				}
@@ -187,7 +187,7 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 				if vals[0].GetType() != value.TypeSetWord {
 					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWord(vals[0])
+				word, ok := value.AsWordValue(vals[0])
 				if !ok || word != "user.address.city" {
 					t.Errorf("Expected set-word to be 'user.address.city', got %q", word)
 				}

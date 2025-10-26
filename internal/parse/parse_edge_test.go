@@ -167,7 +167,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeBlock {
 					t.Errorf("Expected block, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				block, ok := value.AsBlock(vals[0])
+				block, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected block value")
 					return
@@ -190,7 +190,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeParen {
 					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				paren, ok := value.AsBlock(vals[0])
+				paren, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected paren value")
 					return
@@ -213,7 +213,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeBlock {
 					t.Errorf("Expected block, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				block, ok := value.AsBlock(vals[0])
+				block, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected block value")
 					return
@@ -236,7 +236,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeParen {
 					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				paren, ok := value.AsBlock(vals[0])
+				paren, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected paren value")
 					return
@@ -259,7 +259,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeBlock {
 					t.Errorf("Expected block, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				block, ok := value.AsBlock(vals[0])
+				block, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected block value")
 					return
@@ -303,7 +303,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeBlock {
 					t.Errorf("Expected block, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				block, ok := value.AsBlock(vals[0])
+				block, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected block value")
 					return
@@ -333,7 +333,7 @@ func TestBlockParenParsing(t *testing.T) {
 				if vals[0].GetType() != value.TypeBlock {
 					t.Errorf("Expected block, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				block, ok := value.AsBlock(vals[0])
+				block, ok := value.AsBlockValue(vals[0])
 				if !ok {
 					t.Errorf("Expected block value")
 					return

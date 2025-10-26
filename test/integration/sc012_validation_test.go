@@ -36,7 +36,7 @@ func TestSC012_FileReadWriteThroughput(t *testing.T) {
 
 		for i := 0; i < iterations; i++ {
 			filename := fmt.Sprintf("write_test_%d.txt", i)
-			err := native.WritePort(filename, value.StrVal(testData), nil)
+			err := native.WritePort(filename, value.NewStrVal(testData), nil)
 			if err != nil {
 				t.Fatalf("Write failed: %v", err)
 			}
@@ -54,7 +54,7 @@ func TestSC012_FileReadWriteThroughput(t *testing.T) {
 	// Test read throughput
 	t.Run("ReadThroughput", func(t *testing.T) {
 		// Setup: Create test file
-		err := native.WritePort(testFile, value.StrVal(testData), nil)
+		err := native.WritePort(testFile, value.NewStrVal(testData), nil)
 		if err != nil {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
@@ -177,7 +177,7 @@ func TestSC012_SandboxEnforcement(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Try to write to the path
-			err := native.WritePort(tt.path, value.StrVal("test content"), nil)
+			err := native.WritePort(tt.path, value.NewStrVal("test content"), nil)
 
 			if tt.shouldFail {
 				if err == nil {
@@ -249,7 +249,7 @@ func TestSC012_PortLifecycle(t *testing.T) {
 
 	t.Run("SaveAndLoad", func(t *testing.T) {
 		testFile := "saveload_test.txt"
-		testValue := value.IntVal(42)
+		testValue := value.NewIntVal(42)
 
 		// Save value
 		err := native.SavePort(testFile, testValue, nil)

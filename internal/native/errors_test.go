@@ -24,7 +24,7 @@ func TestArityError(t *testing.T) {
 }
 
 func TestTypeError(t *testing.T) {
-	val := value.IntVal(10)
+	val := value.NewIntVal(10)
 	err := typeError("add", "integer", val).(*verror.Error)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -35,13 +35,13 @@ func TestTypeError(t *testing.T) {
 	if err.ID != verror.ErrIDTypeMismatch {
 		t.Fatalf("unexpected id: %s", err.ID)
 	}
-	if err.Args != [3]string{"add", "integer", value.TypeToString(val.Type)} {
+	if err.Args != [3]string{"add", "integer", value.TypeToString(val.GetType())} {
 		t.Fatalf("unexpected args: %#v", err.Args)
 	}
 }
 
 func TestMathTypeError(t *testing.T) {
-	val := value.StrVal("oops")
+	val := value.NewStrVal("oops")
 	err := mathTypeError("/", val).(*verror.Error)
 	if err == nil {
 		t.Fatalf("expected error, got nil")
@@ -52,7 +52,7 @@ func TestMathTypeError(t *testing.T) {
 	if err.ID != verror.ErrIDTypeMismatch {
 		t.Fatalf("unexpected id: %s", err.ID)
 	}
-	if err.Args != [3]string{"/", "integer", value.TypeToString(val.Type)} {
+	if err.Args != [3]string{"/", "integer", value.TypeToString(val.GetType())} {
 		t.Fatalf("unexpected args: %#v", err.Args)
 	}
 }

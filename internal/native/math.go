@@ -32,7 +32,7 @@ type decimalCompareFn func(a, b *decimal.Big) bool
 // It handles type checking, decimal promotion, and overflow detection.
 func mathOp(name string, args []core.Value, intFn intOp, decFn decimalOp) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError(name, 2, len(args))
+		return value.NewNoneVal(), arityError(name, 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal arithmetic
@@ -41,23 +41,23 @@ func mathOp(name string, args []core.Value, intFn intOp, decFn decimalOp) (core.
 	}
 
 	// Integer arithmetic
-	a, ok := value.AsInteger(args[0])
+	a, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NoneVal(), mathTypeError(name, args[0])
+		return value.NewNoneVal(), mathTypeError(name, args[0])
 	}
 
-	b, ok := value.AsInteger(args[1])
+	b, ok := value.AsIntValue(args[1])
 	if !ok {
-		return value.NoneVal(), mathTypeError(name, args[1])
+		return value.NewNoneVal(), mathTypeError(name, args[1])
 	}
 
 	// Perform operation with overflow check
 	result, overflow := intFn(a, b)
 	if overflow {
-		return value.NoneVal(), overflowError(name)
+		return value.NewNoneVal(), overflowError(name)
 	}
 
-	return value.IntVal(result), nil
+	return value.NewIntVal(result), nil
 }
 
 // decimalMathOp handles decimal arithmetic with promotion.
@@ -65,12 +65,12 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 	aVal := promoteToDecimal(a, nil, nil)
 	bVal := promoteToDecimal(b, nil, nil)
 	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
+		return value.NewNoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
 
 	// Check for division by zero if the operation might divide
 	if name == "/" && bVal.Sign() == 0 {
-		return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+		return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 	}
 
 	ctx := decimal.Context128
@@ -84,7 +84,7 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 // It handles type checking and decimal promotion.
 func compareOp(name string, args []core.Value, intFn intCompareFn, decFn decimalCompareFn) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError(name, 2, len(args))
+		return value.NewNoneVal(), arityError(name, 2, len(args))
 	}
 
 	// Check if either argument is decimal - if so, promote to decimal comparison
@@ -93,17 +93,17 @@ func compareOp(name string, args []core.Value, intFn intCompareFn, decFn decimal
 	}
 
 	// Integer comparison
-	a, ok := value.AsInteger(args[0])
+	a, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NoneVal(), mathTypeError(name, args[0])
+		return value.NewNoneVal(), mathTypeError(name, args[0])
 	}
 
-	b, ok := value.AsInteger(args[1])
+	b, ok := value.AsIntValue(args[1])
 	if !ok {
-		return value.NoneVal(), mathTypeError(name, args[1])
+		return value.NewNoneVal(), mathTypeError(name, args[1])
 	}
 
-	return value.LogicVal(intFn(a, b)), nil
+	return value.NewLogicVal(intFn(a, b)), nil
 }
 
 // decimalCompareOp handles decimal comparison with promotion.
@@ -111,10 +111,10 @@ func decimalCompareOp(name string, a, b core.Value, decFn decimalCompareFn) (cor
 	aVal := promoteToDecimal(a, nil, nil)
 	bVal := promoteToDecimal(b, nil, nil)
 	if aVal == nil || bVal == nil {
-		return value.NoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
+		return value.NewNoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
 
-	return value.LogicVal(decFn(aVal, bVal)), nil
+	return value.NewLogicVal(decFn(aVal, bVal)), nil
 }
 
 // Add implements the + native function.
@@ -212,8 +212,8 @@ func Multiply(args []core.Value, refValues map[string]core.Value, eval core.Eval
 func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// Special handling for division by zero in integer case
 	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
-		if b, ok := value.AsInteger(args[1]); ok && b == 0 {
-			return value.NoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+		if b, ok := value.AsIntValue(args[1]); ok && b == 0 {
+			return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 		}
 	}
 
@@ -304,14 +304,14 @@ func NotEqual(args []core.Value, refValues map[string]core.Value, eval core.Eval
 // - Truthy: none/false → false, all others → true
 func And(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("and", 2, len(args))
+		return value.NewNoneVal(), arityError("and", 2, len(args))
 	}
 
 	// Convert both to truthy (using ToTruthy from control.go)
 	a := ToTruthy(args[0])
 	b := ToTruthy(args[1])
 
-	return value.LogicVal(a && b), nil
+	return value.NewLogicVal(a && b), nil
 }
 
 // Or implements the or native function.
@@ -322,14 +322,14 @@ func And(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 // - Truthy: none/false → false, all others → true
 func Or(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NoneVal(), arityError("or", 2, len(args))
+		return value.NewNoneVal(), arityError("or", 2, len(args))
 	}
 
 	// Convert both to truthy (using ToTruthy from control.go)
 	a := ToTruthy(args[0])
 	b := ToTruthy(args[1])
 
-	return value.LogicVal(a || b), nil
+	return value.NewLogicVal(a || b), nil
 }
 
 // Not implements the not native function.
@@ -340,9 +340,9 @@ func Or(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 // - Truthy: none/false → false, all others → true
 func Not(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NoneVal(), arityError("not", 1, len(args))
+		return value.NewNoneVal(), arityError("not", 1, len(args))
 	}
 
 	// Convert to truthy and negate (using ToTruthy from control.go)
-	return value.LogicVal(!ToTruthy(args[0])), nil
+	return value.NewLogicVal(!ToTruthy(args[0])), nil
 }

@@ -10,15 +10,16 @@ import (
 
 // BlockValue represents an ordered sequence of values.
 // Used for both blocks [...] (deferred evaluation) and parens (...)  (immediate evaluation).
-// The distinction is made by the Value wrapper's Type field, not the BlockValue itself.
+// The distinction is made by the typ field.
 //
 // Design per data-model.md:
 // - Blocks evaluate to themselves (return self without evaluating contents)
 // - Parens evaluate their contents immediately
 // - Both share the same underlying structure
 type BlockValue struct {
-	Elements []core.Value // ordered value sequence
-	Index    int          // current series position (0-based)
+	Elements []core.Value   // ordered value sequence
+	Index    int            // current series position (0-based)
+	typ      core.ValueType // TypeBlock or TypeParen
 }
 
 // NewBlockValue creates a BlockValue with given elements.
@@ -29,6 +30,18 @@ func NewBlockValue(elements []core.Value) *BlockValue {
 	return &BlockValue{
 		Elements: elements,
 		Index:    0,
+		typ:      TypeBlock,
+	}
+}
+
+func NewBlockValueWithType(elements []core.Value, typ core.ValueType) *BlockValue {
+	if elements == nil {
+		elements = []core.Value{}
+	}
+	return &BlockValue{
+		Elements: elements,
+		Index:    0,
+		typ:      typ,
 	}
 }
 
@@ -87,8 +100,8 @@ func (b *BlockValue) StringElements() string {
 	return strings.Join(parts, " ")
 }
 
-// Equals performs deep equality comparison.
-func (b *BlockValue) Equals(other *BlockValue) bool {
+// EqualsBlock performs deep equality comparison with another BlockValue.
+func (b *BlockValue) EqualsBlock(other *BlockValue) bool {
 	if len(b.Elements) != len(other.Elements) {
 		return false
 	}
@@ -98,6 +111,25 @@ func (b *BlockValue) Equals(other *BlockValue) bool {
 		}
 	}
 	return true
+}
+
+func (b *BlockValue) Equals(other core.Value) bool {
+	if other.GetType() != TypeBlock && other.GetType() != TypeParen {
+		return false
+	}
+	otherBlock, ok := other.(*BlockValue)
+	if !ok {
+		return false
+	}
+	return b.EqualsBlock(otherBlock)
+}
+
+func (b *BlockValue) GetType() core.ValueType {
+	return b.typ
+}
+
+func (b *BlockValue) GetPayload() any {
+	return b
 }
 
 // Series operations (contracts/series.md)
@@ -178,12 +210,12 @@ func SortBlock(b *BlockValue) {
 		elemJ := b.Elements[j]
 		switch elemI.GetType() {
 		case TypeInteger:
-			iVal, _ := AsInteger(elemI)
-			jVal, _ := AsInteger(elemJ)
+			iVal, _ := AsIntValue(elemI)
+			jVal, _ := AsIntValue(elemJ)
 			return iVal < jVal
 		case TypeString:
-			iVal, _ := AsString(elemI)
-			jVal, _ := AsString(elemJ)
+			iVal, _ := AsStringValue(elemI)
+			jVal, _ := AsStringValue(elemJ)
 			return iVal.Form() < jVal.Form()
 		default:
 			return false

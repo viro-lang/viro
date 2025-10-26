@@ -112,11 +112,8 @@ func (p *PathExpression) Form() string {
 }
 
 // PathVal creates a Value wrapping a PathExpression.
-func PathVal(path *PathExpression) Value {
-	return Value{
-		Type:    TypePath,
-		Payload: path,
-	}
+func PathVal(path *PathExpression) core.Value {
+	return path
 }
 
 // AsPath extracts the PathExpression from a Value, or returns nil if wrong type.
@@ -126,4 +123,19 @@ func AsPath(v core.Value) (*PathExpression, bool) {
 	}
 	path, ok := v.GetPayload().(*PathExpression)
 	return path, ok
+}
+
+func (p *PathExpression) GetType() core.ValueType {
+	return TypePath
+}
+
+func (p *PathExpression) GetPayload() any {
+	return p
+}
+
+func (p *PathExpression) Equals(other core.Value) bool {
+	if other.GetType() != TypePath {
+		return false
+	}
+	return other.GetPayload() == p
 }

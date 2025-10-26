@@ -42,8 +42,8 @@ func TestDecimalValueWrapping(t *testing.T) {
 	mag := decimal.New(42, 0)
 	val := value.DecimalVal(mag, 0)
 
-	if val.Type != value.TypeDecimal {
-		t.Errorf("expected TypeDecimal, got %v", val.Type)
+	if val.GetType() != value.TypeDecimal {
+		t.Errorf("expected TypeDecimal, got %v", val.GetType())
 	}
 
 	// Test AsDecimal extraction
@@ -56,7 +56,7 @@ func TestDecimalValueWrapping(t *testing.T) {
 	}
 
 	// Test wrong type
-	intVal := value.IntVal(42)
+	intVal := value.NewIntVal(42)
 	_, ok = value.AsDecimal(intVal)
 	if ok {
 		t.Error("AsDecimal returned true for integer value")
@@ -90,8 +90,8 @@ func TestObjectValueWrapping(t *testing.T) {
 	obj := value.NewObject(nil, []string{"x"}, nil)
 	val := value.ObjectVal(obj)
 
-	if val.Type != value.TypeObject {
-		t.Errorf("expected TypeObject, got %v", val.Type)
+	if val.GetType() != value.TypeObject {
+		t.Errorf("expected TypeObject, got %v", val.GetType())
 	}
 
 	// Test AsObject extraction
@@ -104,7 +104,7 @@ func TestObjectValueWrapping(t *testing.T) {
 	}
 
 	// Test wrong type
-	intVal := value.IntVal(42)
+	intVal := value.NewIntVal(42)
 	_, ok = value.AsObject(intVal)
 	if ok {
 		t.Error("AsObject returned true for integer value")
@@ -140,8 +140,8 @@ func TestPortValueWrapping(t *testing.T) {
 	port := value.NewPort("tcp", "localhost:8080", nil)
 	val := value.PortVal(port)
 
-	if val.Type != value.TypePort {
-		t.Errorf("expected TypePort, got %v", val.Type)
+	if val.GetType() != value.TypePort {
+		t.Errorf("expected TypePort, got %v", val.GetType())
 	}
 
 	// Test AsPort extraction
@@ -154,7 +154,7 @@ func TestPortValueWrapping(t *testing.T) {
 	}
 
 	// Test wrong type
-	intVal := value.IntVal(42)
+	intVal := value.NewIntVal(42)
 	_, ok = value.AsPort(intVal)
 	if ok {
 		t.Error("AsPort returned true for integer value")
@@ -168,7 +168,7 @@ func TestPathExpressionConstruction(t *testing.T) {
 		{Type: value.PathSegmentWord, Value: "address"},
 		{Type: value.PathSegmentWord, Value: "city"},
 	}
-	base := value.WordVal("user")
+	base := value.NewWordVal("user")
 
 	path := value.NewPath(segments, base)
 
@@ -192,11 +192,11 @@ func TestPathValueWrapping(t *testing.T) {
 	segments := []value.PathSegment{
 		{Type: value.PathSegmentWord, Value: "test"},
 	}
-	path := value.NewPath(segments, value.NoneVal())
+	path := value.NewPath(segments, value.NewNoneVal())
 	val := value.PathVal(path)
 
-	if val.Type != value.TypePath {
-		t.Errorf("expected TypePath, got %v", val.Type)
+	if val.GetType() != value.TypePath {
+		t.Errorf("expected TypePath, got %v", val.GetType())
 	}
 
 	// Test AsPath extraction
@@ -209,7 +209,7 @@ func TestPathValueWrapping(t *testing.T) {
 	}
 
 	// Test wrong type
-	intVal := value.IntVal(42)
+	intVal := value.NewIntVal(42)
 	_, ok = value.AsPath(intVal)
 	if ok {
 		t.Error("AsPath returned true for integer value")
@@ -221,7 +221,7 @@ func TestValueTypeDispatch(t *testing.T) {
 	// Create object with a field
 	objFrame := frame.NewObjectFrame(0, []string{"name"}, []core.ValueType{value.TypeString})
 	obj := value.NewObject(objFrame, []string{"name"}, []core.ValueType{value.TypeString})
-	obj.SetField("name", value.StrVal("Alice"))
+	obj.SetField("name", value.NewStrVal("Alice"))
 
 	tests := []struct {
 		name     string
@@ -231,7 +231,7 @@ func TestValueTypeDispatch(t *testing.T) {
 		{"decimal", value.DecimalVal(decimal.New(42, 0), 0), value.TypeDecimal},
 		{"object", value.ObjectVal(obj), value.TypeObject},
 		{"port", value.PortVal(value.NewPort("file", "test", nil)), value.TypePort},
-		{"path", value.PathVal(value.NewPath([]value.PathSegment{{Type: value.PathSegmentWord, Value: "test"}}, value.NoneVal())), value.TypePath},
+		{"path", value.PathVal(value.NewPath([]value.PathSegment{{Type: value.PathSegmentWord, Value: "test"}}, value.NewNoneVal())), value.TypePath},
 	}
 
 	for _, tt := range tests {
@@ -251,7 +251,7 @@ func TestValueTypeDispatch(t *testing.T) {
 
 // TestInvalidConversions validates error cases for type assertions
 func TestInvalidConversions(t *testing.T) {
-	intVal := value.IntVal(42)
+	intVal := value.NewIntVal(42)
 
 	// Test all AsXXX methods return false for wrong type
 	if _, ok := value.AsDecimal(intVal); ok {

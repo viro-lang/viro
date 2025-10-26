@@ -142,7 +142,7 @@ func TestSpecOf(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok || len(blk.Elements) == 0 {
 					t.Error("expected spec-of to return non-empty block")
 				}
@@ -156,7 +156,7 @@ func TestSpecOf(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok {
 					t.Error("expected spec-of to return block")
 				}
@@ -173,7 +173,7 @@ func TestSpecOf(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected spec-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok {
 					t.Error("expected spec-of to return block")
 				}
@@ -245,7 +245,7 @@ func TestBodyOf(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected body-of to return block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok || len(blk.Elements) == 0 {
 					t.Error("expected body-of to return non-empty block")
 				}
@@ -337,7 +337,7 @@ func TestWordsAndValues(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Fatalf("expected block result, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Fatalf("expected block with 2 words, got %d elements", len(blk.Elements))
 				}
@@ -356,7 +356,7 @@ func TestWordsAndValues(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Fatalf("expected block result, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Fatalf("expected block with 2 values, got %d elements", len(blk.Elements))
 				}
@@ -376,7 +376,7 @@ func TestWordsAndValues(t *testing.T) {
 				if v.GetType() != value.TypeLogic {
 					t.Fatalf("expected logic!, got %v", value.TypeToString(v.GetType()))
 				}
-				logic, _ := value.AsLogic(v)
+				logic, _ := value.AsLogicValue(v)
 				if !logic {
 					t.Error("words-of and values-of should return same length")
 				}
@@ -390,7 +390,7 @@ func TestWordsAndValues(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok {
 					t.Fatal("expected block type")
 				}
@@ -426,7 +426,7 @@ func TestWordsAndValues(t *testing.T) {
 				if v.GetType() != value.TypeBlock {
 					t.Errorf("expected block!, got %v", value.TypeToString(v.GetType()))
 				}
-				blk, ok := value.AsBlock(v)
+				blk, ok := value.AsBlockValue(v)
 				if !ok || len(blk.Elements) != 2 {
 					t.Error("expected 2 words for nested object")
 				}

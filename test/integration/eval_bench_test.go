@@ -26,7 +26,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
-	if got, ok := value.AsInteger(warmResult); !ok || got != 5 {
+	if got, ok := value.AsIntValue(warmResult); !ok || got != 5 {
 		b.Fatalf("unexpected warm-up result: %v", warmResult)
 	}
 
@@ -41,7 +41,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 		simpleEvalResult = result
 	}
 
-	if got, ok := value.AsInteger(simpleEvalResult); !ok || got != 5 {
+	if got, ok := value.AsIntValue(simpleEvalResult); !ok || got != 5 {
 		b.Fatalf("unexpected final result: %v", simpleEvalResult)
 	}
 }
@@ -73,7 +73,7 @@ total
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
-	if got, ok := value.AsInteger(warmResult); !ok || got != 1100 {
+	if got, ok := value.AsIntValue(warmResult); !ok || got != 1100 {
 		b.Fatalf("unexpected warm-up result: %v", warmResult)
 	}
 
@@ -88,7 +88,7 @@ total
 		complexEvalResult = result
 	}
 
-	if got, ok := value.AsInteger(complexEvalResult); !ok || got != 1100 {
+	if got, ok := value.AsIntValue(complexEvalResult); !ok || got != 1100 {
 		b.Fatalf("unexpected final result: %v", complexEvalResult)
 	}
 }

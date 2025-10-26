@@ -14,7 +14,7 @@ func buildRegistryFromFrame(f core.Frame) map[string]*value.FunctionValue {
 	registry := make(map[string]*value.FunctionValue)
 	for _, binding := range f.GetAll() {
 		if binding.Value.GetType() == value.TypeFunction {
-			if fn, ok := value.AsFunction(binding.Value); ok {
+			if fn, ok := value.AsFunctionValue(binding.Value); ok {
 				registry[binding.Symbol] = fn
 			}
 		}
@@ -34,7 +34,7 @@ func buildRegistryFromFrame(f core.Frame) map[string]*value.FunctionValue {
 func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	// Handle 0 or 1 arguments
 	if len(args) > 1 {
-		return value.NoneVal(), arityError("?", 1, len(args))
+		return value.NewNoneVal(), arityError("?", 1, len(args))
 	}
 
 	// Build registry from root frame
@@ -44,7 +44,7 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	// No arguments - show category list
 	if len(args) == 0 {
 		fmt.Print(FormatCategoryList(registry))
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// One argument - get the word/string directly (not evaluated)
@@ -52,12 +52,12 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 	// Get the word name to look up
 	var lookupName string
-	if sym, ok := value.AsWord(arg); ok {
+	if sym, ok := value.AsWordValue(arg); ok {
 		lookupName = sym
-	} else if str, ok := value.AsString(arg); ok {
+	} else if str, ok := value.AsStringValue(arg); ok {
 		lookupName = str.String()
 	} else {
-		return value.NoneVal(), typeError("?", "word or string", arg)
+		return value.NewNoneVal(), typeError("?", "word or string", arg)
 	}
 
 	// Try to find the function in the registry
@@ -68,7 +68,7 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		} else {
 			fmt.Printf("\n%s: Native function (no documentation available)\n\n", lookupName)
 		}
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// Not a function - maybe it's a category?
@@ -76,7 +76,7 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	if !strings.Contains(output, "not found") {
 		// It's a valid category
 		fmt.Print(output)
-		return value.NoneVal(), nil
+		return value.NewNoneVal(), nil
 	}
 
 	// Not found - suggest similar functions
@@ -88,7 +88,7 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		fmt.Printf("\n'%s' not found. Type '?' to see available functions.\n\n", lookupName)
 	}
 
-	return value.NoneVal(), nil
+	return value.NewNoneVal(), nil
 }
 
 // Words lists all available function names.
@@ -96,7 +96,7 @@ func Help(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 // Returns: block of words (function names)
 func Words(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
-		return value.NoneVal(), arityError("words", 0, len(args))
+		return value.NewNoneVal(), arityError("words", 0, len(args))
 	}
 
 	// Build registry from root frame
@@ -105,8 +105,8 @@ func Words(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 
 	names := make([]core.Value, 0, len(registry))
 	for name := range registry {
-		names = append(names, value.WordVal(name))
+		names = append(names, value.NewWordVal(name))
 	}
 
-	return value.BlockVal(names), nil
+	return value.NewBlockVal(names), nil
 }

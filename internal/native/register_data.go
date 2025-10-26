@@ -25,16 +25,16 @@ func RegisterDataNatives(rootFrame core.Frame) {
 		}
 
 		// Bind to root frame
-		rootFrame.Bind(name, value.FuncVal(fn))
+		rootFrame.Bind(name, value.NewFuncVal(fn))
 
 		// Mark as registered
 		registered[name] = true
 	}
 
 	// Register core literal keywords
-	rootFrame.Bind("true", value.LogicVal(true))
-	rootFrame.Bind("false", value.LogicVal(false))
-	rootFrame.Bind("none", value.NoneVal())
+	rootFrame.Bind("true", value.NewLogicVal(true))
+	rootFrame.Bind("false", value.NewLogicVal(false))
+	rootFrame.Bind("none", value.NewNoneVal())
 
 	// ===== Group 6: Data operations  =====
 	registerAndBind("set", value.NewNativeFunction(

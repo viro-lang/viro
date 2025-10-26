@@ -101,7 +101,7 @@ func TestActionShadowing(t *testing.T) {
 	}
 
 	// Should use the local function, not the action
-	if val, ok := value.AsInteger(result); !ok || val != 10 {
+	if val, ok := value.AsIntValue(result); !ok || val != 10 {
 		t.Errorf("Expected 10, got %s", result.Mold())
 	}
 }
@@ -128,7 +128,7 @@ func TestActionMultipleArguments(t *testing.T) {
 	}
 
 	// Block should be modified in-place
-	blk, ok := value.AsBlock(result)
+	blk, ok := value.AsBlockValue(result)
 	if !ok {
 		t.Fatalf("Expected block, got %s", value.TypeToString(result.GetType()))
 	}
@@ -138,7 +138,7 @@ func TestActionMultipleArguments(t *testing.T) {
 	}
 
 	// Check last element is 3
-	lastVal, ok := value.AsInteger(blk.Elements[2])
+	lastVal, ok := value.AsIntValue(blk.Elements[2])
 	if !ok || lastVal != 3 {
 		t.Errorf("Expected last element to be 3, got %s", blk.Elements[2].String())
 	}

@@ -1,6 +1,10 @@
 package value
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
+)
 
 // BinaryValue represents a sequence of raw bytes.
 type BinaryValue struct {
@@ -39,8 +43,8 @@ func (b *BinaryValue) Form() string {
 	return b.Mold()
 }
 
-// Equals performs deep equality comparison.
-func (b *BinaryValue) Equals(other *BinaryValue) bool {
+// EqualsBinary performs deep equality comparison with another BinaryValue.
+func (b *BinaryValue) EqualsBinary(other *BinaryValue) bool {
 	if len(b.data) != len(other.data) {
 		return false
 	}
@@ -50,6 +54,25 @@ func (b *BinaryValue) Equals(other *BinaryValue) bool {
 		}
 	}
 	return true
+}
+
+func (b *BinaryValue) Equals(other core.Value) bool {
+	if other.GetType() != TypeBinary {
+		return false
+	}
+	otherBin, ok := other.(*BinaryValue)
+	if !ok {
+		return false
+	}
+	return b.EqualsBinary(otherBin)
+}
+
+func (b *BinaryValue) GetType() core.ValueType {
+	return TypeBinary
+}
+
+func (b *BinaryValue) GetPayload() any {
+	return b
 }
 
 // Series operations (contracts/series.md)

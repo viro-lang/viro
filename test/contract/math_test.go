@@ -24,22 +24,22 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "add positive integers",
 			op:       "+",
-			args:     []core.Value{value.IntVal(3), value.IntVal(4)},
-			expected: value.IntVal(7),
+			args:     []core.Value{value.NewIntVal(3), value.NewIntVal(4)},
+			expected: value.NewIntVal(7),
 			wantErr:  false,
 		},
 		{
 			name:     "add negative integers",
 			op:       "+",
-			args:     []core.Value{value.IntVal(-5), value.IntVal(10)},
-			expected: value.IntVal(5),
+			args:     []core.Value{value.NewIntVal(-5), value.NewIntVal(10)},
+			expected: value.NewIntVal(5),
 			wantErr:  false,
 		},
 		{
 			name:     "add with zero",
 			op:       "+",
-			args:     []core.Value{value.IntVal(42), value.IntVal(0)},
-			expected: value.IntVal(42),
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(0)},
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 
@@ -47,15 +47,15 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "subtract integers",
 			op:       "-",
-			args:     []core.Value{value.IntVal(10), value.IntVal(3)},
-			expected: value.IntVal(7),
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3)},
+			expected: value.NewIntVal(7),
 			wantErr:  false,
 		},
 		{
 			name:     "subtract to negative",
 			op:       "-",
-			args:     []core.Value{value.IntVal(3), value.IntVal(10)},
-			expected: value.IntVal(-7),
+			args:     []core.Value{value.NewIntVal(3), value.NewIntVal(10)},
+			expected: value.NewIntVal(-7),
 			wantErr:  false,
 		},
 
@@ -63,22 +63,22 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "multiply integers",
 			op:       "*",
-			args:     []core.Value{value.IntVal(6), value.IntVal(7)},
-			expected: value.IntVal(42),
+			args:     []core.Value{value.NewIntVal(6), value.NewIntVal(7)},
+			expected: value.NewIntVal(42),
 			wantErr:  false,
 		},
 		{
 			name:     "multiply by zero",
 			op:       "*",
-			args:     []core.Value{value.IntVal(42), value.IntVal(0)},
-			expected: value.IntVal(0),
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(0)},
+			expected: value.NewIntVal(0),
 			wantErr:  false,
 		},
 		{
 			name:     "multiply negative",
 			op:       "*",
-			args:     []core.Value{value.IntVal(-3), value.IntVal(4)},
-			expected: value.IntVal(-12),
+			args:     []core.Value{value.NewIntVal(-3), value.NewIntVal(4)},
+			expected: value.NewIntVal(-12),
 			wantErr:  false,
 		},
 
@@ -86,22 +86,22 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "divide integers",
 			op:       "/",
-			args:     []core.Value{value.IntVal(10), value.IntVal(3)},
-			expected: value.IntVal(3), // Truncated toward zero
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3)},
+			expected: value.NewIntVal(3), // Truncated toward zero
 			wantErr:  false,
 		},
 		{
 			name:     "divide negative",
 			op:       "/",
-			args:     []core.Value{value.IntVal(-10), value.IntVal(3)},
-			expected: value.IntVal(-3), // Truncated toward zero
+			args:     []core.Value{value.NewIntVal(-10), value.NewIntVal(3)},
+			expected: value.NewIntVal(-3), // Truncated toward zero
 			wantErr:  false,
 		},
 		{
 			name:     "divide by zero error",
 			op:       "/",
-			args:     []core.Value{value.IntVal(10), value.IntVal(0)},
-			expected: value.NoneVal(),
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(0)},
+			expected: value.NewNoneVal(),
 			wantErr:  true, // Math error: division by zero
 		},
 
@@ -109,8 +109,8 @@ func TestArithmeticNatives(t *testing.T) {
 		{
 			name:     "add string to integer error",
 			op:       "+",
-			args:     []core.Value{value.StrVal("hello"), value.IntVal(5)},
-			expected: value.NoneVal(),
+			args:     []core.Value{value.NewStrVal("hello"), value.NewIntVal(5)},
+			expected: value.NewNoneVal(),
 			wantErr:  true, // Type mismatch error
 		},
 	}
@@ -161,32 +161,32 @@ func TestLeftToRightEvaluation(t *testing.T) {
 		{
 			name:     "left-to-right addition and multiplication",
 			expr:     "3 + 4 * 2",
-			expected: value.IntVal(14), // (3 + 4) * 2 = 7 * 2 = 14
+			expected: value.NewIntVal(14), // (3 + 4) * 2 = 7 * 2 = 14
 		},
 		{
 			name:     "left-to-right subtraction and division",
 			expr:     "10 - 6 / 2",
-			expected: value.IntVal(2), // (10 - 6) / 2 = 4 / 2 = 2
+			expected: value.NewIntVal(2), // (10 - 6) / 2 = 4 / 2 = 2
 		},
 		{
 			name:     "parentheses force specific order",
 			expr:     "(3 + 4) * 2",
-			expected: value.IntVal(14), // Same as left-to-right
+			expected: value.NewIntVal(14), // Same as left-to-right
 		},
 		{
 			name:     "multiple operations left-to-right",
 			expr:     "2 + 3 * 4 + 5",
-			expected: value.IntVal(25), // ((2 + 3) * 4) + 5 = (5 * 4) + 5 = 20 + 5 = 25
+			expected: value.NewIntVal(25), // ((2 + 3) * 4) + 5 = (5 * 4) + 5 = 20 + 5 = 25
 		},
 		{
 			name:     "nested parentheses",
 			expr:     "((2 + 3) * 4)",
-			expected: value.IntVal(20),
+			expected: value.NewIntVal(20),
 		},
 		{
 			name:     "division then multiplication left-to-right",
 			expr:     "20 / 2 * 3",
-			expected: value.IntVal(30), // (20 / 2) * 3 = 10 * 3 = 30
+			expected: value.NewIntVal(30), // (20 / 2) * 3 = 10 * 3 = 30
 		},
 	}
 
@@ -217,19 +217,19 @@ func TestArithmeticOverflow(t *testing.T) {
 		{
 			name:    "addition overflow",
 			op:      "+",
-			args:    []core.Value{value.IntVal(9223372036854775807), value.IntVal(1)},
+			args:    []core.Value{value.NewIntVal(9223372036854775807), value.NewIntVal(1)},
 			wantErr: true,
 		},
 		{
 			name:    "subtraction underflow",
 			op:      "-",
-			args:    []core.Value{value.IntVal(-9223372036854775808), value.IntVal(1)},
+			args:    []core.Value{value.NewIntVal(-9223372036854775808), value.NewIntVal(1)},
 			wantErr: true,
 		},
 		{
 			name:    "multiplication overflow",
 			op:      "*",
-			args:    []core.Value{value.IntVal(9223372036854775807), value.IntVal(2)},
+			args:    []core.Value{value.NewIntVal(9223372036854775807), value.NewIntVal(2)},
 			wantErr: true,
 		},
 	}
@@ -258,7 +258,7 @@ func TestArithmeticOverflow(t *testing.T) {
 			}
 
 			// Verify result is none on error
-			if tt.wantErr && !result.Equals(value.NoneVal()) {
+			if tt.wantErr && !result.Equals(value.NewNoneVal()) {
 				t.Errorf("%s(%v) on error should return none, got %v", tt.op, tt.args, result)
 			}
 		})

@@ -17,17 +17,17 @@ func TestSeries_First(t *testing.T) {
 		{
 			name:  "block first element",
 			input: "first [1 2 3]",
-			want:  value.IntVal(1),
+			want:  value.NewIntVal(1),
 		},
 		{
 			name:  "single element block",
 			input: "first [42]",
-			want:  value.IntVal(42),
+			want:  value.NewIntVal(42),
 		},
 		{
 			name:  "string first character",
 			input: "first \"hello\"",
-			want:  value.StrVal("h"),
+			want:  value.NewStrVal("h"),
 		},
 		{
 			name:    "empty block error",
@@ -77,12 +77,12 @@ func TestSeries_Last(t *testing.T) {
 		{
 			name:  "block last element",
 			input: "last [1 2 3]",
-			want:  value.IntVal(3),
+			want:  value.NewIntVal(3),
 		},
 		{
 			name:  "string last character",
 			input: "last \"hello\"",
-			want:  value.StrVal("o"),
+			want:  value.NewStrVal("o"),
 		},
 		{
 			name:    "empty block error",
@@ -134,11 +134,11 @@ func TestSeries_Append(t *testing.T) {
 			input: `data: [1 2 3]
 append data 4
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.IntVal(2),
-				value.IntVal(3),
-				value.IntVal(4),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewIntVal(4),
 			}),
 		},
 		{
@@ -146,9 +146,9 @@ data`,
 			input: `data: [1]
 append data "x"
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.StrVal("x"),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewStrVal("x"),
 			}),
 		},
 		{
@@ -156,7 +156,7 @@ data`,
 			input: `str: "hi"
 append str " there"
 str`,
-			want: value.StrVal("hi there"),
+			want: value.NewStrVal("hi there"),
 		},
 		{
 			name:    "non series error",
@@ -198,11 +198,11 @@ func TestSeries_Insert(t *testing.T) {
 			input: `data: [1 2 3]
 insert data 0
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(0),
-				value.IntVal(1),
-				value.IntVal(2),
-				value.IntVal(3),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(0),
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
 			}),
 		},
 		{
@@ -210,7 +210,7 @@ data`,
 			input: `str: "world"
 insert str "hello "
 str`,
-			want: value.StrVal("hello world"),
+			want: value.NewStrVal("hello world"),
 		},
 		{
 			name:    "non series error",
@@ -250,17 +250,17 @@ func TestSeries_LengthQ(t *testing.T) {
 		{
 			name:  "block length",
 			input: "length? [1 2 3]",
-			want:  value.IntVal(3),
+			want:  value.NewIntVal(3),
 		},
 		{
 			name:  "empty block length",
 			input: "length? []",
-			want:  value.IntVal(0),
+			want:  value.NewIntVal(0),
 		},
 		{
 			name:  "string length",
 			input: "length? \"hello\"",
-			want:  value.IntVal(5),
+			want:  value.NewIntVal(5),
 		},
 		{
 			name:    "non series error",
@@ -272,7 +272,7 @@ func TestSeries_LengthQ(t *testing.T) {
 			input: `data: [1]
 append data 2
 length? data`,
-			want: value.IntVal(2),
+			want: value.NewIntVal(2),
 		},
 	}
 
@@ -301,8 +301,8 @@ length? data`,
 func TestSeries_Copy(t *testing.T) {
 	t.Run("copy block", func(t *testing.T) {
 		input := "copy [1 2 3]"
-		want := value.BlockVal([]core.Value{
-			value.IntVal(1), value.IntVal(2), value.IntVal(3),
+		want := value.NewBlockVal([]core.Value{
+			value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3),
 		})
 		evalResult, err := Evaluate(input)
 		if err != nil {
@@ -315,7 +315,7 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy string", func(t *testing.T) {
 		input := "copy \"hello\""
-		want := value.StrVal("hello")
+		want := value.NewStrVal("hello")
 		evalResult, err := Evaluate(input)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -327,8 +327,8 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part block", func(t *testing.T) {
 		input := "copy --part 2 [1 2 3 4]"
-		want := value.BlockVal([]core.Value{
-			value.IntVal(1), value.IntVal(2),
+		want := value.NewBlockVal([]core.Value{
+			value.NewIntVal(1), value.NewIntVal(2),
 		})
 		evalResult, err := Evaluate(input)
 		if err == nil {
@@ -342,7 +342,7 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part string", func(t *testing.T) {
 		input := "copy --part 3 \"abcdef\""
-		want := value.StrVal("abc")
+		want := value.NewStrVal("abc")
 		evalResult, err := Evaluate(input)
 		if err == nil {
 			if !evalResult.Equals(want) {
@@ -381,32 +381,32 @@ func TestSeries_Find(t *testing.T) {
 		{
 			name:  "find in block",
 			input: `find [1 2 3 2 1] 2`,
-			want:  value.IntVal(2),
+			want:  value.NewIntVal(2),
 		},
 		{
 			name:  "find in string",
 			input: `find "hello world" "o"`,
-			want:  value.IntVal(5),
+			want:  value.NewIntVal(5),
 		},
 		{
 			name:  "find --last in block",
 			input: `find --last [1 2 3 2 1] 2`,
-			want:  value.IntVal(4),
+			want:  value.NewIntVal(4),
 		},
 		{
 			name:  "find --last in string",
 			input: `find --last "hello world" "o"`,
-			want:  value.IntVal(8),
+			want:  value.NewIntVal(8),
 		},
 		{
 			name:  "find not found in block",
 			input: `find [1 2 3] 4`,
-			want:  value.NoneVal(),
+			want:  value.NewNoneVal(),
 		},
 		{
 			name:  "find not found in string",
 			input: `find "hello" "z"`,
-			want:  value.NoneVal(),
+			want:  value.NewNoneVal(),
 		},
 		{
 			name:    "find non-series error",
@@ -454,11 +454,11 @@ func TestSeries_Remove(t *testing.T) {
 			input: `data: [1 2 3 4 5]
 remove data
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(2),
-				value.IntVal(3),
-				value.IntVal(4),
-				value.IntVal(5),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+				value.NewIntVal(5),
 			}),
 		},
 		{
@@ -466,16 +466,16 @@ data`,
 			input: `str: "hello"
 remove str
 str`,
-			want: value.StrVal("ello"),
+			want: value.NewStrVal("ello"),
 		},
 		{
 			name: "remove --part from block",
 			input: `data: [1 2 3 4 5]
 remove data --part 3
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(4),
-				value.IntVal(5),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(4),
+				value.NewIntVal(5),
 			}),
 		},
 		{
@@ -483,7 +483,7 @@ data`,
 			input: `str: "hello"
 remove str --part 2
 str`,
-			want: value.StrVal("llo"),
+			want: value.NewStrVal("llo"),
 		},
 		{
 			name:    "remove from non-series error",
@@ -536,9 +536,9 @@ func TestSeries_SkipTake(t *testing.T) {
 			input: `data: [1 2 3 4 5]
 skip data 2
 take data 2`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(3),
-				value.IntVal(4),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3),
+				value.NewIntVal(4),
 			}),
 		},
 		{
@@ -546,16 +546,16 @@ take data 2`,
 			input: `str: "hello"
 skip str 1
 take str 3`,
-			want: value.StrVal("ell"),
+			want: value.NewStrVal("ell"),
 		},
 		{
 			name: "take returns a new series",
 			input: `data: [1 2 3]
 part: take data 2
 part`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(1),
-				value.IntVal(2),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
 			}),
 		},
 		{
@@ -614,9 +614,9 @@ func TestSeries_SortReverse(t *testing.T) {
 			input: `data: [3 1 4 1 5 9 2 6]
 sort data
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(1), value.IntVal(1), value.IntVal(2), value.IntVal(3),
-				value.IntVal(4), value.IntVal(5), value.IntVal(6), value.IntVal(9),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1), value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3),
+				value.NewIntVal(4), value.NewIntVal(5), value.NewIntVal(6), value.NewIntVal(9),
 			}),
 		},
 		{
@@ -624,8 +624,8 @@ data`,
 			input: `data: ["c" "a" "b"]
 sort data
 data`,
-			want: value.BlockVal([]core.Value{
-				value.StrVal("a"), value.StrVal("b"), value.StrVal("c"),
+			want: value.NewBlockVal([]core.Value{
+				value.NewStrVal("a"), value.NewStrVal("b"), value.NewStrVal("c"),
 			}),
 		},
 		{
@@ -633,15 +633,15 @@ data`,
 			input: `str: "cba"
 sort str
 str`,
-			want: value.StrVal("abc"),
+			want: value.NewStrVal("abc"),
 		},
 		{
 			name: "reverse block",
 			input: `data: [1 2 3]
 reverse data
 data`,
-			want: value.BlockVal([]core.Value{
-				value.IntVal(3), value.IntVal(2), value.IntVal(1),
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3), value.NewIntVal(2), value.NewIntVal(1),
 			}),
 		},
 		{
@@ -649,7 +649,7 @@ data`,
 			input: `str: "hello"
 reverse str
 str`,
-			want: value.StrVal("olleh"),
+			want: value.NewStrVal("olleh"),
 		},
 		{
 			name:    "sort non-series error",
