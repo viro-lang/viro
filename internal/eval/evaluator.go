@@ -321,7 +321,7 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	resolved, _ := e.Lookup(word)
 	fn, _ := value.AsFunction(resolved)
 
-	newPos, result, _, err := e.invokeFunctionExpression(block, position, fn, leftOperand)
+	newPos, result, err := e.invokeFunctionExpression(block, position, fn, leftOperand)
 	return newPos, result, err
 }
 
@@ -419,7 +419,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 
 		if resolved.GetType() == value.TypeFunction {
 			fn, _ := value.AsFunction(resolved)
-			newPos, result, _, err := e.invokeFunctionExpression(block, position, fn, value.NoneVal())
+			newPos, result, err := e.invokeFunctionExpression(block, position, fn, value.NoneVal())
 
 			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
 				duration := time.Since(traceStart)
@@ -498,36 +498,35 @@ func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, path
 }
 
 // invokeFunctionExpression invokes a function starting at the given position in a block.
-// Returns the new position after consuming the function and its arguments, the result value,
-// a boolean indicating if lastResult was consumed as an infix operand, and any error.
-func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue, lastResult core.Value) (int, core.Value, bool, error) {
+// Returns the new position after consuming the function and its arguments, the result value, and any error.
+func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue, lastResult core.Value) (int, core.Value, error) {
 	name := functionDisplayName(fn)
 	e.pushCall(name)
 	defer e.popCall()
 
-	posArgs, refValues, newPos, consumedLast, err := e.collectFunctionArgs(fn, block, position+1, lastResult)
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, lastResult)
 	if err != nil {
-		return position, value.NoneVal(), false, e.annotateError(err, block, position)
+		return position, value.NoneVal(), e.annotateError(err, block, position)
 	}
 
 	if fn.Type == value.FuncNative {
 		result, err := e.callNative(fn, posArgs, refValues)
 		if err != nil {
-			return position, value.NoneVal(), false, e.annotateError(err, block, position)
+			return position, value.NoneVal(), e.annotateError(err, block, position)
 		}
-		return newPos, result, consumedLast, nil
+		return newPos, result, nil
 	}
 
 	result, err := e.executeFunction(fn, posArgs, refValues)
 	if err != nil {
-		return position, value.NoneVal(), false, err
+		return position, value.NoneVal(), err
 	}
-	return newPos, result, consumedLast, nil
+	return newPos, result, nil
 }
 
 // collectFunctionArgs collects arguments for a function starting at the given position.
-// Returns positional arguments, refinement values, new position, a boolean indicating if lastResult was consumed, and any error.
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, lastResult core.Value) ([]core.Value, map[string]core.Value, int, bool, error) {
+// Returns positional arguments, refinement values, new position, and any error.
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
 	positional := make([]value.ParamSpec, 0, len(fn.Params))
 	refSpecs := make(map[string]value.ParamSpec)
 	refValues := make(map[string]core.Value)
@@ -553,7 +552,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
 	if useInfix {
 		if len(positional) == 0 {
-			return nil, nil, position, false, verror.NewScriptError(
+			return nil, nil, position, verror.NewScriptError(
 				verror.ErrIDArgCount,
 				[3]string{functionDisplayName(fn), "0", "1 (infix requires at least one parameter)"},
 			)
@@ -568,11 +567,11 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		var err error
 		position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
 		if err != nil {
-			return nil, nil, position, false, err
+			return nil, nil, position, err
 		}
 
 		if position >= len(block) {
-			return nil, nil, position, false, verror.NewScriptError(
+			return nil, nil, position, verror.NewScriptError(
 				verror.ErrIDArgCount,
 				[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
 			)
@@ -589,7 +588,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 				newPos, arg, err = e.EvaluateExpression(block, position)
 			}
 			if err != nil {
-				return nil, nil, position, false, err
+				return nil, nil, position, err
 			}
 			position = newPos
 		} else {
@@ -604,10 +603,10 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	var err error
 	position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
 	if err != nil {
-		return nil, nil, position, false, err
+		return nil, nil, position, err
 	}
 
-	return posArgs, refValues, position, useInfix, nil
+	return posArgs, refValues, position, nil
 }
 
 // evalPathValue evaluates a path expression and returns its value.
