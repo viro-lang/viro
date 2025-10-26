@@ -130,109 +130,6 @@ func (e *Evaluator) currentFrameIndex() int {
 	return current.GetIndex()
 }
 
-// evalFunc represents a function type for evaluating different value types.
-// It takes an evaluator and a value, returning the evaluated result and any error.
-type evalFunc func(core.Evaluator, core.Value) (core.Value, error)
-
-// evalDispatch maps value types to their corresponding evaluation functions.
-// This dispatch table enables polymorphic evaluation of different Vi value types.
-var evalDispatch map[core.ValueType]evalFunc
-
-// init initializes the evaluation dispatch table with handlers for all supported value types.
-func init() {
-	evalDispatch = map[core.ValueType]evalFunc{
-		value.TypeInteger:  evalLiteral,
-		value.TypeString:   evalLiteral,
-		value.TypeLogic:    evalLiteral,
-		value.TypeNone:     evalLiteral,
-		value.TypeDecimal:  evalLiteral,
-		value.TypeObject:   evalLiteral,
-		value.TypePort:     evalLiteral,
-		value.TypeDatatype: evalLiteral,
-		value.TypeBlock:    evalBlock,
-		value.TypeFunction: evalFunction,
-		value.TypeParen:    evalParenDispatch,
-		value.TypeWord:     evalWordDispatch,
-		value.TypeSetWord:  evalSetWordDispatch,
-		value.TypeGetWord:  evalGetWordDispatch,
-		value.TypeLitWord:  evalLitWordDispatch,
-		value.TypePath:     evalPathDispatch,
-	}
-}
-
-// evalLiteral handles evaluation of literal values (integers, strings, logic, none, decimal, object, port, datatype).
-// Literal values evaluate to themselves without any computation.
-func evalLiteral(e core.Evaluator, val core.Value) (core.Value, error) {
-	return val, nil
-}
-
-// evalBlock handles evaluation of block values.
-// Block values evaluate to themselves without execution of their contents.
-func evalBlock(e core.Evaluator, val core.Value) (core.Value, error) {
-	return val, nil
-}
-
-// evalFunction handles evaluation of function values.
-// Function values evaluate to themselves without invocation.
-func evalFunction(e core.Evaluator, val core.Value) (core.Value, error) {
-	return val, nil
-}
-
-// evalParenDispatch handles evaluation of parenthesized expressions.
-// Parentheses contain a block that gets executed immediately.
-func evalParenDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	block, ok := value.AsBlock(val)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("paren value does not contain BlockValue", [3]string{})
-	}
-
-	return e.DoBlock(block.Elements)
-}
-
-// evalWordDispatch handles evaluation of word values with debugging support.
-// Words are looked up in the current context and may trigger breakpoints.
-func evalWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	if debug.GlobalDebugger != nil {
-		wordStr, ok := value.AsWord(val)
-		if ok && debug.GlobalDebugger.HasBreakpoint(wordStr) {
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
-				trace.GlobalTraceSession.Emit(trace.TraceEvent{
-					Timestamp: time.Now(),
-					Word:      "debug",
-					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
-					Duration:  0,
-				})
-			}
-		}
-	}
-	return evalWord(e, val)
-}
-
-// evalSetWordDispatch handles evaluation of set-word values without assignment.
-// Set-words without values are invalid and result in an error.
-func evalSetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	wordStr, _ := value.AsWord(val)
-	return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
-}
-
-// evalGetWordDispatch handles evaluation of get-word values.
-// Get-words return the value bound to the word without evaluation.
-func evalGetWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	return evalGetWord(e, val)
-}
-
-// evalLitWordDispatch handles evaluation of lit-word values.
-// Lit-words evaluate to word values containing the same string.
-func evalLitWordDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	return value.WordVal(val.GetPayload().(string)), nil
-}
-
-// evalPathDispatch handles evaluation of path values.
-// Paths navigate through object fields and collection indices.
-func evalPathDispatch(e core.Evaluator, val core.Value) (core.Value, error) {
-	return evalPath(e, val)
-}
-
 // popFrame removes the current frame from the evaluation context and returns its index.
 // If the frame is not captured, it may be cleared from the frame store.
 // Captured frames are converted to closure type for potential reuse.
@@ -383,145 +280,309 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	return value.NoneVal(), false
 }
 
-// DoNext evaluates a single value using the appropriate evaluation function based on its type.
-// Supports tracing for performance monitoring and debugging.
+// DoNext evaluates a single value using the new position-based evaluateExpression method.
+// This is a wrapper that maintains backward compatibility with existing code.
 // Returns the evaluated result and any error encountered during evaluation.
 func (e *Evaluator) DoNext(val core.Value) (core.Value, error) {
+	_, result, err := e.evaluateExpression([]core.Value{val}, 0, value.NoneVal())
+	return result, err
+}
+
+// DoBlock evaluates a sequence of values as a block using the new position-based evaluateBlock method.
+// This is a wrapper that maintains backward compatibility with existing code.
+// Returns the result of the last expression or none value for empty blocks.
+func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
+	return e.evaluateBlock(vals)
+}
+
+// evaluateExpression evaluates a single expression from a block starting at the given position.
+// Returns the new position after consuming the expression, the result value, and any error.
+// This method implements the core execution model where expressions consume positions sequentially.
+func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, error) {
+	if position >= len(block) {
+		return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
+	}
+
+	element := block[position]
+
 	var traceStart time.Time
 	var traceWord string
 	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
 		traceStart = time.Now()
-		if value.IsWord(val.GetType()) {
-			if w, ok := value.AsWord(val); ok {
+		if value.IsWord(element.GetType()) {
+			if w, ok := value.AsWord(element); ok {
 				traceWord = w
 			}
 		}
 	}
 
-	evalFn, found := evalDispatch[val.GetType()]
-	if !found {
-		result := value.NoneVal()
-		err := verror.NewInternalError("unknown value type in Do_Next", [3]string{})
-		return result, err
+	switch element.GetType() {
+	case value.TypeInteger, value.TypeString, value.TypeLogic,
+		value.TypeNone, value.TypeDecimal, value.TypeObject,
+		value.TypePort, value.TypeDatatype, value.TypeBlock,
+		value.TypeFunction:
+		return position + 1, element, nil
+
+	case value.TypeParen:
+		block, _ := value.AsBlock(element)
+		result, err := e.evaluateBlock(block.Elements)
+		return position + 1, result, err
+
+	case value.TypeLitWord:
+		return position + 1, value.WordVal(element.GetPayload().(string)), nil
+
+	case value.TypeGetWord:
+		wordStr, _ := value.AsWord(element)
+		result, ok := e.Lookup(wordStr)
+		if !ok {
+			return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		}
+		return position + 1, result, nil
+
+	case value.TypeSetWord:
+		wordStr, _ := value.AsWord(element)
+
+		if strings.Contains(wordStr, ".") {
+			return e.evalSetPathExpression(block, position, wordStr)
+		}
+
+		currentFrame := e.currentFrame()
+		if currentFrame == nil {
+			currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
+			e.pushFrame(currentFrame)
+		}
+
+		newPos, result, err := e.evaluateExpression(block, position+1, lastResult)
+		if err != nil {
+			return position, value.NoneVal(), e.annotateError(err, block, position)
+		}
+
+		if result.GetType() == value.TypeFunction {
+			if fnVal, ok := value.AsFunction(result); ok && fnVal.Name == "" {
+				fnVal.Name = wordStr
+			}
+		}
+
+		currentFrame.Bind(wordStr, result)
+		return newPos, result, nil
+
+	case value.TypeWord:
+		wordStr, _ := value.AsWord(element)
+
+		if debug.GlobalDebugger != nil && debug.GlobalDebugger.HasBreakpoint(wordStr) {
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				trace.GlobalTraceSession.Emit(trace.TraceEvent{
+					Timestamp: time.Now(),
+					Word:      "debug",
+					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
+					Duration:  0,
+				})
+			}
+		}
+
+		resolved, found := e.Lookup(wordStr)
+		if !found {
+			return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		}
+
+		if resolved.GetType() == value.TypeFunction {
+			fn, _ := value.AsFunction(resolved)
+			newPos, result, err := e.invokeFunctionExpression(block, position, fn, lastResult)
+
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
+				duration := time.Since(traceStart)
+				trace.GlobalTraceSession.Emit(trace.TraceEvent{
+					Timestamp: traceStart,
+					Value:     result.Form(),
+					Word:      traceWord,
+					Duration:  duration.Nanoseconds(),
+				})
+			}
+
+			return newPos, result, err
+		}
+
+		return position + 1, resolved, nil
+
+	case value.TypePath:
+		path, _ := value.AsPath(element)
+		result, err := e.evalPathValue(path)
+		return position + 1, result, err
+
+	default:
+		return position, value.NoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
 	}
-
-	result, err := evalFn(e, val)
-
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
-		duration := time.Since(traceStart)
-		trace.GlobalTraceSession.Emit(trace.TraceEvent{
-			Timestamp: traceStart,
-			Value:     result.Form(),
-			Word:      traceWord,
-			Duration:  duration.Nanoseconds(),
-		})
-	}
-
-	return result, err
 }
 
-// DoBlock evaluates a sequence of values as a block.
-// Handles set-word assignments and regular evaluations, returning the result of the last expression.
-// Empty blocks return none value.
-func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
-	if len(vals) == 0 {
+// evaluateBlock evaluates a block of values using position tracking.
+// Returns the result of the last expression or none value for empty blocks.
+func (e *Evaluator) evaluateBlock(block []core.Value) (core.Value, error) {
+	if len(block) == 0 {
 		return value.NoneVal(), nil
 	}
 
-	var lastResult core.Value = value.NoneVal()
-	var err error
+	position := 0
+	lastResult := value.NoneVal()
 
-	for i := 0; i < len(vals); i++ {
-		val := vals[i]
-
-		// Handle set-word assignments (x: value)
-		if val.GetType() == value.TypeSetWord {
-			lastResult, err = e.evalSetWord(val, vals, &i)
-			if err != nil {
-				return value.NoneVal(), e.annotateError(err, vals, i)
-			}
-			continue
-		}
-
-		// Evaluate regular expressions, potentially with function calls
-		startIdx := i
-		lastResult, err = e.evaluateWithFunctionCall(val, vals, &i, lastResult)
+	for position < len(block) {
+		newPos, result, err := e.evaluateExpression(block, position, lastResult)
 		if err != nil {
-			return value.NoneVal(), e.annotateError(err, vals, startIdx)
+			return value.NoneVal(), e.annotateError(err, block, position)
 		}
+		position = newPos
+		lastResult = result
 	}
 
 	return lastResult, nil
+}
+
+// invokeFunctionExpression invokes a function starting at the given position in a block.
+// Returns the new position after consuming the function and its arguments, the result value, and any error.
+func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue, lastResult core.Value) (int, core.Value, error) {
+	name := functionDisplayName(fn)
+	e.pushCall(name)
+	defer e.popCall()
+
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, lastResult)
+	if err != nil {
+		return position, value.NoneVal(), e.annotateError(err, block, position)
+	}
+
+	if fn.Type == value.FuncNative {
+		result, err := e.callNative(fn, posArgs, refValues)
+		if err != nil {
+			return position, value.NoneVal(), e.annotateError(err, block, position)
+		}
+		return newPos, result, nil
+	}
+
+	result, err := e.executeFunction(fn, posArgs, refValues)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+	return newPos, result, nil
+}
+
+// collectFunctionArgs collects arguments for a function starting at the given position.
+// Returns positional arguments, refinement values, new position, and any error.
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
+	positional := make([]value.ParamSpec, 0, len(fn.Params))
+	refSpecs := make(map[string]value.ParamSpec)
+	refValues := make(map[string]core.Value)
+	refProvided := make(map[string]bool)
+
+	for _, spec := range fn.Params {
+		if spec.Refinement {
+			refSpecs[spec.Name] = spec
+			if spec.TakesValue {
+				refValues[spec.Name] = value.NoneVal()
+			} else {
+				refValues[spec.Name] = value.LogicVal(false)
+			}
+			continue
+		}
+		positional = append(positional, spec)
+	}
+
+	posArgs := make([]core.Value, len(positional))
+	position := startPosition
+	paramIndex := 0
+
+	useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
+	if useInfix {
+		if len(positional) == 0 {
+			return nil, nil, position, verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{functionDisplayName(fn), "0", "1 (infix requires at least one parameter)"},
+			)
+		}
+		posArgs[0] = lastResult
+		paramIndex = 1
+	}
+
+	for paramIndex < len(positional) {
+		paramSpec := positional[paramIndex]
+
+		var err error
+		position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+		if err != nil {
+			return nil, nil, position, err
+		}
+
+		if position >= len(block) {
+			return nil, nil, position, verror.NewScriptError(
+				verror.ErrIDArgCount,
+				[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
+			)
+		}
+
+		var arg core.Value
+		if paramSpec.Eval {
+			var newPos int
+			newPos, arg, err = e.evaluateExpression(block, position, value.NoneVal())
+			if err != nil {
+				return nil, nil, position, err
+			}
+			position = newPos
+		} else {
+			arg = block[position]
+			position++
+		}
+
+		posArgs[paramIndex] = arg
+		paramIndex++
+	}
+
+	var err error
+	position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+	if err != nil {
+		return nil, nil, position, err
+	}
+
+	return posArgs, refValues, position, nil
+}
+
+// evalPathValue evaluates a path expression and returns its value.
+func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error) {
+	tr, err := traversePath(e, path, false)
+	if err != nil {
+		return value.NoneVal(), err
+	}
+	return tr.values[len(tr.values)-1], nil
+}
+
+// evalSetPathExpression handles set-path assignment in expression evaluation.
+// Returns the new position after consuming the set-path and its value, the result, and any error.
+func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, pathStr string) (int, core.Value, error) {
+	path, err := parsePathString(pathStr)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	newPos, result, err := e.evaluateExpression(block, position+1, value.NoneVal())
+	if err != nil {
+		return position, value.NoneVal(), e.annotateError(err, block, position)
+	}
+
+	tr, err := traversePath(e, path, true)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	result, err = e.assignToPathTarget(tr, result, pathStr)
+	if err != nil {
+		return position, value.NoneVal(), err
+	}
+
+	return newPos, result, nil
 }
 
 // EvalExpressionFromTokens evaluates a single expression from a token sequence starting at the given position.
 // This is a public wrapper for use by native functions that need to evaluate expressions sequentially.
 // Returns the result, new position after the expression, and any error encountered.
 func (e *Evaluator) EvalExpressionFromTokens(tokens []core.Value, startPos int) (core.Value, int, error) {
-	return e.evalExpressionFromTokens(tokens, startPos, value.NoneVal())
-}
-
-// evalExpressionFromTokens evaluates a single expression from a token sequence starting at the given position.
-// Handles both set-word assignments and regular evaluations.
-// Returns the result, new position, and any error encountered.
-func (e *Evaluator) evalExpressionFromTokens(tokens []core.Value, pos int, lastResult core.Value) (core.Value, int, error) {
-	if pos >= len(tokens) {
-		return value.NoneVal(), pos, verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
-	}
-
-	idx := pos
-	current := tokens[idx]
-
-	if current.GetType() == value.TypeSetWord {
-		result, err := e.evalSetWord(current, tokens, &idx)
-		if err != nil {
-			return value.NoneVal(), pos, err
-		}
-		return result, idx + 1, nil
-	}
-
-	result, err := e.evaluateWithFunctionCall(current, tokens, &idx, lastResult)
-	if err != nil {
-		return value.NoneVal(), pos, err
-	}
-
-	return result, idx + 1, nil
-}
-
-// invokeFunction invokes a function with the given arguments and context.
-// Handles both native and user-defined functions, managing the call stack and argument collection.
-// Supports infix function calls where the last result is used as the first argument.
-func (e *Evaluator) invokeFunction(fn *value.FunctionValue, vals []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
-	startIdx := *idx
-	name := functionDisplayName(fn)
-
-	// Track function call for debugging
-	e.pushCall(name)
-	defer e.popCall()
-
-	// Parse arguments including refinements and infix handling
-	tokens := vals[*idx+1:]
-	posArgs, refValues, consumed, err := e.collectFunctionArgsWithInfix(fn, tokens, lastResult)
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, vals, startIdx)
-	}
-
-	*idx += consumed
-
-	// Dispatch to native or user-defined function
-	if fn.Type == value.FuncNative {
-		result, callErr := e.callNative(fn, posArgs, refValues)
-		if callErr != nil {
-			return value.NoneVal(), e.annotateError(callErr, vals, startIdx)
-		}
-		return result, nil
-	}
-
-	result, execErr := e.executeFunction(fn, posArgs, refValues)
-	if execErr != nil {
-		return value.NoneVal(), execErr
-	}
-	return result, nil
+	newPos, result, err := e.evaluateExpression(tokens, startPos, value.NoneVal())
+	return result, newPos, err
 }
 
 // callNative invokes a native function with positional and refinement arguments.
@@ -541,32 +602,6 @@ func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, re
 		return result, verr
 	}
 	return value.NoneVal(), verror.NewInternalError(err.Error(), [3]string{})
-}
-
-// evaluateWithFunctionCall evaluates a value, potentially invoking a function if the value is a word.
-// If the word resolves to a function, it invokes the function with appropriate arguments.
-// Otherwise, evaluates the value normally.
-func (e *Evaluator) evaluateWithFunctionCall(val core.Value, seq []core.Value, idx *int, lastResult core.Value) (core.Value, error) {
-	if val.GetType() != value.TypeWord {
-		return e.DoNext(val)
-	}
-
-	wordStr, ok := value.AsWord(val)
-	if !ok {
-		return e.DoNext(val)
-	}
-
-	resolved, found := e.Lookup(wordStr)
-	if !found {
-		return e.DoNext(val)
-	}
-
-	if resolved.GetType() == value.TypeFunction {
-		fn, _ := value.AsFunction(resolved)
-		return e.invokeFunction(fn, seq, idx, lastResult)
-	}
-
-	return e.DoNext(val)
 }
 
 // isRefinement checks if a value represents a function refinement.
@@ -613,12 +648,13 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 					[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
 				)
 			}
-			arg, nextPos, err := e.evalExpressionFromTokens(tokens, pos+1, value.NoneVal())
+			var arg core.Value
+			var err error
+			pos, arg, err = e.evaluateExpression(tokens, pos+1, value.NoneVal())
 			if err != nil {
 				return pos, err
 			}
 			refValues[refName] = arg
-			pos = nextPos
 		} else {
 			refValues[refName] = value.LogicVal(true)
 			pos++
@@ -628,94 +664,6 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 	}
 
 	return pos, nil
-}
-
-// collectFunctionArgsWithInfix collects positional and refinement arguments for function invocation.
-// Handles infix functions where the last result becomes the first argument.
-// Parses refinements and validates argument counts.
-func (e *Evaluator) collectFunctionArgsWithInfix(fn *value.FunctionValue, tokens []core.Value, lastResult core.Value) ([]core.Value, map[string]core.Value, int, error) {
-	displayName := functionDisplayName(fn)
-
-	// Separate positional and refinement parameters
-	positional := make([]value.ParamSpec, 0, len(fn.Params))
-	refSpecs := make(map[string]value.ParamSpec)
-	refValues := make(map[string]core.Value)
-	refProvided := make(map[string]bool)
-
-	for _, spec := range fn.Params {
-		if spec.Refinement {
-			refSpecs[spec.Name] = spec
-			if spec.TakesValue {
-				refValues[spec.Name] = value.NoneVal()
-			} else {
-				refValues[spec.Name] = value.LogicVal(false)
-			}
-			continue
-		}
-		positional = append(positional, spec)
-	}
-
-	posArgs := make([]core.Value, len(positional))
-	pos := 0
-	paramIndex := 0
-
-	// Handle infix functions (last result becomes first argument)
-	useInfix := fn.Infix && lastResult.GetType() != value.TypeNone
-	if useInfix {
-		if len(positional) == 0 {
-			return nil, nil, 0, verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{displayName, "0", "1 (infix requires at least one parameter)"},
-			)
-		}
-		posArgs[0] = lastResult
-		paramIndex = 1
-	}
-
-	// Parse each positional argument, allowing refinements to interleave
-	for paramIndex < len(positional) {
-		paramSpec := positional[paramIndex]
-
-		newPos, err := e.readRefinements(tokens, pos, refSpecs, refValues, refProvided)
-		if err != nil {
-			return nil, nil, 0, err
-		}
-		pos = newPos
-
-		if pos >= len(tokens) {
-			return nil, nil, 0, verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{displayName, strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
-			)
-		}
-
-		// Evaluate or use literal depending on parameter spec
-		var arg core.Value
-		if paramSpec.Eval {
-			var nextPos int
-			arg, nextPos, err = e.evalExpressionFromTokens(tokens, pos, value.NoneVal())
-			if err != nil {
-				return nil, nil, 0, err
-			}
-			pos = nextPos
-		} else {
-			token := tokens[pos]
-			arg = token
-			pos++
-		}
-
-		posArgs[paramIndex] = arg
-		paramIndex++
-	}
-
-	// Handle any remaining refinements after positional args
-	newPos, err := e.readRefinements(tokens, pos, refSpecs, refValues, refProvided)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-	pos = newPos
-
-	return posArgs, refValues, pos, nil
 }
 
 // executeFunction executes a user-defined function with the given arguments and refinements.
@@ -758,85 +706,6 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 	result, err := e.DoBlock(fn.Body.Elements)
 	if err != nil {
 		return value.NoneVal(), err
-	}
-
-	return result, nil
-}
-
-// evalWord evaluates a word by looking it up in the current context.
-// Words represent variable names and function names in Vi.
-// Returns an error if the word is not found in any accessible frame.
-func evalWord(e core.Evaluator, val core.Value) (core.Value, error) {
-	wordStr, ok := value.AsWord(val)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("word value does not contain string", [3]string{})
-	}
-
-	result, ok := e.Lookup(wordStr)
-	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-	}
-
-	return result, nil
-}
-
-// evalSetWord handles assignment of values to words (set-word evaluation).
-// Supports both simple word assignment and path-based assignment (e.g., obj.field = value).
-// Creates a new frame if none exists and binds the value to the word.
-func (e *Evaluator) evalSetWord(val core.Value, vals []core.Value, i *int) (core.Value, error) {
-	wordStr, ok := value.AsWord(val)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("set-word value does not contain string", [3]string{})
-	}
-
-	if *i+1 >= len(vals) {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-word without value: " + wordStr, "", ""})
-	}
-
-	// Handle path-based assignment (e.g., obj.field:)
-	if strings.Contains(wordStr, ".") {
-		return e.evalSetPath(wordStr, vals, i)
-	}
-
-	// Ensure we have a frame to bind to
-	currentFrame := e.currentFrame()
-	if currentFrame == nil {
-		currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
-		e.pushFrame(currentFrame)
-	}
-
-	*i++
-	nextVal := vals[*i]
-
-	// Evaluate the value to assign
-	result, err := e.evaluateWithFunctionCall(nextVal, vals, i, value.NoneVal())
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, vals, *i)
-	}
-
-	// Auto-name anonymous functions
-	if result.GetType() == value.TypeFunction {
-		if fnVal, ok := value.AsFunction(result); ok && fnVal.Name == "" {
-			fnVal.Name = wordStr
-		}
-	}
-
-	currentFrame.Bind(wordStr, result)
-
-	return result, nil
-}
-
-// evalGetWord evaluates a get-word by looking up its value without evaluation.
-// Get-words return the raw bound value, useful for accessing functions and literals.
-func evalGetWord(e core.Evaluator, val core.Value) (core.Value, error) {
-	wordStr, ok := value.AsWord(val)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("get-word value does not contain string", [3]string{})
-	}
-
-	result, ok := e.Lookup(wordStr)
-	if !ok {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
 	}
 
 	return result, nil
@@ -1058,56 +927,4 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	}
 
 	return newVal, nil
-}
-
-// evalPath evaluates a path expression to access nested values.
-// Traverses the path to return the value at the final location.
-// Supports object field access and collection indexing.
-func evalPath(e core.Evaluator, val core.Value) (core.Value, error) {
-	if val.GetType() != value.TypePath {
-		typeString := value.TypeToString(val.GetType())
-		return value.NoneVal(), verror.NewInternalError("evalPath called with non-path type", [3]string{typeString, "", ""})
-	}
-
-	path, ok := value.AsPath(val)
-	if !ok {
-		return value.NoneVal(), verror.NewInternalError("path value does not contain PathExpression - payload type mismatch", [3]string{fmt.Sprintf("payload=%T", val.GetPayload()), "", ""})
-	}
-
-	tr, err := traversePath(e, path, false)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	return tr.values[len(tr.values)-1], nil
-}
-
-// evalSetPath handles assignment to path expressions (set-path evaluation).
-// Parses the path string, evaluates the value to assign, and performs the assignment.
-// Supports assignment to nested object fields and collection elements.
-func (e *Evaluator) evalSetPath(pathStr string, vals []core.Value, i *int) (core.Value, error) {
-	path, err := parsePathString(pathStr)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	*i++
-	if *i >= len(vals) {
-		return value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"set-path without value", "", ""})
-	}
-
-	var result core.Value
-	nextVal := vals[*i]
-
-	result, err = e.evaluateWithFunctionCall(nextVal, vals, i, value.NoneVal())
-	if err != nil {
-		return value.NoneVal(), e.annotateError(err, vals, *i)
-	}
-
-	tr, err := traversePath(e, path, true)
-	if err != nil {
-		return value.NoneVal(), err
-	}
-
-	return e.assignToPathTarget(tr, result, pathStr)
 }
