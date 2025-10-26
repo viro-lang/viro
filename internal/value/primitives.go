@@ -6,6 +6,12 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
+var (
+	noneValSingleton  = NoneValue{}
+	trueValSingleton  = LogicValue(true)
+	falseValSingleton = LogicValue(false)
+)
+
 type IntValue int64
 
 func (i IntValue) GetType() core.ValueType {
@@ -244,11 +250,14 @@ func NewIntVal(i int64) core.Value {
 }
 
 func NewLogicVal(b bool) core.Value {
-	return LogicValue(b)
+	if b {
+		return trueValSingleton
+	}
+	return falseValSingleton
 }
 
 func NewNoneVal() core.Value {
-	return NoneValue{}
+	return noneValSingleton
 }
 
 func NewWordVal(symbol string) core.Value {
@@ -306,8 +315,6 @@ func AsDatatypeValue(v core.Value) (string, bool) {
 	}
 	return "", false
 }
-
-var noneValSingleton = NoneValue{}
 
 func GetNoneVal() core.Value {
 	return noneValSingleton
