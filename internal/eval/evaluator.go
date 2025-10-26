@@ -278,7 +278,7 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	lastResult := value.NoneVal()
 
 	for position < len(vals) {
-		newPos, result, err := e.EvaluateExpressionV2(vals, position)
+		newPos, result, err := e.EvaluateExpression(vals, position)
 		if err != nil {
 			return value.NoneVal(), e.annotateError(err, vals, position)
 		}
@@ -371,7 +371,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		wordStr, _ := value.AsWord(element)
 
 		if strings.Contains(wordStr, ".") {
-			return e.evalSetPathExpressionV2(block, position, wordStr)
+			return e.evalSetPathExpression(block, position, wordStr)
 		}
 
 		if position+1 >= len(block) {
@@ -381,7 +381,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 			)
 		}
 
-		newPos, result, err := e.EvaluateExpressionV2(block, position+1)
+		newPos, result, err := e.EvaluateExpression(block, position+1)
 		if err != nil {
 			return position, value.NoneVal(), e.annotateError(err, block, position)
 		}
@@ -446,11 +446,10 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	}
 }
 
-// EvaluateExpressionV2 evaluates a single expression from a block starting at the given position.
-// This version handles infix operator lookahead internally, eliminating the need for lastResult
-// parameter and consumedLast return value.
+// EvaluateExpression evaluates a single expression from a block starting at the given position.
+// Handles infix operator lookahead internally for proper left-to-right evaluation.
 // Returns the new position after consuming the expression, the result value, and any error.
-func (e *Evaluator) EvaluateExpressionV2(block []core.Value, position int) (int, core.Value, error) {
+func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
 	newPos, result, err := e.evaluateElement(block, position)
 	if err != nil {
 		return position, value.NoneVal(), err
@@ -473,14 +472,14 @@ func (e *Evaluator) EvaluateExpressionV2(block []core.Value, position int) (int,
 	return newPos, result, nil
 }
 
-// evalSetPathExpressionV2 handles set-path assignment for V2 evaluation.
-func (e *Evaluator) evalSetPathExpressionV2(block []core.Value, position int, pathStr string) (int, core.Value, error) {
+// evalSetPathExpression handles set-path assignment in expression evaluation.
+func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, pathStr string) (int, core.Value, error) {
 	path, err := parsePathString(pathStr)
 	if err != nil {
 		return position, value.NoneVal(), err
 	}
 
-	newPos, result, err := e.EvaluateExpressionV2(block, position+1)
+	newPos, result, err := e.EvaluateExpression(block, position+1)
 	if err != nil {
 		return position, value.NoneVal(), e.annotateError(err, block, position)
 	}
@@ -496,15 +495,6 @@ func (e *Evaluator) evalSetPathExpressionV2(block []core.Value, position int, pa
 	}
 
 	return newPos, result, nil
-}
-
-// EvaluateExpression evaluates a single expression from a block starting at the given position.
-// This is a compatibility shim for the old API. New code should not depend on this signature.
-// Returns the new position after consuming the expression, the result value, a boolean indicating
-// if lastResult was consumed as an infix operand, and any error.
-func (e *Evaluator) EvaluateExpression(block []core.Value, position int, lastResult core.Value) (int, core.Value, bool, error) {
-	newPos, result, err := e.EvaluateExpressionV2(block, position)
-	return newPos, result, false, err
 }
 
 // invokeFunctionExpression invokes a function starting at the given position in a block.
@@ -594,7 +584,7 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 			if useInfix {
 				newPos, arg, err = e.evaluateElement(block, position)
 			} else {
-				newPos, arg, err = e.EvaluateExpressionV2(block, position)
+				newPos, arg, err = e.EvaluateExpression(block, position)
 			}
 			if err != nil {
 				return nil, nil, position, false, err
