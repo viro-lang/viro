@@ -107,19 +107,6 @@ func (e *Evaluator) currentFrame() core.Frame {
 	return e.Frames[len(e.Frames)-1]
 }
 
-// pushFrame adds a new frame to the evaluation context and returns its index.
-// If the frame doesn't have an index assigned, it will be stored in the frame store.
-func (e *Evaluator) pushFrame(f core.Frame) int {
-	idx := f.GetIndex()
-	if idx < 0 {
-		idx = len(e.frameStore)
-		e.frameStore = append(e.frameStore, f)
-		f.SetIndex(idx)
-	}
-	e.Frames = append(e.Frames, f)
-	return idx
-}
-
 // currentFrameIndex returns the index of the currently active frame.
 // Returns -1 if no frames are available.
 func (e *Evaluator) currentFrameIndex() int {
@@ -349,7 +336,7 @@ func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastRes
 		currentFrame := e.currentFrame()
 		if currentFrame == nil {
 			currentFrame = frame.NewFrame(frame.FrameFunctionArgs, -1)
-			e.pushFrame(currentFrame)
+			e.PushFrameContext(currentFrame)
 		}
 
 		newPos, result, err := e.evaluateExpression(block, position+1, lastResult)
@@ -617,6 +604,20 @@ func isRefinement(val core.Value) bool {
 	return strings.HasPrefix(wordStr, "--")
 }
 
+// refinementError creates a script error for refinement-related issues.
+func refinementError(kind, refName string) error {
+	var msg string
+	switch kind {
+	case "unknown":
+		msg = fmt.Sprintf("Unknown refinement: --%s", refName)
+	case "duplicate":
+		msg = fmt.Sprintf("Duplicate refinement: --%s", refName)
+	case "missing-value":
+		msg = fmt.Sprintf("Refinement --%s requires a value", refName)
+	}
+	return verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{msg, "", ""})
+}
+
 // readRefinements parses refinement arguments from a token sequence.
 // Refinements can be flags (boolean) or take values.
 // Updates the refinement values map and tracks which refinements have been provided.
@@ -627,26 +628,17 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 
 		spec, exists := refSpecs[refName]
 		if !exists {
-			return pos, verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{fmt.Sprintf("Unknown refinement: --%s", refName), "", ""},
-			)
+			return pos, refinementError("unknown", refName)
 		}
 
 		if refProvided[refName] {
-			return pos, verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{fmt.Sprintf("Duplicate refinement: --%s", refName), "", ""},
-			)
+			return pos, refinementError("duplicate", refName)
 		}
 
 		// Handle refinements that take values vs. boolean flags
 		if spec.TakesValue {
 			if pos+1 >= len(tokens) {
-				return pos, verror.NewScriptError(
-					verror.ErrIDInvalidOperation,
-					[3]string{fmt.Sprintf("Refinement --%s requires a value", refName), "", ""},
-				)
+				return pos, refinementError("missing-value", refName)
 			}
 			var arg core.Value
 			var err error
@@ -677,7 +669,7 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 
 	frame := frame.NewFrameWithCapacity(frame.FrameFunctionArgs, parent, len(fn.Params))
 	frame.Name = functionDisplayName(fn)
-	e.pushFrame(frame)
+	e.PushFrameContext(frame)
 	defer e.popFrame()
 
 	posIndex := 0
@@ -803,23 +795,23 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 			if current.GetType() == value.TypeBlock {
 				block, _ := value.AsBlock(current)
-				if index < 1 || index > int64(len(block.Elements)) {
-					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for block of length %d", index, len(block.Elements)), "", ""})
+				if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+					return nil, err
 				}
 				tr.values = append(tr.values, block.Elements[index-1])
 
 			} else if current.GetType() == value.TypeString {
 				str, _ := value.AsString(current)
 				runes := []rune(str.String())
-				if index < 1 || index > int64(len(runes)) {
-					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for string of length %d", index, len(runes)), "", ""})
+				if err := checkIndexBounds(index, int64(len(runes)), "string"); err != nil {
+					return nil, err
 				}
 				tr.values = append(tr.values, value.StrVal(string(runes[index-1])))
 
 			} else if current.GetType() == value.TypeBinary {
 				bin, _ := value.AsBinary(current)
-				if index < 1 || index > int64(bin.Length()) {
-					return nil, verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range for binary of length %d", index, bin.Length()), "", ""})
+				if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
+					return nil, err
 				}
 				tr.values = append(tr.values, value.IntVal(int64(bin.At(int(index-1)))))
 
@@ -862,6 +854,16 @@ func parsePathString(pathStr string) (*value.PathExpression, error) {
 	return value.NewPath(segments, value.NoneVal()), nil
 }
 
+// checkIndexBounds validates that an index is within bounds (1-based indexing).
+// Returns nil if valid, error if out of bounds.
+func checkIndexBounds(index, length int64, typeName string) error {
+	if index < 1 || index > length {
+		return verror.NewScriptError(verror.ErrIDIndexOutOfRange,
+			[3]string{fmt.Sprintf("index %d out of range for %s of length %d", index, typeName, length), "", ""})
+	}
+	return nil
+}
+
 // assignToPathTarget assigns a value to the target location identified by a path traversal.
 // Supports assignment to object fields and block/string indices.
 // Validates that the target is assignable and within bounds.
@@ -895,8 +897,8 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 		}
 
 		block, _ := value.AsBlock(container)
-		if index < 1 || index > int64(len(block.Elements)) {
-			return value.NoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{fmt.Sprintf("index %d out of range", index), "", ""})
+		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+			return value.NoneVal(), err
 		}
 		block.Elements[index-1] = newVal
 
