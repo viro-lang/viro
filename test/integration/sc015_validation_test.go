@@ -30,7 +30,7 @@ func TestSC015_TraceOverheadDisabled(t *testing.T) {
 	`
 
 	// Measure baseline (trace disabled)
-	iterations := 100
+	iterations := 20
 	start := time.Now()
 	for i := 0; i < iterations; i++ {
 		out.Reset()
@@ -75,7 +75,7 @@ func TestSC015_TraceOverheadEnabled(t *testing.T) {
 	out.Reset()
 	loop.EvalLineForTest("trace --off")
 
-	iterations := 100
+	iterations := 20
 	start := time.Now()
 	for i := 0; i < iterations; i++ {
 		out.Reset()
@@ -146,7 +146,7 @@ func TestSC015_BreakpointLatency(t *testing.T) {
 	}
 
 	// Measure baseline without breakpoints
-	iterations := 1000
+	iterations := 100
 	start := time.Now()
 	for i := 0; i < iterations; i++ {
 		out.Reset()

@@ -22,12 +22,12 @@ func TestComplexInputScenarios(t *testing.T) {
 			input:       "  42   +   24  ",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 3 {
+					t.Errorf("Expected 3 values (flat sequence), got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeInteger {
+					t.Errorf("Expected integer, got %s", value.TypeToString(vals[0].GetType()))
 				}
 			},
 			desc: "Should handle mixed whitespace correctly",
@@ -104,18 +104,17 @@ func TestComplexInputScenarios(t *testing.T) {
 			input:       `42 "hello" true false none integer! [1 2 3] (4 5 6)`,
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				// Allow some flexibility in parsing
-				if len(vals) < 7 {
-					t.Errorf("Expected at least 7 values, got %d", len(vals))
+				if len(vals) < 8 {
+					t.Errorf("Expected at least 8 values, got %d", len(vals))
 					return
 				}
 				// Check that we have the expected types somewhere in the result
 				hasInteger := false
 				hasString := false
-				hasLogic := false
-				hasNone := false
+				hasWord := false
 				hasDatatype := false
 				hasBlock := false
+				hasParen := false
 
 				for _, val := range vals {
 					switch val.GetType() {
@@ -123,18 +122,18 @@ func TestComplexInputScenarios(t *testing.T) {
 						hasInteger = true
 					case value.TypeString:
 						hasString = true
-					case value.TypeLogic:
-						hasLogic = true
-					case value.TypeNone:
-						hasNone = true
+					case value.TypeWord:
+						hasWord = true
 					case value.TypeDatatype:
 						hasDatatype = true
 					case value.TypeBlock:
 						hasBlock = true
+					case value.TypeParen:
+						hasParen = true
 					}
 				}
 
-				if !hasInteger || !hasString || !hasLogic || !hasNone || !hasDatatype || !hasBlock {
+				if !hasInteger || !hasString || !hasWord || !hasDatatype || !hasBlock || !hasParen {
 					t.Errorf("Missing expected types in parsed values")
 				}
 			},

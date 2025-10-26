@@ -49,8 +49,8 @@ type Evaluator interface {
 	PushFrameContext(frame Frame) int
 	PopFrameContext()
 	Lookup(symbol string) (Value, bool)
-	DoNext(value Value) (Value, error)
 	DoBlock(vals []Value) (Value, error)
+	EvaluateExpression(block []Value, position int) (int, Value, error)
 	SetOutputWriter(writer io.Writer)
 	GetOutputWriter() io.Writer
 	SetErrorWriter(writer io.Writer)

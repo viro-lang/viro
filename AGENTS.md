@@ -1,10 +1,13 @@
 # Agent Guidelines for Viro
 
 ## Build & Test Commands
-- Build: `go build -o viro ./cmd/viro` or `make build`
+- Generate grammar: `make grammar` or `pigeon -o internal/parse/peg/parser.go grammar/viro.peg`
+- Build: `make build` (includes grammar generation) or `go build -o viro ./cmd/viro`
 - Test all: `go test ./...` or `make test`
+- Test summary: `make test-summary` (shows total, passed, and failed test counts)
 - Test package: `go test -v ./test/contract/...` or `go test -v ./internal/native/...`
 - Single test: `go test -v ./test/contract -run TestNativeAdd`
+- Test with JSON output: `go test -json ./... | jq` (structured output for better analysis)
 - Coverage: `go test -coverprofile=coverage.out ./...`
 
 ## Code Style
@@ -22,3 +25,7 @@
 - Every code change MUST have test coverage
 - Automated tests ONLY; avoid running `./viro` manually
 - No real network calls in tests; use 127.0.0.1 mocked servers only
+
+## Planning
+- Store plans in `plans/` directory with sequential numbering: `001_description.md`, `002_description.md`, etc.
+- Check existing plans to determine the next sequence number

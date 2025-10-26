@@ -181,8 +181,8 @@ func TestCommentParsing(t *testing.T) {
 		{
 			name:     "Comment in expression",
 			input:    "3 ; comment\n+ ; another comment\n4",
-			expected: []core.Value{value.ParenVal([]core.Value{value.WordVal("+"), value.IntVal(3), value.IntVal(4)})},
-			desc:     "Should parse expression with comments interspersed",
+			expected: []core.Value{value.IntVal(3), value.WordVal("+"), value.IntVal(4)},
+			desc:     "Should parse as flat sequence with comments removed",
 		},
 		{
 			name:     "Empty comment",

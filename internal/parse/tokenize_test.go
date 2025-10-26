@@ -86,18 +86,10 @@ func TestComplexNumberParsing(t *testing.T) {
 		{
 			name:        "multiple decimal points as path",
 			input:       "1.2.3",
-			expectError: false,
-			expected:    nil, // Will be checked by checkResult
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse multiple decimal points as a path",
+			expectError: true,
+			expected:    nil,
+			checkResult: nil,
+			desc:        "Should reject multiple decimal points (paths can't start with numbers)",
 		},
 		{
 			name:        "number at start of input",
@@ -167,32 +159,16 @@ func TestAdvancedPathTokenization(t *testing.T) {
 		{
 			name:        "path starting with number",
 			input:       "1.field",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse paths starting with numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject paths starting with numbers",
 		},
 		{
 			name:        "decimal path",
 			input:       "42.0.field",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse paths with decimal numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject paths with decimal numbers at start",
 		},
 		{
 			name:        "complex nested path",
@@ -232,17 +208,9 @@ func TestAdvancedPathTokenization(t *testing.T) {
 		{
 			name:        "set-path with number",
 			input:       "1.field:",
-			expectError: false,
-			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
-					return
-				}
-				if vals[0].GetType() != value.TypeSetWord {
-					t.Errorf("Expected set-word, got %s", value.TypeToString(vals[0].GetType()))
-				}
-			},
-			desc: "Should parse set-paths starting with numbers",
+			expectError: true,
+			checkResult: nil,
+			desc:        "Should reject set-paths starting with numbers",
 		},
 		{
 			name:        "regular path vs set-path",
@@ -416,15 +384,15 @@ func TestWordVariants(t *testing.T) {
 					t.Errorf("Expected 1 value, got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeLogic {
-					t.Errorf("Expected logic, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeWord {
+					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				logic, ok := value.AsLogic(vals[0])
-				if !ok || !logic {
-					t.Errorf("Expected true, got %v", logic)
+				word, ok := value.AsWord(vals[0])
+				if !ok || word != "true" {
+					t.Errorf("Expected word 'true', got %v", word)
 				}
 			},
-			desc: "Should parse true as logic value",
+			desc: "Should parse true as word (evaluator converts to logic)",
 		},
 		{
 			name:        "false keyword",
@@ -435,15 +403,15 @@ func TestWordVariants(t *testing.T) {
 					t.Errorf("Expected 1 value, got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeLogic {
-					t.Errorf("Expected logic, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeWord {
+					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				logic, ok := value.AsLogic(vals[0])
-				if !ok || logic {
-					t.Errorf("Expected false, got %v", logic)
+				word, ok := value.AsWord(vals[0])
+				if !ok || word != "false" {
+					t.Errorf("Expected word 'false', got %v", word)
 				}
 			},
-			desc: "Should parse false as logic value",
+			desc: "Should parse false as word (evaluator converts to logic)",
 		},
 		{
 			name:        "none keyword",
@@ -454,11 +422,15 @@ func TestWordVariants(t *testing.T) {
 					t.Errorf("Expected 1 value, got %d", len(vals))
 					return
 				}
-				if vals[0].GetType() != value.TypeNone {
-					t.Errorf("Expected none, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeWord {
+					t.Errorf("Expected word, got %s", value.TypeToString(vals[0].GetType()))
+				}
+				word, ok := value.AsWord(vals[0])
+				if !ok || word != "none" {
+					t.Errorf("Expected word 'none', got %v", word)
 				}
 			},
-			desc: "Should parse none as none value",
+			desc: "Should parse none as word (evaluator converts to none type)",
 		},
 		{
 			name:        "set-word",
@@ -586,61 +558,53 @@ func TestOperatorTokenization(t *testing.T) {
 			input:       "+ - * / < > =",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				// This will be parsed as an expression, not separate tokens
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value (expression), got %d", len(vals))
+				if len(vals) != 7 {
+					t.Errorf("Expected 7 values (flat sequence of operators), got %d", len(vals))
 					return
 				}
-				// The result should be a complex expression
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren (expression), got %s", value.TypeToString(vals[0].GetType()))
+				for i, v := range vals {
+					if v.GetType() != value.TypeWord {
+						t.Errorf("Expected word at position %d, got %s", i, value.TypeToString(v.GetType()))
+					}
 				}
 			},
-			desc: "Should parse operators as expression",
+			desc: "Should parse operators as flat sequence of words",
 		},
 		{
 			name:        "operators in expression",
 			input:       "3 + 4 * 2",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value (parsed expression), got %d", len(vals))
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (flat sequence), got %d", len(vals))
 					return
 				}
-				// The expression should be parsed as ((+ 3 4) * 2)
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren (expression), got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should parse operators in mathematical expressions",
+			desc: "Should parse as flat sequence [3, +, 4, *, 2]",
 		},
 		{
 			name:        "comparison operators",
 			input:       "x < y and y > z",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value (parsed expression), got %d", len(vals))
+				if len(vals) != 7 {
+					t.Errorf("Expected 7 values (flat sequence), got %d", len(vals))
 					return
 				}
 			},
-			desc: "Should parse comparison and logical operators",
+			desc: "Should parse as flat sequence",
 		},
 		{
 			name:        "operator precedence test",
 			input:       "1 + 2 * 3",
 			expectError: false,
 			checkResult: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 1 {
-					t.Errorf("Expected 1 value, got %d", len(vals))
+				if len(vals) != 5 {
+					t.Errorf("Expected 5 values (flat sequence), got %d", len(vals))
 					return
 				}
-				// Should parse as (+ 1 (* 2 3)) due to left-to-right evaluation
-				if vals[0].GetType() != value.TypeParen {
-					t.Errorf("Expected paren, got %s", value.TypeToString(vals[0].GetType()))
-				}
 			},
-			desc: "Should demonstrate left-to-right operator evaluation",
+			desc: "Should parse as flat sequence [1, +, 2, *, 3] - evaluator handles evaluation order",
 		},
 	}
 

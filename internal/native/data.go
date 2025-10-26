@@ -51,7 +51,8 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	}
 
 	symbol, _ := value.AsWord(args[0])
-	return eval.DoNext(value.GetWordVal(symbol))
+	_, result, err := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0)
+	return result, err
 }
 
 // TypeQ implements the `type?` native.
@@ -308,7 +309,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		switch target.GetType() {
 		case value.TypeWord:
 			word, _ := value.AsWord(target)
-			evaluated, evalErr := eval.DoNext(value.WordVal(word))
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.WordVal(word)}, 0)
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}
@@ -317,7 +318,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		case value.TypeGetWord:
 			symbol, _ := value.AsWord(target)
-			evaluated, evalErr := eval.DoNext(value.GetWordVal(symbol))
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.GetWordVal(symbol)}, 0)
 			if evalErr != nil {
 				return value.NoneVal(), evalErr
 			}

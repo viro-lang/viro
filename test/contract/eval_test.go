@@ -64,7 +64,7 @@ func TestLiteralEvaluation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewTestEvaluator()
 
-			result, err := e.DoNext(tt.input)
+			result, err := e.DoBlock([]core.Value{tt.input})
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -124,7 +124,7 @@ func TestBlockEvaluation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewTestEvaluator()
 
-			result, err := e.DoNext(tt.input)
+			result, err := e.DoBlock([]core.Value{tt.input})
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -175,7 +175,7 @@ func TestParenEvaluation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewTestEvaluator()
 
-			result, err := e.DoNext(tt.input)
+			result, err := e.DoBlock([]core.Value{tt.input})
 
 			if err != nil {
 				t.Errorf("Do_Next(%v) unexpected error: %v", tt.input, err)
@@ -227,7 +227,7 @@ func TestWordEvaluation(t *testing.T) {
 				e.Frames = append(e.Frames, f)
 			}
 
-			result, err := e.DoNext(tt.input)
+			result, err := e.DoBlock([]core.Value{tt.input})
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Do_Next(%v) error = %v, wantErr %v", tt.input, err, tt.wantErr)
