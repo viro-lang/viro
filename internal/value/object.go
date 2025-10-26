@@ -166,3 +166,18 @@ func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
 
 	return NoneVal(), false
 }
+
+func (obj *ObjectInstance) GetType() core.ValueType {
+	return TypeObject
+}
+
+func (obj *ObjectInstance) GetPayload() any {
+	return obj
+}
+
+func (obj *ObjectInstance) Equals(other core.Value) bool {
+	if other.GetType() != TypeObject {
+		return false
+	}
+	return other.GetPayload() == obj
+}

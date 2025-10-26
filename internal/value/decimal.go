@@ -58,6 +58,31 @@ func (d *DecimalValue) Form() string {
 	return d.Mold()
 }
 
+func (d *DecimalValue) GetType() core.ValueType {
+	return TypeDecimal
+}
+
+func (d *DecimalValue) GetPayload() any {
+	return d
+}
+
+func (d *DecimalValue) Equals(other core.Value) bool {
+	if other.GetType() != TypeDecimal {
+		return false
+	}
+	otherDec, ok := other.GetPayload().(*DecimalValue)
+	if !ok {
+		return false
+	}
+	if d.Magnitude == nil && otherDec.Magnitude == nil {
+		return true
+	}
+	if d.Magnitude == nil || otherDec.Magnitude == nil {
+		return false
+	}
+	return d.Magnitude.Cmp(otherDec.Magnitude) == 0
+}
+
 // DecimalVal creates a Value wrapping a DecimalValue.
 func DecimalVal(magnitude *decimal.Big, scale int16) Value {
 	return Value{

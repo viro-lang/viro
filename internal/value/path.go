@@ -127,3 +127,18 @@ func AsPath(v core.Value) (*PathExpression, bool) {
 	path, ok := v.GetPayload().(*PathExpression)
 	return path, ok
 }
+
+func (p *PathExpression) GetType() core.ValueType {
+	return TypePath
+}
+
+func (p *PathExpression) GetPayload() any {
+	return p
+}
+
+func (p *PathExpression) Equals(other core.Value) bool {
+	if other.GetType() != TypePath {
+		return false
+	}
+	return other.GetPayload() == p
+}

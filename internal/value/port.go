@@ -132,3 +132,18 @@ func (a *PortAdapter) Close() error {
 	}
 	return a.Port.Driver.Close()
 }
+
+func (p *Port) GetType() core.ValueType {
+	return TypePort
+}
+
+func (p *Port) GetPayload() any {
+	return p
+}
+
+func (p *Port) Equals(other core.Value) bool {
+	if other.GetType() != TypePort {
+		return false
+	}
+	return other.GetPayload() == p
+}

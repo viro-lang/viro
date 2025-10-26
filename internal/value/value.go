@@ -149,7 +149,7 @@ func (v Value) Equals(other core.Value) bool {
 		if !vOk || !oOk {
 			return false
 		}
-		return vStr.Equals(oStr)
+		return vStr.EqualsString(oStr)
 	case TypeWord, TypeSetWord, TypeGetWord, TypeLitWord:
 		return v.Payload.(string) == other.GetPayload().(string)
 	case TypeDatatype:
@@ -160,7 +160,7 @@ func (v Value) Equals(other core.Value) bool {
 		if !vOk || !oOk {
 			return false
 		}
-		return vBlk.Equals(oBlk)
+		return vBlk.EqualsBlock(oBlk)
 	case TypeFunction:
 		// Functions compared by identity (pointer equality)
 		return v.Payload == other.GetPayload()
@@ -170,7 +170,7 @@ func (v Value) Equals(other core.Value) bool {
 		if !vOk || !oOk {
 			return false
 		}
-		return vBin.Equals(oBin)
+		return vBin.EqualsBinary(oBin)
 	default:
 		return false
 	}

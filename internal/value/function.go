@@ -177,9 +177,15 @@ func (f *FunctionValue) GetRefinement(name string) *ParamSpec {
 
 func (f *FunctionValue) Equals(other core.Value) bool {
 	if other.GetType() == TypeFunction {
-		// TODO: fix the equals implementation
 		return other.GetPayload() == f
-
 	}
 	return false
+}
+
+func (f *FunctionValue) GetType() core.ValueType {
+	return TypeFunction
+}
+
+func (f *FunctionValue) GetPayload() any {
+	return f
 }

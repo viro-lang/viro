@@ -3,6 +3,8 @@ package value
 import (
 	"fmt"
 	"sort"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
 // StringValue represents a UTF-8 character sequence.
@@ -41,8 +43,8 @@ func (s *StringValue) Form() string {
 	return s.String()
 }
 
-// Equals performs deep equality comparison.
-func (s *StringValue) Equals(other *StringValue) bool {
+// EqualsString performs deep equality comparison with another StringValue.
+func (s *StringValue) EqualsString(other *StringValue) bool {
 	if len(s.runes) != len(other.runes) {
 		return false
 	}
@@ -52,6 +54,25 @@ func (s *StringValue) Equals(other *StringValue) bool {
 		}
 	}
 	return true
+}
+
+func (s *StringValue) Equals(other core.Value) bool {
+	if other.GetType() != TypeString {
+		return false
+	}
+	otherStr, ok := other.(*StringValue)
+	if !ok {
+		return false
+	}
+	return s.EqualsString(otherStr)
+}
+
+func (s *StringValue) GetType() core.ValueType {
+	return TypeString
+}
+
+func (s *StringValue) GetPayload() any {
+	return s
 }
 
 // Series operations (contracts/series.md)
