@@ -17,6 +17,7 @@ import (
 	"os"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -26,12 +27,12 @@ import (
 // Per FR-015: emits structured events to stderr by default, optional file redirection.
 // Per research.md: uses lumberjack for rotating log file support.
 type TraceSession struct {
-	mu          sync.Mutex
-	enabled     bool
-	sink        io.Writer          // Output destination (stderr or file)
-	logger      *lumberjack.Logger // Optional file logger
-	filters     TraceFilters
-	stepCounter int64 // Monotonic step counter
+	mu            sync.Mutex
+	enabled       atomic.Bool
+	sink          io.Writer          // Output destination (stderr or file)
+	logger        *lumberjack.Logger // Optional file logger
+	atomicFilters atomic.Value       // Stores *TraceFilters for lock-free reads
+	stepCounter   int64              // Monotonic step counter
 }
 
 // TraceFilters controls which events are emitted.
@@ -85,60 +86,54 @@ func InitTrace(traceFile string, maxSizeMB int) error {
 		sink = logger
 	}
 
-	GlobalTraceSession = &TraceSession{
-		enabled: false, // Disabled by default, enabled via trace --on
-		sink:    sink,
-		logger:  logger,
-		filters: TraceFilters{},
+	ts := &TraceSession{
+		sink:   sink,
+		logger: logger,
 	}
+	ts.enabled.Store(false)
+	ts.atomicFilters.Store(&TraceFilters{})
+	GlobalTraceSession = ts
 
 	return nil
 }
 
 // Enable activates tracing with optional filters.
 func (ts *TraceSession) Enable(filters TraceFilters) {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	ts.enabled = true
-	ts.filters = filters
+	ts.atomicFilters.Store(&filters)
+	ts.enabled.Store(true)
 }
 
 // Disable stops tracing.
 func (ts *TraceSession) Disable() {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	ts.enabled = false
+	ts.enabled.Store(false)
 }
 
 // IsEnabled returns true if tracing is active.
 func (ts *TraceSession) IsEnabled() bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	return ts.enabled
+	return ts.enabled.Load()
 }
 
 // Emit writes a trace event if tracing is enabled and event passes filters.
 func (ts *TraceSession) Emit(event TraceEvent) {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-
-	if !ts.enabled {
+	if !ts.enabled.Load() {
 		return
 	}
 
+	filters := ts.atomicFilters.Load().(*TraceFilters)
+
 	// Apply filters
-	if len(ts.filters.IncludeWords) > 0 {
-		found := slices.Contains(ts.filters.IncludeWords, event.Word)
+	if len(filters.IncludeWords) > 0 {
+		found := slices.Contains(filters.IncludeWords, event.Word)
 		if !found {
 			return
 		}
 	}
 
-	if slices.Contains(ts.filters.ExcludeWords, event.Word) {
+	if slices.Contains(filters.ExcludeWords, event.Word) {
 		return
 	}
 
-	if ts.filters.MinDuration > 0 && time.Duration(event.Duration) < ts.filters.MinDuration {
+	if filters.MinDuration > 0 && time.Duration(event.Duration) < filters.MinDuration {
 		return
 	}
 
@@ -149,8 +144,10 @@ func (ts *TraceSession) Emit(event TraceEvent) {
 		return
 	}
 
-	// Write to sink
+	// Write to sink (mutex-protected for safe concurrent writes)
+	ts.mu.Lock()
 	fmt.Fprintf(ts.sink, "%s\n", data)
+	ts.mu.Unlock()
 }
 
 // Close flushes and closes the trace session.
@@ -166,48 +163,39 @@ func (ts *TraceSession) Close() error {
 
 // NextStep increments and returns the next step counter value.
 func (ts *TraceSession) NextStep() int64 {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	ts.stepCounter++
-	return ts.stepCounter
+	return atomic.AddInt64(&ts.stepCounter, 1)
 }
 
 // ResetStepCounter resets the step counter to zero.
 func (ts *TraceSession) ResetStepCounter() {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	ts.stepCounter = 0
+	atomic.StoreInt64(&ts.stepCounter, 0)
 }
 
 // GetVerbose returns whether verbose mode is enabled.
 func (ts *TraceSession) GetVerbose() bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	return ts.filters.Verbose
+	filters := ts.atomicFilters.Load().(*TraceFilters)
+	return filters.Verbose
 }
 
 // GetIncludeArgs returns whether function arguments should be included.
 func (ts *TraceSession) GetIncludeArgs() bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	return ts.filters.IncludeArgs
+	filters := ts.atomicFilters.Load().(*TraceFilters)
+	return filters.IncludeArgs
 }
 
 // ShouldTraceExpression returns whether expressions should be traced based on StepLevel.
 func (ts *TraceSession) ShouldTraceExpression() bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	return ts.filters.StepLevel >= 1
+	filters := ts.atomicFilters.Load().(*TraceFilters)
+	return filters.StepLevel >= 1
 }
 
 // ShouldTraceAtDepth returns whether tracing should occur at the given depth.
 func (ts *TraceSession) ShouldTraceAtDepth(depth int) bool {
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
-	if ts.filters.MaxDepth == 0 {
+	filters := ts.atomicFilters.Load().(*TraceFilters)
+	if filters.MaxDepth == 0 {
 		return true
 	}
-	return depth <= ts.filters.MaxDepth
+	return depth <= filters.MaxDepth
 }
 
 // Port lifecycle trace event helpers (T076)
