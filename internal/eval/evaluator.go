@@ -270,7 +270,16 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 // DoBlock evaluates a sequence of values as a block using position tracking.
 // Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
+	var traceStart time.Time
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		traceStart = time.Now()
+		e.emitTraceResult("block-enter", "", fmt.Sprintf("[%d expressions]", len(vals)), value.NewNoneVal(), 0, traceStart, nil)
+	}
+
 	if len(vals) == 0 {
+		if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+			e.emitTraceResult("block-exit", "", "[]", value.NewNoneVal(), 0, time.Now(), nil)
+		}
 		return value.NewNoneVal(), nil
 	}
 
@@ -280,10 +289,17 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	for position < len(vals) {
 		newPos, result, err := e.EvaluateExpression(vals, position)
 		if err != nil {
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				e.emitTraceResult("block-exit", "", fmt.Sprintf("[error at position %d]", position), value.NewNoneVal(), position, time.Now(), err)
+			}
 			return value.NewNoneVal(), e.annotateError(err, vals, position)
 		}
 		position = newPos
 		lastResult = result
+	}
+
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		e.emitTraceResult("block-exit", "", fmt.Sprintf("[%d expressions]", len(vals)), lastResult, len(vals), time.Now(), nil)
 	}
 
 	return lastResult, nil
@@ -363,61 +379,91 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	element := block[position]
 
 	var traceStart time.Time
-	var traceWord string
 	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
 		traceStart = time.Now()
-		if value.IsWord(element.GetType()) {
-			if w, ok := value.AsWordValue(element); ok {
-				traceWord = w
-			}
-		}
 	}
+
+	shouldTraceExpr := trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && trace.GlobalTraceSession.ShouldTraceExpression()
 
 	switch element.GetType() {
 	case value.TypeInteger, value.TypeString, value.TypeLogic,
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype, value.TypeBlock,
 		value.TypeFunction:
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
+		}
 		return position + 1, element, nil
 
 	case value.TypeParen:
 		block, _ := value.AsBlockValue(element)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
+		}
 		result, err := e.DoBlock(block.Elements)
+		if shouldTraceExpr && err == nil {
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
+		}
 		return position + 1, result, err
 
 	case value.TypeLitWord:
 		wordStr, _ := value.AsWordValue(element)
-		return position + 1, value.NewWordVal(wordStr), nil
+		result := value.NewWordVal(wordStr)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf("'%s", wordStr), result, position, traceStart, nil)
+		}
+		return position + 1, result, nil
 
 	case value.TypeGetWord:
 		wordStr, _ := value.AsWordValue(element)
 		result, ok := e.Lookup(wordStr)
 		if !ok {
-			return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), err
+		}
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), result, position, traceStart, nil)
 		}
 		return position + 1, result, nil
 
 	case value.TypeGetPath:
 		getPath, _ := value.AsGetPath(element)
 		result, err := e.evalGetPathValue(getPath)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", getPath.Mold(), result, position, traceStart, err)
+		}
 		return position + 1, result, err
 
 	case value.TypeSetPath:
 		setPath, _ := value.AsSetPath(element)
-		return e.evalSetPathValue(block, position, setPath)
+		newPos, result, err := e.evalSetPathValue(block, position, setPath)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", setPath.Mold(), result, position, traceStart, err)
+		}
+		return newPos, result, err
 
 	case value.TypeSetWord:
 		wordStr, _ := value.AsWordValue(element)
 
 		if position+1 >= len(block) {
-			return position, value.NewNoneVal(), verror.NewScriptError(
+			err := verror.NewScriptError(
 				verror.ErrIDNoValue,
 				[3]string{wordStr, "set-word-without-value", wordStr},
 			)
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), err
 		}
 
 		newPos, result, err := e.EvaluateExpression(block, position+1)
 		if err != nil {
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
+			}
 			return position, value.NewNoneVal(), e.annotateError(err, block, position)
 		}
 
@@ -428,8 +474,11 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		}
 
 		currentFrame := e.currentFrame()
-
 		currentFrame.Bind(wordStr, result)
+
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), result, position, traceStart, nil)
+		}
 
 		return newPos, result, nil
 
@@ -449,24 +498,21 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 
 		resolved, found := e.Lookup(wordStr)
 		if !found {
-			return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, wordStr, value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), err
 		}
 
 		if resolved.GetType() == value.TypeFunction {
 			fn, _ := value.AsFunctionValue(resolved)
 			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
-
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && traceWord != "" {
-				duration := time.Since(traceStart)
-				trace.GlobalTraceSession.Emit(trace.TraceEvent{
-					Timestamp: traceStart,
-					Value:     result.Form(),
-					Word:      traceWord,
-					Duration:  duration.Nanoseconds(),
-				})
-			}
-
 			return newPos, result, err
+		}
+
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, wordStr, resolved, position, traceStart, nil)
 		}
 
 		return position + 1, resolved, nil
@@ -475,6 +521,9 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		path, _ := value.AsPath(element)
 		result, err := e.evalPathValue(path)
 		if err != nil {
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", "", path.Mold(), value.NewNoneVal(), position, traceStart, err)
+			}
 			return position, value.NewNoneVal(), err
 		}
 
@@ -482,6 +531,10 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 			fn, _ := value.AsFunctionValue(result)
 			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
 			return newPos, result, err
+		}
+
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", path.Mold(), result, position, traceStart, nil)
 		}
 
 		return position + 1, result, nil
@@ -549,18 +602,49 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 		return position, value.NewNoneVal(), e.annotateError(err, block, position)
 	}
 
-	if fn.Type == value.FuncNative {
-		result, err := e.callNative(fn, posArgs, refValues)
-		if err != nil {
-			return position, value.NewNoneVal(), e.annotateError(err, block, position)
+	var traceStart time.Time
+	var args map[string]string
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		traceStart = time.Now()
+		args = e.captureFunctionArgs(fn, posArgs, refValues)
+		event := trace.TraceEvent{
+			Timestamp:  traceStart,
+			Value:      "",
+			Word:       name,
+			Duration:   0,
+			EventType:  "call",
+			Step:       trace.GlobalTraceSession.NextStep(),
+			Depth:      len(e.callStack) - 1,
+			Position:   position,
+			Expression: name,
+			Args:       args,
 		}
-		return newPos, result, nil
+		trace.GlobalTraceSession.Emit(event)
 	}
 
-	result, err := e.executeFunction(fn, posArgs, refValues)
-	if err != nil {
-		return position, value.NewNoneVal(), err
+	var result core.Value
+	if fn.Type == value.FuncNative {
+		result, err = e.callNative(fn, posArgs, refValues)
+		if err != nil {
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), e.annotateError(err, block, position)
+		}
+	} else {
+		result, err = e.executeFunction(fn, posArgs, refValues)
+		if err != nil {
+			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), err
+		}
 	}
+
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		e.emitTraceResult("return", name, name, result, position, traceStart, nil)
+	}
+
 	return newPos, result, nil
 }
 
@@ -999,4 +1083,79 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	}
 
 	return newVal, nil
+}
+
+// captureFrameState returns a map of variable bindings in the current frame for tracing.
+func (e *Evaluator) captureFrameState() map[string]string {
+	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetVerbose() {
+		return nil
+	}
+
+	currentFrame := e.currentFrame()
+	bindings := currentFrame.GetAll()
+	result := make(map[string]string, len(bindings))
+
+	for _, binding := range bindings {
+		result[binding.Symbol] = binding.Value.Form()
+	}
+
+	return result
+}
+
+// captureFunctionArgs extracts function argument names and values for tracing.
+func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) map[string]string {
+	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetIncludeArgs() {
+		return nil
+	}
+
+	result := make(map[string]string)
+
+	positional, _ := e.separateParameters(fn)
+	for i, param := range positional {
+		if i < len(posArgs) {
+			result[param.Name] = posArgs[i].Form()
+		}
+	}
+
+	for name, val := range refValues {
+		result[name] = val.Form()
+	}
+
+	return result
+}
+
+// emitTraceResult emits a trace event with comprehensive debugging information.
+func (e *Evaluator) emitTraceResult(eventType string, word string, expr string, result core.Value, position int, traceStart time.Time, err error) {
+	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.IsEnabled() {
+		return
+	}
+
+	depth := len(e.callStack) - 1
+	if !trace.GlobalTraceSession.ShouldTraceAtDepth(depth) {
+		return
+	}
+
+	var frameState map[string]string
+	if trace.GlobalTraceSession.GetVerbose() {
+		frameState = e.captureFrameState()
+	}
+
+	event := trace.TraceEvent{
+		Timestamp:  traceStart,
+		Value:      result.Form(),
+		Word:       word,
+		Duration:   time.Since(traceStart).Nanoseconds(),
+		EventType:  eventType,
+		Step:       trace.GlobalTraceSession.NextStep(),
+		Depth:      depth,
+		Position:   position,
+		Expression: expr,
+		Frame:      frameState,
+	}
+
+	if err != nil {
+		event.Error = err.Error()
+	}
+
+	trace.GlobalTraceSession.Emit(event)
 }
