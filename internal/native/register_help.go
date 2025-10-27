@@ -73,14 +73,19 @@ Useful for programmatic access to available functionality.`,
 			value.NewRefinementSpec("exclude", true),
 			value.NewRefinementSpec("file", true),
 			value.NewRefinementSpec("append", false),
+			value.NewRefinementSpec("verbose", false),
+			value.NewRefinementSpec("step-level", true),
+			value.NewRefinementSpec("include-args", false),
+			value.NewRefinementSpec("max-depth", true),
 		},
 		Trace,
 		false,
 		&NativeDoc{
 			Category: "Debug",
-			Summary:  "Controls execution tracing",
+			Summary:  "Controls execution tracing with enhanced debugging options",
 			Description: `Enables or disables tracing of code execution. When enabled, traces function calls
-and other execution events to a log file. Supports filtering and custom output destinations.`,
+and other execution events to a log file. Supports filtering, custom output destinations, and enhanced
+debugging modes including verbose frame state, expression-level tracing, and call depth limiting.`,
 			Parameters: []ParamDoc{
 				{Name: "--on", Type: "logic!", Description: "Enable tracing", Optional: true},
 				{Name: "--off", Type: "logic!", Description: "Disable tracing", Optional: true},
@@ -88,10 +93,14 @@ and other execution events to a log file. Supports filtering and custom output d
 				{Name: "--exclude", Type: "block!", Description: "Block of words to exclude from trace (blacklist)", Optional: true},
 				{Name: "--file", Type: "string!", Description: "Custom file path for trace output", Optional: true},
 				{Name: "--append", Type: "logic!", Description: "Append to trace file instead of overwriting", Optional: true},
+				{Name: "--verbose", Type: "logic!", Description: "Include frame state (local variables) in trace events", Optional: true},
+				{Name: "--step-level", Type: "integer!", Description: "Control granularity: 0=calls only, 1=expressions, 2=all", Optional: true},
+				{Name: "--include-args", Type: "logic!", Description: "Include function arguments in trace events", Optional: true},
+				{Name: "--max-depth", Type: "integer!", Description: "Limit trace to specified call stack depth (0=unlimited)", Optional: true},
 			},
 			Returns:  "[none!] Always returns none",
-			Examples: []string{"trace --on  ; enable tracing", "trace --on --only [calculate-interest]  ; trace specific function", "trace --off  ; disable tracing"},
-			SeeAlso:  []string{"trace?", "debug"}, Tags: []string{"debug", "trace", "observability"},
+			Examples: []string{"trace --on  ; enable tracing", "trace --on --verbose --include-args --step-level 1  ; enhanced tracing", "trace --on --only [calculate-interest] --include-args  ; trace specific function with args", "trace --on --max-depth 3  ; limit trace depth", "trace --off  ; disable tracing"},
+			SeeAlso:  []string{"trace?", "debug"}, Tags: []string{"debug", "trace", "observability", "llm"},
 		},
 	)))
 

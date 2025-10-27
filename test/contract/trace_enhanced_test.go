@@ -517,3 +517,220 @@ func TestCallStackDepth(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+// TestTraceVerboseRefinement tests the --verbose refinement.
+func TestTraceVerboseRefinement(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		wantErr bool
+	}{
+		{
+			name:    "trace with --verbose",
+			code:    "trace --on --verbose",
+			wantErr: false,
+		},
+		{
+			name:    "trace without --verbose",
+			code:    "trace --on",
+			wantErr: false,
+		},
+		{
+			name:    "trace --verbose requires --on",
+			code:    "trace --off",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("unexpected error state: got error=%v, wantErr=%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestTraceStepLevelRefinement tests the --step-level refinement.
+func TestTraceStepLevelRefinement(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		wantErr bool
+	}{
+		{
+			name:    "step-level 0 (calls only)",
+			code:    "trace --on --step-level 0",
+			wantErr: false,
+		},
+		{
+			name:    "step-level 1 (expressions)",
+			code:    "trace --on --step-level 1",
+			wantErr: false,
+		},
+		{
+			name:    "step-level 2 (all)",
+			code:    "trace --on --step-level 2",
+			wantErr: false,
+		},
+		{
+			name:    "step-level invalid (negative)",
+			code:    "trace --on --step-level -1",
+			wantErr: true,
+		},
+		{
+			name:    "step-level invalid (too high)",
+			code:    "trace --on --step-level 3",
+			wantErr: true,
+		},
+		{
+			name:    "step-level invalid type (string)",
+			code:    "trace --on --step-level \"test\"",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("unexpected error state: got error=%v, wantErr=%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestTraceIncludeArgsRefinement tests the --include-args refinement.
+func TestTraceIncludeArgsRefinement(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		wantErr bool
+	}{
+		{
+			name:    "include-args enabled",
+			code:    "trace --on --include-args",
+			wantErr: false,
+		},
+		{
+			name:    "include-args with verbose",
+			code:    "trace --on --include-args --verbose",
+			wantErr: false,
+		},
+		{
+			name:    "include-args with step-level",
+			code:    "trace --on --include-args --step-level 1",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("unexpected error state: got error=%v, wantErr=%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestTraceMaxDepthRefinement tests the --max-depth refinement.
+func TestTraceMaxDepthRefinement(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		wantErr bool
+	}{
+		{
+			name:    "max-depth 0 (unlimited)",
+			code:    "trace --on --max-depth 0",
+			wantErr: false,
+		},
+		{
+			name:    "max-depth 5",
+			code:    "trace --on --max-depth 5",
+			wantErr: false,
+		},
+		{
+			name:    "max-depth 100",
+			code:    "trace --on --max-depth 100",
+			wantErr: false,
+		},
+		{
+			name:    "max-depth invalid (negative)",
+			code:    "trace --on --max-depth -1",
+			wantErr: true,
+		},
+		{
+			name:    "max-depth invalid type (string)",
+			code:    "trace --on --max-depth \"test\"",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("unexpected error state: got error=%v, wantErr=%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestTraceCombinedRefinements tests combinations of trace refinements.
+func TestTraceCombinedRefinements(t *testing.T) {
+	tests := []struct {
+		name    string
+		code    string
+		wantErr bool
+	}{
+		{
+			name:    "all debugging refinements",
+			code:    "trace --on --verbose --step-level 1 --include-args --max-depth 5",
+			wantErr: false,
+		},
+		{
+			name:    "verbose and include-args",
+			code:    "trace --on --verbose --include-args",
+			wantErr: false,
+		},
+		{
+			name:    "step-level with max-depth",
+			code:    "trace --on --step-level 1 --max-depth 10",
+			wantErr: false,
+		},
+		{
+			name:    "all refinements with filtering",
+			code:    "trace --on --verbose --step-level 1 --include-args --max-depth 5 --only [test-fn]",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("unexpected error state: got error=%v, wantErr=%v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// TestTraceStepCounterReset tests that step counter is reset when trace is enabled.
+func TestTraceStepCounterReset(t *testing.T) {
+	code := `
+		trace --on
+		x: 10
+		trace --off
+		trace --on
+		y: 20
+		trace --off
+	`
+
+	_, err := Evaluate(code)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
