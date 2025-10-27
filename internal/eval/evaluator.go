@@ -29,6 +29,8 @@ type Evaluator struct {
 	ErrorWriter  io.Writer
 	InputReader  io.Reader
 
+	// Cached trace state fields for performance optimization.
+	// These fields are synchronized with the global trace session and must be updated via UpdateTraceCache().
 	traceEnabled         bool
 	traceShouldTraceExpr bool
 }
