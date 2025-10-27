@@ -164,13 +164,15 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 				if len(vals) != 2 {
 					t.Fatalf("Expected 2 values, got %d: %v", len(vals), vals)
 				}
-				if vals[0].GetType() != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord for set-path, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeSetPath {
+					t.Errorf("Expected TypeSetPath for set-path, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				// The set-word should contain the full path string
-				word, ok := value.AsWordValue(vals[0])
-				if !ok || word != "obj.name" {
-					t.Errorf("Expected set-word to be 'obj.name', got %q", word)
+				// The set-path should be a proper path expression
+				setPath, ok := value.AsSetPath(vals[0])
+				if !ok {
+					t.Errorf("Expected set-path value")
+				} else if len(setPath.Segments) != 2 {
+					t.Errorf("Expected 2 segments, got %d", len(setPath.Segments))
 				}
 				if vals[1].GetType() != value.TypeString {
 					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
@@ -184,12 +186,14 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 				if len(vals) != 2 {
 					t.Fatalf("Expected 2 values, got %d", len(vals))
 				}
-				if vals[0].GetType() != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
+				if vals[0].GetType() != value.TypeSetPath {
+					t.Errorf("Expected TypeSetPath, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				word, ok := value.AsWordValue(vals[0])
-				if !ok || word != "user.address.city" {
-					t.Errorf("Expected set-word to be 'user.address.city', got %q", word)
+				setPath, ok := value.AsSetPath(vals[0])
+				if !ok {
+					t.Errorf("Expected set-path value")
+				} else if len(setPath.Segments) != 3 {
+					t.Errorf("Expected 3 segments, got %d", len(setPath.Segments))
 				}
 			},
 		},

@@ -77,8 +77,8 @@ Input <- _ vals:Value* _ EOF {
     return flattenValues(vals), nil
 }
 
-Value <- _ val:(Decimal / Integer / String / Block / Paren / 
-                SetWord / GetWord / LitWord / Path / 
+Value <- _ val:(Decimal / Integer / String / Block / Paren /
+                Path / SetPath / SetWord / GetPath / GetWord / LitWord /
                 Datatype / Word) _ {
     return val, nil
 }
@@ -104,7 +104,87 @@ String <- '"' [^"]* '"' {
 }
 
 SetWord <- word:WordChars ':' !':' {
-    return value.NewSetWordVal(word.(string)), nil
+    wordStr := word.(string)
+    if strings.Contains(wordStr, ".") {
+        return nil, fmt.Errorf("set-word cannot contain dots")
+    }
+    return value.NewSetWordVal(wordStr), nil
+}
+
+GetPath <- ':' first:WordChars rest:('.' PathElement)+ {
+    segments := make([]value.PathSegment, 0)
+    segments = append(segments, value.PathSegment{
+        Type: value.PathSegmentWord,
+        Value: first.(string),
+    })
+
+    for _, item := range toSlice(rest) {
+        parts := toSlice(item)
+        segment := parts[1]
+
+        var segStr string
+        switch v := segment.(type) {
+        case string:
+            segStr = v
+        case []byte:
+            segStr = string(v)
+        default:
+            segStr = ""
+        }
+
+        if num, err := strconv.ParseInt(segStr, 10, 64); err == nil {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentIndex,
+                Value: num,
+            })
+        } else {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentWord,
+                Value: segStr,
+            })
+        }
+    }
+
+    path := value.NewGetPath(segments, value.NewNoneVal())
+    return value.GetPathVal(path), nil
+}
+
+SetPath <- first:WordChars rest:('.' PathElement)+ ':' {
+    segments := make([]value.PathSegment, 0)
+    segments = append(segments, value.PathSegment{
+        Type: value.PathSegmentWord,
+        Value: first.(string),
+    })
+
+    for _, item := range toSlice(rest) {
+        parts := toSlice(item)
+        segment := parts[1]
+
+        var segStr string
+        switch v := segment.(type) {
+        case string:
+            segStr = v
+        case []byte:
+            segStr = string(v)
+        default:
+            segStr = ""
+        }
+
+        if num, err := strconv.ParseInt(segStr, 10, 64); err == nil {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentIndex,
+                Value: num,
+            })
+        } else {
+            segments = append(segments, value.PathSegment{
+                Type: value.PathSegmentWord,
+                Value: segStr,
+            })
+        }
+    }
+
+    path := value.NewSetPath(segments, value.NewNoneVal())
+    return value.SetPathVal(path), nil
 }
 
 GetWord <- ':' word:WordChars {
@@ -115,7 +195,7 @@ LitWord <- '\'' word:WordChars {
     return value.NewLitWordVal(word.(string)), nil
 }
 
-Path <- first:WordChars rest:('.' PathElement)+ isSet:':'? !':' {
+Path <- first:WordChars rest:('.' PathElement)+ !':' {
     segments := make([]value.PathSegment, 0)
     segments = append(segments, value.PathSegment{
         Type: value.PathSegmentWord,
@@ -149,7 +229,8 @@ Path <- first:WordChars rest:('.' PathElement)+ isSet:':'? !':' {
         }
     }
     
-    return buildPath(segments, isSet != nil), nil
+    path := value.NewPath(segments, value.NewNoneVal())
+    return value.PathVal(path), nil
 }
 
 PathElement <- WordChars / [0-9]+ {
@@ -161,6 +242,10 @@ Word <- word:WordChars {
 }
 
 WordChars <- [\p{L}_?+*/<>=-] [\p{L}\p{N}_?+*/<>=-]* {
+    return string(c.text), nil
+}
+
+SimpleWordChars <- [\p{L}_?+*/<>=-] [\p{L}\p{N}_?+*/<>=-]* {
     return string(c.text), nil
 }
 

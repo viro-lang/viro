@@ -249,10 +249,29 @@ func TestPathReadTraversal(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name:       "simple field access",
-			code:       "obj: object [name: \"Alice\"] obj.name",
+			name:       "path invokes no-arg function",
+			code:       "obj: object [get-name: fn [] [\"Alice\"]] obj.get-name",
 			expectType: value.TypeString,
 			expectStr:  "Alice",
+			wantErr:    false,
+		},
+		{
+			name:       "get-path returns function value",
+			code:       "obj: object [get-name: fn [] [\"Alice\"]] :obj.get-name",
+			expectType: value.TypeFunction,
+			wantErr:    false,
+		},
+		{
+			name:       "nested path invokes no-arg function",
+			code:       "user: object [profile: object [get-age: fn [] [30]]] user.profile.get-age",
+			expectType: value.TypeInteger,
+			expectStr:  "30",
+			wantErr:    false,
+		},
+		{
+			name:       "nested get-path returns function",
+			code:       "user: object [profile: object [get-age: fn [] [30]]] :user.profile.get-age",
+			expectType: value.TypeFunction,
 			wantErr:    false,
 		},
 		{
@@ -330,7 +349,7 @@ func TestPathWriteMutation(t *testing.T) {
 	}{
 		{
 			name: "update object field via path",
-			code: `obj: object [name: "Alice" age: 30]
+			code: `obj: object []
 			       obj.name: "Bob"
 			       obj`,
 			checkFunc: func(t *testing.T, e core.Evaluator) {
@@ -689,6 +708,168 @@ func TestPathErrorHandling(t *testing.T) {
 				errMsg := verr.Error()
 				if !strings.Contains(strings.ToLower(errMsg), strings.ToLower(tt.expectToken)) {
 					t.Errorf("expected error message to contain %q, got %q", tt.expectToken, errMsg)
+				}
+			}
+		})
+	}
+}
+
+// T087: path function invocation
+func TestPathFunctionInvocation(t *testing.T) {
+	tests := []struct {
+		name       string
+		code       string
+		expectType core.ValueType
+		expectStr  string
+		wantErr    bool
+	}{
+		{
+			name:       "path invokes no-arg function",
+			code:       "obj: object [get-name: fn [] [\"Alice\"]] obj.get-name",
+			expectType: value.TypeString,
+			expectStr:  "Alice",
+			wantErr:    false,
+		},
+		{
+			name:       "get-path returns function value",
+			code:       "obj: object [get-name: fn [] [\"Alice\"]] :obj.get-name",
+			expectType: value.TypeFunction,
+			wantErr:    false,
+		},
+		{
+			name:       "nested path invokes no-arg function",
+			code:       "user: object [profile: object [get-age: fn [] [30]]] user.profile.get-age",
+			expectType: value.TypeInteger,
+			expectStr:  "30",
+			wantErr:    false,
+		},
+		{
+			name:       "nested get-path returns function",
+			code:       "user: object [profile: object [get-age: fn [] [30]]] :user.profile.get-age",
+			expectType: value.TypeFunction,
+			wantErr:    false,
+		},
+		{
+			name:       "path with regular field access",
+			code:       "obj: object [name: \"Bob\"] obj.name",
+			expectType: value.TypeString,
+			expectStr:  "Bob",
+			wantErr:    false,
+		},
+		{
+			name:       "path with function that has args (fails with no args)",
+			code:       "obj: object [add: fn [a b] [a + b]] obj.add",
+			expectType: value.TypeNone,
+			wantErr:    true, // Should fail with arity error
+		},
+		{
+			name:       "call function accessed by path with arguments",
+			code:       "obj: object [add: fn [a b] [a + b]] obj.add 1 2",
+			expectType: value.TypeInteger,
+			expectStr:  "3",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
+			}
+
+			if tt.expectStr != "" {
+				str := result.Form()
+				if !strings.Contains(str, tt.expectStr) {
+					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
+				}
+			}
+		})
+	}
+}
+
+// T088: get-path evaluation
+func TestGetPathEvaluation(t *testing.T) {
+	tests := []struct {
+		name       string
+		code       string
+		expectType core.ValueType
+		expectStr  string
+		wantErr    bool
+	}{
+		{
+			name:       "get-path returns function without invocation",
+			code:       "obj: object [get-name: fn [] [\"Alice\"]] :obj.get-name",
+			expectType: value.TypeFunction,
+			wantErr:    false,
+		},
+		{
+			name:       "get-path on regular field",
+			code:       "obj: object [name: \"Bob\"] :obj.name",
+			expectType: value.TypeString,
+			expectStr:  "Bob",
+			wantErr:    false,
+		},
+		{
+			name:       "get-path on nested function",
+			code:       "user: object [profile: object [get-age: fn [] [30]]] :user.profile.get-age",
+			expectType: value.TypeFunction,
+			wantErr:    false,
+		},
+		{
+			name:       "get-path on nested field",
+			code:       "user: object [profile: object [name: \"Alice\"]] :user.profile.name",
+			expectType: value.TypeString,
+			expectStr:  "Alice",
+			wantErr:    false,
+		},
+		{
+			name:    "get-path on missing field",
+			code:    "obj: object [x: 10] :obj.missing",
+			wantErr: true, // Should raise Script error (no-such-field)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if verr, ok := err.(*verror.Error); ok {
+					if verr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", verr.Category)
+					}
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if result.GetType() != tt.expectType {
+				t.Errorf("expected type %v, got %v", value.TypeToString(tt.expectType), value.TypeToString(result.GetType()))
+			}
+
+			if tt.expectStr != "" {
+				str := result.Form()
+				if !strings.Contains(str, tt.expectStr) {
+					t.Errorf("expected string to contain %q, got %q", tt.expectStr, str)
 				}
 			}
 		})

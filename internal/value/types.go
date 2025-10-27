@@ -27,6 +27,8 @@ const (
 	TypeObject   // Object instance with frame-based fields
 	TypePort     // I/O port abstraction (file, TCP, HTTP)
 	TypePath     // Path expression (transient evaluation type)
+	TypeGetPath  // Get-path expression (transient evaluation type)
+	TypeSetPath  // Set-path expression (transient evaluation type)
 	TypeDatatype // Datatype literal (e.g., object!, integer!)
 	TypeBinary   // Raw byte sequence
 )
@@ -64,6 +66,10 @@ func TypeToString(t core.ValueType) string {
 		return "port!"
 	case TypePath:
 		return "path!"
+	case TypeGetPath:
+		return "get-path!"
+	case TypeSetPath:
+		return "set-path!"
 	case TypeDatatype:
 		return "datatype!"
 	case TypeBinary:

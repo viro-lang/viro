@@ -224,8 +224,8 @@ func TestAdvancedPathTokenization(t *testing.T) {
 				if vals[0].GetType() != value.TypePath {
 					t.Errorf("First value should be path, got %s", value.TypeToString(vals[0].GetType()))
 				}
-				if vals[1].GetType() != value.TypeSetWord {
-					t.Errorf("Second value should be set-word, got %s", value.TypeToString(vals[1].GetType()))
+				if vals[1].GetType() != value.TypeSetPath {
+					t.Errorf("Second value should be set-path, got %s", value.TypeToString(vals[1].GetType()))
 				}
 			},
 			desc: "Should distinguish between paths and set-paths",
