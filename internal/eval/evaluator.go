@@ -290,13 +290,13 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 // Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	var traceStart time.Time
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+	if e.traceEnabled {
 		traceStart = time.Now()
 		e.emitTraceResult("block-enter", "", fmt.Sprintf("[%d expressions]", len(vals)), value.NewNoneVal(), 0, traceStart, nil)
 	}
 
 	if len(vals) == 0 {
-		if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		if e.traceEnabled {
 			e.emitTraceResult("block-exit", "", "[]", value.NewNoneVal(), 0, time.Now(), nil)
 		}
 		return value.NewNoneVal(), nil
@@ -308,7 +308,7 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	for position < len(vals) {
 		newPos, result, err := e.EvaluateExpression(vals, position)
 		if err != nil {
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+			if e.traceEnabled {
 				e.emitTraceResult("block-exit", "", fmt.Sprintf("[error at position %d]", position), value.NewNoneVal(), position, time.Now(), err)
 			}
 			return value.NewNoneVal(), e.annotateError(err, vals, position)
@@ -317,7 +317,7 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 		lastResult = result
 	}
 
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+	if e.traceEnabled {
 		e.emitTraceResult("block-exit", "", fmt.Sprintf("[%d expressions]", len(vals)), lastResult, len(vals), time.Now(), nil)
 	}
 
@@ -505,7 +505,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		wordStr, _ := value.AsWordValue(element)
 
 		if debug.GlobalDebugger != nil && debug.GlobalDebugger.HasBreakpoint(wordStr) {
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+			if e.traceEnabled {
 				trace.GlobalTraceSession.Emit(trace.TraceEvent{
 					Timestamp: time.Now(),
 					Word:      "debug",
@@ -623,7 +623,7 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 
 	var traceStart time.Time
 	var args map[string]string
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+	if e.traceEnabled {
 		traceStart = time.Now()
 		args = e.captureFunctionArgs(fn, posArgs, refValues)
 		event := trace.TraceEvent{
@@ -645,7 +645,7 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 	if fn.Type == value.FuncNative {
 		result, err = e.callNative(fn, posArgs, refValues)
 		if err != nil {
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+			if e.traceEnabled {
 				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
 			}
 			return position, value.NewNoneVal(), e.annotateError(err, block, position)
@@ -653,14 +653,14 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 	} else {
 		result, err = e.executeFunction(fn, posArgs, refValues)
 		if err != nil {
-			if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+			if e.traceEnabled {
 				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
 			}
 			return position, value.NewNoneVal(), err
 		}
 	}
 
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+	if e.traceEnabled {
 		e.emitTraceResult("return", name, name, result, position, traceStart, nil)
 	}
 
@@ -1106,7 +1106,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 
 // captureFrameState returns a map of variable bindings in the current frame for tracing.
 func (e *Evaluator) captureFrameState() map[string]string {
-	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetVerbose() {
+	if !e.traceEnabled || trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetVerbose() {
 		return nil
 	}
 
@@ -1123,7 +1123,7 @@ func (e *Evaluator) captureFrameState() map[string]string {
 
 // captureFunctionArgs extracts function argument names and values for tracing.
 func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) map[string]string {
-	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetIncludeArgs() {
+	if !e.traceEnabled || trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetIncludeArgs() {
 		return nil
 	}
 
@@ -1145,7 +1145,7 @@ func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.
 
 // emitTraceResult emits a trace event with comprehensive debugging information.
 func (e *Evaluator) emitTraceResult(eventType string, word string, expr string, result core.Value, position int, traceStart time.Time, err error) {
-	if trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.IsEnabled() {
+	if !e.traceEnabled || trace.GlobalTraceSession == nil {
 		return
 	}
 
