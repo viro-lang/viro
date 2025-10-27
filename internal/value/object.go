@@ -34,9 +34,9 @@ func (o *ObjectInstance) String() string {
 		return "object[]"
 	}
 
-	// Build field representation using owned frame
+	// Build field representation including inherited fields from prototype chain
 	var fields []string
-	bindings := o.Frame.GetAll()
+	bindings := o.GetAllFieldsWithProto()
 	for _, binding := range bindings {
 		fields = append(fields, fmt.Sprintf("%s: %s", binding.Symbol, binding.Value.Form()))
 	}
@@ -54,9 +54,9 @@ func (o *ObjectInstance) Mold() string {
 		return "make object! []"
 	}
 
-	// Build field assignments using owned frame
+	// Build field assignments including inherited fields from prototype chain
 	fieldAssignments := []string{}
-	bindings := o.Frame.GetAll()
+	bindings := o.GetAllFieldsWithProto()
 	for _, binding := range bindings {
 		moldedVal := binding.Value.Mold()
 		fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", binding.Symbol, moldedVal))
@@ -75,9 +75,9 @@ func (o *ObjectInstance) Form() string {
 		return ""
 	}
 
-	// Build field display lines using owned frame
+	// Build field display lines including inherited fields from prototype chain
 	fieldLines := []string{}
-	bindings := o.Frame.GetAll()
+	bindings := o.GetAllFieldsWithProto()
 	for _, binding := range bindings {
 		displayVal := binding.Value.Form()
 		fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", binding.Symbol, displayVal))
@@ -140,6 +140,43 @@ func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
 	}
 
 	return NewNoneVal(), false
+}
+
+// GetAllFieldsWithProto collects all accessible fields (own + inherited).
+// Returns bindings in order: parent fields first, then child fields (child overrides parent).
+func (obj *ObjectInstance) GetAllFieldsWithProto() []core.Binding {
+	seen := make(map[string]bool)
+	var result []core.Binding
+
+	// Walk up the prototype chain to collect all objects
+	chain := []*ObjectInstance{}
+	current := obj
+	for current != nil {
+		chain = append(chain, current)
+		current = current.ParentProto
+	}
+
+	// Reverse walk: start from root ancestor to child, so we preserve order
+	// Child fields that override parent fields will appear in child's position
+	for i := len(chain) - 1; i >= 0; i-- {
+		bindings := chain[i].Frame.GetAll()
+		for _, binding := range bindings {
+			if !seen[binding.Symbol] {
+				seen[binding.Symbol] = true
+				result = append(result, binding)
+			} else {
+				// Update the value if field was already seen (child overriding parent)
+				for j := range result {
+					if result[j].Symbol == binding.Symbol {
+						result[j].Value = binding.Value
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func (obj *ObjectInstance) GetType() core.ValueType {

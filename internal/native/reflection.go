@@ -62,9 +62,9 @@ func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build spec block from frame bindings
+		// Build spec block from all accessible fields (including inherited)
 		specElements := []core.Value{}
-		bindings := obj.Frame.GetAll()
+		bindings := obj.GetAllFieldsWithProto()
 		for _, binding := range bindings {
 			specElements = append(specElements, value.NewWordVal(binding.Symbol))
 		}
@@ -111,9 +111,9 @@ func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build body block from frame bindings (field: value pairs)
+		// Build body block from all accessible fields (including inherited)
 		bodyElements := []core.Value{}
-		bindings := obj.Frame.GetAll()
+		bindings := obj.GetAllFieldsWithProto()
 		for _, binding := range bindings {
 			bodyElements = append(bodyElements, value.NewSetWordVal(binding.Symbol))
 			bodyElements = append(bodyElements, value.NewNoneVal()) // Placeholder
@@ -149,8 +149,8 @@ func WordsOf(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of words from frame bindings
-	bindings := obj.Frame.GetAll()
+	// Build block of words from all accessible fields (including inherited)
+	bindings := obj.GetAllFieldsWithProto()
 	wordElements := make([]core.Value, len(bindings))
 	for i, binding := range bindings {
 		wordElements[i] = value.NewWordVal(binding.Symbol)
@@ -180,8 +180,8 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of values using owned frame
-	bindings := obj.Frame.GetAll()
+	// Build block of values from all accessible fields (including inherited)
+	bindings := obj.GetAllFieldsWithProto()
 	valueElements := make([]core.Value, len(bindings))
 	for i, binding := range bindings {
 		valueElements[i] = binding.Value
@@ -224,7 +224,7 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
 		// Format: object [field: value ...]
-		bindings := obj.Frame.GetAll()
+		bindings := obj.GetAllFieldsWithProto()
 		fields := []string{}
 		for _, binding := range bindings {
 			fields = append(fields, binding.Symbol)
