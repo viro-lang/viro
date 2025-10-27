@@ -43,8 +43,9 @@ func TestObjectConstruction(t *testing.T) {
 				if !ok {
 					t.Fatal("expected object type")
 				}
-				if len(obj.Manifest.Words) != 0 {
-					t.Errorf("expected 0 fields, got %d", len(obj.Manifest.Words))
+				bindings := obj.Frame.GetAll()
+				if len(bindings) != 0 {
+					t.Errorf("expected 0 fields, got %d", len(bindings))
 				}
 			},
 			wantErr: false,
@@ -58,11 +59,12 @@ func TestObjectConstruction(t *testing.T) {
 				if !ok {
 					t.Fatal("expected object type")
 				}
-				if len(obj.Manifest.Words) != 2 {
-					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
+				bindings := obj.Frame.GetAll()
+				if len(bindings) != 2 {
+					t.Errorf("expected 2 fields, got %d", len(bindings))
 				}
-				if obj.Manifest.Words[0] != "name" || obj.Manifest.Words[1] != "age" {
-					t.Errorf("unexpected field names: %v", obj.Manifest.Words)
+				if bindings[0].Symbol != "name" || bindings[1].Symbol != "age" {
+					t.Errorf("unexpected field names: %v %v", bindings[0].Symbol, bindings[1].Symbol)
 				}
 			},
 			wantErr: false,
@@ -76,8 +78,9 @@ func TestObjectConstruction(t *testing.T) {
 				if !ok {
 					t.Fatal("expected object type")
 				}
-				if len(obj.Manifest.Words) != 2 {
-					t.Errorf("expected 2 fields, got %d", len(obj.Manifest.Words))
+				bindings := obj.Frame.GetAll()
+				if len(bindings) != 2 {
+					t.Errorf("expected 2 fields, got %d", len(bindings))
 				}
 
 				nameVal, found := obj.GetField("name")

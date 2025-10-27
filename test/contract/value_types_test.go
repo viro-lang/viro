@@ -65,17 +65,20 @@ func TestDecimalValueWrapping(t *testing.T) {
 
 // TestObjectInstanceConstruction validates ObjectInstance creation
 func TestObjectInstanceConstruction(t *testing.T) {
-	words := []string{"name", "age"}
-	types := []core.ValueType{value.TypeString, value.TypeInteger}
+	// Create frame with fields
+	objFrame := frame.NewObjectFrame(-1, []string{}, nil)
+	objFrame.Bind("name", value.NewStrVal("test"))
+	objFrame.Bind("age", value.NewIntVal(25))
 
-	obj := value.NewObject(nil, words, types)
+	obj := value.NewObject(objFrame)
 
 	if obj == nil {
 		t.Fatal("NewObject returned nil")
 	}
 
-	if len(obj.Manifest.Words) != 2 {
-		t.Errorf("expected 2 words, got %d", len(obj.Manifest.Words))
+	bindings := obj.Frame.GetAll()
+	if len(bindings) != 2 {
+		t.Errorf("expected 2 fields, got %d", len(bindings))
 	}
 
 	// Test String() output
@@ -87,7 +90,9 @@ func TestObjectInstanceConstruction(t *testing.T) {
 
 // TestObjectValueWrapping validates Value wrapping for objects
 func TestObjectValueWrapping(t *testing.T) {
-	obj := value.NewObject(nil, []string{"x"}, nil)
+	objFrame := frame.NewObjectFrame(-1, []string{}, nil)
+	objFrame.Bind("x", value.NewIntVal(10))
+	obj := value.NewObject(objFrame)
 	val := value.ObjectVal(obj)
 
 	if val.GetType() != value.TypeObject {
@@ -219,9 +224,9 @@ func TestPathValueWrapping(t *testing.T) {
 // TestValueTypeDispatch validates type dispatch for new types
 func TestValueTypeDispatch(t *testing.T) {
 	// Create object with a field
-	objFrame := frame.NewObjectFrame(0, []string{"name"}, []core.ValueType{value.TypeString})
-	obj := value.NewObject(objFrame, []string{"name"}, []core.ValueType{value.TypeString})
-	obj.SetField("name", value.NewStrVal("Alice"))
+	objFrame := frame.NewObjectFrame(0, []string{}, nil)
+	objFrame.Bind("name", value.NewStrVal("Alice"))
+	obj := value.NewObject(objFrame)
 
 	tests := []struct {
 		name     string

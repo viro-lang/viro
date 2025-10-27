@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -640,22 +641,15 @@ func QueryPort(portVal core.Value) (core.Value, error) {
 		return value.NewNoneVal(), fmt.Errorf("port is closed")
 	}
 
-	metadata, err := port.Driver.Query()
+	_, err := port.Driver.Query()
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 
-	// Convert metadata map to object
-	// For now, create a simple object representation
-	// Full implementation would use ObjectInstance with proper frame
-	obj := value.NewObject(nil, make([]string, 0, len(metadata)), make([]core.ValueType, 0, len(metadata)))
-
-	// Store metadata keys
-	for key := range metadata {
-		obj.Manifest.Words = append(obj.Manifest.Words, key)
-		obj.Manifest.Types = append(obj.Manifest.Types, value.TypeNone)
-	}
-
+	// TODO: Convert metadata map to object with proper Value conversion
+	// For now, return empty object
+	objFrame := frame.NewObjectFrame(-1, make([]string, 0), nil)
+	obj := value.NewObject(objFrame)
 	return value.ObjectVal(obj), nil
 }
 

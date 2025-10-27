@@ -18,28 +18,13 @@ import (
 type ObjectInstance struct {
 	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
-	Manifest    ObjectManifest  // Field metadata
-}
-
-// ObjectManifest describes the fields exposed by an object.
-type ObjectManifest struct {
-	Words []string         // Published field names (case-sensitive)
-	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewObject creates an ObjectInstance with owned frame for self-contained storage.
-func NewObject(ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
-	if types == nil {
-		// Default to TypeNone (any type) for all fields
-		types = make([]core.ValueType, len(words))
-	}
+func NewObject(ownedFrame core.Frame) *ObjectInstance {
 	return &ObjectInstance{
 		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
-		Manifest: ObjectManifest{
-			Words: words,
-			Types: types,
-		},
 	}
 }
 
@@ -51,12 +36,9 @@ func (o *ObjectInstance) String() string {
 
 	// Build field representation using owned frame
 	var fields []string
-	for _, fieldName := range o.Manifest.Words {
-		if val, found := o.GetField(fieldName); found {
-			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.Form()))
-		} else {
-			fields = append(fields, fmt.Sprintf("%s: <missing>", fieldName))
-		}
+	bindings := o.Frame.GetAll()
+	for _, binding := range bindings {
+		fields = append(fields, fmt.Sprintf("%s: %s", binding.Symbol, binding.Value.Form()))
 	}
 
 	if len(fields) == 0 {
@@ -74,12 +56,10 @@ func (o *ObjectInstance) Mold() string {
 
 	// Build field assignments using owned frame
 	fieldAssignments := []string{}
-	for _, fieldName := range o.Manifest.Words {
-		if fieldVal, found := o.GetField(fieldName); found {
-			// Recursively mold the field value
-			moldedVal := fieldVal.Mold() // Use Mold() for proper recursive molding
-			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
-		}
+	bindings := o.Frame.GetAll()
+	for _, binding := range bindings {
+		moldedVal := binding.Value.Mold()
+		fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", binding.Symbol, moldedVal))
 	}
 
 	if len(fieldAssignments) == 0 {
@@ -97,12 +77,10 @@ func (o *ObjectInstance) Form() string {
 
 	// Build field display lines using owned frame
 	fieldLines := []string{}
-	for _, fieldName := range o.Manifest.Words {
-		if fieldVal, found := o.GetField(fieldName); found {
-			// Use Form() for human-readable field values
-			displayVal := fieldVal.Form()
-			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
-		}
+	bindings := o.Frame.GetAll()
+	for _, binding := range bindings {
+		displayVal := binding.Value.Form()
+		fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", binding.Symbol, displayVal))
 	}
 
 	if len(fieldLines) == 0 {
