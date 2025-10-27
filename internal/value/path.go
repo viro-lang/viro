@@ -139,3 +139,192 @@ func (p *PathExpression) Equals(other core.Value) bool {
 	}
 	return other.GetPayload() == p
 }
+
+// GetPathExpression marks a path as non-invoking (like get-words)
+type GetPathExpression struct {
+	*PathExpression
+}
+
+// NewGetPath creates a GetPathExpression with the given segments and base value.
+func NewGetPath(segments []PathSegment, base core.Value) *GetPathExpression {
+	return &GetPathExpression{
+		PathExpression: NewPath(segments, base),
+	}
+}
+
+// String returns a get-path-like representation for debugging.
+func (g *GetPathExpression) String() string {
+	if g == nil || len(g.Segments) == 0 {
+		return "get-path[]"
+	}
+	result := "get-path["
+	for i, seg := range g.Segments {
+		if i > 0 {
+			result += "."
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += "/" + seg.Value.(string)
+		}
+	}
+	result += "]"
+	return result
+}
+
+// Mold returns the mold-formatted get-path representation.
+func (g *GetPathExpression) Mold() string {
+	if g == nil || len(g.Segments) == 0 {
+		return ""
+	}
+	result := ":"
+	for i, seg := range g.Segments {
+		if i > 0 {
+			// Use appropriate separator based on segment type
+			switch seg.Type {
+			case PathSegmentRefinement:
+				result += "/"
+			default:
+				result += "."
+			}
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += seg.Value.(string)
+		}
+	}
+	return result
+}
+
+// Form returns the form-formatted get-path representation (same as mold for get-paths).
+func (g *GetPathExpression) Form() string {
+	return g.Mold()
+}
+
+// GetPathVal creates a Value wrapping a GetPathExpression.
+func GetPathVal(path *GetPathExpression) core.Value {
+	return path
+}
+
+// AsGetPath extracts the GetPathExpression from a Value, or returns nil if wrong type.
+func AsGetPath(v core.Value) (*GetPathExpression, bool) {
+	if v.GetType() != TypeGetPath {
+		return nil, false
+	}
+	path, ok := v.GetPayload().(*GetPathExpression)
+	return path, ok
+}
+
+func (g *GetPathExpression) GetType() core.ValueType {
+	return TypeGetPath
+}
+
+func (g *GetPathExpression) GetPayload() any {
+	return g
+}
+
+func (g *GetPathExpression) Equals(other core.Value) bool {
+	if other.GetType() != TypeGetPath {
+		return false
+	}
+	return other.GetPayload() == g
+}
+
+// SetPathExpression marks a path as assignment target (like set-words)
+type SetPathExpression struct {
+	*PathExpression
+}
+
+// NewSetPath creates a SetPathExpression with the given segments and base value.
+func NewSetPath(segments []PathSegment, base core.Value) *SetPathExpression {
+	return &SetPathExpression{
+		PathExpression: NewPath(segments, base),
+	}
+}
+
+// String returns a set-path-like representation for debugging.
+func (s *SetPathExpression) String() string {
+	if s == nil || len(s.Segments) == 0 {
+		return "set-path[]"
+	}
+	result := "set-path["
+	for i, seg := range s.Segments {
+		if i > 0 {
+			result += "."
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += "/" + seg.Value.(string)
+		}
+	}
+	result += "]"
+	return result
+}
+
+// Mold returns a set-path representation suitable for parsing.
+func (s *SetPathExpression) Mold() string {
+	if s == nil || len(s.Segments) == 0 {
+		return ""
+	}
+	result := ""
+	for i, seg := range s.Segments {
+		if i > 0 {
+			result += "."
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += "/" + seg.Value.(string)
+		}
+	}
+	result += ":"
+	return result
+}
+
+// Form returns a user-friendly representation.
+func (s *SetPathExpression) Form() string {
+	return s.Mold()
+}
+
+// SetPathVal creates a Value wrapping a SetPathExpression.
+func SetPathVal(path *SetPathExpression) core.Value {
+	return path
+}
+
+// AsSetPath extracts the SetPathExpression from a Value, or returns nil if wrong type.
+func AsSetPath(v core.Value) (*SetPathExpression, bool) {
+	if v.GetType() != TypeSetPath {
+		return nil, false
+	}
+	path, ok := v.GetPayload().(*SetPathExpression)
+	return path, ok
+}
+
+func (s *SetPathExpression) GetType() core.ValueType {
+	return TypeSetPath
+}
+
+func (s *SetPathExpression) GetPayload() any {
+	return s
+}
+
+func (s *SetPathExpression) Equals(other core.Value) bool {
+	if other.GetType() != TypeSetPath {
+		return false
+	}
+	return other.GetPayload() == s
+}

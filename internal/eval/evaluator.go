@@ -397,12 +397,17 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		}
 		return position + 1, result, nil
 
+	case value.TypeGetPath:
+		getPath, _ := value.AsGetPath(element)
+		result, err := e.evalGetPathValue(getPath)
+		return position + 1, result, err
+
+	case value.TypeSetPath:
+		setPath, _ := value.AsSetPath(element)
+		return e.evalSetPathValue(block, position, setPath)
+
 	case value.TypeSetWord:
 		wordStr, _ := value.AsWordValue(element)
-
-		if strings.Contains(wordStr, ".") {
-			return e.evalSetPathExpression(block, position, wordStr)
-		}
 
 		if position+1 >= len(block) {
 			return position, value.NewNoneVal(), verror.NewScriptError(
@@ -423,9 +428,9 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		}
 
 		currentFrame := e.currentFrame()
-		if currentFrame != nil {
-			currentFrame.Bind(wordStr, result)
-		}
+
+		currentFrame.Bind(wordStr, result)
+
 		return newPos, result, nil
 
 	case value.TypeWord:
@@ -469,7 +474,17 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	case value.TypePath:
 		path, _ := value.AsPath(element)
 		result, err := e.evalPathValue(path)
-		return position + 1, result, err
+		if err != nil {
+			return position, value.NewNoneVal(), err
+		}
+
+		if result.GetType() == value.TypeFunction {
+			fn, _ := value.AsFunctionValue(result)
+			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
+			return newPos, result, err
+		}
+
+		return position + 1, result, nil
 
 	default:
 		return position, value.NewNoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
@@ -502,24 +517,19 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, c
 	return newPos, result, nil
 }
 
-// evalSetPathExpression handles set-path assignment in expression evaluation.
-func (e *Evaluator) evalSetPathExpression(block []core.Value, position int, pathStr string) (int, core.Value, error) {
-	path, err := parsePathString(pathStr)
-	if err != nil {
-		return position, value.NewNoneVal(), err
-	}
-
+// evalSetPathValue handles set-path assignment in expression evaluation.
+func (e *Evaluator) evalSetPathValue(block []core.Value, position int, setPath *value.SetPathExpression) (int, core.Value, error) {
 	newPos, result, err := e.EvaluateExpression(block, position+1)
 	if err != nil {
 		return position, value.NewNoneVal(), e.annotateError(err, block, position)
 	}
 
-	tr, err := traversePath(e, path, true)
+	tr, err := traversePath(e, setPath.PathExpression, true)
 	if err != nil {
 		return position, value.NewNoneVal(), err
 	}
 
-	result, err = e.assignToPathTarget(tr, result, pathStr)
+	result, err = e.assignToPathTarget(tr, result, setPath.Mold())
 	if err != nil {
 		return position, value.NewNoneVal(), err
 	}
@@ -646,6 +656,22 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
+	result := tr.values[len(tr.values)-1]
+
+	// Path expressions return functions without invoking them
+	// (they can be invoked later with arguments like: obj.method arg1 arg2)
+
+	return result, nil
+}
+
+// evalGetPathValue evaluates a get-path expression and returns its value.
+// Get-paths NEVER invoke functions - they just return the result.
+func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Value, error) {
+	tr, err := traversePath(e, getPath.PathExpression, false)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	// Get-paths NEVER invoke functions - just return the result
 	return tr.values[len(tr.values)-1], nil
 }
 
@@ -904,33 +930,6 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 	return tr, nil
 }
 
-// parsePathString converts a dot-separated string path into a PathExpression.
-// Supports both word segments (field names) and numeric segments (indices).
-// Requires at least two segments for a valid path.
-func parsePathString(pathStr string) (*value.PathExpression, error) {
-	parts := strings.Split(pathStr, ".")
-	if len(parts) < 2 {
-		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
-	}
-
-	segments := make([]value.PathSegment, len(parts))
-	for i, part := range parts {
-		if idx, err := strconv.ParseInt(part, 10, 64); err == nil {
-			segments[i] = value.PathSegment{
-				Type:  value.PathSegmentIndex,
-				Value: idx,
-			}
-		} else {
-			segments[i] = value.PathSegment{
-				Type:  value.PathSegmentWord,
-				Value: part,
-			}
-		}
-	}
-
-	return value.NewPath(segments, value.NewNoneVal()), nil
-}
-
 // checkIndexBounds validates that an index is within bounds (1-based indexing).
 // Returns nil if valid, error if out of bounds.
 func checkIndexBounds(index, length int64, typeName string) error {
@@ -992,13 +991,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 
 		obj, _ := value.AsObject(container)
 
-		// Check if field exists in object or prototype chain using owned frames
-		_, found := obj.GetFieldWithProto(fieldName)
-		if !found {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
-		}
-
-		// Set field using owned frame
+		// Set field using owned frame (creates field if it doesn't exist)
 		obj.SetField(fieldName, newVal)
 
 	default:

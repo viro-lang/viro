@@ -35,8 +35,6 @@ type Frame interface {
 	Count() int
 	GetAll() []Binding
 	Clone() Frame
-	ValidateFieldType(symbol string, value Value) bool
-	HasManifestField(symbol string) bool
 	GetName() string
 	SetName(name string)
 }

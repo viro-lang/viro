@@ -62,15 +62,11 @@ func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build spec block from manifest
+		// Build spec block from all accessible fields (including inherited)
 		specElements := []core.Value{}
-		for i, field := range obj.Manifest.Words {
-			specElements = append(specElements, value.NewWordVal(field))
-			// If there's a type hint, include it
-			if i < len(obj.Manifest.Types) && obj.Manifest.Types[i] != value.TypeNone {
-				typeName := value.TypeToString(obj.Manifest.Types[i])
-				specElements = append(specElements, value.NewWordVal(typeName))
-			}
+		bindings := obj.GetAllFieldsWithProto()
+		for _, binding := range bindings {
+			specElements = append(specElements, value.NewWordVal(binding.Symbol))
 		}
 		return value.NewBlockVal(specElements), nil
 
@@ -115,10 +111,11 @@ func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build body block from manifest (field: value pairs)
+		// Build body block from all accessible fields (including inherited)
 		bodyElements := []core.Value{}
-		for _, field := range obj.Manifest.Words {
-			bodyElements = append(bodyElements, value.NewSetWordVal(field))
+		bindings := obj.GetAllFieldsWithProto()
+		for _, binding := range bindings {
+			bodyElements = append(bodyElements, value.NewSetWordVal(binding.Symbol))
 			bodyElements = append(bodyElements, value.NewNoneVal()) // Placeholder
 		}
 		return value.NewBlockVal(bodyElements), nil
@@ -152,10 +149,11 @@ func WordsOf(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of words
-	wordElements := make([]core.Value, len(obj.Manifest.Words))
-	for i, field := range obj.Manifest.Words {
-		wordElements[i] = value.NewWordVal(field)
+	// Build block of words from all accessible fields (including inherited)
+	bindings := obj.GetAllFieldsWithProto()
+	wordElements := make([]core.Value, len(bindings))
+	for i, binding := range bindings {
+		wordElements[i] = value.NewWordVal(binding.Symbol)
 	}
 
 	return value.NewBlockVal(wordElements), nil
@@ -182,15 +180,11 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of values using owned frame
-	valueElements := make([]core.Value, len(obj.Manifest.Words))
-	for i, field := range obj.Manifest.Words {
-		if fieldVal, found := obj.GetField(field); found {
-			// Deep copy the value to prevent mutation
-			valueElements[i] = fieldVal
-		} else {
-			valueElements[i] = value.NewNoneVal()
-		}
+	// Build block of values from all accessible fields (including inherited)
+	bindings := obj.GetAllFieldsWithProto()
+	valueElements := make([]core.Value, len(bindings))
+	for i, binding := range bindings {
+		valueElements[i] = binding.Value
 	}
 
 	return value.NewBlockVal(valueElements), nil
@@ -230,9 +224,10 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
 		// Format: object [field: value ...]
+		bindings := obj.GetAllFieldsWithProto()
 		fields := []string{}
-		for _, field := range obj.Manifest.Words {
-			fields = append(fields, field)
+		for _, binding := range bindings {
+			fields = append(fields, binding.Symbol)
 		}
 		fieldsStr := strings.Join(fields, " ")
 		source := fmt.Sprintf("object [%s]", fieldsStr)

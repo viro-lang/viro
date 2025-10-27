@@ -188,7 +188,7 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 		ownedFrame.Bind(field, evaled)
 	}
 
-	obj := value.NewObject(ownedFrame, fields, nil)
+	obj := value.NewObject(ownedFrame)
 	if prototype != nil {
 		obj.ParentProto = prototype
 	}
@@ -462,33 +462,7 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	obj, _ := value.AsObject(targetVal)
 
-	// Check if field exists in manifest
-	fieldIndex := -1
-	for i, word := range obj.Manifest.Words {
-		if word == fieldName {
-			fieldIndex = i
-			break
-		}
-	}
-
-	if fieldIndex == -1 {
-		// Field doesn't exist - error per contract (no dynamic field addition)
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDNoSuchField,
-			[3]string{fieldName, "", ""},
-		)
-	}
-
-	// Optional: Type validation if type hint is present
-	expectedType := obj.Manifest.Types[fieldIndex]
-	if expectedType != value.TypeNone && expectedType != newVal.GetType() {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{value.TypeToString(expectedType), value.TypeToString(newVal.GetType()), fieldName},
-		)
-	}
-
-	// Update the field using owned frame
+	// Set the field using owned frame (creates field if it doesn't exist)
 	obj.SetField(fieldName, newVal)
 
 	// Emit trace event for field write (Feature 002, T097)

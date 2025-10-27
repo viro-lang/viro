@@ -18,28 +18,13 @@ import (
 type ObjectInstance struct {
 	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
-	Manifest    ObjectManifest  // Field metadata
-}
-
-// ObjectManifest describes the fields exposed by an object.
-type ObjectManifest struct {
-	Words []string         // Published field names (case-sensitive)
-	Types []core.ValueType // Optional type hints (TypeNone = any type allowed)
 }
 
 // NewObject creates an ObjectInstance with owned frame for self-contained storage.
-func NewObject(ownedFrame core.Frame, words []string, types []core.ValueType) *ObjectInstance {
-	if types == nil {
-		// Default to TypeNone (any type) for all fields
-		types = make([]core.ValueType, len(words))
-	}
+func NewObject(ownedFrame core.Frame) *ObjectInstance {
 	return &ObjectInstance{
 		Frame:       ownedFrame,
 		ParentProto: nil, // No parent by default
-		Manifest: ObjectManifest{
-			Words: words,
-			Types: types,
-		},
 	}
 }
 
@@ -49,14 +34,11 @@ func (o *ObjectInstance) String() string {
 		return "object[]"
 	}
 
-	// Build field representation using owned frame
+	// Build field representation including inherited fields from prototype chain
 	var fields []string
-	for _, fieldName := range o.Manifest.Words {
-		if val, found := o.GetField(fieldName); found {
-			fields = append(fields, fmt.Sprintf("%s: %s", fieldName, val.Form()))
-		} else {
-			fields = append(fields, fmt.Sprintf("%s: <missing>", fieldName))
-		}
+	bindings := o.GetAllFieldsWithProto()
+	for _, binding := range bindings {
+		fields = append(fields, fmt.Sprintf("%s: %s", binding.Symbol, binding.Value.Form()))
 	}
 
 	if len(fields) == 0 {
@@ -72,14 +54,12 @@ func (o *ObjectInstance) Mold() string {
 		return "make object! []"
 	}
 
-	// Build field assignments using owned frame
+	// Build field assignments including inherited fields from prototype chain
 	fieldAssignments := []string{}
-	for _, fieldName := range o.Manifest.Words {
-		if fieldVal, found := o.GetField(fieldName); found {
-			// Recursively mold the field value
-			moldedVal := fieldVal.Mold() // Use Mold() for proper recursive molding
-			fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", fieldName, moldedVal))
-		}
+	bindings := o.GetAllFieldsWithProto()
+	for _, binding := range bindings {
+		moldedVal := binding.Value.Mold()
+		fieldAssignments = append(fieldAssignments, fmt.Sprintf("%s: %s", binding.Symbol, moldedVal))
 	}
 
 	if len(fieldAssignments) == 0 {
@@ -95,14 +75,12 @@ func (o *ObjectInstance) Form() string {
 		return ""
 	}
 
-	// Build field display lines using owned frame
+	// Build field display lines including inherited fields from prototype chain
 	fieldLines := []string{}
-	for _, fieldName := range o.Manifest.Words {
-		if fieldVal, found := o.GetField(fieldName); found {
-			// Use Form() for human-readable field values
-			displayVal := fieldVal.Form()
-			fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", fieldName, displayVal))
-		}
+	bindings := o.GetAllFieldsWithProto()
+	for _, binding := range bindings {
+		displayVal := binding.Value.Form()
+		fieldLines = append(fieldLines, fmt.Sprintf("%s: %s", binding.Symbol, displayVal))
 	}
 
 	if len(fieldLines) == 0 {
@@ -162,6 +140,43 @@ func (obj *ObjectInstance) GetFieldWithProto(name string) (core.Value, bool) {
 	}
 
 	return NewNoneVal(), false
+}
+
+// GetAllFieldsWithProto collects all accessible fields (own + inherited).
+// Returns bindings in order: parent fields first, then child fields (child overrides parent).
+func (obj *ObjectInstance) GetAllFieldsWithProto() []core.Binding {
+	seen := make(map[string]bool)
+	var result []core.Binding
+
+	// Walk up the prototype chain to collect all objects
+	chain := []*ObjectInstance{}
+	current := obj
+	for current != nil {
+		chain = append(chain, current)
+		current = current.ParentProto
+	}
+
+	// Reverse walk: start from root ancestor to child, so we preserve order
+	// Child fields that override parent fields will appear in child's position
+	for i := len(chain) - 1; i >= 0; i-- {
+		bindings := chain[i].Frame.GetAll()
+		for _, binding := range bindings {
+			if !seen[binding.Symbol] {
+				seen[binding.Symbol] = true
+				result = append(result, binding)
+			} else {
+				// Update the value if field was already seen (child overriding parent)
+				for j := range result {
+					if result[j].Symbol == binding.Symbol {
+						result[j].Value = binding.Value
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return result
 }
 
 func (obj *ObjectInstance) GetType() core.ValueType {
