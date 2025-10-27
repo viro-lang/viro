@@ -26,11 +26,12 @@ import (
 // Per FR-015: emits structured events to stderr by default, optional file redirection.
 // Per research.md: uses lumberjack for rotating log file support.
 type TraceSession struct {
-	mu      sync.Mutex
-	enabled bool
-	sink    io.Writer          // Output destination (stderr or file)
-	logger  *lumberjack.Logger // Optional file logger
-	filters TraceFilters
+	mu          sync.Mutex
+	enabled     bool
+	sink        io.Writer          // Output destination (stderr or file)
+	logger      *lumberjack.Logger // Optional file logger
+	filters     TraceFilters
+	stepCounter int64 // Monotonic step counter
 }
 
 // TraceFilters controls which events are emitted.
@@ -38,6 +39,11 @@ type TraceFilters struct {
 	IncludeWords []string      // Only trace these words (empty = all)
 	ExcludeWords []string      // Never trace these words
 	MinDuration  time.Duration // Only trace operations taking longer than this
+
+	Verbose     bool // Include frame state
+	StepLevel   int  // 0=calls only, 1=expressions, 2=all
+	IncludeArgs bool // Include function arguments
+	MaxDepth    int  // Only trace up to this call depth (0=unlimited)
 }
 
 // TraceEvent represents a single trace event (per FR-015 requirements).
@@ -46,6 +52,16 @@ type TraceEvent struct {
 	Value     string    `json:"value"`    // String representation of evaluated value
 	Word      string    `json:"word"`     // Word being evaluated (if applicable)
 	Duration  int64     `json:"duration"` // Nanoseconds spent evaluating
+
+	EventType  string            `json:"event_type,omitempty"`  // "eval", "call", "return", "block-enter", "block-exit"
+	Step       int64             `json:"step,omitempty"`        // Execution step counter
+	Depth      int               `json:"depth,omitempty"`       // Call stack depth
+	Position   int               `json:"position,omitempty"`    // Position in current block
+	Expression string            `json:"expression,omitempty"`  // Mold of expression being evaluated
+	Args       map[string]string `json:"args,omitempty"`        // Function arguments (name -> value)
+	Frame      map[string]string `json:"frame,omitempty"`       // Local variables (only in verbose mode)
+	ParentExpr string            `json:"parent_expr,omitempty"` // Context expression
+	Error      string            `json:"error,omitempty"`       // Error message if evaluation failed
 }
 
 // GlobalTraceSession is the active trace session (singleton).
@@ -146,6 +162,52 @@ func (ts *TraceSession) Close() error {
 		return ts.logger.Close()
 	}
 	return nil
+}
+
+// NextStep increments and returns the next step counter value.
+func (ts *TraceSession) NextStep() int64 {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.stepCounter++
+	return ts.stepCounter
+}
+
+// ResetStepCounter resets the step counter to zero.
+func (ts *TraceSession) ResetStepCounter() {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	ts.stepCounter = 0
+}
+
+// GetVerbose returns whether verbose mode is enabled.
+func (ts *TraceSession) GetVerbose() bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.filters.Verbose
+}
+
+// GetIncludeArgs returns whether function arguments should be included.
+func (ts *TraceSession) GetIncludeArgs() bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.filters.IncludeArgs
+}
+
+// ShouldTraceExpression returns whether expressions should be traced based on StepLevel.
+func (ts *TraceSession) ShouldTraceExpression() bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	return ts.filters.StepLevel >= 1
+}
+
+// ShouldTraceAtDepth returns whether tracing should occur at the given depth.
+func (ts *TraceSession) ShouldTraceAtDepth(depth int) bool {
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	if ts.filters.MaxDepth == 0 {
+		return true
+	}
+	return depth <= ts.filters.MaxDepth
 }
 
 // Port lifecycle trace event helpers (T076)
