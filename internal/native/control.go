@@ -282,6 +282,7 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		// Disable tracing
 		if trace.GlobalTraceSession != nil {
 			trace.GlobalTraceSession.Disable()
+			eval.UpdateTraceCache()
 		}
 		return value.NewNoneVal(), nil
 	}
@@ -421,6 +422,7 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	trace.GlobalTraceSession.ResetStepCounter()
 
 	trace.GlobalTraceSession.Enable(filters)
+	eval.UpdateTraceCache()
 	return value.NewNoneVal(), nil
 }
 

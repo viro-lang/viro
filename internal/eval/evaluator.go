@@ -28,6 +28,9 @@ type Evaluator struct {
 	OutputWriter io.Writer
 	ErrorWriter  io.Writer
 	InputReader  io.Reader
+
+	traceEnabled         bool
+	traceShouldTraceExpr bool
 }
 
 // NewEvaluator creates a new evaluator instance with an initialized global frame.
@@ -49,6 +52,8 @@ func NewEvaluator() *Evaluator {
 	e.captured[0] = true
 
 	frame.InitTypeFrames()
+
+	e.UpdateTraceCache()
 
 	return e
 }
@@ -96,6 +101,18 @@ func (e *Evaluator) SetInputReader(r io.Reader) {
 // GetInputReader returns the current input reader.
 func (e *Evaluator) GetInputReader() io.Reader {
 	return e.InputReader
+}
+
+// UpdateTraceCache refreshes the cached trace settings from the global trace session.
+// This should be called whenever trace settings change (enable/disable/filter updates).
+func (e *Evaluator) UpdateTraceCache() {
+	if trace.GlobalTraceSession == nil {
+		e.traceEnabled = false
+		e.traceShouldTraceExpr = false
+		return
+	}
+	e.traceEnabled = trace.GlobalTraceSession.IsEnabled()
+	e.traceShouldTraceExpr = e.traceEnabled && trace.GlobalTraceSession.ShouldTraceExpression()
 }
 
 // currentFrame returns the currently active frame in the evaluation context.
@@ -379,11 +396,11 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	element := block[position]
 
 	var traceStart time.Time
-	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+	if e.traceEnabled {
 		traceStart = time.Now()
 	}
 
-	shouldTraceExpr := trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() && trace.GlobalTraceSession.ShouldTraceExpression()
+	shouldTraceExpr := e.traceShouldTraceExpr
 
 	switch element.GetType() {
 	case value.TypeInteger, value.TypeString, value.TypeLogic,

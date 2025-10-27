@@ -55,4 +55,5 @@ type Evaluator interface {
 	GetErrorWriter() io.Writer
 	SetInputReader(reader io.Reader)
 	GetInputReader() io.Reader
+	UpdateTraceCache()
 }
