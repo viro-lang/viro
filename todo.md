@@ -7,7 +7,7 @@ List of things to implement:
   STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
 
 - comprehensive cli interface
-  STATUS: NOT IMPLEMENTED - No main.go exists yet, so CLI flags (including trace-file and trace-max-size) are missing
+  STATUS: NOT IMPLEMENTED - main.go does not exist yet, so CLI flags (including trace-file and trace-max-size) are missing
 
 - while should accept logic! or integer! (as it's documentation states)
   STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
