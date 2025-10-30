@@ -530,13 +530,12 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 			fn, _ := value.AsFunctionValue(resolved)
 			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
 			return newPos, result, err
+		} else {
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, wordStr, resolved, position, traceStart, nil)
+			}
+			return position + 1, resolved, nil
 		}
-
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", wordStr, wordStr, resolved, position, traceStart, nil)
-		}
-
-		return position + 1, resolved, nil
 
 	case value.TypePath:
 		path, _ := value.AsPath(element)
@@ -552,13 +551,12 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 			fn, _ := value.AsFunctionValue(result)
 			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
 			return newPos, result, err
+		} else {
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", "", path.Mold(), result, position, traceStart, nil)
+			}
+			return position + 1, result, nil
 		}
-
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", "", path.Mold(), result, position, traceStart, nil)
-		}
-
-		return position + 1, result, nil
 
 	default:
 		return position, value.NewNoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
