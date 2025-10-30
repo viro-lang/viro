@@ -1,8 +1,5 @@
 List of things to implement:
 
-- remove all the tracing and debugging to add later, after the architecture settles
-  STATUS: NOT IMPLEMENTED - Extensive tracing and debugging code exists throughout the codebase (trace package, debug package, evaluator integration)
-
 - extend help system for user-defined functions
   STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
 
