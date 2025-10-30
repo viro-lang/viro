@@ -31,6 +31,8 @@ type Evaluator struct {
 
 	// Cached trace state fields for performance optimization.
 	// These fields are synchronized with the global trace session and must be updated via UpdateTraceCache().
+	// Call UpdateTraceCache() after any change to the global trace session (e.g., enabling/disabling tracing,
+	// or modifying trace filters) to ensure cache consistency.
 	traceEnabled         bool
 	traceShouldTraceExpr bool
 }
