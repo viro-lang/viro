@@ -2,6 +2,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -10,8 +12,8 @@ import (
 // StringFirst returns the first character of a string.
 // Feature: 004-dynamic-function-invocation
 func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])
@@ -30,8 +32,8 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 // StringLast returns the last character of a string.
 // Feature: 004-dynamic-function-invocation
 func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])
@@ -51,8 +53,8 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // Modifies the string in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])
@@ -74,8 +76,8 @@ func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.
 // Modifies the string in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])
@@ -96,8 +98,8 @@ func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.
 // StringLength returns the number of characters in a string.
 // Feature: 004-dynamic-function-invocation
 func StringLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])

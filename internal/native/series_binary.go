@@ -2,6 +2,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -10,8 +12,8 @@ import (
 // BinaryFirst returns the first byte of a binary value.
 // Feature: 004-dynamic-function-invocation
 func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])
@@ -29,8 +31,8 @@ func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 // BinaryLast returns the last byte of a binary value.
 // Feature: 004-dynamic-function-invocation
 func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])
@@ -49,8 +51,8 @@ func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // Modifies the binary in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])
@@ -80,8 +82,8 @@ func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.
 // Modifies the binary in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])
@@ -112,8 +114,8 @@ func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.
 // BinaryLength returns the number of bytes in a binary value.
 // Feature: 004-dynamic-function-invocation
 func BinaryLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])

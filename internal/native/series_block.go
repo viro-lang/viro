@@ -2,6 +2,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -10,8 +12,8 @@ import (
 // BlockFirst returns the first element of a block.
 // Feature: 004-dynamic-function-invocation
 func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	blk, ok := value.AsBlockValue(args[0])
@@ -29,8 +31,8 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 // BlockLast returns the last element of a block.
 // Feature: 004-dynamic-function-invocation
 func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	blk, ok := value.AsBlockValue(args[0])
@@ -49,8 +51,8 @@ func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Eva
 // Modifies the block in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	blk, ok := value.AsBlockValue(args[0])
@@ -69,8 +71,8 @@ func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.E
 // Modifies the block in-place and returns it.
 // Feature: 004-dynamic-function-invocation
 func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", string(rune(len(args) + '0'))})
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
 	}
 
 	blk, ok := value.AsBlockValue(args[0])
@@ -88,8 +90,8 @@ func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.E
 // BlockLength returns the number of elements in a block.
 // Feature: 004-dynamic-function-invocation
 func BlockLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", "0"})
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	blk, ok := value.AsBlockValue(args[0])
