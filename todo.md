@@ -17,3 +17,9 @@ List of things to implement:
 
 - wherever a viro value is converted into string it should use either `mold` or `form` functions
   STATUS: NOT IMPLEMENTED - Many places in codebase use .String() directly instead of mold/form functions
+
+- implement all the series functions
+
+- remove all the 'REBOL-inspired' messages
+
+- the 'read' native should support reading directories and return block with filenames
