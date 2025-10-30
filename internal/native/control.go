@@ -282,6 +282,7 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		// Disable tracing
 		if trace.GlobalTraceSession != nil {
 			trace.GlobalTraceSession.Disable()
+			eval.UpdateTraceCache()
 		}
 		return value.NewNoneVal(), nil
 	}
@@ -371,7 +372,57 @@ func Trace(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		}
 	}
 
+	// Handle --verbose refinement (Phase 3)
+	if verboseVal, ok := refValues["verbose"]; ok && ToTruthy(verboseVal) {
+		filters.Verbose = true
+	}
+
+	// Handle --step-level refinement (Phase 3)
+	if stepLevelVal, ok := refValues["step-level"]; ok && stepLevelVal.GetType() != value.TypeNone {
+		if stepLevelVal.GetType() != value.TypeInteger {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--step-level requires integer (0=calls, 1=expressions, 2=all)", "", ""},
+			)
+		}
+		stepLevel, _ := value.AsIntValue(stepLevelVal)
+		if stepLevel < 0 || stepLevel > 2 {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"--step-level must be 0, 1, or 2", "", ""},
+			)
+		}
+		filters.StepLevel = int(stepLevel)
+	}
+
+	// Handle --include-args refinement (Phase 3)
+	if includeArgsVal, ok := refValues["include-args"]; ok && ToTruthy(includeArgsVal) {
+		filters.IncludeArgs = true
+	}
+
+	// Handle --max-depth refinement (Phase 3)
+	if maxDepthVal, ok := refValues["max-depth"]; ok && maxDepthVal.GetType() != value.TypeNone {
+		if maxDepthVal.GetType() != value.TypeInteger {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--max-depth requires integer", "", ""},
+			)
+		}
+		maxDepth, _ := value.AsIntValue(maxDepthVal)
+		if maxDepth < 0 {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"--max-depth must be non-negative", "", ""},
+			)
+		}
+		filters.MaxDepth = int(maxDepth)
+	}
+
+	// Reset step counter when enabling trace (Phase 3)
+	trace.GlobalTraceSession.ResetStepCounter()
+
 	trace.GlobalTraceSession.Enable(filters)
+	eval.UpdateTraceCache()
 	return value.NewNoneVal(), nil
 }
 

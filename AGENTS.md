@@ -29,3 +29,26 @@
 ## Planning
 - Store plans in `plans/` directory with sequential numbering: `001_description.md`, `002_description.md`, etc.
 - Check existing plans to determine the next sequence number
+
+## Debugging
+
+### Quick Start
+Use enhanced trace system for LLM-friendly debugging:
+```viro
+trace --on --verbose --include-args --step-level 1
+; Your code here
+trace --off
+```
+
+### Complete Instructions
+**IMPORTANT**: For detailed debugging workflow, trace output format, parsing examples, and troubleshooting, see:
+- **[LLM Debugging Instructions](/.github/instructions/debugging-with-trace.instruction.md)** - Complete guide for LLM agents
+- [Debugging Guide](/docs/debugging-guide.md) - User-facing documentation
+- [Debugging Examples](/docs/debugging-examples.md) - Practical scenarios
+
+### Common Patterns
+- **Infinite recursion**: Use `--max-depth 10` and check depth progression
+- **Variable tracking**: Use `--verbose` to see frame state changes
+- **Function arguments**: Use `--include-args` to verify parameter values
+- **Performance**: Use `--step-level 0` and analyze duration field
+- **Parse JSON output**: Write Python/JS scripts to analyze trace events

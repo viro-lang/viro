@@ -1,19 +1,13 @@
 List of things to implement:
 
-- remove the Value wrapper with payload and use the values directly
-  STATUS: NOT IMPLEMENTED - Value struct still uses Type and Payload fields with interface{} discriminated union
-
 - remove all the tracing and debugging to add later, after the architecture settles
   STATUS: NOT IMPLEMENTED - Extensive tracing and debugging code exists throughout the codebase (trace package, debug package, evaluator integration)
 
 - extend help system for user-defined functions
   STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
 
-- set new fields in objects
-  STATUS: NOT IMPLEMENTED - Objects have fixed manifest of fields, no support for dynamically adding new fields (put function errors if field doesn't exist)
-
 - comprehensive cli interface
-  STATUS: PARTIALLY IMPLEMENTED - References to CLI flags exist (sandbox-root, allow-insecure-tls) but trace-file and trace-max-size flags are missing from main.go
+  STATUS: NOT IMPLEMENTED - main.go does not exist yet, so CLI flags (including trace-file and trace-max-size) are missing
 
 - while should accept logic! or integer! (as it's documentation states)
   STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
