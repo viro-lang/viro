@@ -1,0 +1,68 @@
+print "=== Functions ==="
+print ""
+
+print "--- Simple function ---"
+greet: func [name] [
+    print (join "Hello, " name)
+]
+greet "Alice"
+greet "Bob"
+
+print ""
+print "--- Function with return value ---"
+square: func [n] [
+    * n n
+]
+print (square 5)
+print (square 10)
+
+print ""
+print "--- Multiple parameters ---"
+add-multiply: func [a b c] [
+    (+ a b) * c
+]
+print (add-multiply 2 3 4)
+
+print ""
+print "--- Recursive function (factorial) ---"
+factorial: func [n] [
+    if (<= n 1) [
+        1
+    ] [
+        (* n (factorial (- n 1)))
+    ]
+]
+print (factorial 5)
+print (factorial 7)
+
+print ""
+print "--- Fibonacci function ---"
+fib: func [n] [
+    if (<= n 1) [
+        n
+    ] [
+        (+ (fib (- n 1)) (fib (- n 2)))
+    ]
+]
+print "Fibonacci sequence:"
+i: 0
+loop 10 [
+    print (fib i)
+    i: (+ i 1)
+]
+
+print ""
+print "--- Function with refinements ---"
+calculate: func [a b --add --multiply] [
+    if :add [
+        (+ a b)
+    ] [
+        if :multiply [
+            (* a b)
+        ] [
+            a
+        ]
+    ]
+]
+print (calculate 5 3 --add)
+print (calculate 5 3 --multiply)

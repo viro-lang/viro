@@ -1,0 +1,96 @@
+print "=== Advanced Examples ==="
+print ""
+
+print "--- Higher-order functions: map ---"
+map: func [series fn] [
+    result: []
+    foreach series fn [item] [
+        append result (fn item)
+    ]
+    result
+]
+
+numbers: [1 2 3 4 5]
+double: func [n] [(* n 2)]
+doubled: map numbers :double
+print doubled
+
+print ""
+print "--- Filter function ---"
+filter: func [series predicate] [
+    result: []
+    foreach series predicate [item] [
+        when (predicate item) [
+            append result item
+        ]
+    ]
+    result
+]
+
+is-even?: func [n] [
+    (= (mod n 2) 0)
+]
+
+evens: filter [1 2 3 4 5 6 7 8 9 10] :is-even?
+print evens
+
+print ""
+print "--- Sum calculation ---"
+sum: func [numbers] [
+    total: 0
+    foreach numbers [n] [
+        total: (+ total n)
+    ]
+    total
+]
+
+print (sum [1 2 3 4 5])
+print (sum [10 20 30])
+
+print ""
+print "--- Finding maximum ---"
+max-value: func [numbers] [
+    if (= (length? numbers) 0) [none] [
+        maximum: first numbers
+        foreach (next numbers) [n] [
+            when (> n maximum) [
+                maximum: n
+            ]
+        ]
+        maximum
+    ]
+]
+
+print (max-value [3 7 2 9 1 5])
+print (max-value [100 50 75 200 25])
+
+print ""
+print "--- Sorting (bubble sort) ---"
+bubble-sort: func [arr] [
+    n: length? arr
+    sorted: copy arr
+    i: 1
+    loop (- n 1) [
+        j: 1
+        loop (- n i) [
+            pos1: at sorted j
+            pos2: at sorted (+ j 1)
+            val1: first pos1
+            val2: first pos2
+            when (> val1 val2) [
+                change pos1 val2
+                change pos2 val1
+            ]
+            j: (+ j 1)
+        ]
+        i: (+ i 1)
+    ]
+    sorted
+]
+
+unsorted: [64 34 25 12 22 11 90]
+sorted: bubble-sort unsorted
+print "Original:"
+print unsorted
+print "Sorted:"
+print sorted

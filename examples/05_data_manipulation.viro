@@ -1,0 +1,55 @@
+print "=== Data Manipulation ==="
+print ""
+
+print "--- set / get ---"
+set 'myVar 42
+print (get 'myVar)
+
+set 'name "Viro"
+print (get 'name)
+
+print ""
+print "--- type? ---"
+print (type? 42)
+print (type? "hello")
+print (type? true)
+print (type? none)
+print (type? [1 2 3])
+print (type? 'myword)
+
+print ""
+print "--- form (human-readable) ---"
+print (form [1 2 3])
+print (form "quoted string")
+print (form true)
+print (form 'someword)
+
+print ""
+print "--- mold (REBOL-readable) ---"
+print (mold [1 2 3])
+print (mold "quoted string")
+print (mold true)
+print (mold 'someword)
+
+print ""
+print "--- reduce (evaluate block elements) ---"
+x: 5
+y: 10
+print (reduce [x y (+ x y) (* x y)])
+
+print ""
+print "--- compose (selective evaluation) ---"
+name: "World"
+count: 42
+template: compose [Hello (name) the answer is (count)]
+print template
+
+print ""
+print "--- join ---"
+print (join "Hello" " World")
+print (join "Number: " "42")
+
+firstName: "John"
+lastName: "Doe"
+fullName: join firstName (join " " lastName)
+print fullName
