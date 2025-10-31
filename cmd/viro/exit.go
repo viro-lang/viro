@@ -44,11 +44,13 @@ func categoryToExitCode(cat verror.ErrorCategory) int {
 	}
 }
 
-func printError(err error, context string) {
+func printError(err error, prefix string) {
 	if vErr, ok := err.(*verror.Error); ok {
 		fmt.Fprintf(os.Stderr, "%v", vErr)
+	} else if prefix != "" {
+		fmt.Fprintf(os.Stderr, "%s error: %v\n", prefix, err)
 	} else {
-		fmt.Fprintf(os.Stderr, "%s error: %v\n", context, err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
 }
 

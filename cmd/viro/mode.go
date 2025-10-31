@@ -32,31 +32,37 @@ func (m Mode) String() string {
 	}
 }
 
-func detectAndValidateMode(cfg *Config) (Mode, error) {
+func detectMode(cfg *Config) (Mode, error) {
 	modeCount := 0
 	var detectedMode Mode
 
-	if cfg.ShowVersion {
-		modeCount++
-		detectedMode = ModeVersion
+	modes := []struct {
+		condition bool
+		mode      Mode
+		validator func() error
+	}{
+		{cfg.ShowVersion, ModeVersion, nil},
+		{cfg.ShowHelp, ModeHelp, nil},
+		{cfg.EvalExpr != "", ModeEval, nil},
+		{cfg.CheckOnly, ModeCheck, func() error {
+			if cfg.ScriptFile == "" {
+				return fmt.Errorf("--check flag requires a script file")
+			}
+			return nil
+		}},
+		{!cfg.CheckOnly && cfg.ScriptFile != "", ModeScript, nil},
 	}
-	if cfg.ShowHelp {
-		modeCount++
-		detectedMode = ModeHelp
-	}
-	if cfg.EvalExpr != "" {
-		modeCount++
-		detectedMode = ModeEval
-	}
-	if cfg.CheckOnly {
-		modeCount++
-		detectedMode = ModeCheck
-		if cfg.ScriptFile == "" {
-			return ModeCheck, fmt.Errorf("--check flag requires a script file")
+
+	for _, m := range modes {
+		if m.condition {
+			modeCount++
+			detectedMode = m.mode
+			if m.validator != nil {
+				if err := m.validator(); err != nil {
+					return detectedMode, err
+				}
+			}
 		}
-	} else if cfg.ScriptFile != "" {
-		modeCount++
-		detectedMode = ModeScript
 	}
 
 	if modeCount > 1 {
@@ -76,8 +82,4 @@ func detectAndValidateMode(cfg *Config) (Mode, error) {
 	}
 
 	return detectedMode, nil
-}
-
-func detectMode(cfg *Config) (Mode, error) {
-	return detectAndValidateMode(cfg)
 }

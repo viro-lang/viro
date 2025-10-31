@@ -77,16 +77,16 @@ func (c *Config) LoadFromFlags() error {
 	parsed := splitCommandLineArgs(args)
 
 	var flagArgs []string
-	if parsed.replArgsIdx >= 0 {
-		flagArgs = args[:parsed.replArgsIdx]
-		c.Args = args[parsed.replArgsIdx+1:]
+	if parsed.ReplArgsIdx >= 0 {
+		flagArgs = args[:parsed.ReplArgsIdx]
+		c.Args = args[parsed.ReplArgsIdx+1:]
 		c.ScriptFile = ""
-	} else if parsed.scriptIdx >= 0 {
-		flagArgs = args[:parsed.scriptIdx]
-		parsed.scriptArgs = args[parsed.scriptIdx:]
+	} else if parsed.ScriptIdx >= 0 {
+		flagArgs = args[:parsed.ScriptIdx]
+		parsed.ScriptArgs = args[parsed.ScriptIdx:]
 	} else {
 		flagArgs = args
-		parsed.scriptArgs = nil
+		parsed.ScriptArgs = nil
 	}
 
 	if err := fs.Parse(flagArgs); err != nil {
@@ -125,62 +125,15 @@ func (c *Config) LoadFromFlags() error {
 		c.SandboxRoot = cwd
 	}
 
-	if parsed.replArgsIdx < 0 && len(parsed.scriptArgs) > 0 {
-		c.ScriptFile = parsed.scriptArgs[0]
-		c.Args = parsed.scriptArgs[1:]
+	if parsed.ReplArgsIdx < 0 && len(parsed.ScriptArgs) > 0 {
+		c.ScriptFile = parsed.ScriptArgs[0]
+		c.Args = parsed.ScriptArgs[1:]
 	}
 
 	return nil
 }
 
-func hasPrefix(s, prefix string) bool {
-	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-}
-
-type parsedArgs struct {
-	scriptIdx   int
-	replArgsIdx int
-	scriptArgs  []string
-}
-
-func splitCommandLineArgs(args []string) *parsedArgs {
-	result := &parsedArgs{
-		scriptIdx:   -1,
-		replArgsIdx: -1,
-	}
-
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-
-		if arg == "--" {
-			result.replArgsIdx = i
-			break
-		}
-
-		if arg == "-c" {
-			if i+1 < len(args) {
-				i++
-			}
-			continue
-		}
-
-		if arg == "--sandbox-root" || arg == "--history-file" || arg == "--prompt" {
-			if i+1 < len(args) {
-				i++
-			}
-			continue
-		}
-
-		if !hasPrefix(arg, "-") {
-			result.scriptIdx = i
-			break
-		}
-	}
-
-	return result
-}
-
 func (c *Config) Validate() error {
-	_, err := detectAndValidateMode(c)
+	_, err := detectMode(c)
 	return err
 }

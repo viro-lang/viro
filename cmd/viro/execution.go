@@ -11,12 +11,54 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
+type ExecutionMode int
+
+const (
+	ExecuteModeCheck ExecutionMode = iota
+	ExecuteModeEval
+	ExecuteModeScript
+)
+
 type ExecutionContext struct {
 	Config      *Config
 	Input       InputSource
 	Args        []string
 	PrintResult bool
 	ParseOnly   bool
+}
+
+func runExecution(cfg *Config, mode ExecutionMode) int {
+	var ctx *ExecutionContext
+
+	switch mode {
+	case ExecuteModeCheck:
+		ctx = &ExecutionContext{
+			Config:      cfg,
+			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
+			Args:        nil,
+			PrintResult: false,
+			ParseOnly:   true,
+		}
+	case ExecuteModeEval:
+		ctx = &ExecutionContext{
+			Config:      cfg,
+			Input:       &ExprInput{Expr: cfg.EvalExpr, WithStdin: cfg.ReadStdin},
+			Args:        []string{},
+			PrintResult: !cfg.NoPrint,
+			ParseOnly:   false,
+		}
+	case ExecuteModeScript:
+		ctx = &ExecutionContext{
+			Config:      cfg,
+			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
+			Args:        cfg.Args,
+			PrintResult: false,
+			ParseOnly:   false,
+		}
+	}
+
+	_, exitCode := executeViroCode(ctx)
+	return exitCode
 }
 
 func executeViroCode(ctx *ExecutionContext) (core.Value, int) {

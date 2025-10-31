@@ -5,55 +5,59 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func main() {
 	setupSignalHandler()
 
+	cfg, err := loadConfiguration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(ExitUsage)
+	}
+
+	exitCode := executeMode(cfg)
+	os.Exit(exitCode)
+}
+
+func loadConfiguration() (*Config, error) {
 	cfg := NewConfig()
 	if err := cfg.LoadFromEnv(); err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
-		os.Exit(ExitUsage)
+		return nil, err
 	}
-
 	if err := cfg.LoadFromFlags(); err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
-		os.Exit(ExitUsage)
+		return nil, err
 	}
-
 	if err := cfg.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(ExitUsage)
+		return nil, err
 	}
+	return cfg, nil
+}
 
+func executeMode(cfg *Config) int {
 	mode, err := detectMode(cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(ExitUsage)
+		return ExitUsage
 	}
 
-	var exitCode int
-	switch mode {
-	case ModeREPL:
-		exitCode = runREPL(cfg)
-	case ModeScript:
-		exitCode = runScript(cfg)
-	case ModeEval:
-		exitCode = runEval(cfg)
-	case ModeCheck:
-		exitCode = runCheck(cfg)
-	case ModeVersion:
-		printVersion()
-		exitCode = ExitSuccess
-	case ModeHelp:
-		printHelp()
-		exitCode = ExitSuccess
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
-		exitCode = ExitUsage
+	handlers := map[Mode]func(*Config) int{
+		ModeREPL:    runREPL,
+		ModeScript:  func(cfg *Config) int { return runExecution(cfg, ExecuteModeScript) },
+		ModeEval:    func(cfg *Config) int { return runExecution(cfg, ExecuteModeEval) },
+		ModeCheck:   func(cfg *Config) int { return runExecution(cfg, ExecuteModeCheck) },
+		ModeVersion: func(cfg *Config) int { printVersion(); return ExitSuccess },
+		ModeHelp:    func(cfg *Config) int { printHelp(); return ExitSuccess },
 	}
 
-	os.Exit(exitCode)
+	if handler, ok := handlers[mode]; ok {
+		return handler(cfg)
+	}
+
+	fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
+	return ExitUsage
 }
 
 func setupSignalHandler() {
@@ -70,13 +74,13 @@ func runREPL(cfg *Config) int {
 		fmt.Fprintf(os.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
 	}
 
-	repl, err := NewREPL(cfg.Args)
+	r, err := repl.NewREPL(cfg.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing REPL: %v\n", err)
 		return ExitError
 	}
 
-	if err := repl.Run(); err != nil {
+	if err := r.Run(); err != nil {
 		return handleError(err)
 	}
 
