@@ -32,6 +32,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
@@ -102,6 +103,8 @@ func NewREPL() (*REPL, error) {
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
+	initializeSystemObject(evaluator)
+
 	repl := &REPL{
 		evaluator:      evaluator,
 		rl:             rl,
@@ -146,6 +149,8 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
+
+	initializeSystemObject(e)
 
 	historyPath := resolveHistoryPath(false)
 	repl := &REPL{
@@ -553,6 +558,18 @@ func isExitCommand(input string) bool {
 		return false
 	}
 	return strings.EqualFold(input, "quit") || strings.EqualFold(input, "exit")
+}
+
+func initializeSystemObject(evaluator core.Evaluator) {
+	argsBlock := value.NewBlockValue([]core.Value{})
+
+	ownedFrame := frame.NewFrame(frame.FrameObject, -1)
+	ownedFrame.Bind("args", argsBlock)
+
+	systemObj := value.NewObject(ownedFrame)
+
+	rootFrame := evaluator.GetFrameByIndex(0)
+	rootFrame.Bind("system", systemObj)
 }
 
 // handleHelpShortcut handles the special REPL-only '?' command (no arguments).

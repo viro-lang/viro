@@ -59,7 +59,7 @@ func executeScript(cfg *Config, content string) int {
 
 	evaluator := setupEvaluator(cfg)
 
-	injectScriptArgs(evaluator, cfg.Args)
+	initializeSystemObject(evaluator, cfg.Args)
 
 	_, err = evaluator.DoBlock(values)
 	if err != nil {
@@ -70,7 +70,7 @@ func executeScript(cfg *Config, content string) int {
 	return ExitSuccess
 }
 
-func injectScriptArgs(evaluator *eval.Evaluator, args []string) {
+func initializeSystemObject(evaluator *eval.Evaluator, args []string) {
 	viroArgs := make([]core.Value, len(args))
 	for i, arg := range args {
 		viroArgs[i] = value.NewStringValue(arg)

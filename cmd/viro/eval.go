@@ -29,6 +29,8 @@ func runEval(cfg *Config) int {
 
 	evaluator := setupEvaluator(cfg)
 
+	initializeSystemObject(evaluator, []string{})
+
 	result, err := evaluator.DoBlock(values)
 	if err != nil {
 		printRuntimeError(err)
