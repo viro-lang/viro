@@ -44,18 +44,18 @@ func categoryToExitCode(cat verror.ErrorCategory) int {
 	}
 }
 
-func printParseError(err error) {
+func printError(err error, context string) {
 	if vErr, ok := err.(*verror.Error); ok {
 		fmt.Fprintf(os.Stderr, "%v", vErr)
 	} else {
-		fmt.Fprintf(os.Stderr, "Parse error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%s error: %v\n", context, err)
 	}
 }
 
+func printParseError(err error) {
+	printError(err, "Parse")
+}
+
 func printRuntimeError(err error) {
-	if vErr, ok := err.(*verror.Error); ok {
-		fmt.Fprintf(os.Stderr, "%v", vErr)
-	} else {
-		fmt.Fprintf(os.Stderr, "Runtime error: %v\n", err)
-	}
+	printError(err, "Runtime")
 }

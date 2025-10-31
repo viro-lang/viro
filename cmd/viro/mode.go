@@ -32,24 +32,52 @@ func (m Mode) String() string {
 	}
 }
 
-func detectMode(cfg *Config) (Mode, error) {
+func detectAndValidateMode(cfg *Config) (Mode, error) {
+	modeCount := 0
+	var detectedMode Mode
+
 	if cfg.ShowVersion {
-		return ModeVersion, nil
+		modeCount++
+		detectedMode = ModeVersion
 	}
 	if cfg.ShowHelp {
-		return ModeHelp, nil
+		modeCount++
+		detectedMode = ModeHelp
 	}
 	if cfg.EvalExpr != "" {
-		return ModeEval, nil
+		modeCount++
+		detectedMode = ModeEval
 	}
 	if cfg.CheckOnly {
+		modeCount++
+		detectedMode = ModeCheck
 		if cfg.ScriptFile == "" {
-			return ModeCheck, fmt.Errorf("--check requires a script file")
+			return ModeCheck, fmt.Errorf("--check flag requires a script file")
 		}
-		return ModeCheck, nil
+	} else if cfg.ScriptFile != "" {
+		modeCount++
+		detectedMode = ModeScript
 	}
-	if cfg.ScriptFile != "" {
-		return ModeScript, nil
+
+	if modeCount > 1 {
+		return ModeREPL, fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
 	}
-	return ModeREPL, nil
+
+	if cfg.ReadStdin && cfg.EvalExpr == "" {
+		return ModeREPL, fmt.Errorf("--stdin flag requires -c flag")
+	}
+
+	if cfg.NoPrint && cfg.EvalExpr == "" {
+		return ModeREPL, fmt.Errorf("--no-print flag requires -c flag")
+	}
+
+	if modeCount == 0 {
+		return ModeREPL, nil
+	}
+
+	return detectedMode, nil
+}
+
+func detectMode(cfg *Config) (Mode, error) {
+	return detectAndValidateMode(cfg)
 }

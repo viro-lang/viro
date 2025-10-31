@@ -74,50 +74,19 @@ func (c *Config) LoadFromFlags() error {
 	stdin := fs.Bool("stdin", false, "Read additional input from stdin")
 
 	args := os.Args[1:]
-	scriptIdx := -1
-	replArgsIdx := -1
-
-	for i := 0; i < len(args); i++ {
-		arg := args[i]
-
-		if arg == "--" {
-			replArgsIdx = i
-			break
-		}
-
-		if arg == "-c" {
-			if i+1 < len(args) {
-				i++
-			}
-			continue
-		}
-
-		if arg == "--sandbox-root" || arg == "--history-file" || arg == "--prompt" {
-			if i+1 < len(args) {
-				i++
-			}
-			continue
-		}
-
-		if !hasPrefix(arg, "-") {
-			scriptIdx = i
-			break
-		}
-	}
+	parsed := splitCommandLineArgs(args)
 
 	var flagArgs []string
-	var scriptArgs []string
-
-	if replArgsIdx >= 0 {
-		flagArgs = args[:replArgsIdx]
-		c.Args = args[replArgsIdx+1:]
+	if parsed.replArgsIdx >= 0 {
+		flagArgs = args[:parsed.replArgsIdx]
+		c.Args = args[parsed.replArgsIdx+1:]
 		c.ScriptFile = ""
-	} else if scriptIdx >= 0 {
-		flagArgs = args[:scriptIdx]
-		scriptArgs = args[scriptIdx:]
+	} else if parsed.scriptIdx >= 0 {
+		flagArgs = args[:parsed.scriptIdx]
+		parsed.scriptArgs = args[parsed.scriptIdx:]
 	} else {
 		flagArgs = args
-		scriptArgs = nil
+		parsed.scriptArgs = nil
 	}
 
 	if err := fs.Parse(flagArgs); err != nil {
@@ -156,9 +125,9 @@ func (c *Config) LoadFromFlags() error {
 		c.SandboxRoot = cwd
 	}
 
-	if replArgsIdx < 0 && len(scriptArgs) > 0 {
-		c.ScriptFile = scriptArgs[0]
-		c.Args = scriptArgs[1:]
+	if parsed.replArgsIdx < 0 && len(parsed.scriptArgs) > 0 {
+		c.ScriptFile = parsed.scriptArgs[0]
+		c.Args = parsed.scriptArgs[1:]
 	}
 
 	return nil
@@ -168,35 +137,50 @@ func hasPrefix(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 
+type parsedArgs struct {
+	scriptIdx   int
+	replArgsIdx int
+	scriptArgs  []string
+}
+
+func splitCommandLineArgs(args []string) *parsedArgs {
+	result := &parsedArgs{
+		scriptIdx:   -1,
+		replArgsIdx: -1,
+	}
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
+		if arg == "--" {
+			result.replArgsIdx = i
+			break
+		}
+
+		if arg == "-c" {
+			if i+1 < len(args) {
+				i++
+			}
+			continue
+		}
+
+		if arg == "--sandbox-root" || arg == "--history-file" || arg == "--prompt" {
+			if i+1 < len(args) {
+				i++
+			}
+			continue
+		}
+
+		if !hasPrefix(arg, "-") {
+			result.scriptIdx = i
+			break
+		}
+	}
+
+	return result
+}
+
 func (c *Config) Validate() error {
-	modeCount := 0
-	if c.ShowVersion {
-		modeCount++
-	}
-	if c.ShowHelp {
-		modeCount++
-	}
-	if c.EvalExpr != "" {
-		modeCount++
-	}
-	if c.CheckOnly && c.ScriptFile == "" {
-		return fmt.Errorf("--check flag requires a script file")
-	}
-	if c.ScriptFile != "" {
-		modeCount++
-	}
-
-	if modeCount > 1 {
-		return fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
-	}
-
-	if c.ReadStdin && c.EvalExpr == "" {
-		return fmt.Errorf("--stdin flag requires -c flag")
-	}
-
-	if c.NoPrint && c.EvalExpr == "" {
-		return fmt.Errorf("--no-print flag requires -c flag")
-	}
-
-	return nil
+	_, err := detectAndValidateMode(c)
+	return err
 }
