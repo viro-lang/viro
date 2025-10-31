@@ -17,6 +17,7 @@ type Config struct {
 	EvalExpr    string
 	CheckOnly   bool
 	ScriptFile  string
+	Args        []string
 
 	NoHistory   bool
 	HistoryFile string
@@ -52,25 +53,66 @@ func (c *Config) LoadFromEnv() error {
 }
 
 func (c *Config) LoadFromFlags() error {
-	sandboxRoot := flag.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
-	allowInsecureTLS := flag.Bool("allow-insecure-tls", false, "Allow insecure TLS connections globally (warning: disables certificate verification)")
-	quiet := flag.Bool("quiet", false, "Suppress non-error output")
-	verbose := flag.Bool("verbose", false, "Enable verbose output")
+	fs := flag.NewFlagSet("viro", flag.ContinueOnError)
 
-	version := flag.Bool("version", false, "Show version information")
-	help := flag.Bool("help", false, "Show help information")
-	evalExpr := flag.String("c", "", "Evaluate expression and print result")
-	check := flag.Bool("check", false, "Check syntax only (don't execute)")
+	sandboxRoot := fs.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
+	allowInsecureTLS := fs.Bool("allow-insecure-tls", false, "Allow insecure TLS connections globally (warning: disables certificate verification)")
+	quiet := fs.Bool("quiet", false, "Suppress non-error output")
+	verbose := fs.Bool("verbose", false, "Enable verbose output")
 
-	noHistory := flag.Bool("no-history", false, "Disable command history in REPL")
-	historyFile := flag.String("history-file", "", "History file location")
-	prompt := flag.String("prompt", "", "Custom REPL prompt")
-	noWelcome := flag.Bool("no-welcome", false, "Skip welcome message in REPL")
+	version := fs.Bool("version", false, "Show version information")
+	help := fs.Bool("help", false, "Show help information")
+	evalExpr := fs.String("c", "", "Evaluate expression and print result")
+	check := fs.Bool("check", false, "Check syntax only (don't execute)")
 
-	noPrint := flag.Bool("no-print", false, "Don't print result of evaluation")
-	stdin := flag.Bool("stdin", false, "Read additional input from stdin")
+	noHistory := fs.Bool("no-history", false, "Disable command history in REPL")
+	historyFile := fs.String("history-file", "", "History file location")
+	prompt := fs.String("prompt", "", "Custom REPL prompt")
+	noWelcome := fs.Bool("no-welcome", false, "Skip welcome message in REPL")
 
-	flag.Parse()
+	noPrint := fs.Bool("no-print", false, "Don't print result of evaluation")
+	stdin := fs.Bool("stdin", false, "Read additional input from stdin")
+
+	args := os.Args[1:]
+	scriptIdx := -1
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+
+		if arg == "-c" {
+			if i+1 < len(args) {
+				i++
+			}
+			continue
+		}
+
+		if arg == "--sandbox-root" || arg == "--history-file" || arg == "--prompt" {
+			if i+1 < len(args) {
+				i++
+			}
+			continue
+		}
+
+		if !hasPrefix(arg, "-") {
+			scriptIdx = i
+			break
+		}
+	}
+
+	var flagArgs []string
+	var scriptArgs []string
+
+	if scriptIdx >= 0 {
+		flagArgs = args[:scriptIdx]
+		scriptArgs = args[scriptIdx:]
+	} else {
+		flagArgs = args
+		scriptArgs = nil
+	}
+
+	if err := fs.Parse(flagArgs); err != nil {
+		return err
+	}
 
 	if *sandboxRoot != "" {
 		c.SandboxRoot = *sandboxRoot
@@ -104,12 +146,16 @@ func (c *Config) LoadFromFlags() error {
 		c.SandboxRoot = cwd
 	}
 
-	args := flag.Args()
-	if len(args) > 0 {
-		c.ScriptFile = args[0]
+	if len(scriptArgs) > 0 {
+		c.ScriptFile = scriptArgs[0]
+		c.Args = scriptArgs[1:]
 	}
 
 	return nil
+}
+
+func hasPrefix(s, prefix string) bool {
+	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
 
 func (c *Config) Validate() error {

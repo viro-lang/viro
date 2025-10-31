@@ -1,0 +1,37 @@
+; Example: Script Arguments
+; Demonstrates how to access command-line arguments passed to a script
+; Run with: viro examples/09_script_arguments.viro arg1 arg2 arg3
+
+print "Script Arguments Example"
+print "========================"
+print ""
+
+; Access the system object's args field
+print ["Total arguments:" length? system.args]
+print ["Arguments:" system.args]
+print ""
+
+; Check if arguments were provided
+if ((length? system.args) = 0) [
+    print "No arguments provided."
+    print "Usage: viro examples/09_script_arguments.viro <arg1> <arg2> ..."
+] [
+    print "Processing arguments:"
+    
+    ; Access first argument
+    if ((length? system.args) > 0) [
+        print ["  First argument:" first system.args]
+    ] []
+    
+    ; Access last argument
+    if ((length? system.args) > 1) [
+        print ["  Last argument:" last system.args]
+    ] []
+]
+
+print ""
+print "Notes:"
+print "- All arguments are passed as strings"
+print "- Arguments can include flags (--verbose, -c, etc.)"
+print "- Viro flags must come BEFORE the script name"
+print "- Everything after the script name goes to system.args"

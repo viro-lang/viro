@@ -83,6 +83,14 @@ Practical utility functions:
 - String manipulation
 - Word counting
 
+### 09_script_arguments.viro
+Command-line argument handling:
+- Accessing script arguments via `system.args`
+- Checking argument count with `length?`
+- Processing arguments as strings
+- Viro flags vs script arguments
+- Practical argument parsing patterns
+
 ## Key Language Features
 
 ### Left-to-Right Evaluation
@@ -149,6 +157,7 @@ Different word types have different evaluation semantics:
 6. Learn **06_objects.viro** - Object-oriented programming
 7. Challenge yourself with **07_advanced.viro** - Advanced patterns
 8. Apply knowledge with **08_practical.viro** - Real-world utilities
+9. Build CLI tools with **09_script_arguments.viro** - Script arguments and automation
 
 ## Additional Resources
 

@@ -258,3 +258,150 @@ func TestConfigFlagsPriority(t *testing.T) {
 		t.Errorf("SandboxRoot = %q, want %q (flags should override env)", cfg.SandboxRoot, "/from/flag")
 	}
 }
+
+func TestScriptArgumentParsing(t *testing.T) {
+	tests := []struct {
+		name           string
+		args           []string
+		wantScriptFile string
+		wantArgs       []string
+		wantErr        bool
+	}{
+		{
+			name:           "script without args",
+			args:           []string{"cmd", "script.viro"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{},
+			wantErr:        false,
+		},
+		{
+			name:           "script with args",
+			args:           []string{"cmd", "script.viro", "arg1", "arg2"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"arg1", "arg2"},
+			wantErr:        false,
+		},
+		{
+			name:           "script with flag-like args",
+			args:           []string{"cmd", "script.viro", "--verbose", "--output", "file.txt"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"--verbose", "--output", "file.txt"},
+			wantErr:        false,
+		},
+		{
+			name:           "viro flags before script",
+			args:           []string{"cmd", "--quiet", "--sandbox-root", "/tmp", "script.viro", "arg1"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"arg1"},
+			wantErr:        false,
+		},
+		{
+			name:           "viro flags mixed - flags before script, args after",
+			args:           []string{"cmd", "--quiet", "script.viro", "--sandbox-root", "/tmp"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"--sandbox-root", "/tmp"},
+			wantErr:        false,
+		},
+		{
+			name:           "script args with spaces via quoting (simulated)",
+			args:           []string{"cmd", "script.viro", "hello world", "arg2"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"hello world", "arg2"},
+			wantErr:        false,
+		},
+		{
+			name:           "empty args (just script)",
+			args:           []string{"cmd", "test.viro"},
+			wantScriptFile: "test.viro",
+			wantArgs:       []string{},
+			wantErr:        false,
+		},
+		{
+			name:           "multiple numeric args",
+			args:           []string{"cmd", "script.viro", "42", "3.14", "100"},
+			wantScriptFile: "script.viro",
+			wantArgs:       []string{"42", "3.14", "100"},
+			wantErr:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+			os.Args = tt.args
+
+			cfg := NewConfig()
+			err := cfg.LoadFromFlags()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadFromFlags() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if err != nil {
+				return
+			}
+
+			if cfg.ScriptFile != tt.wantScriptFile {
+				t.Errorf("ScriptFile = %q, want %q", cfg.ScriptFile, tt.wantScriptFile)
+			}
+
+			if len(cfg.Args) != len(tt.wantArgs) {
+				t.Errorf("Args length = %d, want %d", len(cfg.Args), len(tt.wantArgs))
+			}
+
+			for i, arg := range cfg.Args {
+				if i >= len(tt.wantArgs) {
+					break
+				}
+				if arg != tt.wantArgs[i] {
+					t.Errorf("Args[%d] = %q, want %q", i, arg, tt.wantArgs[i])
+				}
+			}
+		})
+	}
+}
+
+func TestScriptArgumentsNoScriptMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		wantArgs []string
+	}{
+		{
+			name:     "REPL mode - no args",
+			args:     []string{"cmd"},
+			wantArgs: nil,
+		},
+		{
+			name:     "version mode - no args",
+			args:     []string{"cmd", "--version"},
+			wantArgs: nil,
+		},
+		{
+			name:     "help mode - no args",
+			args:     []string{"cmd", "--help"},
+			wantArgs: nil,
+		},
+		{
+			name:     "eval mode - no args",
+			args:     []string{"cmd", "-c", "3 + 4"},
+			wantArgs: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+			os.Args = tt.args
+
+			cfg := NewConfig()
+			if err := cfg.LoadFromFlags(); err != nil {
+				t.Fatalf("LoadFromFlags() error = %v", err)
+			}
+
+			if len(cfg.Args) != 0 {
+				t.Errorf("Args = %v, want empty in non-script mode", cfg.Args)
+			}
+		})
+	}
+}

@@ -6,7 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/eval"
+	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
 func runScript(cfg *Config) int {
@@ -55,6 +59,8 @@ func executeScript(cfg *Config, content string) int {
 
 	evaluator := setupEvaluator(cfg)
 
+	injectScriptArgs(evaluator, cfg.Args)
+
 	_, err = evaluator.DoBlock(values)
 	if err != nil {
 		printRuntimeError(err)
@@ -62,4 +68,21 @@ func executeScript(cfg *Config, content string) int {
 	}
 
 	return ExitSuccess
+}
+
+func injectScriptArgs(evaluator *eval.Evaluator, args []string) {
+	viroArgs := make([]core.Value, len(args))
+	for i, arg := range args {
+		viroArgs[i] = value.NewStringValue(arg)
+	}
+
+	argsBlock := value.NewBlockValue(viroArgs)
+
+	ownedFrame := frame.NewFrame(frame.FrameObject, -1)
+	ownedFrame.Bind("args", argsBlock)
+
+	systemObj := value.NewObject(ownedFrame)
+
+	rootFrame := evaluator.GetFrameByIndex(0)
+	rootFrame.Bind("system", systemObj)
 }
