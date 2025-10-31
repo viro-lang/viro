@@ -1,0 +1,22 @@
+# This demonstrates REPL with arguments using the -- separator
+
+# Example 1: Start REPL with user credentials
+$ viro -- user@example.com admin
+>> print ["Email:" first system.args]
+Email: user@example.com
+>> print ["Role:" last system.args]  
+Role: admin
+
+# Example 2: Test code that depends on arguments
+$ viro -- config.json 8080
+>> filename: first system.args
+>> port: to-integer last system.args
+>> print ["Server config:" filename "on port" port]
+Server config: config.json on port 8080
+
+# Example 3: Pass flag-like strings as data
+$ viro -- --verbose --output results.txt
+>> print first system.args
+--verbose
+>> print last system.args
+results.txt

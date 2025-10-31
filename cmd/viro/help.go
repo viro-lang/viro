@@ -6,7 +6,8 @@ func printHelp() {
 	fmt.Print(`Viro - A REBOL-inspired programming language
 
 USAGE:
-    viro [OPTIONS] [FILE]
+    viro [OPTIONS] [FILE [ARGS...]]
+    viro [OPTIONS] -- [ARGS...]
     viro -c EXPRESSION
     viro --check FILE
     viro --version
@@ -14,7 +15,8 @@ USAGE:
 
 MODES:
     (default)           Start interactive REPL
-    FILE                Execute script file
+    FILE [ARGS...]      Execute script file with arguments
+    -- [ARGS...]        Start REPL with arguments in system.args
     -c EXPRESSION       Evaluate expression and print result
     --check FILE        Check syntax without executing
 
@@ -54,8 +56,11 @@ EXAMPLES:
     # Start REPL
     viro
 
-    # Execute script
-    viro script.viro
+    # Start REPL with arguments
+    viro -- arg1 arg2 arg3
+
+    # Execute script with arguments
+    viro script.viro arg1 arg2
 
     # Check syntax
     viro --check script.viro
@@ -68,6 +73,11 @@ EXAMPLES:
 
     # Suppress output
     viro -c "pow 2 10" --no-print
+
+    # REPL with arguments for testing
+    viro -- user@example.com admin
+    >> print ["Email:" first system.args]
+    >> print ["Role:" last system.args]
 
 For more information, visit: https://github.com/marcin-radoszewski/viro
 `)

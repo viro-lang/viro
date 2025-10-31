@@ -75,9 +75,15 @@ func (c *Config) LoadFromFlags() error {
 
 	args := os.Args[1:]
 	scriptIdx := -1
+	replArgsIdx := -1
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+
+		if arg == "--" {
+			replArgsIdx = i
+			break
+		}
 
 		if arg == "-c" {
 			if i+1 < len(args) {
@@ -102,7 +108,11 @@ func (c *Config) LoadFromFlags() error {
 	var flagArgs []string
 	var scriptArgs []string
 
-	if scriptIdx >= 0 {
+	if replArgsIdx >= 0 {
+		flagArgs = args[:replArgsIdx]
+		c.Args = args[replArgsIdx+1:]
+		c.ScriptFile = ""
+	} else if scriptIdx >= 0 {
 		flagArgs = args[:scriptIdx]
 		scriptArgs = args[scriptIdx:]
 	} else {
@@ -146,7 +156,7 @@ func (c *Config) LoadFromFlags() error {
 		c.SandboxRoot = cwd
 	}
 
-	if len(scriptArgs) > 0 {
+	if replArgsIdx < 0 && len(scriptArgs) > 0 {
 		c.ScriptFile = scriptArgs[0]
 		c.Args = scriptArgs[1:]
 	}

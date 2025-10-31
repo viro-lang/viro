@@ -68,7 +68,7 @@ type REPL struct {
 }
 
 // NewREPL creates a new REPL instance.
-func NewREPL() (*REPL, error) {
+func NewREPL(args []string) (*REPL, error) {
 	// Initialize trace/debug sessions (Feature 002, T154)
 	// Trace is initialized with default settings (stderr, 50MB max size)
 	// These will be controlled via trace --on/--off and debug --on/--off
@@ -103,7 +103,7 @@ func NewREPL() (*REPL, error) {
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
-	initializeSystemObject(evaluator)
+	initializeSystemObject(evaluator, args)
 
 	repl := &REPL{
 		evaluator:      evaluator,
@@ -150,7 +150,7 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
-	initializeSystemObject(e)
+	initializeSystemObject(e, []string{})
 
 	historyPath := resolveHistoryPath(false)
 	repl := &REPL{
@@ -560,8 +560,13 @@ func isExitCommand(input string) bool {
 	return strings.EqualFold(input, "quit") || strings.EqualFold(input, "exit")
 }
 
-func initializeSystemObject(evaluator core.Evaluator) {
-	argsBlock := value.NewBlockValue([]core.Value{})
+func initializeSystemObject(evaluator core.Evaluator, args []string) {
+	viroArgs := make([]core.Value, len(args))
+	for i, arg := range args {
+		viroArgs[i] = value.NewStringValue(arg)
+	}
+
+	argsBlock := value.NewBlockValue(viroArgs)
 
 	ownedFrame := frame.NewFrame(frame.FrameObject, -1)
 	ownedFrame.Bind("args", argsBlock)
