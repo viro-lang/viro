@@ -277,23 +277,27 @@ func GreaterOrEqual(args []core.Value, refValues map[string]core.Value, eval cor
 // Equal implements the = native function.
 //
 // Contract: = value1 value2 → logic
-// - Arguments can be integers or decimals
-// - Returns true if value1 == value2, false otherwise
+// - Arguments can be any type
+// - Returns true if value1 equals value2, false otherwise
+// - Uses polymorphic Equals method for type-specific comparison
 func Equal(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return compareOp("=", args,
-		func(a, b int64) bool { return a == b },
-		func(a, b *decimal.Big) bool { return a.Cmp(b) == 0 })
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("=", 2, len(args))
+	}
+	return value.NewLogicVal(args[0].Equals(args[1])), nil
 }
 
 // NotEqual implements the <> native function.
 //
 // Contract: <> value1 value2 → logic
-// - Arguments can be integers or decimals
-// - Returns true if value1 != value2, false otherwise
+// - Arguments can be any type
+// - Returns true if value1 does not equal value2, false otherwise
+// - Uses polymorphic Equals method for type-specific comparison
 func NotEqual(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return compareOp("<>", args,
-		func(a, b int64) bool { return a != b },
-		func(a, b *decimal.Big) bool { return a.Cmp(b) != 0 })
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("<>", 2, len(args))
+	}
+	return value.NewLogicVal(!args[0].Equals(args[1])), nil
 }
 
 // And implements the and native function.

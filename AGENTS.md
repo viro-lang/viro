@@ -62,6 +62,8 @@ The `viro` binary supports multiple execution modes:
 - Naming: Use Viro-style native names (`first`, `length?`, `type-of` with ?, ! suffixes) not Go-style
 
 ## Workflow
+- **ALWAYS use viro-interpreter-dev agent**: When editing ANY Viro interpreter code, you MUST use the viro-interpreter-dev agent via the Task tool. This agent has specialized expertise in the Viro codebase architecture and prevents common mistakes.
+- **MANDATORY code review process**: After the viro-interpreter-dev agent finishes updates, you MUST use the viro-code-reviewer agent to review the code. The main agent may then decide whether to apply the suggested changes. If changes are applied, ALWAYS use the viro-interpreter-dev agent again (never edit directly).
 - **TDD mandatory**: Write tests FIRST in `test/contract/`, then implement in `internal/native/`
 - Consult specs: `specs/*/contracts/*.md` before implementation
 - Every code change MUST have test coverage
