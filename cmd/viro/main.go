@@ -27,6 +27,6 @@ func setupSignalHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		os.Exit(ExitInterrupt)
+		os.Exit(api.ExitInterrupt)
 	}()
 }

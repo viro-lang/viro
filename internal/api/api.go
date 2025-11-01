@@ -115,7 +115,7 @@ func Run(ctx *RuntimeContext, cfg *Config) int {
 		fmt.Fprintf(ctx.Stderr, "REPL mode not supported in API context\n")
 		return ExitError
 	case ModeScript, ModeEval, ModeCheck:
-		return runExecutionWithContext(cfg, mode, ctx)
+		return RunExecutionWithContext(cfg, mode, ctx)
 	case ModeVersion:
 		fmt.Fprintf(ctx.Stdout, "%s\n", "Viro 0.1.0")
 		return ExitSuccess
@@ -147,7 +147,7 @@ func detectMode(cfg *Config) Mode {
 	return ModeREPL
 }
 
-func runExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
+func RunExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
 	if cfg.Profile && mode == ModeEval {
 		fmt.Fprintf(ctx.Stderr, "Error: --profile flag requires a script file, not -c expression\n")
 		return ExitUsage
@@ -236,7 +236,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	result, err := evaluator.DoBlock(values)
 	if err != nil {
 		printErrorToWriter(err, "Runtime", ctx.Stderr)
-		return handleErrorWithContext(err)
+		return HandleErrorWithContext(err)
 	}
 
 	if printResult && !cfg.Quiet {
@@ -285,7 +285,7 @@ func initializeSystemObjectInEvaluator(evaluator *eval.Evaluator, args []string)
 	rootFrame.Bind("system", systemObj)
 }
 
-func handleErrorWithContext(err error) int {
+func HandleErrorWithContext(err error) int {
 	if err == nil {
 		return ExitSuccess
 	}
