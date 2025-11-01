@@ -60,13 +60,13 @@ func TestEvalMode(t *testing.T) {
 		{
 			name:     "division by zero",
 			expr:     "1 / 0",
-			want:     "Math error",
+			want:     "** Math Error",
 			wantExit: 1,
 		},
 		{
 			name:     "syntax error",
 			expr:     "print [unclosed",
-			want:     "Syntax error",
+			want:     "** Syntax Error",
 			wantExit: 2,
 		},
 		{

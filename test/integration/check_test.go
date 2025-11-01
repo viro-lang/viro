@@ -44,19 +44,19 @@ func TestCheckMode(t *testing.T) {
 			name:       "invalid syntax - unclosed block",
 			script:     `[1 2 3`,
 			wantExit:   2,
-			wantOutput: "Syntax error",
+			wantOutput: "** Syntax Error",
 		},
 		{
 			name:       "invalid syntax - unclosed string",
 			script:     `"unclosed string`,
 			wantExit:   2,
-			wantOutput: "Syntax error",
+			wantOutput: "** Syntax Error",
 		},
 		{
 			name:       "invalid syntax - malformed expression",
 			script:     `print [unclosed`,
 			wantExit:   2,
-			wantOutput: "Syntax error",
+			wantOutput: "** Syntax Error",
 		},
 		{
 			name:       "empty script",
@@ -154,7 +154,7 @@ print "This should not be printed"
 		t.Error("--check mode executed the script (found print output)")
 	}
 
-	if strings.Contains(outputStr, "Math error") {
+	if strings.Contains(outputStr, "** Math Error") {
 		t.Error("--check mode executed the script (found runtime error)")
 	}
 }
@@ -280,8 +280,8 @@ print "test"
 	}
 
 	output := stdout.String() + stderr.String()
-	if !strings.Contains(output, "Syntax error") {
-		t.Errorf("output = %q, want to contain 'Syntax error'", output)
+	if !strings.Contains(output, "** Syntax Error") {
+		t.Errorf("output = %q, want to contain '** Syntax Error'", output)
 	}
 }
 

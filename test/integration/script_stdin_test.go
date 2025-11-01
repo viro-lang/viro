@@ -42,14 +42,14 @@ func TestScriptFromStdin(t *testing.T) {
 			script:     `print [unclosed`,
 			wantExit:   2,
 			wantStdout: "",
-			wantStderr: "Syntax error",
+			wantStderr: "** Syntax Error",
 		},
 		{
 			name:       "runtime error from stdin",
 			script:     `1 / 0`,
 			wantExit:   1,
 			wantStdout: "",
-			wantStderr: "Math error",
+			wantStderr: "** Math Error",
 		},
 		{
 			name:       "empty input from stdin",
