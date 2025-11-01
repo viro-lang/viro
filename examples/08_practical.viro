@@ -3,7 +3,7 @@ print ""
 
 print "--- Temperature converter ---"
 celsius-to-fahrenheit: func [c] [
-    (+ (* c 9 / 5) 32)
+    (+ (* c (/ 9 5)) 32)
 ]
 
 fahrenheit-to-celsius: func [f] [
