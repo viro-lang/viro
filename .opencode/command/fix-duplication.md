@@ -1,6 +1,6 @@
 ---
 description: Reviews the selected code and identifies duplication
-agent: Plan
+agent: plan
 ---
 
 Review source files in $ARGUMENTS and identify similar code and propose
