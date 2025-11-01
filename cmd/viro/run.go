@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
@@ -30,8 +31,8 @@ func Run(ctx *RuntimeContext) int {
 	return executeModeWithContext(cfg, ctx)
 }
 
-func loadConfigurationWithContext(ctx *RuntimeContext) (*Config, error) {
-	cfg := NewConfig()
+func loadConfigurationWithContext(ctx *RuntimeContext) (*config.Config, error) {
+	cfg := config.NewConfig()
 	if err := cfg.LoadFromEnv(); err != nil {
 		return nil, err
 	}
@@ -47,7 +48,7 @@ func loadConfigurationWithContext(ctx *RuntimeContext) (*Config, error) {
 	return cfg, nil
 }
 
-func executeModeWithContext(cfg *Config, ctx *RuntimeContext) int {
+func executeModeWithContext(cfg *config.Config, ctx *RuntimeContext) int {
 	mode, err := cfg.DetectMode()
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Error: %v\n", err)
@@ -55,14 +56,14 @@ func executeModeWithContext(cfg *Config, ctx *RuntimeContext) int {
 	}
 
 	switch mode {
-	case ModeREPL:
+	case config.ModeREPL:
 		return runREPLWithContext(cfg, ctx)
-	case ModeScript, ModeEval, ModeCheck:
+	case config.ModeScript, config.ModeEval, config.ModeCheck:
 		return runExecutionWithContext(cfg, mode, ctx)
-	case ModeVersion:
+	case config.ModeVersion:
 		fmt.Fprintf(ctx.Stdout, "%s\n", getVersionString())
 		return ExitSuccess
-	case ModeHelp:
+	case config.ModeHelp:
 		fmt.Fprintf(ctx.Stdout, "%s", getHelpText())
 		return ExitSuccess
 	default:
@@ -71,7 +72,7 @@ func executeModeWithContext(cfg *Config, ctx *RuntimeContext) int {
 	}
 }
 
-func runREPLWithContext(cfg *Config, ctx *RuntimeContext) int {
+func runREPLWithContext(cfg *config.Config, ctx *RuntimeContext) int {
 	if cfg.AllowInsecureTLS {
 		fmt.Fprintf(ctx.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
 	}
@@ -98,7 +99,7 @@ func runREPLWithContext(cfg *Config, ctx *RuntimeContext) int {
 	return ExitSuccess
 }
 
-func runExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
+func runExecutionWithContext(cfg *config.Config, mode config.Mode, ctx *RuntimeContext) int {
 	var err error
 	if cfg.Profile {
 		err = trace.InitTraceSilent()
@@ -120,23 +121,23 @@ func runExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
 	var input InputSource
 
 	switch mode {
-	case ModeCheck:
+	case config.ModeCheck:
 		input = &FileInput{Config: cfg, Path: cfg.ScriptFile}
-	case ModeEval:
+	case config.ModeEval:
 		input = &ExprInputWithContext{Expr: cfg.EvalExpr, WithStdin: cfg.ReadStdin, Stdin: ctx.Stdin}
-	case ModeScript:
+	case config.ModeScript:
 		input = &FileInput{Config: cfg, Path: cfg.ScriptFile}
 	}
 
 	var args []string
-	if mode == ModeScript {
+	if mode == config.ModeScript {
 		args = cfg.Args
 	} else {
 		args = []string{}
 	}
 
-	printResult := (mode == ModeEval && !cfg.NoPrint)
-	parseOnly := (mode == ModeCheck)
+	printResult := (mode == config.ModeEval && !cfg.NoPrint)
+	parseOnly := (mode == config.ModeCheck)
 
 	exitCode := executeViroCodeWithContext(cfg, input, args, printResult, parseOnly, profiler, ctx)
 
@@ -175,7 +176,7 @@ func (e *ExprInputWithContext) Load() (string, error) {
 	return expr, nil
 }
 
-func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, printResult bool, parseOnly bool, profiler *profile.Profiler, ctx *RuntimeContext) int {
+func executeViroCodeWithContext(cfg *config.Config, input InputSource, args []string, printResult bool, parseOnly bool, profiler *profile.Profiler, ctx *RuntimeContext) int {
 	content, err := input.Load()
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Error loading input: %v\n", err)
@@ -212,7 +213,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	return ExitSuccess
 }
 
-func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator {
+func setupEvaluatorWithContext(cfg *config.Config, ctx *RuntimeContext) *eval.Evaluator {
 	evaluator := eval.NewEvaluator()
 
 	if cfg.Quiet {

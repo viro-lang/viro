@@ -3,11 +3,12 @@ package main
 import (
 	"io"
 
+	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 )
 
-func setupEvaluator(cfg *Config) *eval.Evaluator {
+func setupEvaluator(cfg *config.Config) *eval.Evaluator {
 	evaluator := eval.NewEvaluator()
 
 	if cfg.Quiet {

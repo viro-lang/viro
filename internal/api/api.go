@@ -1,12 +1,12 @@
 package api
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
+	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
@@ -29,103 +29,25 @@ type RuntimeContext struct {
 	Stderr io.Writer
 }
 
-type Mode int
+type Mode = config.Mode
 
 const (
-	ModeREPL Mode = iota
-	ModeScript
-	ModeEval
-	ModeCheck
-	ModeVersion
-	ModeHelp
+	ModeREPL    = config.ModeREPL
+	ModeScript  = config.ModeScript
+	ModeEval    = config.ModeEval
+	ModeCheck   = config.ModeCheck
+	ModeVersion = config.ModeVersion
+	ModeHelp    = config.ModeHelp
 )
 
-type Config struct {
-	SandboxRoot      string
-	AllowInsecureTLS bool
-	Quiet            bool
-	Verbose          bool
-	ShowVersion      bool
-	ShowHelp         bool
-	EvalExpr         string
-	CheckOnly        bool
-	ScriptFile       string
-	Args             []string
-	NoHistory        bool
-	HistoryFile      string
-	Prompt           string
-	NoWelcome        bool
-	TraceOn          bool
-	NoPrint          bool
-	ReadStdin        bool
-	Profile          bool
-}
+type Config = config.Config
 
 func NewConfig() *Config {
-	cwd, _ := os.Getwd()
-	return &Config{
-		SandboxRoot: cwd,
-	}
+	return config.NewConfig()
 }
 
 func ConfigFromArgs(args []string) (*Config, error) {
-	cfg := NewConfig()
-
-	fs := flag.NewFlagSet("viro", flag.ContinueOnError)
-
-	sandboxRoot := fs.String("sandbox-root", "", "")
-	allowInsecureTLS := fs.Bool("allow-insecure-tls", false, "")
-	quiet := fs.Bool("quiet", false, "")
-	verbose := fs.Bool("verbose", false, "")
-	version := fs.Bool("version", false, "")
-	help := fs.Bool("help", false, "")
-	evalExpr := fs.String("c", "", "")
-	check := fs.Bool("check", false, "")
-	noHistory := fs.Bool("no-history", false, "")
-	historyFile := fs.String("history-file", "", "")
-	prompt := fs.String("prompt", "", "")
-	noWelcome := fs.Bool("no-welcome", false, "")
-	traceOn := fs.Bool("trace", false, "")
-	noPrint := fs.Bool("no-print", false, "")
-	stdin := fs.Bool("stdin", false, "")
-	profileFlag := fs.Bool("profile", false, "")
-
-	if err := fs.Parse(args); err != nil {
-		return nil, err
-	}
-
-	if *sandboxRoot != "" {
-		cfg.SandboxRoot = *sandboxRoot
-	}
-	cfg.AllowInsecureTLS = *allowInsecureTLS
-	cfg.Quiet = *quiet
-	cfg.Verbose = *verbose
-	cfg.ShowVersion = *version
-	cfg.ShowHelp = *help
-	cfg.EvalExpr = *evalExpr
-	cfg.CheckOnly = *check
-	cfg.NoHistory = *noHistory
-	if *historyFile != "" {
-		cfg.HistoryFile = *historyFile
-	}
-	if *prompt != "" {
-		cfg.Prompt = *prompt
-	}
-	cfg.NoWelcome = *noWelcome
-	cfg.TraceOn = *traceOn
-	cfg.NoPrint = *noPrint
-	cfg.ReadStdin = *stdin
-	cfg.Profile = *profileFlag
-
-	positionalArgs := fs.Args()
-	if len(positionalArgs) > 0 {
-		cfg.ScriptFile = positionalArgs[0]
-		if len(positionalArgs) > 1 {
-			cfg.Args = positionalArgs[1:]
-		}
-	}
-
-	return cfg, nil
+	return config.ParseSimple(args)
 }
 
 type InputSource interface {

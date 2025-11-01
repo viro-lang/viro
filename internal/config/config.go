@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"flag"
@@ -159,4 +159,130 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("--profile flag requires a script file")
 	}
 	return nil
+}
+
+type Mode int
+
+const (
+	ModeREPL Mode = iota
+	ModeScript
+	ModeEval
+	ModeCheck
+	ModeVersion
+	ModeHelp
+)
+
+func (m Mode) String() string {
+	switch m {
+	case ModeREPL:
+		return "REPL"
+	case ModeScript:
+		return "Script"
+	case ModeEval:
+		return "Eval"
+	case ModeCheck:
+		return "Check"
+	case ModeVersion:
+		return "Version"
+	case ModeHelp:
+		return "Help"
+	default:
+		return "Unknown"
+	}
+}
+
+func (c *Config) DetectMode() (Mode, error) {
+	modes := []struct {
+		condition bool
+		mode      Mode
+	}{
+		{c.ShowVersion, ModeVersion},
+		{c.ShowHelp, ModeHelp},
+		{c.EvalExpr != "", ModeEval},
+		{c.CheckOnly, ModeCheck},
+		{!c.CheckOnly && c.ScriptFile != "", ModeScript},
+	}
+
+	var detectedMode Mode
+	modeCount := 0
+
+	for _, m := range modes {
+		if m.condition {
+			modeCount++
+			detectedMode = m.mode
+		}
+	}
+
+	if modeCount > 1 {
+		return ModeREPL, fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
+	}
+
+	if modeCount == 0 {
+		return ModeREPL, nil
+	}
+
+	return detectedMode, nil
+}
+
+func ParseSimple(args []string) (*Config, error) {
+	cwd, _ := os.Getwd()
+	cfg := &Config{
+		SandboxRoot: cwd,
+	}
+
+	fs := flag.NewFlagSet("viro", flag.ContinueOnError)
+
+	sandboxRoot := fs.String("sandbox-root", "", "")
+	allowInsecureTLS := fs.Bool("allow-insecure-tls", false, "")
+	quiet := fs.Bool("quiet", false, "")
+	verbose := fs.Bool("verbose", false, "")
+	version := fs.Bool("version", false, "")
+	help := fs.Bool("help", false, "")
+	evalExpr := fs.String("c", "", "")
+	check := fs.Bool("check", false, "")
+	noHistory := fs.Bool("no-history", false, "")
+	historyFile := fs.String("history-file", "", "")
+	prompt := fs.String("prompt", "", "")
+	noWelcome := fs.Bool("no-welcome", false, "")
+	traceOn := fs.Bool("trace", false, "")
+	noPrint := fs.Bool("no-print", false, "")
+	stdin := fs.Bool("stdin", false, "")
+	profileFlag := fs.Bool("profile", false, "")
+
+	if err := fs.Parse(args); err != nil {
+		return nil, err
+	}
+
+	if *sandboxRoot != "" {
+		cfg.SandboxRoot = *sandboxRoot
+	}
+	cfg.AllowInsecureTLS = *allowInsecureTLS
+	cfg.Quiet = *quiet
+	cfg.Verbose = *verbose
+	cfg.ShowVersion = *version
+	cfg.ShowHelp = *help
+	cfg.EvalExpr = *evalExpr
+	cfg.CheckOnly = *check
+	cfg.NoHistory = *noHistory
+	if *historyFile != "" {
+		cfg.HistoryFile = *historyFile
+	}
+	if *prompt != "" {
+		cfg.Prompt = *prompt
+	}
+	cfg.NoWelcome = *noWelcome
+	cfg.TraceOn = *traceOn
+	cfg.NoPrint = *noPrint
+	cfg.ReadStdin = *stdin
+	cfg.Profile = *profileFlag
+
+	positionalArgs := fs.Args()
+	if len(positionalArgs) > 0 {
+		cfg.ScriptFile = positionalArgs[0]
+		if len(positionalArgs) > 1 {
+			cfg.Args = positionalArgs[1:]
+		}
+	}
+
+	return cfg, nil
 }

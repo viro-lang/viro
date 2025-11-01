@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
@@ -18,7 +19,7 @@ const (
 )
 
 type ExecutionContext struct {
-	Config      *Config
+	Config      *config.Config
 	Input       InputSource
 	Args        []string
 	PrintResult bool
@@ -26,7 +27,7 @@ type ExecutionContext struct {
 	Profiler    *profile.Profiler
 }
 
-func runExecution(cfg *Config, mode Mode) int {
+func runExecution(cfg *config.Config, mode config.Mode) int {
 	var err error
 	if cfg.Profile {
 		err = trace.InitTraceSilent()
@@ -48,7 +49,7 @@ func runExecution(cfg *Config, mode Mode) int {
 	var ctx *ExecutionContext
 
 	switch mode {
-	case ModeCheck:
+	case config.ModeCheck:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
@@ -57,7 +58,7 @@ func runExecution(cfg *Config, mode Mode) int {
 			ParseOnly:   true,
 			Profiler:    profiler,
 		}
-	case ModeEval:
+	case config.ModeEval:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &ExprInput{Expr: cfg.EvalExpr, WithStdin: cfg.ReadStdin},
@@ -66,7 +67,7 @@ func runExecution(cfg *Config, mode Mode) int {
 			ParseOnly:   false,
 			Profiler:    profiler,
 		}
-	case ModeScript:
+	case config.ModeScript:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
