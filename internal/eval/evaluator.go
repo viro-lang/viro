@@ -923,7 +923,7 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 			}
 			var arg core.Value
 			var err error
-			pos, arg, err = e.evaluateElement(tokens, pos+1)
+			pos, arg, err = e.EvaluateExpression(tokens, pos+1)
 			if err != nil {
 				return pos, err
 			}
