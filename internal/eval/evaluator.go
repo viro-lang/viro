@@ -402,6 +402,147 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	return newPos, result, nil
 }
 
+// evaluateLiteralValues handles evaluation of literal values that return themselves unchanged.
+func (e *Evaluator) evaluateLiteralValues(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
+	}
+	return position + 1, element, nil
+}
+
+// evaluateParenExpression handles evaluation of parenthesized expressions.
+func (e *Evaluator) evaluateParenExpression(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	block, _ := value.AsBlockValue(element)
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
+	}
+	result, err := e.DoBlock(block.Elements)
+	if shouldTraceExpr && err == nil {
+		e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
+	}
+	return position + 1, result, err
+}
+
+// evaluateLitWord handles evaluation of literal words.
+func (e *Evaluator) evaluateLitWord(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	wordStr, _ := value.AsWordValue(element)
+	result := value.NewWordVal(wordStr)
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", wordStr, fmt.Sprintf("'%s", wordStr), result, position, traceStart, nil)
+	}
+	return position + 1, result, nil
+}
+
+// evaluateGetWord handles evaluation of get-words (:word).
+func (e *Evaluator) evaluateGetWord(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	wordStr, _ := value.AsWordValue(element)
+	result, ok := e.Lookup(wordStr)
+	if !ok {
+		err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), value.NewNoneVal(), position, traceStart, err)
+		}
+		return position, value.NewNoneVal(), err
+	}
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), result, position, traceStart, nil)
+	}
+	return position + 1, result, nil
+}
+
+// evaluateSetWord handles evaluation of set-words (word:).
+func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	wordStr, _ := value.AsWordValue(element)
+
+	if position+1 >= len(block) {
+		err := verror.NewScriptError(
+			verror.ErrIDNoValue,
+			[3]string{wordStr, "set-word-without-value", wordStr},
+		)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
+		}
+		return position, value.NewNoneVal(), err
+	}
+
+	newPos, result, err := e.EvaluateExpression(block, position+1)
+	if err != nil {
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
+		}
+		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+	}
+
+	if result.GetType() == value.TypeFunction {
+		if fnVal, ok := value.AsFunctionValue(result); ok && fnVal.Name == "" {
+			fnVal.Name = wordStr
+		}
+	}
+
+	currentFrame := e.currentFrame()
+	currentFrame.Bind(wordStr, result)
+
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), result, position, traceStart, nil)
+	}
+
+	return newPos, result, nil
+}
+
+// evaluateWord handles evaluation of regular words.
+func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	wordStr, _ := value.AsWordValue(element)
+
+	if debug.GlobalDebugger != nil {
+		debug.GlobalDebugger.HandleBreakpoint(wordStr)
+	}
+
+	resolved, found := e.Lookup(wordStr)
+	if !found {
+		err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, wordStr, value.NewNoneVal(), position, traceStart, err)
+		}
+		return position, value.NewNoneVal(), err
+	}
+
+	if resolved.GetType() == value.TypeFunction {
+		fn, _ := value.AsFunctionValue(resolved)
+		newPos, result, err := e.invokeFunctionExpression(block, position, fn)
+		return newPos, result, err
+	}
+
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", wordStr, wordStr, resolved, position, traceStart, nil)
+	}
+
+	return position + 1, resolved, nil
+}
+
+// evaluatePath handles evaluation of path expressions.
+func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+	path, _ := value.AsPath(element)
+	result, err := e.evalPathValue(path)
+	if err != nil {
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", path.Mold(), value.NewNoneVal(), position, traceStart, err)
+		}
+		return position, value.NewNoneVal(), err
+	}
+
+	if result.GetType() == value.TypeFunction {
+		fn, _ := value.AsFunctionValue(result)
+		newPos, result, err := e.invokeFunctionExpression(block, position, fn)
+		return newPos, result, err
+	}
+
+	if shouldTraceExpr {
+		e.emitTraceResult("eval", "", path.Mold(), result, position, traceStart, nil)
+	}
+
+	return position + 1, result, nil
+}
+
 // evaluateElement evaluates a single element without lookahead
 func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core.Value, error) {
 	if position >= len(block) {
@@ -422,44 +563,16 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype, value.TypeBlock,
 		value.TypeFunction:
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
-		}
-		return position + 1, element, nil
+		return e.evaluateLiteralValues(element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeParen:
-		block, _ := value.AsBlockValue(element)
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
-		}
-		result, err := e.DoBlock(block.Elements)
-		if shouldTraceExpr && err == nil {
-			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
-		}
-		return position + 1, result, err
+		return e.evaluateParenExpression(element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeLitWord:
-		wordStr, _ := value.AsWordValue(element)
-		result := value.NewWordVal(wordStr)
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", wordStr, fmt.Sprintf("'%s", wordStr), result, position, traceStart, nil)
-		}
-		return position + 1, result, nil
+		return e.evaluateLitWord(element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeGetWord:
-		wordStr, _ := value.AsWordValue(element)
-		result, ok := e.Lookup(wordStr)
-		if !ok {
-			err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), err
-		}
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), result, position, traceStart, nil)
-		}
-		return position + 1, result, nil
+		return e.evaluateGetWord(element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeGetPath:
 		getPath, _ := value.AsGetPath(element)
@@ -478,89 +591,13 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		return newPos, result, err
 
 	case value.TypeSetWord:
-		wordStr, _ := value.AsWordValue(element)
-
-		if position+1 >= len(block) {
-			err := verror.NewScriptError(
-				verror.ErrIDNoValue,
-				[3]string{wordStr, "set-word-without-value", wordStr},
-			)
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), err
-		}
-
-		newPos, result, err := e.EvaluateExpression(block, position+1)
-		if err != nil {
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), e.annotateError(err, block, position)
-		}
-
-		if result.GetType() == value.TypeFunction {
-			if fnVal, ok := value.AsFunctionValue(result); ok && fnVal.Name == "" {
-				fnVal.Name = wordStr
-			}
-		}
-
-		currentFrame := e.currentFrame()
-		currentFrame.Bind(wordStr, result)
-
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), result, position, traceStart, nil)
-		}
-
-		return newPos, result, nil
+		return e.evaluateSetWord(block, element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeWord:
-		wordStr, _ := value.AsWordValue(element)
-
-		if debug.GlobalDebugger != nil {
-			debug.GlobalDebugger.HandleBreakpoint(wordStr)
-		}
-
-		resolved, found := e.Lookup(wordStr)
-		if !found {
-			err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", wordStr, wordStr, value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), err
-		}
-
-		if resolved.GetType() == value.TypeFunction {
-			fn, _ := value.AsFunctionValue(resolved)
-			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
-			return newPos, result, err
-		} else {
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", wordStr, wordStr, resolved, position, traceStart, nil)
-			}
-			return position + 1, resolved, nil
-		}
+		return e.evaluateWord(block, element, position, traceStart, shouldTraceExpr)
 
 	case value.TypePath:
-		path, _ := value.AsPath(element)
-		result, err := e.evalPathValue(path)
-		if err != nil {
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", "", path.Mold(), value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), err
-		}
-
-		if result.GetType() == value.TypeFunction {
-			fn, _ := value.AsFunctionValue(result)
-			newPos, result, err := e.invokeFunctionExpression(block, position, fn)
-			return newPos, result, err
-		} else {
-			if shouldTraceExpr {
-				e.emitTraceResult("eval", "", path.Mold(), result, position, traceStart, nil)
-			}
-			return position + 1, result, nil
-		}
+		return e.evaluatePath(block, element, position, traceStart, shouldTraceExpr)
 
 	default:
 		return position, value.NewNoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
@@ -613,23 +650,13 @@ func (e *Evaluator) evalSetPathValue(block []core.Value, position int, setPath *
 	return newPos, result, nil
 }
 
-// invokeFunctionExpression invokes a function starting at the given position in a block.
-// Returns the new position after consuming the function and its arguments, the result value, and any error.
-func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue) (int, core.Value, error) {
-	name := functionDisplayName(fn)
-	e.pushCall(name)
-	defer e.popCall()
-
-	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 0, false)
-	if err != nil {
-		return position, value.NewNoneVal(), e.annotateError(err, block, position)
-	}
-
+// setupFunctionCallTracing sets up tracing for a function call.
+func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs []core.Value, refValues map[string]core.Value) (time.Time, map[string]string) {
 	var traceStart time.Time
 	var args map[string]string
 	if e.traceEnabled {
 		traceStart = time.Now()
-		args = e.captureFunctionArgs(fn, posArgs, refValues)
+		args = e.captureFunctionArgs(nil, posArgs, refValues) // fn is not needed for arg capture
 		event := trace.TraceEvent{
 			Timestamp:  traceStart,
 			Value:      "",
@@ -644,24 +671,56 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 		}
 		trace.GlobalTraceSession.Emit(event)
 	}
+	return traceStart, args
+}
+
+// callNativeFunction invokes a native function and handles tracing.
+func (e *Evaluator) callNativeFunction(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value, name string, position int, traceStart time.Time) (core.Value, error) {
+	result, err := e.callNative(fn, posArgs, refValues)
+	if err != nil {
+		if e.traceEnabled {
+			e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
+		}
+		return value.NewNoneVal(), e.annotateError(err, nil, position)
+	}
+	return result, nil
+}
+
+// callUserDefinedFunction invokes a user-defined function and handles tracing.
+func (e *Evaluator) callUserDefinedFunction(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value, name string, position int, traceStart time.Time) (core.Value, error) {
+	result, err := e.executeFunction(fn, posArgs, refValues)
+	if err != nil {
+		if e.traceEnabled {
+			e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
+		}
+		return value.NewNoneVal(), err
+	}
+	return result, nil
+}
+
+// invokeFunctionExpression invokes a function starting at the given position in a block.
+// Returns the new position after consuming the function and its arguments, the result value, and any error.
+func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue) (int, core.Value, error) {
+	name := functionDisplayName(fn)
+	e.pushCall(name)
+	defer e.popCall()
+
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 0, false)
+	if err != nil {
+		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+	}
+
+	traceStart, _ := e.setupFunctionCallTracing(name, position, posArgs, refValues)
 
 	var result core.Value
 	if fn.Type == value.FuncNative {
-		result, err = e.callNative(fn, posArgs, refValues)
-		if err != nil {
-			if e.traceEnabled {
-				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), e.annotateError(err, block, position)
-		}
+		result, err = e.callNativeFunction(fn, posArgs, refValues, name, position, traceStart)
 	} else {
-		result, err = e.executeFunction(fn, posArgs, refValues)
-		if err != nil {
-			if e.traceEnabled {
-				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
-			}
-			return position, value.NewNoneVal(), err
-		}
+		result, err = e.callUserDefinedFunction(fn, posArgs, refValues, name, position, traceStart)
+	}
+
+	if err != nil {
+		return position, value.NewNoneVal(), err
 	}
 
 	if e.traceEnabled {
@@ -725,15 +784,33 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	position := startPosition
 	paramIndex := startParamIndex
 
+	position, err := e.collectPositionalArgs(fn, block, positional, posArgs, refSpecs, refValues, refProvided, position, paramIndex, useElementEval)
+	if err != nil {
+		return nil, nil, position, err
+	}
+
+	position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+	if err != nil {
+		return nil, nil, position, err
+	}
+
+	return posArgs, refValues, position, nil
+}
+
+// collectPositionalArgs collects positional arguments for a function call.
+func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.Value, positional []value.ParamSpec, posArgs []core.Value, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool, startPosition, startParamIndex int, useElementEval bool) (int, error) {
+	position := startPosition
+	paramIndex := startParamIndex
+
 	for paramIndex < len(positional) {
 		var err error
 		position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
 		if err != nil {
-			return nil, nil, position, err
+			return position, err
 		}
 
 		if position >= len(block) {
-			return nil, nil, position, verror.NewScriptError(
+			return position, verror.NewScriptError(
 				verror.ErrIDArgCount,
 				[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
 			)
@@ -742,19 +819,13 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 		paramSpec := positional[paramIndex]
 		position, posArgs[paramIndex], err = e.collectParameter(block, position, paramSpec, useElementEval)
 		if err != nil {
-			return nil, nil, position, err
+			return position, err
 		}
 
 		paramIndex++
 	}
 
-	var err error
-	position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
-	if err != nil {
-		return nil, nil, position, err
-	}
-
-	return posArgs, refValues, position, nil
+	return position, nil
 }
 
 // evalPathValue evaluates a path expression and returns its value.
@@ -882,6 +953,22 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 	e.PushFrameContext(frame)
 	defer e.popFrame()
 
+	e.bindFunctionParameters(frame, fn, posArgs, refinements)
+
+	if fn.Body == nil {
+		return value.NewNoneVal(), verror.NewInternalError("function body missing", [3]string{})
+	}
+
+	result, err := e.DoBlock(fn.Body.Elements)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	return result, nil
+}
+
+// bindFunctionParameters binds positional and refinement parameters to a function frame.
+func (e *Evaluator) bindFunctionParameters(frame core.Frame, fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) {
 	posIndex := 0
 	for _, spec := range fn.Params {
 		if spec.Refinement {
@@ -900,17 +987,6 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 		frame.Bind(spec.Name, posArgs[posIndex])
 		posIndex++
 	}
-
-	if fn.Body == nil {
-		return value.NewNoneVal(), verror.NewInternalError("function body missing", [3]string{})
-	}
-
-	result, err := e.DoBlock(fn.Body.Elements)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	return result, nil
 }
 
 // pathTraversal represents the result of traversing a path expression.
@@ -918,6 +994,91 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 type pathTraversal struct {
 	segments []value.PathSegment
 	values   []core.Value
+}
+
+// resolvePathBase resolves the base value for a path expression.
+func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, error) {
+	switch firstSeg.Type {
+	case value.PathSegmentWord:
+		wordStr, ok := firstSeg.Value.(string)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
+		}
+
+		base, ok := e.Lookup(wordStr)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+		}
+		return base, nil
+	case value.PathSegmentIndex:
+		// Numeric literals as base (e.g., 1.2.3)
+		num, ok := firstSeg.Value.(int64)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
+		}
+		return value.NewIntVal(num), nil
+	default:
+		return value.NewNoneVal(), verror.NewInternalError("unexpected first segment type", [3]string{fmt.Sprintf("%v", firstSeg.Type), "", ""})
+	}
+}
+
+// traverseWordSegment handles traversal of word segments (object field access).
+func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
+	if current.GetType() != value.TypeObject {
+		return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{value.TypeToString(current.GetType()), "", ""})
+	}
+
+	obj, _ := value.AsObject(current)
+	fieldName, ok := seg.Value.(string)
+	if !ok {
+		return verror.NewInternalError("word segment does not contain string", [3]string{})
+	}
+
+	// Search field in object and prototype chain using owned frames
+	fieldVal, found := obj.GetFieldWithProto(fieldName)
+	if !found {
+		return verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
+	}
+
+	tr.values = append(tr.values, fieldVal)
+	return nil
+}
+
+// traverseIndexSegment handles traversal of index segments (collection indexing).
+func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
+	index, ok := seg.Value.(int64)
+	if !ok {
+		return verror.NewInternalError("index segment does not contain int64", [3]string{})
+	}
+
+	switch current.GetType() {
+	case value.TypeBlock:
+		block, _ := value.AsBlockValue(current)
+		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+			return err
+		}
+		tr.values = append(tr.values, block.Elements[index-1])
+
+	case value.TypeString:
+		str, _ := value.AsStringValue(current)
+		runes := []rune(str.String())
+		if err := checkIndexBounds(index, int64(len(runes)), "string"); err != nil {
+			return err
+		}
+		tr.values = append(tr.values, value.NewStrVal(string(runes[index-1])))
+
+	case value.TypeBinary:
+		bin, _ := value.AsBinaryValue(current)
+		if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
+			return err
+		}
+		tr.values = append(tr.values, value.NewIntVal(int64(bin.At(int(index-1)))))
+
+	default:
+		return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block, string, or binary type", "", ""})
+	}
+
+	return nil
 }
 
 // traversePath navigates through a path expression to access nested values.
@@ -935,28 +1096,9 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 	// Resolve the base value (first segment)
 	firstSeg := path.Segments[0]
-	var base core.Value
-
-	switch firstSeg.Type {
-	case value.PathSegmentWord:
-		wordStr, ok := firstSeg.Value.(string)
-		if !ok {
-			return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
-		}
-
-		base, ok = e.Lookup(wordStr)
-		if !ok {
-			return nil, verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-		}
-	case value.PathSegmentIndex:
-		// Numeric literals as base (e.g., 1.2.3)
-		num, ok := firstSeg.Value.(int64)
-		if !ok {
-			return nil, verror.NewInternalError("index segment does not contain int64", [3]string{})
-		}
-		base = value.NewIntVal(num)
-	default:
-		return nil, verror.NewInternalError("unexpected first segment type", [3]string{fmt.Sprintf("%v", firstSeg.Type), "", ""})
+	base, err := e.(*Evaluator).resolvePathBase(firstSeg)
+	if err != nil {
+		return nil, err
 	}
 
 	tr.values = append(tr.values, base)
@@ -977,56 +1119,13 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 		switch seg.Type {
 		case value.PathSegmentWord:
-			// Object field access
-			if current.GetType() != value.TypeObject {
-				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{value.TypeToString(current.GetType()), "", ""})
+			if err := e.(*Evaluator).traverseWordSegment(tr, seg, current); err != nil {
+				return nil, err
 			}
-
-			obj, _ := value.AsObject(current)
-			fieldName, ok := seg.Value.(string)
-			if !ok {
-				return nil, verror.NewInternalError("word segment does not contain string", [3]string{})
-			}
-
-			// Search field in object and prototype chain using owned frames
-			fieldVal, found := obj.GetFieldWithProto(fieldName)
-			if !found {
-				return nil, verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
-			}
-
-			tr.values = append(tr.values, fieldVal)
 
 		case value.PathSegmentIndex:
-			// Collection indexing
-			index, ok := seg.Value.(int64)
-			if !ok {
-				return nil, verror.NewInternalError("index segment does not contain int64", [3]string{})
-			}
-
-			if current.GetType() == value.TypeBlock {
-				block, _ := value.AsBlockValue(current)
-				if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
-					return nil, err
-				}
-				tr.values = append(tr.values, block.Elements[index-1])
-
-			} else if current.GetType() == value.TypeString {
-				str, _ := value.AsStringValue(current)
-				runes := []rune(str.String())
-				if err := checkIndexBounds(index, int64(len(runes)), "string"); err != nil {
-					return nil, err
-				}
-				tr.values = append(tr.values, value.NewStrVal(string(runes[index-1])))
-
-			} else if current.GetType() == value.TypeBinary {
-				bin, _ := value.AsBinaryValue(current)
-				if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
-					return nil, err
-				}
-				tr.values = append(tr.values, value.NewIntVal(int64(bin.At(int(index-1)))))
-
-			} else {
-				return nil, verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block, string, or binary type", "", ""})
+			if err := e.(*Evaluator).traverseIndexSegment(tr, seg, current); err != nil {
+				return nil, err
 			}
 
 		default:
@@ -1069,41 +1168,49 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 
 	switch finalSeg.Type {
 	case value.PathSegmentIndex:
-		// Assign to collection element
-		index, ok := finalSeg.Value.(int64)
-		if !ok {
-			return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
-		}
-
-		if container.GetType() != value.TypeBlock {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
-		}
-
-		block, _ := value.AsBlockValue(container)
-		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
-			return value.NewNoneVal(), err
-		}
-		block.Elements[index-1] = newVal
-
+		return e.assignToIndexTarget(container, finalSeg, newVal, pathStr)
 	case value.PathSegmentWord:
-		// Assign to object field
-		fieldName, ok := finalSeg.Value.(string)
-		if !ok {
-			return value.NewNoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
-		}
-
-		if container.GetType() != value.TypeObject {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
-		}
-
-		obj, _ := value.AsObject(container)
-
-		// Set field using owned frame (creates field if it doesn't exist)
-		obj.SetField(fieldName, newVal)
-
+		return e.assignToWordTarget(container, finalSeg, newVal, pathStr)
 	default:
 		return value.NewNoneVal(), verror.NewInternalError("unsupported path segment type for assignment", [3]string{})
 	}
+}
+
+// assignToIndexTarget assigns a value to an indexed position in a collection.
+func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
+	index, ok := finalSeg.Value.(int64)
+	if !ok {
+		return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
+	}
+
+	if container.GetType() != value.TypeBlock {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
+	}
+
+	block, _ := value.AsBlockValue(container)
+	if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+		return value.NewNoneVal(), err
+	}
+	block.Elements[index-1] = newVal
+
+	return newVal, nil
+}
+
+// assignToWordTarget assigns a value to an object field.
+func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
+	fieldName, ok := finalSeg.Value.(string)
+	if !ok {
+		return value.NewNoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
+	}
+
+	if container.GetType() != value.TypeObject {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
+	}
+
+	obj, _ := value.AsObject(container)
+
+	// Set field using owned frame (creates field if it doesn't exist)
+	obj.SetField(fieldName, newVal)
 
 	return newVal, nil
 }
