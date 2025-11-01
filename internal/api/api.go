@@ -19,9 +19,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-const (
-	defaultTraceMaxSizeMB = 50
-)
+const ()
 
 type RuntimeContext struct {
 	Args   []string
@@ -158,7 +156,7 @@ func RunExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
 	if cfg.Profile {
 		err = trace.InitTraceSilent()
 	} else {
-		err = trace.InitTrace("", defaultTraceMaxSizeMB)
+		err = trace.InitTrace("", 50)
 	}
 
 	if err != nil {
