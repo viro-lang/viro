@@ -31,7 +31,7 @@ type TraceSession struct {
 	enabled       atomic.Bool
 	sink          io.Writer          // Output destination (stderr or file)
 	logger        *lumberjack.Logger // Optional file logger
-	atomicFilters atomic.Value       // Stores *TraceFilters for lock-free reads
+	atomicFilters atomic.Value       // Stores *TraceFilters for lock-free reads; must always store a non-nil *TraceFilters pointer to avoid panics when type asserting in Load() calls
 	stepCounter   int64              // Monotonic step counter
 	callback      atomic.Value       // Stores func(TraceEvent) for lock-free reads
 }
