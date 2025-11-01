@@ -29,10 +29,9 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/marcin-radoszewski/viro/internal/bootstrap"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
-	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
@@ -146,20 +145,8 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 		return nil, err
 	}
 
-	evaluator := eval.NewEvaluator()
-	evaluator.SetOutputWriter(os.Stdout)
-	evaluator.SetErrorWriter(os.Stderr)
-	evaluator.SetInputReader(os.Stdin)
-
-	rootFrame := evaluator.GetFrameByIndex(0)
-	native.RegisterMathNatives(rootFrame)
-	native.RegisterSeriesNatives(rootFrame)
-	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame, evaluator)
-	native.RegisterControlNatives(rootFrame)
-	native.RegisterHelpNatives(rootFrame)
-
-	initializeSystemObject(evaluator, opts.Args)
+	evaluator := bootstrap.NewEvaluatorWithNatives(os.Stdout, os.Stderr, os.Stdin, false)
+	bootstrap.InjectSystemArgs(evaluator, opts.Args)
 
 	repl := &REPL{
 		evaluator:      evaluator,
@@ -195,26 +182,16 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	debug.InitDebugger()
 
 	if e == nil {
-		e = eval.NewEvaluator()
+		e = bootstrap.NewEvaluatorWithNatives(out, out, strings.NewReader(""), false)
+		bootstrap.InjectSystemArgs(e, []string{})
+	} else {
+		// If evaluator is provided, just configure I/O
+		if out != nil {
+			e.SetOutputWriter(out)
+			e.SetErrorWriter(out) // For tests, use same writer for both
+		}
+		e.SetInputReader(strings.NewReader("")) // Empty input for tests
 	}
-	if out == nil {
-		out = io.Discard
-	}
-
-	// Configure evaluator I/O
-	e.SetOutputWriter(out)
-	e.SetErrorWriter(out)                   // For tests, use same writer for both
-	e.SetInputReader(strings.NewReader("")) // Empty input for tests
-
-	rootFrame := e.GetFrameByIndex(0)
-	native.RegisterMathNatives(rootFrame)
-	native.RegisterSeriesNatives(rootFrame)
-	native.RegisterDataNatives(rootFrame)
-	native.RegisterIONatives(rootFrame, e)
-	native.RegisterControlNatives(rootFrame)
-	native.RegisterHelpNatives(rootFrame)
-
-	initializeSystemObject(e, []string{})
 
 	historyPath := resolveHistoryPath(false)
 	repl := &REPL{
@@ -675,23 +652,6 @@ func isExitCommand(input string) bool {
 		return false
 	}
 	return strings.EqualFold(input, "quit") || strings.EqualFold(input, "exit")
-}
-
-func initializeSystemObject(evaluator core.Evaluator, args []string) {
-	viroArgs := make([]core.Value, len(args))
-	for i, arg := range args {
-		viroArgs[i] = value.NewStringValue(arg)
-	}
-
-	argsBlock := value.NewBlockValue(viroArgs)
-
-	ownedFrame := frame.NewFrame(frame.FrameObject, -1)
-	ownedFrame.Bind("args", argsBlock)
-
-	systemObj := value.NewObject(ownedFrame)
-
-	rootFrame := evaluator.GetFrameByIndex(0)
-	rootFrame.Bind("system", systemObj)
 }
 
 // handleHelpShortcut handles the special REPL-only '?' command (no arguments).
