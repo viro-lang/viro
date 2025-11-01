@@ -30,7 +30,7 @@ clean:
 	$(GOCLEAN)
 	rm -f $(BUILD_DIR)/$(BINARY_NAME)
 
-install:
+install: build
 	$(GOBUILD) -o $(GOPATH)/bin/$(BINARY_NAME) $(CMD_DIR)
 
 deps:
