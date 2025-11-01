@@ -2,7 +2,7 @@ print "=== Functions ==="
 print ""
 
 print "--- Simple function ---"
-greet: func [name] [
+greet: fn [name] [
     print (join "Hello, " name)
 ]
 greet "Alice"
@@ -10,7 +10,7 @@ greet "Bob"
 
 print ""
 print "--- Function with return value ---"
-square: func [n] [
+square: fn [n] [
     * n n
 ]
 print (square 5)
@@ -18,14 +18,14 @@ print (square 10)
 
 print ""
 print "--- Multiple parameters ---"
-add-multiply: func [a b c] [
+add-multiply: fn [a b c] [
     (+ a b) * c
 ]
 print (add-multiply 2 3 4)
 
 print ""
 print "--- Recursive function (factorial) ---"
-factorial: func [n] [
+factorial: fn [n] [
     if (<= n 1) [
         1
     ] [
@@ -37,7 +37,7 @@ print (factorial 7)
 
 print ""
 print "--- Fibonacci function ---"
-fib: func [n] [
+fib: fn [n] [
     if (<= n 1) [
         n
     ] [
@@ -53,7 +53,7 @@ loop 10 [
 
 print ""
 print "--- Function with refinements ---"
-calculate: func [a b --add --multiply] [
+calculate: fn [a b --add --multiply] [
     if :add [
         (+ a b)
     ] [
