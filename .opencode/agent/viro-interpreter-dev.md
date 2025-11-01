@@ -68,7 +68,7 @@ description: >-
 
   </example>
 mode: subagent
-model: copilot/grok-code-fast-1
+model: github-copilot/grok-code-fast-1
 textVerbosity: low
 ---
 
