@@ -301,7 +301,7 @@ func HandleErrorWithContext(err error) int {
 
 func printErrorToWriter(err error, prefix string, w io.Writer) {
 	if vErr, ok := err.(*verror.Error); ok {
-		fmt.Fprintf(w, "%v", vErr)
+		fmt.Fprintf(w, "%v\n", vErr)
 	} else if prefix != "" {
 		fmt.Fprintf(w, "%s error: %v\n", prefix, err)
 	} else {
