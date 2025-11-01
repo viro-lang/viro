@@ -52,7 +52,16 @@ func TestRecordEvent(t *testing.T) {
 
 	p.Disable()
 
-	stats := p.functionStats["test-function"]
+	report := p.GetReport()
+
+	var stats *FunctionStats
+	for _, s := range report.Functions {
+		if s.Name == "test-function" {
+			stats = s
+			break
+		}
+	}
+
 	if stats == nil {
 		t.Fatal("test-function stats not recorded")
 	}
@@ -66,10 +75,6 @@ func TestRecordEvent(t *testing.T) {
 		t.Errorf("Expected total time %v, got %v", expectedTotal, stats.TotalTime)
 	}
 
-	if stats.MinTime != 100*time.Microsecond {
-		t.Errorf("Expected min time 100µs, got %v", stats.MinTime)
-	}
-
 	if stats.MaxTime != 200*time.Microsecond {
 		t.Errorf("Expected max time 200µs, got %v", stats.MaxTime)
 	}
@@ -77,6 +82,10 @@ func TestRecordEvent(t *testing.T) {
 	expectedAvg := 150 * time.Microsecond
 	if stats.AverageTime != expectedAvg {
 		t.Errorf("Expected average time %v, got %v", expectedAvg, stats.AverageTime)
+	}
+
+	if stats.MedianTime != 150*time.Microsecond {
+		t.Errorf("Expected median time 150µs, got %v", stats.MedianTime)
 	}
 }
 

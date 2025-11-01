@@ -82,9 +82,12 @@ type FunctionStats struct {
 	Name        string
 	CallCount   int64
 	TotalTime   time.Duration
-	MinTime     time.Duration
 	MaxTime     time.Duration
 	AverageTime time.Duration
+	MedianTime  time.Duration
+	P95Time     time.Duration
+	P99Time     time.Duration
+	durations   []time.Duration
 }
 
 type ProfileReport struct {
@@ -146,8 +149,8 @@ func (p *Profiler) RecordEvent(word string, duration time.Duration) {
 		stats = &FunctionStats{
 			Name:      word,
 			CallCount: 0,
-			MinTime:   duration,
 			MaxTime:   duration,
+			durations: make([]time.Duration, 0, 100),
 		}
 		p.functionStats[word] = stats
 	}
@@ -163,12 +166,11 @@ func (p *Profiler) RecordEvent(word string, duration time.Duration) {
 		stats.TotalTime = newTotal
 	}
 
-	if duration < stats.MinTime {
-		stats.MinTime = duration
-	}
 	if duration > stats.MaxTime {
 		stats.MaxTime = duration
 	}
+
+	stats.durations = append(stats.durations, duration)
 
 	if stats.CallCount > 0 {
 		stats.AverageTime = time.Duration(int64(stats.TotalTime) / stats.CallCount)
@@ -181,6 +183,7 @@ func (p *Profiler) GetReport() *ProfileReport {
 
 	functions := make([]*FunctionStats, 0, len(p.functionStats))
 	for _, stats := range p.functionStats {
+		stats.calculatePercentiles()
 		functions = append(functions, stats)
 	}
 
@@ -195,11 +198,47 @@ func (p *Profiler) GetReport() *ProfileReport {
 	}
 }
 
+func (s *FunctionStats) calculatePercentiles() {
+	if len(s.durations) == 0 {
+		return
+	}
+
+	sorted := make([]time.Duration, len(s.durations))
+	copy(sorted, s.durations)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i] < sorted[j]
+	})
+
+	s.MedianTime = percentile(sorted, 0.50)
+	s.P95Time = percentile(sorted, 0.95)
+	s.P99Time = percentile(sorted, 0.99)
+}
+
+func percentile(sorted []time.Duration, p float64) time.Duration {
+	if len(sorted) == 0 {
+		return 0
+	}
+	if len(sorted) == 1 {
+		return sorted[0]
+	}
+
+	index := p * float64(len(sorted)-1)
+	lower := int(index)
+	upper := lower + 1
+
+	if upper >= len(sorted) {
+		return sorted[len(sorted)-1]
+	}
+
+	weight := index - float64(lower)
+	return time.Duration(float64(sorted[lower])*(1-weight) + float64(sorted[upper])*weight)
+}
+
 func (r *ProfileReport) FormatText(w io.Writer) {
 	fmt.Fprintf(w, "\n")
-	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════\n")
-	fmt.Fprintf(w, "                         EXECUTION PROFILE\n")
-	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════\n")
+	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════════════════════════════════\n")
+	fmt.Fprintf(w, "                                           EXECUTION PROFILE\n")
+	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════════════════════════════════\n")
 	fmt.Fprintf(w, "\n")
 	fmt.Fprintf(w, "Total Execution Time: %v\n", r.TotalExecutionTime)
 	fmt.Fprintf(w, "Total Events:         %d\n", r.TotalEvents)
@@ -211,10 +250,10 @@ func (r *ProfileReport) FormatText(w io.Writer) {
 	}
 
 	fmt.Fprintf(w, "Function Statistics (sorted by total time):\n")
-	fmt.Fprintf(w, "───────────────────────────────────────────────────────────────────────\n")
-	fmt.Fprintf(w, "%-20s %10s %12s %10s %10s %10s\n",
-		"Function", "Calls", "Total Time", "Avg Time", "Min Time", "Max Time")
-	fmt.Fprintf(w, "───────────────────────────────────────────────────────────────────────\n")
+	fmt.Fprintf(w, "───────────────────────────────────────────────────────────────────────────────────────────────────\n")
+	fmt.Fprintf(w, "%-20s %10s %12s %12s %12s %12s %12s %12s\n",
+		"Function", "Calls", "Total Time", "Avg Time", "Median", "P95", "P99", "Max Time")
+	fmt.Fprintf(w, "───────────────────────────────────────────────────────────────────────────────────────────────────\n")
 
 	for _, stats := range r.Functions {
 		name := stats.Name
@@ -222,16 +261,18 @@ func (r *ProfileReport) FormatText(w io.Writer) {
 			name = name[:17] + "..."
 		}
 
-		fmt.Fprintf(w, "%-20s %10d %12s %10s %10s %10s\n",
+		fmt.Fprintf(w, "%-20s %10d %12s %12s %12s %12s %12s %12s\n",
 			name,
 			stats.CallCount,
 			formatDuration(stats.TotalTime),
 			formatDuration(stats.AverageTime),
-			formatDuration(stats.MinTime),
+			formatDuration(stats.MedianTime),
+			formatDuration(stats.P95Time),
+			formatDuration(stats.P99Time),
 			formatDuration(stats.MaxTime))
 	}
 
-	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════\n")
+	fmt.Fprintf(w, "═══════════════════════════════════════════════════════════════════════════════════════════════════\n")
 	fmt.Fprintf(w, "\n")
 }
 
