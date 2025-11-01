@@ -25,8 +25,8 @@ trace --on [--only words] [--exclude words] [--file path] [--append]
 1. Enable TraceSession if not already active.
 2. Configure filters per refinements.
 3. Initialize sink:
-   - Default: `lumberjack.Logger` rotating at 5 MB, 3 backups.
-  - `--file`: create/append at specified path (ensuring sandbox compliance).
+    - Default: `lumberjack.Logger` rotating at 50 MB, 5 backups.
+   - `--file`: create/append at specified path (ensuring sandbox compliance).
 4. Emit `trace-control` event noting configuration (clarification #3).
 
 #### Error Cases
@@ -96,27 +96,33 @@ debug --stack
 
 ```json
 {
-  "id": 42,
   "timestamp": "2025-10-08T12:34:56.123Z",
   "word": "square",
-  "category": "eval",
-  "duration": "2.3ms",
-  "metadata": {
-    "args": [5]
-  }
+  "value": "25",
+  "duration": 2300000,
+  "event_type": "call",
+  "step": 42,
+  "depth": 1,
+  "position": 5,
+  "expression": "square 5",
+  "args": {"n": "5"},
+  "frame": {"n": "5"},
+  "parent_expr": "result: square 5",
+  "error": ""
 }
 ```
 
 - JSON lines stored in sink file.
 - Sequence ID increments monotonically.
-- Duration optional (provided for functions via instrumentation).
+- Duration in nanoseconds (integer).
 
-### Categories
-- `eval`: evaluator entry/exit.
-- `native`: native function execution.
-- `error`: structured errors emitted.
-- `trace`: control events (`trace --on`, `trace --off`).
-- `debug`: debugger actions (breakpoints, stepping).
+### Event Types
+- `eval`: general expression evaluation (literals, words, paths).
+- `call`: function call entry.
+- `return`: function call exit.
+- `block-enter`: entering block evaluation.
+- `block-exit`: exiting block evaluation.
+- `setword`: set-word assignment.
 
 ---
 

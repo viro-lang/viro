@@ -71,18 +71,27 @@ trace --on --file %logs/trace.log --append
 Events are written as JSON lines:
 
 ```json
-{"id":1,"timestamp":"2025-10-11T14:23:45.123Z","word":"calculate-interest","category":"eval","duration":"2.3ms","metadata":{"args":[100,0.05,3]}}
-{"id":2,"timestamp":"2025-10-11T14:23:45.125Z","word":"*","category":"native","duration":"0.1ms","metadata":{"args":[100,0.05]}}
-{"id":3,"timestamp":"2025-10-11T14:23:45.126Z","word":"calculate-interest","category":"eval","duration":"3.1ms","metadata":{"result":115.76}}
+{"timestamp":"2024-01-15T10:30:00.123Z","word":"fact","value":"function[fact]","duration":0,"event_type":"setword","step":1,"depth":0,"position":5,"expression":"fact: fn [n] [...]","args":{"n":"3"},"frame":{"n":"3","x":"10"},"parent_expr":"result: fact 3","error":""}
+{"timestamp":"2024-01-15T10:30:00.124Z","word":"fact","value":"6","duration":1234567,"event_type":"call","step":2,"depth":1,"args":{"n":"3"},"frame":{"n":"3","fact":"function[fact]"}}
+{"timestamp":"2024-01-15T10:30:00.125Z","word":"=","value":"false","duration":450,"event_type":"call","step":3,"depth":2}
+{"timestamp":"2024-01-15T10:30:00.126Z","word":"*","value":"6","duration":890,"event_type":"call","step":4,"depth":2}
+{"timestamp":"2024-01-15T10:30:00.127Z","word":"fact","value":"2","duration":987654,"event_type":"return","step":5,"depth":1}
 ```
 
 **Event fields**:
-- `id`: Sequential event number
-- `timestamp`: ISO 8601 timestamp
-- `word`: Function or operation name
-- `category`: Event type (eval, native, error, trace, debug)
-- `duration`: Execution time (when available)
-- `metadata`: Additional context (arguments, results, errors)
+- `timestamp` (string): ISO 8601 timestamp
+- `word` (string): Function or operation name
+- `value` (string): String representation of the evaluated value
+- `duration` (integer): Nanoseconds spent evaluating (0 for instant operations)
+- `event_type` (string): Type of event ("eval", "call", "return", "block-enter", "block-exit", "setword")
+- `step` (integer): Monotonic execution step counter
+- `depth` (integer): Call stack depth (0 = top level)
+- `position` (integer): Position in current block
+- `expression` (string): Mold of expression being evaluated
+- `args` (object): Function arguments as name→value map (when `--include-args` used)
+- `frame` (object): Local variables as name→value map (when `--verbose` used)
+- `parent_expr` (string): Parent context expression
+- `error` (string): Error message if evaluation failed
 
 ### Querying Trace Status
 
