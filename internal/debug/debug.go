@@ -9,7 +9,11 @@
 package debug
 
 import (
+	"fmt"
 	"sync"
+	"time"
+
+	"github.com/marcin-radoszewski/viro/internal/trace"
 )
 
 // Debugger manages breakpoint state and stepping control (Feature 002).
@@ -165,4 +169,24 @@ func (d *Debugger) RemoveBreakpointByID(id int64) bool {
 		}
 	}
 	return false
+}
+
+// HandleBreakpoint checks for breakpoints and emits trace events.
+// Called by evaluator before word evaluation to centralize breakpoint handling.
+func (d *Debugger) HandleBreakpoint(word string) {
+	if !d.HasBreakpoint(word) {
+		return
+	}
+
+	// Emit trace event if tracing is enabled
+	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
+		trace.GlobalTraceSession.Emit(trace.TraceEvent{
+			Timestamp: time.Now(),
+			Word:      "debug",
+			Value:     fmt.Sprintf("breakpoint hit: %s", word),
+			Duration:  0,
+		})
+	}
+
+	// Future: Add interactive debugging logic here
 }

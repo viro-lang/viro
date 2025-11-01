@@ -504,15 +504,8 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	case value.TypeWord:
 		wordStr, _ := value.AsWordValue(element)
 
-		if debug.GlobalDebugger != nil && debug.GlobalDebugger.HasBreakpoint(wordStr) {
-			if e.traceEnabled {
-				trace.GlobalTraceSession.Emit(trace.TraceEvent{
-					Timestamp: time.Now(),
-					Word:      "debug",
-					Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
-					Duration:  0,
-				})
-			}
+		if debug.GlobalDebugger != nil {
+			debug.GlobalDebugger.HandleBreakpoint(wordStr)
 		}
 
 		resolved, found := e.Lookup(wordStr)
