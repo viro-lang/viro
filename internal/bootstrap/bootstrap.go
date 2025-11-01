@@ -33,17 +33,6 @@ func InitDebugger() {
 	debug.InitDebugger()
 }
 
-// InitGlobalServices initializes global services like trace and debugger.
-// This should be called once at application startup.
-// Deprecated: Use InitTrace(false) or InitTraceWithOutput(false, output) and InitDebugger separately for better control.
-func InitGlobalServices(profile bool) error {
-	if err := InitTrace(profile); err != nil {
-		return err
-	}
-	InitDebugger()
-	return nil
-}
-
 // NewEvaluatorWithNatives creates a new evaluator and registers all native functions.
 // The evaluator is configured with the provided I/O streams.
 // If quiet is true, stdout is set to io.Discard.
@@ -69,9 +58,6 @@ func NewEvaluatorWithNatives(stdout, stderr io.Writer, stdin io.Reader, quiet bo
 	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
-
-	// Initialize debugger for script execution (same as REPL)
-	debug.InitDebugger()
 
 	return evaluator
 }
