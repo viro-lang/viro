@@ -926,6 +926,9 @@ func (r *REPL) resumeAndReevaluate() (bool, error) {
 		return false, fmt.Errorf("no paused expression to resume")
 	}
 
+	// Store the paused expression before exiting debug mode
+	pausedExpr := r.debugSession.pausedExpr
+
 	// Resume the debugger
 	r.debugSession.debugger.ResumeExecution()
 
@@ -933,10 +936,7 @@ func (r *REPL) resumeAndReevaluate() (bool, error) {
 	r.ExitDebugMode()
 
 	// Re-evaluate the paused expression
-	r.evalParsedValues(r.debugSession.pausedExpr)
-
-	// Clear the paused expression
-	r.debugSession.pausedExpr = nil
+	r.evalParsedValues(pausedExpr)
 
 	// Return false to exit debug mode (we've resumed)
 	return false, nil
