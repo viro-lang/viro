@@ -125,7 +125,7 @@ Implement dispatch in the evaluator as follows:
 
 ### Rationale
 - **Evaluator Integration**: Dispatch happens in the evaluator's main switch statement on value types, consistent with how functions, words, and other special types are handled.
-- **First Argument Only**: Dispatching solely on first argument type keeps the system simple and predictable, matching REBOL's behavior.
+- **First Argument Only**: Dispatching solely on first argument type keeps the system simple and predictable, matching Viro's behavior.
 - **Global TypeRegistry with Direct Pointers**: Using a single global map with direct frame pointers simplifies dispatch logic and provides fast lookup. One map access yields the frame directly (no frameStore.Get() indirection).
 - **Two-Stage Lookup**: First check if type has a frame (TypeRegistry lookup), then check if frame has the action (frame.Get). This provides clear error messages for both "type not supported" and "action not implemented for type" scenarios.
 - **Argument Delegation**: Type-specific implementations validate their own subsequent arguments, avoiding duplicate validation logic in the dispatcher.
@@ -226,7 +226,7 @@ verror.NewInternalError("action-frame-corrupt",
 
 ### Alternatives Considered
 - **Generic "Type Mismatch" Error**: Reuse existing type error instead of action-specific error. Rejected because it doesn't convey that actions support the type, just not this particular action.
-- **Warning Instead of Error**: When type unsupported, return `none` with a warning. Rejected because silent failures are harder to debug; explicit errors better match REBOL philosophy.
+- **Warning Instead of Error**: When type unsupported, return `none` with a warning. Rejected because silent failures are harder to debug; explicit errors better follow Viro semantics philosophy.
 - **Suggest Alternative**: Include "did you mean?" suggestions in error message. Deferred as nice-to-have; implement basic errors first, enhance later if needed.
 
 ---

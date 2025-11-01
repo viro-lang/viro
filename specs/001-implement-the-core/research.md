@@ -102,7 +102,7 @@ func TestNativeAdd(t *testing.T) {
 func TestEvaluator(t *testing.T) {
     tests := []struct {
         name   string
-        input  string       // REBOL source code
+        input  string       // source code
         output string       // expected result
         errCat ErrorCategory // expected error category (0 = no error)
     }{
@@ -258,25 +258,25 @@ func (e Error) Error() string {
 
 **Alternatives Considered**:
 - Copying entire source block rejected as too expensive
-- Using runtime.Callers() rejected as it captures Go stack, not REBOL call stack
+- Using runtime.Callers() rejected as it captures Go stack, not Viro call stack
 - String-only context rejected as structured values provide better debugging
 
 ---
 
-### 5. UTF-8 String Handling for REBOL Semantics
+### 5. UTF-8 String Handling for Character Series
 
-**Question**: How should strings be handled to support REBOL's series operations while maintaining UTF-8 compatibility?
+**Question**: How should strings be handled to support Viro's series operations while maintaining UTF-8 compatibility?
 
 **Go String Research**:
 - Go strings are immutable UTF-8 byte sequences
 - Indexing `s[i]` yields bytes, not characters (runes)
 - Rune iteration via `for _, r := range s` handles multi-byte characters correctly
-- REBOL treats strings as character series (not byte series)
+- Viro treats strings as character series (not byte series)
 
 **Decision**: Represent strings as `[]rune` internally for series operations
 
 **Rationale**:
-- REBOL string operations (`first`, `last`, `at`) operate on characters, not bytes
+- String operations (`first`, `last`, `at`) operate on characters, not bytes
 - Converting `string` to `[]rune` gives character-level access
 - Mutation operations (append, insert) are easier on `[]rune`
 - Only convert to Go `string` for I/O and display
@@ -310,7 +310,7 @@ func ParseString(literal string) StringValue {
 }
 ```
 
-**REBOL String Operations**:
+String operations in Viro:
 - `first "hello"` → 'h'
 - `last "hello"` → 'o'
 - `length? "hello"` → 5
@@ -323,7 +323,7 @@ func ParseString(literal string) StringValue {
 
 **Alternatives Considered**:
 - Keeping strings as Go `string` type rejected due to awkward character indexing
-- Byte-oriented series rejected as incompatible with REBOL character semantics
+- Byte-oriented series rejected as incompatible with character semantics
 - Normalized Unicode (NFC/NFD) deferred to later phase per spec clarification (case-sensitive, no normalization initially)
 
 ---

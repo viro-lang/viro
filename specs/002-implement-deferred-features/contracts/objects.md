@@ -17,7 +17,7 @@ object spec
 
 ### Parameters
 - `spec`: `block!` describing fields and optional initial values.
-  - Syntax mirror of REBOL `make object!`:
+  - Syntax for object creation `make object!`:
     - `word` for field declaration (initialized to `none`).
     - `word: value` for explicit initialization (evaluated immediately in new object context).
     - `word: [block]` retains block (no evaluation) when preceded by `'` (quote) in spec.

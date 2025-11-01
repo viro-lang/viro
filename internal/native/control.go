@@ -191,7 +191,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 // Contract: reduce value
 // - If value is a block, evaluates each element and returns a new block with the results
 // - If value is not a block, returns the value as-is
-// - Similar to REBOL's reduce function
+// - Evaluates block elements
 //
 // This enables blocks to be evaluated for their contents, useful for:
 // - Creating blocks with computed values

@@ -1,8 +1,5 @@
 List of things to implement:
 
-- remove all the tracing and debugging to add later, after the architecture settles
-  STATUS: NOT IMPLEMENTED - Extensive tracing and debugging code exists throughout the codebase (trace package, debug package, evaluator integration)
-
 - extend help system for user-defined functions
   STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
 
@@ -20,3 +17,7 @@ List of things to implement:
 
 - wherever a viro value is converted into string it should use either `mold` or `form` functions
   STATUS: NOT IMPLEMENTED - Many places in codebase use .String() directly instead of mold/form functions
+
+- implement all the series functions
+
+- the 'read' native should support reading directories and return block with filenames

@@ -1,43 +1,100 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
-)
+	"os/signal"
+	"syscall"
 
-// CLI flags for Feature 002
-var (
-	sandboxRoot      = flag.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
-	allowInsecureTLS = flag.Bool("allow-insecure-tls", false, "Allow insecure TLS connections globally (warning: disables certificate verification)")
+	"github.com/marcin-radoszewski/viro/internal/repl"
 )
 
 func main() {
-	flag.Parse()
+	setupSignalHandler()
 
-	// Resolve sandbox root (default to current directory per FR-006)
-	if *sandboxRoot == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting current directory: %v\n", err)
-			os.Exit(1)
-		}
-		*sandboxRoot = cwd
+	cfg, err := loadConfiguration()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(ExitUsage)
 	}
 
-	// Warn if insecure TLS is enabled (per FR-020)
-	if *allowInsecureTLS {
+	exitCode := executeMode(cfg)
+	os.Exit(exitCode)
+}
+
+func loadConfiguration() (*Config, error) {
+	cfg := NewConfig()
+	if err := cfg.LoadFromEnv(); err != nil {
+		return nil, err
+	}
+	if err := cfg.LoadFromFlags(); err != nil {
+		return nil, err
+	}
+	if err := cfg.ApplyDefaults(); err != nil {
+		return nil, err
+	}
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+func executeMode(cfg *Config) int {
+	mode, err := cfg.DetectMode()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return ExitUsage
+	}
+
+	switch mode {
+	case ModeREPL:
+		return runREPL(cfg)
+	case ModeScript, ModeEval, ModeCheck:
+		return runExecution(cfg, mode)
+	case ModeVersion:
+		printVersion()
+		return ExitSuccess
+	case ModeHelp:
+		printHelp()
+		return ExitSuccess
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
+		return ExitUsage
+	}
+}
+
+func setupSignalHandler() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		os.Exit(ExitInterrupt)
+	}()
+}
+
+func runREPL(cfg *Config) int {
+	if cfg.AllowInsecureTLS {
 		fmt.Fprintf(os.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
 	}
 
-	repl, err := NewREPL()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing REPL: %v\n", err)
-		os.Exit(1)
+	opts := &repl.Options{
+		Prompt:      cfg.Prompt,
+		NoWelcome:   cfg.NoWelcome,
+		NoHistory:   cfg.NoHistory,
+		HistoryFile: cfg.HistoryFile,
+		TraceOn:     cfg.TraceOn,
+		Args:        cfg.Args,
 	}
 
-	if err := repl.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error running REPL: %v\n", err)
-		os.Exit(1)
+	r, err := repl.NewREPLWithOptions(opts)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing REPL: %v\n", err)
+		return ExitError
 	}
+
+	if err := r.Run(); err != nil {
+		return handleError(err)
+	}
+
+	return ExitSuccess
 }

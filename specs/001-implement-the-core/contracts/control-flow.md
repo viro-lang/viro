@@ -71,7 +71,7 @@ result: when valid? [
 2. Convert result to logic (truthy evaluation)
 3. If true: evaluate true-block, return last value
 4. If false: evaluate false-block, return last value
-5. Both blocks required (unlike REBOL's if which only has true branch)
+5. Both blocks required (unlike Viro's if which only has true branch)
 
 **Type Rules**:
 - Condition: any value (truthy conversion)
@@ -258,4 +258,4 @@ For each native:
 - Each test case from specification becomes table entry
 - Parallel execution where safe (no shared state)
 
-**Note**: `either` removed from Viro (REBOL compatibility broken intentionally for clarity)
+**Note**: `either` removed from Viro (compatibility with some languages broken intentionally for clarity)

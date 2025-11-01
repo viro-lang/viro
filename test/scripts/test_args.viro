@@ -1,0 +1,11 @@
+; Test script for command-line arguments
+print ["Arguments received:" system.args]
+print ["Number of arguments:" length? system.args]
+
+if ((length? system.args) > 0) [
+    print ["First argument:" first system.args]
+] []
+
+if ((length? system.args) > 1) [
+    print ["Last argument:" last system.args]
+] []

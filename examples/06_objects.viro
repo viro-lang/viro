@@ -1,0 +1,69 @@
+print "=== Objects ==="
+print ""
+
+print "--- Simple object ---"
+person: make object! [
+    name: "Alice"
+    age: 30
+]
+print person
+
+print ""
+print "--- Accessing object fields (paths) ---"
+print person/name
+print person/age
+
+print ""
+print "--- Object with methods ---"
+counter: make object! [
+    value: 0
+    increment: func [] [
+        value: (+ value 1)
+    ]
+    decrement: func [] [
+        value: (- value 1)
+    ]
+    get-value: func [] [
+        value
+    ]
+]
+
+counter/increment
+counter/increment
+counter/increment
+print (counter/get-value)
+
+counter/decrement
+print (counter/get-value)
+
+print ""
+print "--- Object with initialization ---"
+point: make object! [
+    x: 0
+    y: 0
+    distance-from-origin: func [] [
+        sqrt ((+ (* x x) (* y y)))
+    ]
+]
+
+point/x: 3
+point/y: 4
+print "Point coordinates:"
+print point/x
+print point/y
+
+print ""
+print "--- Nested objects ---"
+employee: make object! [
+    name: "Bob"
+    department: "Engineering"
+    address: make object! [
+        street: "123 Main St"
+        city: "Tech City"
+        zip: "12345"
+    ]
+]
+
+print employee/name
+print employee/address/city
+print employee/address/street

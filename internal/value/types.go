@@ -8,7 +8,7 @@ import "github.com/marcin-radoszewski/viro/internal/core"
 // Uses uint8 for compact representation (11 types fit in 8 bits).
 
 // Value type constants define all supported data types in Viro.
-// These align with REBOL's type system with Viro-specific additions (Paren).
+// These define the Viro type system with Viro-specific additions (Paren).
 const (
 	TypeNone     core.ValueType = iota // Represents absence of value (nil/null)
 	TypeLogic                          // Boolean true/false

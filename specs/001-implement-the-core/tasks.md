@@ -94,7 +94,7 @@ Single project structure (per plan.md):
 
 ## Phase 3: User Story 1 - Evaluate Basic Expressions (Priority: P1) 🎯 MVP
 
-**Goal**: Users can evaluate simple REBOL-style expressions in the REPL: literals, words, arithmetic, blocks/parens
+**Goal**: Users can evaluate simple left-to-right expressions in the REPL: literals, words, arithmetic, blocks/parens
 
 **Independent Test**: Start REPL, enter `5`, `3 + 4`, `x: 10`, `x`, `[1 + 2]`, `(1 + 2)` and verify correct output
 
@@ -426,7 +426,7 @@ Single project structure (per plan.md):
 - [X] T183 [P] [POLISH] Create build instructions in `specs/001-implement-the-core/quickstart.md`
 - [X] T184 [P] [POLISH] Create REPL usage examples with all features
 - [X] T185 [P] [POLISH] Document operator precedence table for users
-- [X] T186 [P] [POLISH] Document local-by-default scoping vs REBOL differences
+- [X] T186 [P] [POLISH] Document local-by-default scoping model
 
 ### Code Quality
 

@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Viro interpreter data model implements REBOL's type-based evaluation system with eight core entities organized in three layers:
+The Viro interpreter data model implements Viro's type-based evaluation system with eight core entities organized in three layers:
 
 1. **Value Layer**: Type-tagged values representing all data
 2. **Execution Layer**: Stack and frames for evaluation state
@@ -598,7 +598,7 @@ type Series interface {
 - First/Last operations error on empty series
 - Mutation operations modify series in-place (series values are mutable)
 
-**Usage Pattern** (REBOL code examples):
+**Usage Pattern** (code examples):
 ```viro
 data: [1 2 3]       ; BlockValue with 3 elements
 first data          ; returns 1
@@ -661,7 +661,7 @@ Series (interface)
 
 ## Data Flow Example
 
-**REBOL Code**: `square: fn [n] [n * n]` then `square 5`
+Code example: `square: fn [n] [n * n]` then `square 5`
 
 1. **Parse**: Creates Block `[square: fn [n] [n * n]]`
    - Value 1: SetWord("square")

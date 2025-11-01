@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Viro is a REBOL-inspired language interpreter implemented in Go. **It is NOT a REBOL interpreter** - it draws inspiration from REBOL's design but implements its own semantics with modern improvements. Key differences and features:
+Viro is a homoiconic programming language interpreter implemented in Go. Key features:
 - Type-based dispatch system with left-to-right evaluation (no operator precedence)
-- Local-by-default scoping (safer than REBOL's global-by-default)
+- Local-by-default scoping (safe, predictable variable scoping)
 - Bash-style refinements (`--flag`, `--option value`)
 - Distinction between blocks `[...]` (deferred) and parens `(...)` (immediate evaluation)
 
@@ -93,7 +93,7 @@ internal/
    - Categories: Throw(0), Note(100), Syntax(200), Script(300), Math(400), Access(500), Internal(900)
    - Each error includes: code, ID, args, near context, where context
 
-5. **Left-to-Right Evaluation**: No operator precedence (REBOL-style)
+5. **Left-to-Right Evaluation**: No operator precedence
    - `3 + 4 * 2` → 14 (not 11)
    - Use parens to group: `3 + (4 * 2)` → 11
 
@@ -148,7 +148,7 @@ Each native function:
 
 ### Action System (Feature 004: Dynamic Function Invocation)
 
-**Actions** are polymorphic functions that dispatch to type-specific implementations based on the first argument's type. This enables REBOL-style series operations where `first [1 2 3]` and `first "hello"` both work correctly.
+**Actions** are polymorphic functions that dispatch to type-specific implementations based on the first argument's type. This enables polymorphic series operations where `first [1 2 3]` and `first "hello"` both work correctly.
 
 **Architecture**:
 - **TypeRegistry**: Global map from `core.ValueType` → `core.Frame` storing type frames

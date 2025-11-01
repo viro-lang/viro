@@ -241,7 +241,7 @@ type ParseState struct {
 
 **Validation Rules**:
 - Detect infinite loops by tracking rule/input pairs visited; fail with Syntax error (200) if repeated without progress (edge case requirement).
-- Non-boolean return (should be success flag) converted to boolean per REBOL semantics.
+- Non-boolean return (should be success flag) converted to boolean per Viro semantics.
 
 **Relationships**:
 - Integrates with evaluator to supply context for `parse` native (FR-015/FR-016).

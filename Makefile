@@ -30,8 +30,11 @@ clean:
 	$(GOCLEAN)
 	rm -f $(BUILD_DIR)/$(BINARY_NAME)
 
-install:
+install: pack
 	$(GOBUILD) -o $(GOPATH)/bin/$(BINARY_NAME) $(CMD_DIR)
+
+pack: build 
+	upx -9 viro
 
 deps:
 	$(GOMOD) download

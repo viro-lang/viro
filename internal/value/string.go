@@ -8,11 +8,11 @@ import (
 )
 
 // StringValue represents a UTF-8 character sequence.
-// Stored as []rune internally for proper REBOL series semantics
+// Stored as []rune internally for proper character series semantics
 // (character-level operations, not byte-level).
 //
 // Design decision per research.md:
-// - REBOL strings are character series, not byte series
+// - strings are character series, not byte series
 // - first "hello" → 'h' (character), not byte 104
 // - Multi-byte Unicode handled correctly
 type StringValue struct {

@@ -1,6 +1,6 @@
 package value
 
-// Word types in Viro follow REBOL semantics with symbol-based identification.
+// Word types in Viro follow Viro semantics with symbol-based identification.
 // All word variants store a symbol string as payload.
 //
 // Word types (distinguished by Value.Type):

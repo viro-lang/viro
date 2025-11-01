@@ -13,7 +13,7 @@
 - String: sequence of characters (runes)
 
 **Common Properties**:
-- Index-based access (0-based internally, 1-based for REBOL semantics if exposed)
+- Index-based access (0-based internally, 1-based for Viro semantics if exposed)
 - Mutable (operations modify in-place)
 - Bounds-checked operations
 
@@ -541,7 +541,7 @@ index? tail data         → 4
 
 ## Series Semantics
 
-**REBOL Series Model**:
+Series model in Viro:
 - Series have current position (internal index)
 - Each series reference maintains its own position
 - Position ranges from 0 (head) to length (tail)

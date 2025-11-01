@@ -121,8 +121,8 @@
 ## Ambiguities & Conflicts
 
 - [X] CHK073 - Is the conflict between "no automatic timeout" (clarifications) and "detect infinite recursion" (edge cases) resolved with explicit requirements? ✅ Clarifications: "No automatic timeout" + FR-048: "Ctrl+C to interrupt" + SC-004/Edge cases: depth limit detection; no conflict (user interrupts, not timeout)
-- [X] CHK074 - Is the "when" vs "if" naming distinction (spec intentionally diverges from REBOL "either") clearly documented as a design decision? ✅ plan.md research.md: "Simplified control flow: when/if" with rationale explained
-- [X] CHK075 - Is the "traditional operator precedence" decision (diverging from REBOL's left-to-right) justified with rationale in spec? ✅ contracts/math.md: "Design Rationale" section + research.md explains decision
+- [X] CHK074 - Is the "when" vs "if" naming distinction (spec intentionally diverges from global-by-default languages "either") clearly documented as a design decision? ✅ plan.md research.md: "Simplified control flow: when/if" with rationale explained
+- [X] CHK075 - Is the "traditional operator precedence" decision (diverging from Viro's left-to-right) justified with rationale in spec? ✅ contracts/math.md: "Design Rationale" section + research.md explains decision
 - [X] CHK076 - Are integer-only arithmetic requirements (FR-026: Phase 1 scope) reconciled with user expectations for decimal operations? ✅ FR-026 + plan.md research.md: "Integer-only arithmetic (Phase 1 scope)" with explicit Phase 2 deferral + rationale
 
 ## Dependencies & Assumptions

@@ -14,7 +14,7 @@ func TestSC007_CommandHistory(t *testing.T) {
 	const targetCommands = 100
 
 	// Verify REPL can be created (which initializes readline with history)
-	loop, err := repl.NewREPL()
+	loop, err := repl.NewREPL([]string{})
 	if err != nil {
 		// If readline fails (e.g., in CI without TTY), that's acceptable
 		// The feature is still implemented correctly

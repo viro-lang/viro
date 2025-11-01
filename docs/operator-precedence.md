@@ -1,12 +1,12 @@
 # Operator Evaluation Reference
 
-**Viro Interpreter** - REBOL-style left-to-right evaluation guide
+**Viro Interpreter** - Left-to-right evaluation guide
 
 ---
 
 ## Left-to-Right Evaluation
 
-Viro uses **left-to-right evaluation** with **no operator precedence**, matching REBOL's evaluation model. This means operators are evaluated in the order they appear, from left to right.
+Viro uses **left-to-right evaluation** with **no operator precedence**. This means operators are evaluated in the order they appear, from left to right.
 
 ### Basic Principle
 
@@ -87,27 +87,13 @@ Most languages use **mathematical operator precedence**:
 3 + 4 * 2       // → 11 (multiplication first)
 ```
 
-**Viro is different**: Uses left-to-right like REBOL
+**Viro is different**: Uses left-to-right evaluation
 
 ```
 3 + 4 * 2       ; In Viro → 14 (left-to-right)
 ```
 
-### REBOL
-
-Viro **matches REBOL** exactly:
-
-**REBOL**:
-```rebol
-3 + 4 * 2  ; → 14 (left-to-right)
-```
-
-**Viro**:
-```
-3 + 4 * 2  ; → 14 (left-to-right)
-```
-
-Both use strict left-to-right evaluation with no operator precedence.
+Viro uses strict left-to-right evaluation with no operator precedence.
 
 ---
 
@@ -141,7 +127,7 @@ square (3 + 4)
 To get traditional mathematical precedence behavior, use parentheses:
 
 ```
-# REBOL/Viro left-to-right:
+# Viro left-to-right:
 3 + 4 * 2       → 14
 
 # To get mathematical precedence (11):

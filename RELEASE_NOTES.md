@@ -8,7 +8,7 @@
 
 ## Overview
 
-Viro v1.0.0 is the first production release of a REBOL R3-inspired interpreter written in Go. It provides an interactive REPL with support for basic expressions, control flow, series operations, user-defined functions, and structured error handling.
+Viro v1.0.0 is the first production release of a homoiconic programming language interpreter written in Go. It provides an interactive REPL with support for basic expressions, control flow, series operations, user-defined functions, and structured error handling.
 
 ---
 
@@ -25,7 +25,7 @@ Viro v1.0.0 is the first production release of a REBOL R3-inspired interpreter w
 
 **Evaluation Engine**:
 - Type-based dispatch with left-to-right evaluation
-- Local-by-default scoping (differs from REBOL)
+- Local-by-default scoping
 - Lexical closures
 - Recursive function support (150+ depth)
 
@@ -35,7 +35,7 @@ Viro v1.0.0 is the first production release of a REBOL R3-inspired interpreter w
 - Logic: `and`, `or`, `not`
 
 **Evaluation Model**:
-- Left-to-right evaluation (matches REBOL)
+- Left-to-right evaluation (no operator precedence)
 - Parentheses control order
 - Function calls consume arguments first
 
@@ -268,15 +268,13 @@ go test ./...
 - Profiling tools
 - Standard library (beyond 28 natives)
 
-### Differences from REBOL
+### Design Highlights
 
-1. **Scoping**: Local-by-default (REBOL is global-by-default)
-2. **Evaluation**: Left-to-right (matches REBOL)
-3. **Native Count**: 28 functions (REBOL has 600+)
-4. **Series Model**: Simplified (no position tracking)
-5. **Datatypes**: 10 types (REBOL has 50+)
-
-See `docs/scoping-differences.md` for detailed comparison.
+1. **Scoping**: Local-by-default for safe, predictable behavior
+2. **Evaluation**: Left-to-right with no operator precedence
+3. **Native Count**: 28 core functions
+4. **Series Model**: Simplified value-based series
+5. **Datatypes**: 10 core types
 
 ---
 
@@ -387,7 +385,7 @@ For bug reports, feature requests, or questions:
 - Core interpreter with 10 value types
 - 28 native functions across 6 categories
 - Type-based evaluation engine
-- Left-to-right evaluation (REBOL-style)
+- Left-to-right evaluation (no operator precedence)
 - Local-by-default scoping
 - Lexical closures
 - Structured error system (7 categories)

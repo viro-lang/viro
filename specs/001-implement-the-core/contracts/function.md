@@ -494,7 +494,7 @@ test                  ; returns 50
 global-val            ; still 100 (global unchanged)
 ```
 
-**Rationale**: Local-by-default prevents accidental modification of global state, a common source of bugs in REBOL. Functions are isolated by default, making them safer and more predictable.
+**Rationale**: Local-by-default prevents accidental modification of global state, a common source of bugs in global-by-default languages. Functions are isolated by default, making them safer and more predictable.
 
 **Current Phase 1 Scope**:
 - Simple parameters (word list, no types)

@@ -19,7 +19,7 @@
 
 A language user wants to apply the same operation name to different data types and have the interpreter automatically dispatch to the correct type-specific implementation. For example, calling `first` on a block, string, or future user-defined series types should work seamlessly without the user needing to know which specific function variant to call.
 
-**Why this priority**: This is the foundational behavior that enables polymorphism in Viro. Without it, users would need separate function names for each type (e.g., `first-block`, `first-string`), which breaks the REBOL-inspired design philosophy and makes the language less intuitive.
+**Why this priority**: This is the foundational behavior that enables polymorphism in Viro. Without it, users would need separate function names for each type (e.g., `first-block`, `first-string`), which breaks the homoiconic design philosophy and makes the language less intuitive.
 
 **Independent Test**: Can be fully tested by defining a single action (e.g., `first`) with type-specific implementations for blocks and strings, then verifying that `first [1 2 3]` and `first "hello"` both execute correctly and deliver the appropriate first element.
 

@@ -149,9 +149,9 @@ func TestArithmeticNatives(t *testing.T) {
 }
 
 // TestLeftToRightEvaluation tests that parser uses left-to-right evaluation.
-// Contract: REBOL-style left-to-right evaluation, no operator precedence.
+// Contract: left-to-right evaluation, no operator precedence.
 //
-// Design decision: Viro now uses left-to-right evaluation, matching REBOL.
+// Design decision: Viro now uses left-to-right evaluation, following Viro semantics.
 func TestLeftToRightEvaluation(t *testing.T) {
 	tests := []struct {
 		name     string
