@@ -264,3 +264,216 @@ func TestArithmeticOverflow(t *testing.T) {
 		})
 	}
 }
+
+func TestEqualityAllTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		op       string
+		args     []core.Value
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "integers equal",
+			op:       "=",
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(42)},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "integers not equal",
+			op:       "=",
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(43)},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "strings equal",
+			op:       "=",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewStrVal("hello")},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "strings not equal",
+			op:       "=",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewStrVal("world")},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "strings case sensitive",
+			op:       "=",
+			args:     []core.Value{value.NewStrVal("Hello"), value.NewStrVal("hello")},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "empty strings equal",
+			op:       "=",
+			args:     []core.Value{value.NewStrVal(""), value.NewStrVal("")},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "logic values true equals true",
+			op:       "=",
+			args:     []core.Value{value.NewLogicVal(true), value.NewLogicVal(true)},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "logic values false equals false",
+			op:       "=",
+			args:     []core.Value{value.NewLogicVal(false), value.NewLogicVal(false)},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "logic values true not equals false",
+			op:       "=",
+			args:     []core.Value{value.NewLogicVal(true), value.NewLogicVal(false)},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none values equal",
+			op:       "=",
+			args:     []core.Value{value.NewNoneVal(), value.NewNoneVal()},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "blocks equal",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}), value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)})},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "blocks not equal different values",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}), value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(1)})},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "blocks not equal different length",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}), value.NewBlockVal([]core.Value{value.NewIntVal(1)})},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "empty blocks equal",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{}), value.NewBlockVal([]core.Value{})},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "nested blocks equal",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}), value.NewIntVal(3)}), value.NewBlockVal([]core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}), value.NewIntVal(3)})},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "type mismatch returns false not error",
+			op:       "=",
+			args:     []core.Value{value.NewIntVal(5), value.NewStrVal("5")},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "type mismatch logic and int",
+			op:       "=",
+			args:     []core.Value{value.NewLogicVal(true), value.NewIntVal(1)},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "type mismatch block and string",
+			op:       "=",
+			args:     []core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1)}), value.NewStrVal("[1]")},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "not-equal integers different",
+			op:       "<>",
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(43)},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "not-equal integers same",
+			op:       "<>",
+			args:     []core.Value{value.NewIntVal(42), value.NewIntVal(42)},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "not-equal strings different",
+			op:       "<>",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewStrVal("world")},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "not-equal strings same",
+			op:       "<>",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewStrVal("hello")},
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "not-equal type mismatch",
+			op:       "<>",
+			args:     []core.Value{value.NewIntVal(5), value.NewStrVal("5")},
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "equal arity error too few",
+			op:       "=",
+			args:     []core.Value{value.NewIntVal(5)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "equal arity error too many",
+			op:       "=",
+			args:     []core.Value{value.NewIntVal(5), value.NewIntVal(5), value.NewIntVal(5)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
+			var result core.Value
+			var err error
+
+			switch tt.op {
+			case "=":
+				result, err = native.Equal(tt.args, map[string]core.Value{}, e)
+			case "<>":
+				result, err = native.NotEqual(tt.args, map[string]core.Value{}, e)
+			default:
+				t.Fatalf("Unknown operator: %s", tt.op)
+			}
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("%s(%v) error = %v, wantErr %v", tt.op, tt.args, err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !result.Equals(tt.expected) {
+				t.Errorf("%s(%v) = %v, want %v", tt.op, tt.args, result, tt.expected)
+			}
+		})
+	}
+}
