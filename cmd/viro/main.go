@@ -4,12 +4,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func main() {
 	setupSignalHandler()
 
-	ctx := &RuntimeContext{
+	ctx := &api.RuntimeContext{
 		Args:   os.Args[1:],
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
