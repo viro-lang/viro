@@ -19,8 +19,7 @@ func InitTrace(profile bool) error {
 }
 
 // InitTraceWithOutput initializes the global trace session with custom output.
-// If output is empty, uses default stderr. If output is a file path, writes to file.
-// If output is not empty and not a file path, this is for future extension.
+// If output is empty, uses default stderr. If output is not empty, treats it as a file path.
 func InitTraceWithOutput(profile bool, output string) error {
 	if profile {
 		return trace.InitTraceSilent()
@@ -36,7 +35,7 @@ func InitDebugger() {
 
 // InitGlobalServices initializes global services like trace and debugger.
 // This should be called once at application startup.
-// Deprecated: Use InitTrace and InitDebugger separately for better control.
+// Deprecated: Use InitTrace(false) or InitTraceWithOutput(false, output) and InitDebugger separately for better control.
 func InitGlobalServices(profile bool) error {
 	if err := InitTrace(profile); err != nil {
 		return err
