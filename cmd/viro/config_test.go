@@ -231,6 +231,29 @@ func TestConfigValidate(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "profile without script",
+			cfg: &Config{
+				Profile: true,
+			},
+			wantErr: true,
+		},
+		{
+			name: "profile with script",
+			cfg: &Config{
+				Profile:    true,
+				ScriptFile: "test.viro",
+			},
+			wantErr: false,
+		},
+		{
+			name: "profile with eval",
+			cfg: &Config{
+				Profile:  true,
+				EvalExpr: "3 + 4",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

@@ -28,6 +28,9 @@ GLOBAL OPTIONS:
     --help                     Show this help message
     --version                  Show version information
 
+SCRIPT OPTIONS:
+    --profile                  Enable profiling and show execution statistics
+
 EVAL OPTIONS:
     --stdin                    Read additional input from stdin
     --no-print                 Don't print result of evaluation
@@ -79,6 +82,9 @@ EXAMPLES:
     viro -- user@example.com admin
     >> print ["Email:" first system.args]
     >> print ["Role:" last system.args]
+
+    # Profile script execution
+    viro --profile script.viro
 
 For more information, visit: https://github.com/marcin-radoszewski/viro
 `)

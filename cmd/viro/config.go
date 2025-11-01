@@ -27,6 +27,7 @@ type Config struct {
 
 	NoPrint   bool
 	ReadStdin bool
+	Profile   bool
 }
 
 func NewConfig() *Config {
@@ -74,6 +75,7 @@ func (c *Config) LoadFromFlags() error {
 
 	noPrint := fs.Bool("no-print", false, "Don't print result of evaluation")
 	stdin := fs.Bool("stdin", false, "Read additional input from stdin")
+	profileFlag := fs.Bool("profile", false, "Show execution profile after script execution")
 
 	args := os.Args[1:]
 	parsed := splitCommandLineArgs(args)
@@ -119,6 +121,7 @@ func (c *Config) LoadFromFlags() error {
 
 	c.NoPrint = *noPrint
 	c.ReadStdin = *stdin
+	c.Profile = *profileFlag
 
 	if parsed.ReplArgsIdx < 0 && len(parsed.ScriptArgs) > 0 {
 		c.ScriptFile = parsed.ScriptArgs[0]
@@ -148,6 +151,9 @@ func (c *Config) Validate() error {
 	}
 	if c.NoPrint && c.EvalExpr == "" {
 		return fmt.Errorf("--no-print flag requires -c flag")
+	}
+	if c.Profile && c.ScriptFile == "" {
+		return fmt.Errorf("--profile flag requires a script file")
 	}
 	return nil
 }

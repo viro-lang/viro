@@ -21,3 +21,5 @@ List of things to implement:
 - implement all the series functions
 
 - the 'read' native should support reading directories and return block with filenames
+
+- fix the examples (some are incorrect viro code and others simply are missing native function implementations )

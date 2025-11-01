@@ -8,7 +8,13 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/parse"
+	"github.com/marcin-radoszewski/viro/internal/profile"
+	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
+)
+
+const (
+	defaultTraceMaxSizeMB = 50
 )
 
 type ExecutionContext struct {
@@ -17,9 +23,28 @@ type ExecutionContext struct {
 	Args        []string
 	PrintResult bool
 	ParseOnly   bool
+	Profiler    *profile.Profiler
 }
 
 func runExecution(cfg *Config, mode Mode) int {
+	var err error
+	if cfg.Profile {
+		err = trace.InitTraceSilent()
+	} else {
+		err = trace.InitTrace("", defaultTraceMaxSizeMB)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing trace: %v\n", err)
+		return ExitInternal
+	}
+
+	var profiler *profile.Profiler
+	if cfg.Profile && trace.GlobalTraceSession != nil {
+		profiler = profile.NewProfiler()
+		profile.EnableProfilingWithTrace(trace.GlobalTraceSession, profiler)
+	}
+
 	var ctx *ExecutionContext
 
 	switch mode {
@@ -30,6 +55,7 @@ func runExecution(cfg *Config, mode Mode) int {
 			Args:        nil,
 			PrintResult: false,
 			ParseOnly:   true,
+			Profiler:    profiler,
 		}
 	case ModeEval:
 		ctx = &ExecutionContext{
@@ -38,6 +64,7 @@ func runExecution(cfg *Config, mode Mode) int {
 			Args:        []string{},
 			PrintResult: !cfg.NoPrint,
 			ParseOnly:   false,
+			Profiler:    profiler,
 		}
 	case ModeScript:
 		ctx = &ExecutionContext{
@@ -46,10 +73,24 @@ func runExecution(cfg *Config, mode Mode) int {
 			Args:        cfg.Args,
 			PrintResult: false,
 			ParseOnly:   false,
+			Profiler:    profiler,
 		}
 	}
 
 	_, exitCode := executeViroCode(ctx)
+
+	if ctx.Profiler != nil {
+		ctx.Profiler.Disable()
+		if !cfg.Quiet {
+			report := ctx.Profiler.GetReport()
+			report.FormatText(os.Stderr)
+		}
+	}
+
+	if trace.GlobalTraceSession != nil {
+		trace.GlobalTraceSession.Close()
+	}
+
 	return exitCode
 }
 
