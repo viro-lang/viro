@@ -52,7 +52,7 @@ set 'name "Alice"  → "Alice" (name bound to string)
 4. `set 42 10` errors (not a word)
 5. Multiple sets: `set 'x 10  set 'x 20` → `x` is now `20` (overwrites)
 
-**Note**: In REBOL, `set` is less common than set-word syntax (`x: 10`). The native exists for programmatic word binding (e.g., `set word-from-variable value`).
+**Note**: In some languages, `set` is less common than set-word syntax (`x: 10`). The native exists for programmatic word binding (e.g., `set word-from-variable value`).
 
 ---
 
@@ -164,7 +164,7 @@ if type? value = 'integer! [
 
 **Implementation Note**:
 - Return type is Word (not string)
-- Type names follow REBOL convention: lowercase with `!` suffix
+- Type names follow Viro convention: lowercase with `!` suffix
 - Consistent naming: `integer!`, `string!`, `block!`, `word!`, `logic!`, `none!`, `function!`, `set-word!`, `get-word!`, `lit-word!`
 
 ---
@@ -222,7 +222,7 @@ form [a b c]     → "a b c"
 **Return**: String representation for serialization
 
 **Behavior**:
-Returns REBOL-readable string format. For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.
+Returns code-readable string format. For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.
 
 **Type Rules**:
 - Argument can be any type (evaluated)
@@ -322,7 +322,7 @@ reduce ["hello", "world"] → ["hello", "world"]
 **Type Inspection** (`type?`):
 - Universal operation (works on any value)
 - Returns word value (not string)
-- Type names are REBOL datatype words (with `!` suffix)
+- Type names are datatype words (with `!` suffix)
 
 **Frame Context**:
 - `set` and `get` operate in current evaluation frame

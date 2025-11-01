@@ -19,7 +19,7 @@
 
 ### User Story 1 - Evaluate Basic Expressions (Priority: P1)
 
-Users can evaluate simple REBOL-style expressions in the REPL, including literals (numbers, strings), words (variables), and basic arithmetic operations. This forms the foundation of the interpreter and demonstrates the core evaluation engine is working.
+Users can evaluate simple left-to-right expressions in the REPL, including literals (numbers, strings), words (variables), and basic arithmetic operations. This forms the foundation of the interpreter and demonstrates the core evaluation engine is working.
 
 **Why this priority**: The core evaluator (`Do_Next`, `Do_Blk`) is the foundation of the entire interpreter. Without expression evaluation, no other features can work. This delivers immediate value by allowing users to perform calculations and see results.
 
@@ -34,7 +34,7 @@ Users can evaluate simple REBOL-style expressions in the REPL, including literal
 5. **Given** variable `x` is bound to `10`, **When** user enters `x`, **Then** system retrieves and displays `10`
 6. **Given** REPL is started, **When** user enters block `[1 + 2]`, **Then** system returns the block itself (deferred evaluation), displays `[1 + 2]`
 7. **Given** REPL is started, **When** user enters paren `(1 + 2)`, **Then** system evaluates contents immediately, displays `3`
-8. **Given** REPL is started, **When** user enters `3 + 4 * 2`, **Then** system evaluates left-to-right and displays `14` (REBOL-style)
+8. **Given** REPL is started, **When** user enters `3 + 4 * 2`, **Then** system evaluates left-to-right and displays `14` (left-to-right)
 9. **Given** user enters an undefined word, **When** evaluation occurs, **Then** system reports "no value" error with word name
 
 ---
@@ -62,7 +62,7 @@ Users can use control flow constructs (`if`, `when`, `loop`) to make decisions a
 
 Users can create and manipulate series (blocks, strings) using native functions like `first`, `last`, `append`, `insert`. This demonstrates the value type system is complete enough to handle composite data structures.
 
-**Why this priority**: Series are fundamental REBOL data types. This validates that the type system and native dispatch handle complex types beyond primitives. Users can now work with collections, which is necessary for real programs.
+**Why this priority**: Series are fundamental data types. This validates that the type system and native dispatch handle complex types beyond primitives. Users can now work with collections, which is necessary for real programs.
 
 **Independent Test**: Can be fully tested by creating series `data: [1 2 3]`, using operations like `first data`, `append data 4`, `insert data 0`, and verifying results match expected series values.
 
@@ -154,7 +154,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 - **FR-001**: System MUST implement type-based dispatch that classifies values (words, functions, paths, literals) and routes them to appropriate evaluation handlers
 - **FR-002**: System MUST support recursive evaluation for nested blocks and paren expressions
-- **FR-003**: System MUST evaluate expressions following REBOL semantics: literals evaluate to themselves, words evaluate to bound values, functions execute with arguments, **blocks evaluate to themselves (deferred), parens evaluate their contents (immediate)**
+- **FR-003**: System MUST evaluate expressions following Viro semantics: literals evaluate to themselves, words evaluate to bound values, functions execute with arguments, **blocks evaluate to themselves (deferred), parens evaluate their contents (immediate)**
 - **FR-004**: System MUST maintain evaluation index through block sequences, advancing after each expression evaluation
 
 #### Type System
@@ -198,7 +198,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 **Math Operations:**
 - **FR-026**: System MUST provide arithmetic operators: `+`, `-`, `*`, `/` for **integer arithmetic only** (Phase 1 scope - decimal/floating-point arithmetic deferred to Phase 2)
-- **FR-026a**: System MUST implement **left-to-right evaluation** (REBOL-style, no operator precedence): operators are evaluated in the order they appear. Example: `3 + 4 * 2` must evaluate to `14` (not 11). Parentheses control evaluation order: `3 + (4 * 2)` evaluates to `11`. See contracts/math.md for details.
+- **FR-026a**: System MUST implement **left-to-right evaluation** (left-to-right, no operator precedence): operators are evaluated in the order they appear. Example: `3 + 4 * 2` must evaluate to `14` (not 11). Parentheses control evaluation order: `3 + (4 * 2)` evaluates to `11`. See contracts/math.md for details.
 - **FR-027**: System MUST provide comparison operators: `<`, `>`, `<=`, `>=`, `=`, `<>` (not equal) - **integer operands only in Phase 1**
 - **FR-028**: System MUST provide logic operators: `and`, `or`, `not`
 
@@ -243,7 +243,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 - **Value**: Core data representation with type tag and data payload. Contains type discriminator (integer, string, word, block, function, etc.) and associated data. All values are immutable except series.
 
-- **Block**: Ordered sequence of values. Fundamental composite type in REBOL. Supports indexing, iteration, and modification operations. Evaluable as code or used as data.
+- **Block**: Ordered sequence of values. Fundamental composite type. Supports indexing, iteration, and modification operations. Evaluable as code or used as data.
 
 - **Word**: Symbolic identifier that references a value in a context. Four forms: word (evaluate), lit-word (quote), get-word (fetch), set-word (assign). Bound to frame during evaluation. Case-sensitive: `x` and `X` are distinct identifiers.
 
@@ -285,7 +285,7 @@ Users can interact with the REPL using standard features: command history (up/do
 
 1. **Target platform**: Development focuses on macOS initially (per workspace context), but design remains cross-platform compatible
 2. **Go version**: Assumes Go 1.21+ available per constitution (for generics and improved error handling)
-3. **Unicode support**: UTF-8 encoding assumed for string handling (REBOL standard)
+3. **Unicode support**: UTF-8 encoding assumed for string handling (standard)
 4. **Memory model**: Assumes sufficient memory for typical REPL sessions (defined as supporting programs up to 10,000 values in memory simultaneously)
 5. **Performance baseline**: "Interactive" performance defined as response under 100ms for 95th percentile of operations
 6. **Arithmetic precision**: Integer arithmetic uses 64-bit signed integers; decimal arithmetic deferred to future phase

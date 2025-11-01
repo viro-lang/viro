@@ -20,6 +20,4 @@ List of things to implement:
 
 - implement all the series functions
 
-- remove all the 'REBOL-inspired' messages
-
 - the 'read' native should support reading directories and return block with filenames

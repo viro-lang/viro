@@ -55,7 +55,7 @@ Data manipulation functions:
 - `set` / `get` - explicit variable binding
 - `type?` - type introspection
 - `form` - human-readable formatting
-- `mold` - REBOL-readable formatting
+- `mold` - code format formatting
 - `reduce` - evaluate block elements
 - `compose` - selective evaluation
 - `join` - string concatenation
@@ -114,7 +114,7 @@ Viro evaluates expressions left-to-right, unlike most languages with operator pr
 
 ### Local-by-Default Scoping
 
-Variables are local to their function by default (safer than REBOL's global-by-default):
+Variables are local to their function by default (local-by-default scoping's global-by-default):
 
 ```viro
 x: 10          ; Global x

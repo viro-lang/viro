@@ -59,7 +59,7 @@ The `viro` binary supports multiple execution modes:
 - Table-driven tests: Always use `tests := []struct{name, args, want, wantErr}`
 - Errors: Use `verror.NewScriptError()`, `verror.NewMathError()` with category/ID/args
 - Imports: Group stdlib → external → internal, alphabetically within groups
-- Naming: Use REBOL-style native names (`first`, `length?`, `type-of`) not Go-style
+- Naming: Use Viro-style native names (`first`, `length?`, `type-of` with ?, ! suffixes) not Go-style
 
 ## Workflow
 - **TDD mandatory**: Write tests FIRST in `test/contract/`, then implement in `internal/native/`

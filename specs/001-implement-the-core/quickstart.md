@@ -2,7 +2,7 @@
 
 **Feature**: Viro Core Language and REPL  
 **Date**: 2025-01-07  
-**Purpose**: Build, run, and test the Viro REBOL interpreter
+**Purpose**: Build, run, and test the Viro interpreter
 
 ---
 
@@ -45,7 +45,7 @@ go build -o viro ./cmd/viro
 
 **Expected Output**:
 ```
-Viro v1.0.0 - REBOL-inspired interpreter
+Viro v1.0.0 - homoiconic interpreter
 Type 'quit' or 'exit' to exit, Ctrl+C to interrupt evaluation
 >> 
 ```

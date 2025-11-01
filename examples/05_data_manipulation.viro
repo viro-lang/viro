@@ -25,7 +25,7 @@ print (form true)
 print (form 'someword)
 
 print ""
-print "--- mold (REBOL-readable) ---"
+print "--- mold (code format) ---"
 print (mold [1 2 3])
 print (mold "quoted string")
 print (mold true)

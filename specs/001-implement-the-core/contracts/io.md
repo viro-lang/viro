@@ -181,7 +181,7 @@ func TestNativeInput(t *testing.T) {
 - Critical feature: `print [...]` evaluates block contents before printing
 - Enables convenient string interpolation: `print ["Hello" name]`
 - Without this, would need separate `reduce` function (not in Phase 1)
-- Similar to REBOL's print behavior
+- Similar to Viro's print behavior
 
 **Error Handling**:
 - `print` does not error (best effort output)

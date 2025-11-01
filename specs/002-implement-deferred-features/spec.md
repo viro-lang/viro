@@ -85,7 +85,7 @@ Developers can create object-like contexts and navigate nested data using path e
 
 ### User Story 4 - Transform Data with Advanced Series and Parse Dialect (Priority: P4)
 
-Data engineers can reshape complex strings and blocks using high-level series utilities and a declarative `parse` dialect that matches REBOL lineage expectations.
+Data engineers can reshape complex strings and blocks using high-level series utilities and a declarative `parse` dialect that follows left-to-right evaluation lineage expectations.
 
 **Why this priority**: Powerful data manipulation is essential for configuration, ETL, and DSL scenarios. Parse and additional series functions were deferred; implementing them next unlocks high-leverage workflows.
 
@@ -174,4 +174,4 @@ Maintainers can trace evaluation, inspect runtime state, and introspect program 
 1. Decimal numbers will use IEEE 754 decimal128 semantics implemented with a high-precision arithmetic core optimized for interactive workloads.
 2. File system access remains sandboxed to a root directory defined by a startup CLI parameter, defaulting to the current working directory when the parameter is absent to avoid accidental system writes.
 3. HTTP support targets HTTPS over TCP with optional proxy configuration; other protocols (FTP, WebSocket) remain out of scope for this phase.
-4. Parse dialect will prioritize compatibility with REBOL 3 syntax where practical; unsupported constructs (e.g., `thru`, `reject`) may be deferred to later phases.
+4. Parse dialect will prioritize compatibility with established syntax patterns where practical; unsupported constructs (e.g., `thru`, `reject`) may be deferred to later phases.

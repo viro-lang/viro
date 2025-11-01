@@ -18,7 +18,7 @@
 //   - Set: Update existing binding
 //   - HasWord: Check if word is bound
 //
-// Viro uses local-by-default scoping (differs from REBOL's global-by-default).
+// Viro uses local-by-default scoping (local-by-default scoping).
 package frame
 
 import (

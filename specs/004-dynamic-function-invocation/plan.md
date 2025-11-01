@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implement a polymorphic action system that enables type-based dynamic dispatch for native and user-defined types. The system introduces an `action!` value type that dispatches to type-specific implementations based on the first argument's type. Type-specific functions are organized in type frames (one per data type) created at interpreter startup. This enables REBOL-style polymorphic operations (e.g., `first [1 2]` and `first "hello"` both work) while maintaining Viro's local-by-default scoping and index-based architecture.
+Implement a polymorphic action system that enables type-based dynamic dispatch for native and user-defined types. The system introduces an `action!` value type that dispatches to type-specific implementations based on the first argument's type. Type-specific functions are organized in type frames (one per data type) created at interpreter startup. This enables left-to-right polymorphic operations (e.g., `first [1 2]` and `first "hello"` both work) while maintaining Viro's local-by-default scoping and index-based architecture.
 
 ## Technical Context
 

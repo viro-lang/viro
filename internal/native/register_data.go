@@ -132,13 +132,13 @@ For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate b
 		false,
 		&NativeDoc{
 			Category: "Data",
-			Summary:  "Converts a value to a REBOL-readable string",
-			Description: `Returns a REBOL-readable string representation of the value.
+			Summary:  "Converts a value to a code-readable string",
+			Description: `Returns a code-readable string representation of the value.
 For blocks, includes outer brackets. For strings, includes quotes. Does not evaluate block contents.`,
 			Parameters: []ParamDoc{
 				{Name: "value", Type: "any-type!", Description: "The value to convert to string", Optional: false},
 			},
-			Returns:  "[string!] REBOL-readable string representation",
+			Returns:  "[string!] code-readable string representation",
 			Examples: []string{"mold [1 2 3]  ; => \"[1 2 3]\"", `mold "hello"  ; => "\"hello\""`, "mold 42  ; => \"42\""},
 			SeeAlso:  []string{"form", "type?"}, Tags: []string{"data", "string", "formatting", "serialization"},
 		},

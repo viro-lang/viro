@@ -289,7 +289,7 @@ func TestData_Form(t *testing.T) {
 
 // TestData_Mold validates the 'mold' native.
 //
-// Contract: mold value → string! REBOL-readable representation
+// Contract: mold value → string! code-readable representation
 // - Blocks: with outer brackets
 // - Strings: with quotes
 // - Other types: standard representation

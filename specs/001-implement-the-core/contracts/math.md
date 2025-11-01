@@ -8,7 +8,7 @@
 
 ## Evaluation Order
 
-**Critical Note**: Viro implements **left-to-right evaluation** matching REBOL's evaluation model. There is **no operator precedence**.
+**Critical Note**: Viro implements **left-to-right evaluation** matching Viro's evaluation model. There is **no operator precedence**.
 
 **Evaluation Model**:
 
@@ -32,7 +32,7 @@ true or false and false  ; → ((true or false) and false) = (true and false) = 
 ```
 
 **Design Rationale**:
-- **Why follow REBOL?** REBOL's left-to-right evaluation is simpler and more consistent with homoiconic philosophy. All operations are treated uniformly.
+- **Why left-to-right?** Viro's left-to-right evaluation is simpler and more consistent with homoiconic philosophy. All operations are treated uniformly.
 - **Why no precedence?** Eliminates need for complex precedence tables and parser logic. Users control order explicitly with parentheses when needed.
 - **Implementation note**: Parser transforms infix notation to prefix calls in left-to-right order. No precedence climbing needed.
 
@@ -354,7 +354,7 @@ none and true    → false
 3. `false and false` → false
 4. `1 and 2` → true (both truthy)
 5. `none and true` → false (none is falsy)
-6. `0 and 1` → true (0 is truthy in REBOL)
+6. `0 and 1` → true (0 is truthy in Viro)
 7. **Precedence**: `true or false and false` returns `true` (and first: true or (false and false) = true or false = true)
 8. **Precedence**: `1 = 1 and 2 = 2` returns `true` (equality first: (1=1) and (2=2) = true and true)
 
@@ -441,7 +441,7 @@ not 1            → false
 - Accept any types
 - Apply truthy conversion (none/false → false, others → true)
 - Return logic values
-- **Note**: `0`, `""`, `[]` are truthy (REBOL convention, differs from some languages)
+- **Note**: `0`, `""`, `[]` are truthy (Viro convention, differs from some languages)
 
 **Error Messages**:
 - Include operation name and argument types

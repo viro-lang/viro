@@ -1,12 +1,12 @@
-# Viro - REBOL-Inspired Interpreter
+# Viro
 
-Viro is a REBOL interpreter implemented in Go, featuring a type-based dispatch system and an interactive REPL.
+Viro is a homoiconic programming language interpreter implemented in Go, featuring a type-based dispatch system and an interactive REPL.
 
 ## Overview
 
-Viro implements a subset of REBOL's evaluation semantics with modern improvements:
-- **Left-to-right evaluation** (no operator precedence, true to REBOL)
-- **Local-by-default scoping** (safer than REBOL's global-by-default)
+Viro's key features:
+- **Left-to-right evaluation** (no operator precedence)
+- **Local-by-default scoping** (safe, predictable variable scoping)
 - **Bash-style refinements** (`--flag`, `--option value`)
 - **Paren type for immediate evaluation** distinct from deferred blocks
 
@@ -41,7 +41,7 @@ go build -o viro ./cmd/viro
 
 ### Example Session
 
-```rebol
+```viro
 >> 42
 42
 >> "hello"
@@ -87,7 +87,7 @@ go test ./...
 - ✅ Literal evaluation (integers, strings, true/false/none)
 - ✅ Variable binding and retrieval (set-word, word)
 - ✅ Arithmetic operations (+, -, *, /) with overflow detection
-- ✅ Left-to-right evaluation (no operator precedence, REBOL-style)
+- ✅ Left-to-right evaluation (no operator precedence)
 - ✅ Block and paren evaluation
 - ✅ Interactive REPL with readline support
 - ✅ Parser with left-to-right evaluation
@@ -113,7 +113,7 @@ go test ./...
 
 1. **TDD (Non-Negotiable)** - Tests written before implementation
 2. **Incremental Layering** - Architecture built layer by layer
-3. **Type Dispatch Fidelity** - Type-based evaluation per REBOL semantics
+3. **Type Dispatch Fidelity** - Type-based evaluation semantics
 4. **Stack and Frame Safety** - Index-based access prevents pointer invalidation
 5. **Structured Errors** - Category-based errors with diagnostic context
 6. **Observable Behavior** - REPL provides clear feedback

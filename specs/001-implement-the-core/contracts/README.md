@@ -43,7 +43,7 @@ Each native function contract specifies:
 - **Return**: Return value type and semantics
 - **Behavior**: Step-by-step execution description
 - **Type Rules**: Type validation requirements
-- **Examples**: REBOL code demonstrating usage
+- **Examples**: code demonstrating usage
 - **Error Cases**: Invalid inputs and error responses
 - **Test Cases**: Concrete test scenarios with expected results
 
@@ -157,7 +157,7 @@ func TestNativeAdd(t *testing.T) {
 ### Integration Tests
 
 End-to-end tests in `test/integration/`:
-- Eval full REBOL expressions
+- Evaluate full expressions
 - Test native interactions
 - Test evaluation context (frames, stack)
 - Test error propagation
@@ -264,7 +264,7 @@ Future natives (post-Phase 1):
 **Object System**:
 - `make object!`, `context`, object field access
 
-Target: ~600 natives for full REBOL R3 compatibility (long-term goal)
+Target: ~600 natives for comprehensive native library (long-term goal)
 
 ---
 

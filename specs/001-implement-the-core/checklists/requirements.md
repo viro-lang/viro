@@ -32,7 +32,7 @@
 ## Validation Results
 
 ### Content Quality Review
-✅ **PASS** - Specification avoids implementation details. References to "REBOL semantics", "type-based dispatch", and "frame system" describe behavioral requirements, not implementation choices. The spec appropriately references the design document for architectural context without prescribing specific code structure.
+✅ **PASS** - Specification avoids implementation details. References to "Viro semantics", "type-based dispatch", and "frame system" describe behavioral requirements, not implementation choices. The spec appropriately references the design document for architectural context without prescribing specific code structure.
 
 ✅ **PASS** - Specification focuses on user value: interactive REPL experience, expression evaluation, error handling that keeps REPL usable. Business need is clear: working interpreter foundation.
 

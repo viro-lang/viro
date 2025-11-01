@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 func printHelp() {
-	fmt.Print(`Viro - A REBOL-inspired programming language
+	fmt.Print(`Viro - A homoiconic programming language
 
 USAGE:
     viro [OPTIONS] [FILE [ARGS...]]

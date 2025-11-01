@@ -82,7 +82,7 @@ func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 // Mold implements the `mold` native.
 //
-// Contract: mold value -> string! REBOL-readable representation
+// Contract: mold value -> string! code-readable representation
 // Returns serialization-friendly string format (brackets on blocks, quotes on strings, objects as make object! [...])
 func Mold(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {

@@ -159,7 +159,7 @@ func TestLitWordRefinementError(t *testing.T) {
 	}
 }
 
-// TestLitWordParameterReturnsValue verifies that lit-word parameters work like REBOL:
+// TestLitWordParameterReturnsValue verifies that lit-word parameters work in Viro:
 // the parameter value is returned without re-evaluation
 func TestLitWordParameterReturnsValue(t *testing.T) {
 	code := `

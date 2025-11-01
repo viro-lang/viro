@@ -1,6 +1,6 @@
 # REPL Usage Guide
 
-**Viro Interpreter** - Interactive programming with REBOL-inspired syntax
+**Viro Interpreter** - Interactive homoiconic programming
 
 ---
 
@@ -691,12 +691,12 @@ function[test]
 - **Error throw/catch**: No user exception handling
 - **Module system**: No `import`/`export`
 
-### Known Differences from REBOL
+### Language Characteristics
 
-- **Scoping**: Local-by-default (REBOL is global-by-default)
-- **Native count**: 28 functions (REBOL has 600+)
-- **Series model**: Simplified (no position tracking within series)
-- **Datatypes**: 10 types (REBOL has 50+)
+- **Scoping**: Local-by-default for safe, predictable behavior
+- **Native count**: 28 core functions
+- **Series model**: Simplified value-based series
+- **Datatypes**: 10 core types
 
 ---
 
