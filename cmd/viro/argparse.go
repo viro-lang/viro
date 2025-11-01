@@ -36,7 +36,7 @@ func splitCommandLineArgs(args []string) *ParsedArgs {
 			continue
 		}
 
-		if !strings.HasPrefix(arg, "-") {
+		if !strings.HasPrefix(arg, "-") || arg == "-" {
 			result.ScriptIdx = i
 			break
 		}
