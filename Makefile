@@ -31,10 +31,10 @@ clean:
 	rm -f $(BUILD_DIR)/$(BINARY_NAME)
 
 install: pack
-	cp ./viro $(GOPATH)/bin/$(BINARY_NAME)
+	cp $(BUILD_DIR)/$(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)
 
 pack: build 
-	upx -9 viro
+	upx -9 $(BUILD_DIR)/$(BINARY_NAME)
 
 deps:
 	$(GOMOD) download
