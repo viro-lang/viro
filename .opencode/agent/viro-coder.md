@@ -196,14 +196,8 @@ Follow these patterns:
 
 1. **Make changes** in logical chunks as described above
 2. **Commit each chunk** with an appropriate commit message
-3. **After all commits are made**, invoke the code reviewer using the Task tool with `subagent_type: "viro-code-reviewer"` and prompt:
-   "Review all unpushed commits to the Viro interpreter for code quality, adherence to project standards, proper separation of concerns, DRY principles, SRP compliance, commit organization, and opportunities for code deduplication."
-4. **Address critical issues** identified by the code reviewer (may require amending commits or creating fix commits)
-5. **Push changes** only after the code reviewer approves or you've addressed all critical issues
 
 Do NOT mark your work as complete until:
 
 - All code has been committed in meaningful chunks with clear commit messages
-- The viro-code-reviewer agent has reviewed all unpushed commits
-- Any critical issues identified have been addressed
 - Changes are ready to be pushed (or have been pushed if that's part of your task)

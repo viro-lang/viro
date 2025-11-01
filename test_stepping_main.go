@@ -9,15 +9,14 @@ import (
 func main() {
 	cfg := config.NewConfig()
 	cfg.ScriptFile = "test_stepping.viro"
-	
+
 	ctx := &api.RuntimeContext{
 		Args:   []string{},
 		Stdin:  nil,
 		Stdout: nil,
 		Stderr: nil,
 	}
-	
+
 	exitCode := api.Run(ctx, cfg)
-	fmt.Printf("Exit code: %d
-", exitCode)
+	fmt.Printf("Exit code: %d\n", exitCode)
 }
