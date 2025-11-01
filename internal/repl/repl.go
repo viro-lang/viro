@@ -239,13 +239,6 @@ func (r *REPL) Run() error {
 	}
 }
 
-// ProcessDebugCommandForTest processes a debug command for testing.
-// Returns the command result without any interactive behavior.
-func (r *REPL) ProcessDebugCommandForTest(cmd string) (continueDebug bool, output string, err error) {
-	// Debug commands not supported
-	return false, "", fmt.Errorf("debug commands not supported")
-}
-
 // EvalLineForTest evaluates a single line and prints to the configured writer.
 func (r *REPL) EvalLineForTest(input string) {
 	if r == nil {
