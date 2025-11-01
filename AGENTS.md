@@ -62,6 +62,7 @@ The `viro` binary supports multiple execution modes:
 - Naming: Use Viro-style native names (`first`, `length?`, `type-of` with ?, ! suffixes) not Go-style
 
 ## Workflow
+- **ALWAYS use viro-interpreter-dev agent**: When editing ANY Viro interpreter code, you MUST use the viro-interpreter-dev agent via the Task tool. This agent has specialized expertise in the Viro codebase architecture and prevents common mistakes.
 - **TDD mandatory**: Write tests FIRST in `test/contract/`, then implement in `internal/native/`
 - Consult specs: `specs/*/contracts/*.md` before implementation
 - Every code change MUST have test coverage
