@@ -192,3 +192,18 @@ var messageTemplates = map[string]string{
 	ErrIDOutOfMemory:     "Out of memory",
 	ErrIDAssertionFailed: "Internal assertion failed: %1",
 }
+
+// ToExitCode converts an error category to an appropriate exit code.
+// This centralizes exit code mapping logic across the application.
+func ToExitCode(category ErrorCategory) int {
+	switch category {
+	case ErrSyntax:
+		return 2 // ExitSyntax
+	case ErrAccess:
+		return 3 // ExitAccess
+	case ErrInternal:
+		return 70 // ExitInternal
+	default:
+		return 1 // ExitError
+	}
+}

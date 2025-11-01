@@ -294,7 +294,7 @@ func HandleErrorWithContext(err error) int {
 	}
 
 	if vErr, ok := err.(*verror.Error); ok {
-		return categoryToExitCode(vErr.Category)
+		return verror.ToExitCode(vErr.Category)
 	}
 
 	return ExitError
@@ -307,19 +307,6 @@ func printErrorToWriter(err error, prefix string, w io.Writer) {
 		fmt.Fprintf(w, "%s error: %v\n", prefix, err)
 	} else {
 		fmt.Fprintf(w, "Error: %v\n", err)
-	}
-}
-
-func categoryToExitCode(cat verror.ErrorCategory) int {
-	switch cat {
-	case verror.ErrSyntax:
-		return ExitSyntax
-	case verror.ErrAccess:
-		return ExitAccess
-	case verror.ErrInternal:
-		return ExitInternal
-	default:
-		return ExitError
 	}
 }
 
