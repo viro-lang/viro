@@ -21,6 +21,7 @@ package repl
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -254,12 +255,53 @@ func (r *REPL) Run() error {
 	}
 }
 
-// EvalLineForTest evaluates a single line and prints to the configured writer.
-func (r *REPL) EvalLineForTest(input string) {
-	if r == nil {
-		return
+// EvalParsedValuesForTest evaluates parsed values for testing.
+// Unlike evalParsedValues, this doesn't enter interactive debug mode.
+func (r *REPL) EvalParsedValuesForTest(values []core.Value) error {
+	result, err := r.evaluator.DoBlock(values)
+	if err != nil {
+		// Check if this is a debug pause error
+		if vErr, ok := err.(*verror.Error); ok && vErr.ID == verror.ErrIDDebugPause {
+			// For testing: just enter debug mode without interactive loop
+			if !r.IsInDebugMode() {
+				r.EnterDebugMode()
+			}
+			if r.debugSession != nil {
+				r.debugSession.pausedExpr = values
+			}
+			// Return the pause error so tests can verify it
+			return err
+		}
+		r.printError(err)
+		return err
 	}
-	r.processLine(strings.TrimRight(input, "\r\n"), false)
+
+	if result.GetType() != value.TypeNone {
+		formResult, err := native.Form([]core.Value{result}, nil, r.evaluator)
+		if err != nil {
+			r.printError(err)
+			return err
+		}
+		fmt.Fprintln(r.out, formResult.Form())
+	}
+	return nil
+}
+
+// ProcessDebugCommandForTest processes a debug command for testing.
+// Returns the command result without any interactive behavior.
+func (r *REPL) ProcessDebugCommandForTest(cmd string) (continueDebug bool, output string, err error) {
+	// Capture output
+	oldOut := r.out
+	var buf bytes.Buffer
+	r.out = &buf
+
+	continueDebug, err = r.HandleDebugCommand(cmd)
+
+	// Restore output and return captured content
+	r.out = oldOut
+	output = buf.String()
+
+	return continueDebug, output, err
 }
 
 // AwaitingContinuation reports whether the REPL is waiting for additional lines
