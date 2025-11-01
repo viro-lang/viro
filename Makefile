@@ -31,7 +31,7 @@ clean:
 	rm -f $(BUILD_DIR)/$(BINARY_NAME)
 
 install: pack
-	$(GOBUILD) -o $(GOPATH)/bin/$(BINARY_NAME) $(CMD_DIR)
+	cp ./viro $(GOPATH)/bin/$(BINARY_NAME)
 
 pack: build 
 	upx -9 viro
