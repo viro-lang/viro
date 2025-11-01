@@ -7,10 +7,13 @@ const (
 	BuildDate = ""
 )
 
-func printVersion() {
+func getVersionString() string {
 	if BuildDate != "" {
-		fmt.Printf("Viro %s (built %s)\n", Version, BuildDate)
-	} else {
-		fmt.Printf("Viro %s\n", Version)
+		return fmt.Sprintf("Viro %s (built %s)", Version, BuildDate)
 	}
+	return fmt.Sprintf("Viro %s", Version)
+}
+
+func printVersion() {
+	fmt.Println(getVersionString())
 }

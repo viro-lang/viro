@@ -2,8 +2,8 @@ package main
 
 import "fmt"
 
-func printHelp() {
-	fmt.Print(`Viro - A homoiconic programming language
+func getHelpText() string {
+	return `Viro - A homoiconic programming language
 
 USAGE:
     viro [OPTIONS] [FILE [ARGS...]]
@@ -27,6 +27,9 @@ GLOBAL OPTIONS:
     --verbose                  Enable verbose output
     --help                     Show this help message
     --version                  Show version information
+
+SCRIPT OPTIONS:
+    --profile                  Enable profiling and show execution statistics
 
 EVAL OPTIONS:
     --stdin                    Read additional input from stdin
@@ -80,6 +83,13 @@ EXAMPLES:
     >> print ["Email:" first system.args]
     >> print ["Role:" last system.args]
 
+    # Profile script execution
+    viro --profile script.viro
+
 For more information, visit: https://github.com/marcin-radoszewski/viro
-`)
+`
+}
+
+func printHelp() {
+	fmt.Print(getHelpText())
 }

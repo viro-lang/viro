@@ -1,18 +1,15 @@
 package integration
 
 import (
+	"bytes"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestCheckMode(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name       string
 		script     string
@@ -94,24 +91,25 @@ func TestCheckMode(t *testing.T) {
 			}
 			tmpfile.Close()
 
-			cmd := exec.Command(viroPath, "--check", tmpfile.Name())
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error type: %v", err)
-				}
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{"--check", tmpfile.Name()},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
+
+			cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+			exitCode := api.Run(ctx, cfg)
+
+			output := stdout.String() + stderr.String()
 
 			if exitCode != tt.wantExit {
 				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
 			}
 
 			if tt.wantOutput != "" {
-				if !strings.Contains(string(output), tt.wantOutput) {
+				if !strings.Contains(output, tt.wantOutput) {
 					t.Errorf("output = %q, want to contain %q", output, tt.wantOutput)
 				}
 			}
@@ -120,11 +118,6 @@ func TestCheckMode(t *testing.T) {
 }
 
 func TestCheckModeDoesNotExecute(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `
 print "This should not be printed"
 1 / 0
@@ -141,14 +134,22 @@ print "This should not be printed"
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--check", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		t.Fatalf("check failed on valid syntax: %v\nOutput: %s", err, output)
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--check", tmpfile.Name()},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	outputStr := string(output)
+	cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode != 0 {
+		t.Fatalf("check failed on valid syntax: exit code %d\nOutput: %s", exitCode, stdout.String()+stderr.String())
+	}
+
+	outputStr := stdout.String() + stderr.String()
 	if strings.Contains(outputStr, "This should not be printed") {
 		t.Error("--check mode executed the script (found print output)")
 	}
@@ -159,11 +160,6 @@ print "This should not be printed"
 }
 
 func TestCheckModeWithVerbose(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := "print \"hello\"\nprint \"world\""
 
 	tmpfile, err := os.CreateTemp("", "test_check_verbose_*.viro")
@@ -177,14 +173,22 @@ func TestCheckModeWithVerbose(t *testing.T) {
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--check", "--verbose", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		t.Fatalf("check failed: %v\nOutput: %s", err, output)
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--check", "--verbose", tmpfile.Name()},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	outputStr := string(output)
+	cfg, _ := api.ConfigFromArgs([]string{"--check", "--verbose", tmpfile.Name()})
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode != 0 {
+		t.Fatalf("check failed: exit code %d\nOutput: %s", exitCode, stdout.String()+stderr.String())
+	}
+
+	outputStr := stdout.String() + stderr.String()
 	if !strings.Contains(outputStr, "Syntax valid") &&
 		!strings.Contains(outputStr, "Parsed") {
 		t.Logf("Note: --verbose output for --check mode: %s", outputStr)
@@ -192,11 +196,6 @@ func TestCheckModeWithVerbose(t *testing.T) {
 }
 
 func TestCheckModeFromExistingScripts(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name       string
 		scriptPath string
@@ -225,29 +224,25 @@ func TestCheckModeFromExistingScripts(t *testing.T) {
 				t.Skipf("test script %s not found", tt.scriptPath)
 			}
 
-			cmd := exec.Command(viroPath, "--check", tt.scriptPath)
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				}
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{"--check", tt.scriptPath},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
 
+			cfg, _ := api.ConfigFromArgs([]string{"--check", tt.scriptPath})
+			exitCode := api.Run(ctx, cfg)
+
 			if exitCode != tt.wantExit {
-				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
+				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, stdout.String()+stderr.String())
 			}
 		})
 	}
 }
 
 func TestCheckModeMultipleErrors(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `
 [unclosed block
 print "test"
@@ -265,50 +260,52 @@ print "test"
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--check", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
-	if err == nil {
-		t.Fatal("expected syntax error, got none")
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--check", tmpfile.Name()},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	exitErr, ok := err.(*exec.ExitError)
-	if !ok {
-		t.Fatalf("unexpected error type: %v", err)
+	cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode == 0 {
+		t.Fatal("expected syntax error, got exit code 0")
 	}
 
-	if exitErr.ExitCode() != 2 {
-		t.Errorf("exit code = %d, want 2 (syntax error)", exitErr.ExitCode())
+	if exitCode != 2 {
+		t.Errorf("exit code = %d, want 2 (syntax error)", exitCode)
 	}
 
-	if !strings.Contains(string(output), "Syntax error") {
+	output := stdout.String() + stderr.String()
+	if !strings.Contains(output, "Syntax error") {
 		t.Errorf("output = %q, want to contain 'Syntax error'", output)
 	}
 }
 
 func TestCheckModeFileNotFound(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--check", "nonexistent_file.viro"},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	cmd := exec.Command(viroPath, "--check", "nonexistent_file.viro")
-	output, err := cmd.CombinedOutput()
+	cfg, _ := api.ConfigFromArgs([]string{"--check", "nonexistent_file.viro"})
+	exitCode := api.Run(ctx, cfg)
 
-	if err == nil {
-		t.Fatal("expected error for nonexistent file, got none")
+	if exitCode == 0 {
+		t.Fatal("expected error for nonexistent file, got exit code 0")
 	}
 
-	exitErr, ok := err.(*exec.ExitError)
-	if !ok {
-		t.Fatalf("unexpected error type: %v", err)
+	if exitCode != 1 {
+		t.Errorf("exit code = %d, want 1 (file not found error)", exitCode)
 	}
 
-	if exitErr.ExitCode() != 1 {
-		t.Errorf("exit code = %d, want 1 (file not found error)", exitErr.ExitCode())
-	}
-
-	outputStr := string(output)
+	outputStr := stdout.String() + stderr.String()
 	if !strings.Contains(strings.ToLower(outputStr), "no such file") &&
 		!strings.Contains(strings.ToLower(outputStr), "not found") &&
 		!strings.Contains(outputStr, "Error loading script") {
@@ -317,11 +314,6 @@ func TestCheckModeFileNotFound(t *testing.T) {
 }
 
 func TestCheckModeWithQuiet(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "test"`
 
 	tmpfile, err := os.CreateTemp("", "test_check_quiet_*.viro")
@@ -335,13 +327,22 @@ func TestCheckModeWithQuiet(t *testing.T) {
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--check", "--quiet", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		t.Fatalf("check failed: %v\nOutput: %s", err, output)
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--check", "--quiet", tmpfile.Name()},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
+	cfg, _ := api.ConfigFromArgs([]string{"--check", "--quiet", tmpfile.Name()})
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode != 0 {
+		t.Fatalf("check failed: exit code %d\nOutput: %s", exitCode, stdout.String()+stderr.String())
+	}
+
+	output := stdout.String() + stderr.String()
 	if len(output) > 0 {
 		t.Logf("Note: --quiet with --check produced output: %s", output)
 	}

@@ -33,6 +33,7 @@ type TraceSession struct {
 	logger        *lumberjack.Logger // Optional file logger
 	atomicFilters atomic.Value       // Stores *TraceFilters for lock-free reads; must always store a non-nil *TraceFilters pointer to avoid panics when type asserting in Load() calls
 	stepCounter   int64              // Monotonic step counter
+	callback      atomic.Value       // Stores func(TraceEvent) for lock-free reads
 }
 
 // TraceFilters controls which events are emitted.
@@ -97,6 +98,21 @@ func InitTrace(traceFile string, maxSizeMB int) error {
 	return nil
 }
 
+// InitTraceSilent initializes the global trace session with output suppressed.
+// Used for profiling where only callbacks are needed, not JSON output.
+// Uses io.Discard for cross-platform compatibility (works on Windows, Unix, etc).
+func InitTraceSilent() error {
+	ts := &TraceSession{
+		sink:   io.Discard,
+		logger: nil,
+	}
+	ts.enabled.Store(false)
+	ts.atomicFilters.Store(&TraceFilters{})
+	GlobalTraceSession = ts
+
+	return nil
+}
+
 // Enable activates tracing with optional filters.
 func (ts *TraceSession) Enable(filters TraceFilters) {
 	ts.atomicFilters.Store(&filters)
@@ -135,6 +151,11 @@ func (ts *TraceSession) Emit(event TraceEvent) {
 
 	if filters.MinDuration > 0 && time.Duration(event.Duration) < filters.MinDuration {
 		return
+	}
+
+	callback := ts.callback.Load()
+	if callback != nil {
+		callback.(func(TraceEvent))(event)
 	}
 
 	// Serialize as JSON (per FR-015: line-delimited JSON)
@@ -196,6 +217,13 @@ func (ts *TraceSession) ShouldTraceAtDepth(depth int) bool {
 		return true
 	}
 	return depth <= filters.MaxDepth
+}
+
+// SetCallback registers a callback function that will be invoked for each emitted trace event.
+// This is useful for profiling and other real-time analysis.
+// The callback is invoked lock-free before the event is serialized to JSON.
+func (ts *TraceSession) SetCallback(callback func(TraceEvent)) {
+	ts.callback.Store(callback)
 }
 
 // Port lifecycle trace event helpers (T076)

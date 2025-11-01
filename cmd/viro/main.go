@@ -1,66 +1,25 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/marcin-radoszewski/viro/internal/repl"
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func main() {
 	setupSignalHandler()
 
-	cfg, err := loadConfiguration()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
-		os.Exit(ExitUsage)
+	ctx := &api.RuntimeContext{
+		Args:   os.Args[1:],
+		Stdin:  os.Stdin,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 
-	exitCode := executeMode(cfg)
+	exitCode := Run(ctx)
 	os.Exit(exitCode)
-}
-
-func loadConfiguration() (*Config, error) {
-	cfg := NewConfig()
-	if err := cfg.LoadFromEnv(); err != nil {
-		return nil, err
-	}
-	if err := cfg.LoadFromFlags(); err != nil {
-		return nil, err
-	}
-	if err := cfg.ApplyDefaults(); err != nil {
-		return nil, err
-	}
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-	return cfg, nil
-}
-
-func executeMode(cfg *Config) int {
-	mode, err := cfg.DetectMode()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		return ExitUsage
-	}
-
-	switch mode {
-	case ModeREPL:
-		return runREPL(cfg)
-	case ModeScript, ModeEval, ModeCheck:
-		return runExecution(cfg, mode)
-	case ModeVersion:
-		printVersion()
-		return ExitSuccess
-	case ModeHelp:
-		printHelp()
-		return ExitSuccess
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
-		return ExitUsage
-	}
 }
 
 func setupSignalHandler() {
@@ -68,33 +27,6 @@ func setupSignalHandler() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		os.Exit(ExitInterrupt)
+		os.Exit(api.ExitInterrupt)
 	}()
-}
-
-func runREPL(cfg *Config) int {
-	if cfg.AllowInsecureTLS {
-		fmt.Fprintf(os.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
-	}
-
-	opts := &repl.Options{
-		Prompt:      cfg.Prompt,
-		NoWelcome:   cfg.NoWelcome,
-		NoHistory:   cfg.NoHistory,
-		HistoryFile: cfg.HistoryFile,
-		TraceOn:     cfg.TraceOn,
-		Args:        cfg.Args,
-	}
-
-	r, err := repl.NewREPLWithOptions(opts)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error initializing REPL: %v\n", err)
-		return ExitError
-	}
-
-	if err := r.Run(); err != nil {
-		return handleError(err)
-	}
-
-	return ExitSuccess
 }
