@@ -23,6 +23,7 @@ type Config struct {
 	HistoryFile string
 	Prompt      string
 	NoWelcome   bool
+	TraceOn     bool
 
 	NoPrint   bool
 	ReadStdin bool
@@ -69,6 +70,7 @@ func (c *Config) LoadFromFlags() error {
 	historyFile := fs.String("history-file", "", "History file location")
 	prompt := fs.String("prompt", "", "Custom REPL prompt")
 	noWelcome := fs.Bool("no-welcome", false, "Skip welcome message in REPL")
+	traceOn := fs.Bool("trace", false, "Start REPL with tracing enabled")
 
 	noPrint := fs.Bool("no-print", false, "Don't print result of evaluation")
 	stdin := fs.Bool("stdin", false, "Read additional input from stdin")
@@ -113,6 +115,7 @@ func (c *Config) LoadFromFlags() error {
 		c.Prompt = *prompt
 	}
 	c.NoWelcome = *noWelcome
+	c.TraceOn = *traceOn
 
 	c.NoPrint = *noPrint
 	c.ReadStdin = *stdin

@@ -37,6 +37,7 @@ REPL OPTIONS:
     --history-file PATH        History file location
     --prompt STRING            Custom REPL prompt
     --no-welcome               Skip welcome message
+    --trace                    Start REPL with tracing enabled
 
 ENVIRONMENT VARIABLES:
     VIRO_SANDBOX_ROOT          Default sandbox root directory

@@ -48,6 +48,16 @@ const (
 	historyFileName    = ".viro_history"
 )
 
+// Options configures REPL behavior and can be set via CLI flags.
+type Options struct {
+	Prompt      string
+	NoWelcome   bool
+	NoHistory   bool
+	HistoryFile string
+	TraceOn     bool
+	Args        []string
+}
+
 // REPL implements a Read-Eval-Print-Loop for Viro.
 //
 // Architecture per contracts:
@@ -65,10 +75,24 @@ type REPL struct {
 	awaitingCont   bool
 	shouldContinue bool
 	historyPath    string
+	customPrompt   string
+	noWelcome      bool
+	noHistory      bool
 }
 
-// NewREPL creates a new REPL instance.
+// NewREPL creates a new REPL instance with default options.
 func NewREPL(args []string) (*REPL, error) {
+	return NewREPLWithOptions(&Options{
+		Args: args,
+	})
+}
+
+// NewREPLWithOptions creates a new REPL instance with custom options.
+func NewREPLWithOptions(opts *Options) (*REPL, error) {
+	if opts == nil {
+		opts = &Options{}
+	}
+
 	// Initialize trace/debug sessions (Feature 002, T154)
 	// Trace is initialized with default settings (stderr, 50MB max size)
 	// These will be controlled via trace --on/--off and debug --on/--off
@@ -77,15 +101,37 @@ func NewREPL(args []string) (*REPL, error) {
 	}
 	debug.InitDebugger()
 
-	historyPath := resolveHistoryPath(true)
+	// Enable trace if requested
+	if opts.TraceOn && trace.GlobalTraceSession != nil {
+		trace.GlobalTraceSession.Enable(trace.TraceFilters{})
+	}
+
+	// Determine history path
+	historyPath := opts.HistoryFile
+	if historyPath == "" && !opts.NoHistory {
+		historyPath = resolveHistoryPath(true)
+	}
+
+	// Determine prompt
+	prompt := opts.Prompt
+	if prompt == "" {
+		prompt = primaryPrompt
+	}
+
 	// Create readline instance with prompt
-	rl, err := readline.NewEx(&readline.Config{
-		Prompt:                 primaryPrompt,
-		HistoryFile:            historyPath,
+	rlConfig := &readline.Config{
+		Prompt:                 prompt,
 		DisableAutoSaveHistory: true,
 		InterruptPrompt:        "^C",
 		EOFPrompt:              "exit",
-	})
+	}
+
+	// Only set history file if history is enabled
+	if !opts.NoHistory && historyPath != "" {
+		rlConfig.HistoryFile = historyPath
+	}
+
+	rl, err := readline.NewEx(rlConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +149,7 @@ func NewREPL(args []string) (*REPL, error) {
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 
-	initializeSystemObject(evaluator, args)
+	initializeSystemObject(evaluator, opts.Args)
 
 	repl := &REPL{
 		evaluator:      evaluator,
@@ -115,8 +161,16 @@ func NewREPL(args []string) (*REPL, error) {
 		awaitingCont:   false,
 		shouldContinue: true,
 		historyPath:    historyPath,
+		customPrompt:   prompt,
+		noWelcome:      opts.NoWelcome,
+		noHistory:      opts.NoHistory,
 	}
-	repl.loadPersistentHistory()
+
+	// Load persistent history only if not disabled
+	if !opts.NoHistory {
+		repl.loadPersistentHistory()
+	}
+
 	return repl, nil
 }
 
@@ -286,9 +340,11 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.evalParsedValues(values)
 }
 
-// printWelcome displays the welcome message.
+// printWelcome displays the welcome message unless disabled.
 func (r *REPL) printWelcome() {
-	fmt.Fprint(r.out, WelcomeMessage())
+	if !r.noWelcome {
+		fmt.Fprint(r.out, WelcomeMessage())
+	}
 }
 
 func (r *REPL) printError(err error) {
@@ -351,7 +407,7 @@ func (r *REPL) HistoryDown() (string, bool) {
 }
 
 func (r *REPL) recordHistory(entry string) {
-	if r == nil {
+	if r == nil || r.noHistory {
 		return
 	}
 	trimmed := strings.TrimSpace(entry)
@@ -380,6 +436,11 @@ func (r *REPL) getCurrentPrompt() string {
 	// Check if debugger is in active mode (breakpoints or stepping)
 	if debug.GlobalDebugger != nil && debug.GlobalDebugger.Mode() != debug.DebugModeOff {
 		return debugPrompt
+	}
+
+	// Use custom prompt if set, otherwise use default
+	if r.customPrompt != "" {
+		return r.customPrompt
 	}
 
 	return primaryPrompt

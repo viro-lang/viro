@@ -77,7 +77,16 @@ func runREPL(cfg *Config) int {
 		fmt.Fprintf(os.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
 	}
 
-	r, err := repl.NewREPL(cfg.Args)
+	opts := &repl.Options{
+		Prompt:      cfg.Prompt,
+		NoWelcome:   cfg.NoWelcome,
+		NoHistory:   cfg.NoHistory,
+		HistoryFile: cfg.HistoryFile,
+		TraceOn:     cfg.TraceOn,
+		Args:        cfg.Args,
+	}
+
+	r, err := repl.NewREPLWithOptions(opts)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing REPL: %v\n", err)
 		return ExitError
