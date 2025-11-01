@@ -44,14 +44,14 @@ func TestScriptExecution(t *testing.T) {
 			script:     `print [unclosed`,
 			wantExit:   2,
 			wantStdout: "",
-			wantStderr: "Syntax error",
+			wantStderr: "** Syntax Error",
 		},
 		{
 			name:       "runtime error - division by zero",
 			script:     `1 / 0`,
 			wantExit:   1,
 			wantStdout: "",
-			wantStderr: "Math error",
+			wantStderr: "** Math Error",
 		},
 		{
 			name:       "runtime error - undefined variable",
@@ -143,7 +143,7 @@ func TestScriptExecutionFromFile(t *testing.T) {
 			name:       "error.viro - syntax error",
 			scriptFile: "error.viro",
 			wantExit:   2,
-			contains:   []string{"Syntax error"},
+			contains:   []string{"** Syntax Error"},
 		},
 	}
 
