@@ -4,41 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"os"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
-type Config struct {
-	SandboxRoot      string
-	AllowInsecureTLS bool
-	Quiet            bool
-	Verbose          bool
-
-	ShowVersion bool
-	ShowHelp    bool
-	EvalExpr    string
-	CheckOnly   bool
-	ScriptFile  string
-	Args        []string
-
-	NoHistory   bool
-	HistoryFile string
-	Prompt      string
-	NoWelcome   bool
-	TraceOn     bool
-
-	NoPrint   bool
-	ReadStdin bool
-	Profile   bool
+func NewConfig() *api.Config {
+	return api.NewConfig()
 }
 
-func NewConfig() *Config {
-	return &Config{
-		SandboxRoot: "",
-		HistoryFile: "",
-		Prompt:      "",
-	}
-}
-
-func (c *Config) LoadFromEnv() error {
+func LoadFromEnv(c *api.Config) error {
 	if root := os.Getenv("VIRO_SANDBOX_ROOT"); root != "" {
 		c.SandboxRoot = root
 	}
@@ -54,11 +28,11 @@ func (c *Config) LoadFromEnv() error {
 	return nil
 }
 
-func (c *Config) LoadFromFlags() error {
-	return c.LoadFromFlagsWithArgs(os.Args[1:])
+func LoadFromFlags(c *api.Config) error {
+	return LoadFromFlagsWithArgs(c, os.Args[1:])
 }
 
-func (c *Config) LoadFromFlagsWithArgs(args []string) error {
+func LoadFromFlagsWithArgs(c *api.Config, args []string) error {
 	fs := flag.NewFlagSet("viro", flag.ContinueOnError)
 
 	sandboxRoot := fs.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
@@ -134,7 +108,7 @@ func (c *Config) LoadFromFlagsWithArgs(args []string) error {
 	return nil
 }
 
-func (c *Config) ApplyDefaults() error {
+func ApplyDefaults(c *api.Config) error {
 	if c.SandboxRoot == "" {
 		cwd, err := os.Getwd()
 		if err != nil {
@@ -145,18 +119,6 @@ func (c *Config) ApplyDefaults() error {
 	return nil
 }
 
-func (c *Config) Validate() error {
-	if c.CheckOnly && c.ScriptFile == "" {
-		return fmt.Errorf("--check flag requires a script file")
-	}
-	if c.ReadStdin && c.EvalExpr == "" {
-		return fmt.Errorf("--stdin flag requires -c flag")
-	}
-	if c.NoPrint && c.EvalExpr == "" {
-		return fmt.Errorf("--no-print flag requires -c flag")
-	}
-	if c.Profile && c.ScriptFile == "" {
-		return fmt.Errorf("--profile flag requires a script file")
-	}
-	return nil
+func Validate(c *api.Config) error {
+	return c.Validate()
 }

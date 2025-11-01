@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/marcin-radoszewski/viro/internal/api"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
@@ -13,14 +14,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-type RuntimeContext struct {
-	Args   []string
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
-}
-
-func Run(ctx *RuntimeContext) int {
+func Run(ctx *api.RuntimeContext) int {
 	cfg, err := loadConfigurationWithContext(ctx)
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Configuration error: %v\n", err)
@@ -30,25 +24,25 @@ func Run(ctx *RuntimeContext) int {
 	return executeModeWithContext(cfg, ctx)
 }
 
-func loadConfigurationWithContext(ctx *RuntimeContext) (*Config, error) {
+func loadConfigurationWithContext(ctx *api.RuntimeContext) (*api.Config, error) {
 	cfg := NewConfig()
-	if err := cfg.LoadFromEnv(); err != nil {
+	if err := LoadFromEnv(cfg); err != nil {
 		return nil, err
 	}
-	if err := cfg.LoadFromFlagsWithArgs(ctx.Args); err != nil {
+	if err := LoadFromFlagsWithArgs(cfg, ctx.Args); err != nil {
 		return nil, err
 	}
-	if err := cfg.ApplyDefaults(); err != nil {
+	if err := ApplyDefaults(cfg); err != nil {
 		return nil, err
 	}
-	if err := cfg.Validate(); err != nil {
+	if err := Validate(cfg); err != nil {
 		return nil, err
 	}
 	return cfg, nil
 }
 
-func executeModeWithContext(cfg *Config, ctx *RuntimeContext) int {
-	mode, err := cfg.DetectMode()
+func executeModeWithContext(cfg *api.Config, ctx *api.RuntimeContext) int {
+	mode, err := DetectMode(cfg)
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Error: %v\n", err)
 		return ExitUsage
@@ -71,7 +65,7 @@ func executeModeWithContext(cfg *Config, ctx *RuntimeContext) int {
 	}
 }
 
-func runREPLWithContext(cfg *Config, ctx *RuntimeContext) int {
+func runREPLWithContext(cfg *api.Config, ctx *api.RuntimeContext) int {
 	if cfg.AllowInsecureTLS {
 		fmt.Fprintf(ctx.Stderr, "WARNING: TLS certificate verification disabled globally. Use with caution.\n")
 	}
@@ -98,7 +92,7 @@ func runREPLWithContext(cfg *Config, ctx *RuntimeContext) int {
 	return ExitSuccess
 }
 
-func runExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
+func runExecutionWithContext(cfg *api.Config, mode Mode, ctx *api.RuntimeContext) int {
 	var err error
 	if cfg.Profile {
 		err = trace.InitTraceSilent()
@@ -175,7 +169,7 @@ func (e *ExprInputWithContext) Load() (string, error) {
 	return expr, nil
 }
 
-func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, printResult bool, parseOnly bool, profiler *profile.Profiler, ctx *RuntimeContext) int {
+func executeViroCodeWithContext(cfg *api.Config, input InputSource, args []string, printResult bool, parseOnly bool, profiler *profile.Profiler, ctx *api.RuntimeContext) int {
 	content, err := input.Load()
 	if err != nil {
 		fmt.Fprintf(ctx.Stderr, "Error loading input: %v\n", err)
@@ -212,7 +206,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	return ExitSuccess
 }
 
-func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator {
+func setupEvaluatorWithContext(cfg *api.Config, ctx *api.RuntimeContext) *eval.Evaluator {
 	evaluator := eval.NewEvaluator()
 
 	if cfg.Quiet {

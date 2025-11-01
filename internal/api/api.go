@@ -128,6 +128,27 @@ func ConfigFromArgs(args []string) (*Config, error) {
 	return cfg, nil
 }
 
+func (c *Config) Validate() error {
+	if c.CheckOnly && c.ScriptFile == "" {
+		return fmt.Errorf("--check flag requires a script file")
+	}
+	if c.ReadStdin && c.EvalExpr == "" {
+		return fmt.Errorf("--stdin flag requires -c flag")
+	}
+	if c.NoPrint && c.EvalExpr == "" {
+		return fmt.Errorf("--no-print flag requires -c flag")
+	}
+	if c.Profile {
+		if c.EvalExpr != "" {
+			return fmt.Errorf("--profile flag cannot be used with -c expressions; it requires a script file or '-' for stdin")
+		}
+		if c.ScriptFile == "" {
+			return fmt.Errorf("--profile flag requires a script file or '-' for stdin")
+		}
+	}
+	return nil
+}
+
 type InputSource interface {
 	Load() (string, error)
 }
@@ -186,6 +207,11 @@ func NewFileInput(cfg *Config, path string, stdin io.Reader) InputSource {
 }
 
 func Run(ctx *RuntimeContext, cfg *Config) int {
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(ctx.Stderr, "Configuration error: %v\n", err)
+		return ExitUsage
+	}
+
 	mode := detectMode(cfg)
 
 	switch mode {
@@ -226,11 +252,6 @@ func detectMode(cfg *Config) Mode {
 }
 
 func runExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
-	if cfg.Profile && mode == ModeEval {
-		fmt.Fprintf(ctx.Stderr, "Error: --profile flag requires a script file, not -c expression\n")
-		return ExitUsage
-	}
-
 	var err error
 	if cfg.Profile {
 		err = trace.InitTraceSilent()

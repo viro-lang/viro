@@ -4,6 +4,8 @@ import (
 	"flag"
 	"os"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func setupTestArgs(t *testing.T, args []string) {
@@ -17,8 +19,8 @@ func TestNewConfig(t *testing.T) {
 	if cfg == nil {
 		t.Fatal("NewConfig() returned nil")
 	}
-	if cfg.SandboxRoot != "" {
-		t.Errorf("SandboxRoot = %q, want empty string", cfg.SandboxRoot)
+	if cfg.SandboxRoot == "" {
+		t.Errorf("SandboxRoot should be set to cwd by default, got empty string")
 	}
 }
 
@@ -114,11 +116,11 @@ func TestLoadFromEnv(t *testing.T) {
 			}
 
 			cfg := NewConfig()
-			if err := cfg.LoadFromEnv(); err != nil {
+			if err := LoadFromEnv(cfg); err != nil {
 				t.Fatalf("LoadFromEnv() error = %v", err)
 			}
 
-			if cfg.SandboxRoot != tt.wantRoot {
+			if tt.wantRoot != "" && cfg.SandboxRoot != tt.wantRoot {
 				t.Errorf("SandboxRoot = %q, want %q", cfg.SandboxRoot, tt.wantRoot)
 			}
 			if cfg.AllowInsecureTLS != tt.wantTLS {
@@ -134,7 +136,7 @@ func TestLoadFromEnv(t *testing.T) {
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfg     *Config
+		cfg     *api.Config
 		wantErr bool
 	}{
 		{
@@ -144,28 +146,28 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "version only",
-			cfg: &Config{
+			cfg: &api.Config{
 				ShowVersion: true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "help only",
-			cfg: &Config{
+			cfg: &api.Config{
 				ShowHelp: true,
 			},
 			wantErr: false,
 		},
 		{
 			name: "eval only",
-			cfg: &Config{
+			cfg: &api.Config{
 				EvalExpr: "3 + 4",
 			},
 			wantErr: false,
 		},
 		{
 			name: "check with script",
-			cfg: &Config{
+			cfg: &api.Config{
 				CheckOnly:  true,
 				ScriptFile: "test.viro",
 			},
@@ -173,21 +175,21 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "check without script",
-			cfg: &Config{
+			cfg: &api.Config{
 				CheckOnly: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "script only",
-			cfg: &Config{
+			cfg: &api.Config{
 				ScriptFile: "test.viro",
 			},
 			wantErr: false,
 		},
 		{
 			name: "version and help",
-			cfg: &Config{
+			cfg: &api.Config{
 				ShowVersion: true,
 				ShowHelp:    true,
 			},
@@ -195,7 +197,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "eval and script",
-			cfg: &Config{
+			cfg: &api.Config{
 				EvalExpr:   "3 + 4",
 				ScriptFile: "test.viro",
 			},
@@ -203,14 +205,14 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "stdin without eval",
-			cfg: &Config{
+			cfg: &api.Config{
 				ReadStdin: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "stdin with eval",
-			cfg: &Config{
+			cfg: &api.Config{
 				EvalExpr:  "first",
 				ReadStdin: true,
 			},
@@ -218,14 +220,14 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "no-print without eval",
-			cfg: &Config{
+			cfg: &api.Config{
 				NoPrint: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "no-print with eval",
-			cfg: &Config{
+			cfg: &api.Config{
 				EvalExpr: "3 + 4",
 				NoPrint:  true,
 			},
@@ -233,14 +235,14 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "profile without script",
-			cfg: &Config{
+			cfg: &api.Config{
 				Profile: true,
 			},
 			wantErr: true,
 		},
 		{
 			name: "profile with script",
-			cfg: &Config{
+			cfg: &api.Config{
 				Profile:    true,
 				ScriptFile: "test.viro",
 			},
@@ -248,7 +250,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			name: "profile with eval",
-			cfg: &Config{
+			cfg: &api.Config{
 				Profile:  true,
 				EvalExpr: "3 + 4",
 			},
@@ -258,7 +260,7 @@ func TestConfigValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cfg.Validate()
+			err := Validate(tt.cfg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -275,10 +277,10 @@ func TestConfigFlagsPriority(t *testing.T) {
 	setupTestArgs(t, []string{"cmd", "--sandbox-root=/from/flag"})
 
 	cfg := NewConfig()
-	if err := cfg.LoadFromEnv(); err != nil {
+	if err := LoadFromEnv(cfg); err != nil {
 		t.Fatalf("LoadFromEnv() error = %v", err)
 	}
-	if err := cfg.LoadFromFlags(); err != nil {
+	if err := LoadFromFlags(cfg); err != nil {
 		t.Fatalf("LoadFromFlags() error = %v", err)
 	}
 
@@ -358,7 +360,7 @@ func TestScriptArgumentParsing(t *testing.T) {
 			setupTestArgs(t, tt.args)
 
 			cfg := NewConfig()
-			err := cfg.LoadFromFlags()
+			err := LoadFromFlags(cfg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("LoadFromFlags() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -421,7 +423,7 @@ func TestScriptArgumentsNoScriptMode(t *testing.T) {
 			setupTestArgs(t, tt.args)
 
 			cfg := NewConfig()
-			if err := cfg.LoadFromFlags(); err != nil {
+			if err := LoadFromFlags(cfg); err != nil {
 				t.Fatalf("LoadFromFlags() error = %v", err)
 			}
 

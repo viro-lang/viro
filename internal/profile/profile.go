@@ -129,12 +129,12 @@ func (p *Profiler) IsEnabled() bool {
 }
 
 func (p *Profiler) RecordEvent(word string, duration time.Duration) {
-	if !p.IsEnabled() {
-		return
-	}
-
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	if !p.enabled {
+		return
+	}
 
 	if p.eventCount < math.MaxInt64 {
 		p.eventCount++

@@ -99,7 +99,7 @@ func TestCheckMode(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+			cfg := mustConfigFromArgs(t, []string{"--check", tmpfile.Name()})
 			exitCode := api.Run(ctx, cfg)
 
 			output := stdout.String() + stderr.String()
@@ -142,7 +142,7 @@ print "This should not be printed"
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+	cfg := mustConfigFromArgs(t, []string{"--check", tmpfile.Name()})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -181,7 +181,7 @@ func TestCheckModeWithVerbose(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"--check", "--verbose", tmpfile.Name()})
+	cfg := mustConfigFromArgs(t, []string{"--check", "--verbose", tmpfile.Name()})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -232,7 +232,7 @@ func TestCheckModeFromExistingScripts(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"--check", tt.scriptPath})
+			cfg := mustConfigFromArgs(t, []string{"--check", tt.scriptPath})
 			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != tt.wantExit {
@@ -268,7 +268,7 @@ print "test"
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"--check", tmpfile.Name()})
+	cfg := mustConfigFromArgs(t, []string{"--check", tmpfile.Name()})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode == 0 {
@@ -294,7 +294,7 @@ func TestCheckModeFileNotFound(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"--check", "nonexistent_file.viro"})
+	cfg := mustConfigFromArgs(t, []string{"--check", "nonexistent_file.viro"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode == 0 {
@@ -335,7 +335,7 @@ func TestCheckModeWithQuiet(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"--check", "--quiet", tmpfile.Name()})
+	cfg := mustConfigFromArgs(t, []string{"--check", "--quiet", tmpfile.Name()})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {

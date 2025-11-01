@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 type InputSource interface {
@@ -12,7 +14,7 @@ type InputSource interface {
 }
 
 type FileInput struct {
-	Config *Config
+	Config *api.Config
 	Path   string
 }
 

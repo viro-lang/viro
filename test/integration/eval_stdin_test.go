@@ -70,7 +70,7 @@ func TestEvalWithStdin(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr, "--stdin"})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr, "--stdin"})
 			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != 0 {
@@ -122,7 +122,7 @@ func TestEvalStdinPipelineUsage(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr, "--stdin"})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr, "--stdin"})
 			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != 0 {
@@ -146,7 +146,7 @@ func TestEvalStdinWithNoPrint(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", "first data", "--stdin", "--no-print"})
+	cfg := mustConfigFromArgs(t, []string{"-c", "first data", "--stdin", "--no-print"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -168,7 +168,7 @@ func TestEvalStdinWithQuiet(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", "first data", "--stdin", "--quiet"})
+	cfg := mustConfigFromArgs(t, []string{"-c", "first data", "--stdin", "--quiet"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -229,7 +229,7 @@ func TestEvalStdinErrors(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr, "--stdin"})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr, "--stdin"})
 			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != tt.wantExit {
@@ -266,7 +266,7 @@ data: [1 2 3 4 5]
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", expr, "--stdin"})
+	cfg := mustConfigFromArgs(t, []string{"-c", expr, "--stdin"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -288,7 +288,7 @@ func TestEvalStdinEmptyInput(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", "3 + 4", "--stdin"})
+	cfg := mustConfigFromArgs(t, []string{"-c", "3 + 4", "--stdin"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -321,7 +321,7 @@ func TestEvalStdinLargeInput(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", expr, "--stdin"})
+	cfg := mustConfigFromArgs(t, []string{"-c", expr, "--stdin"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -351,7 +351,7 @@ z: 30
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", expr, "--stdin"})
+	cfg := mustConfigFromArgs(t, []string{"-c", expr, "--stdin"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -376,7 +376,7 @@ func TestEvalStdinUTF8(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", expr, "--stdin"})
+	cfg := mustConfigFromArgs(t, []string{"-c", expr, "--stdin"})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {

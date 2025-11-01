@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
+)
 
 type Mode int
 
@@ -32,7 +36,7 @@ func (m Mode) String() string {
 	}
 }
 
-func (c *Config) DetectMode() (Mode, error) {
+func DetectMode(c *api.Config) (Mode, error) {
 	modes := []struct {
 		condition bool
 		mode      Mode

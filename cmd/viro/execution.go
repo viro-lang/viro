@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/marcin-radoszewski/viro/internal/api"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
@@ -18,7 +19,7 @@ const (
 )
 
 type ExecutionContext struct {
-	Config      *Config
+	Config      *api.Config
 	Input       InputSource
 	Args        []string
 	PrintResult bool
@@ -26,7 +27,7 @@ type ExecutionContext struct {
 	Profiler    *profile.Profiler
 }
 
-func runExecution(cfg *Config, mode Mode) int {
+func runExecution(cfg *api.Config, mode Mode) int {
 	var err error
 	if cfg.Profile {
 		err = trace.InitTraceSilent()

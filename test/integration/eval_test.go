@@ -110,7 +110,7 @@ func TestEvalMode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr})
 			ctx := &api.RuntimeContext{
 				Args:   []string{"-c", tt.expr},
 				Stdin:  &bytes.Buffer{},
@@ -155,7 +155,7 @@ func TestEvalModeWithNoPrint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr, "--no-print"})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr, "--no-print"})
 			ctx := &api.RuntimeContext{
 				Args:   []string{"-c", tt.expr, "--no-print"},
 				Stdin:  &bytes.Buffer{},
@@ -179,7 +179,7 @@ func TestEvalModeWithNoPrint(t *testing.T) {
 
 func TestEvalModeWithQuiet(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	cfg, _ := api.ConfigFromArgs([]string{"-c", "3 + 4", "--quiet"})
+	cfg := mustConfigFromArgs(t, []string{"-c", "3 + 4", "--quiet"})
 	ctx := &api.RuntimeContext{
 		Args:   []string{"-c", "3 + 4", "--quiet"},
 		Stdin:  &bytes.Buffer{},
@@ -225,7 +225,7 @@ func TestEvalModeMultipleExpressions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr})
 			ctx := &api.RuntimeContext{
 				Args:   []string{"-c", tt.expr},
 				Stdin:  &bytes.Buffer{},
@@ -249,7 +249,7 @@ func TestEvalModeMultipleExpressions(t *testing.T) {
 
 func TestEvalModeWithVerbose(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	cfg, _ := api.ConfigFromArgs([]string{"-c", "3 + 4", "--verbose"})
+	cfg := mustConfigFromArgs(t, []string{"-c", "3 + 4", "--verbose"})
 	ctx := &api.RuntimeContext{
 		Args:   []string{"-c", "3 + 4", "--verbose"},
 		Stdin:  &bytes.Buffer{},
@@ -275,7 +275,7 @@ func TestEvalModeComplexProgram(t *testing.T) {
 	expr := "fib: fn [n] [if n <= 1 [n] [fib (n - 1) + fib (n - 2)]]  fib 10"
 
 	var stdout, stderr bytes.Buffer
-	cfg, _ := api.ConfigFromArgs([]string{"-c", expr})
+	cfg := mustConfigFromArgs(t, []string{"-c", expr})
 	ctx := &api.RuntimeContext{
 		Args:   []string{"-c", expr},
 		Stdin:  &bytes.Buffer{},
@@ -319,7 +319,7 @@ func TestEvalModeShellIntegration(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr})
 			ctx := &api.RuntimeContext{
 				Args:   []string{"-c", tt.expr},
 				Stdin:  &bytes.Buffer{},
@@ -353,7 +353,7 @@ func TestEvalModeEmptyExpression(t *testing.T) {
 		Stderr: &stderr,
 	}
 
-	cfg, _ := api.ConfigFromArgs([]string{"-c", ""})
+	cfg := mustConfigFromArgs(t, []string{"-c", ""})
 	exitCode := api.Run(ctx, cfg)
 
 	if exitCode != 0 {
@@ -399,7 +399,7 @@ func TestEvalModeWithSpecialCharacters(t *testing.T) {
 				Stderr: &stderr,
 			}
 
-			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			cfg := mustConfigFromArgs(t, []string{"-c", tt.expr})
 			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != 0 {
