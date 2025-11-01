@@ -117,14 +117,6 @@ func (c *Config) LoadFromFlags() error {
 	c.NoPrint = *noPrint
 	c.ReadStdin = *stdin
 
-	if c.SandboxRoot == "" {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("error getting current directory: %w", err)
-		}
-		c.SandboxRoot = cwd
-	}
-
 	if parsed.ReplArgsIdx < 0 && len(parsed.ScriptArgs) > 0 {
 		c.ScriptFile = parsed.ScriptArgs[0]
 		c.Args = parsed.ScriptArgs[1:]
@@ -133,7 +125,47 @@ func (c *Config) LoadFromFlags() error {
 	return nil
 }
 
+func (c *Config) ApplyDefaults() error {
+	if c.SandboxRoot == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("error getting current directory: %w", err)
+		}
+		c.SandboxRoot = cwd
+	}
+	return nil
+}
+
 func (c *Config) Validate() error {
-	_, err := detectMode(c)
-	return err
+	modeCount := 0
+	if c.ShowVersion {
+		modeCount++
+	}
+	if c.ShowHelp {
+		modeCount++
+	}
+	if c.EvalExpr != "" {
+		modeCount++
+	}
+	if c.CheckOnly {
+		modeCount++
+	}
+	if !c.CheckOnly && c.ScriptFile != "" {
+		modeCount++
+	}
+
+	if modeCount > 1 {
+		return fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
+	}
+
+	if c.CheckOnly && c.ScriptFile == "" {
+		return fmt.Errorf("--check flag requires a script file")
+	}
+	if c.ReadStdin && c.EvalExpr == "" {
+		return fmt.Errorf("--stdin flag requires -c flag")
+	}
+	if c.NoPrint && c.EvalExpr == "" {
+		return fmt.Errorf("--no-print flag requires -c flag")
+	}
+	return nil
 }

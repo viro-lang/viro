@@ -2,6 +2,13 @@ package main
 
 import "strings"
 
+var flagsWithValues = map[string]bool{
+	"-c":             true,
+	"--sandbox-root": true,
+	"--history-file": true,
+	"--prompt":       true,
+}
+
 type ParsedArgs struct {
 	ScriptIdx   int
 	ReplArgsIdx int
@@ -22,14 +29,7 @@ func splitCommandLineArgs(args []string) *ParsedArgs {
 			break
 		}
 
-		if arg == "-c" {
-			if i+1 < len(args) {
-				i++
-			}
-			continue
-		}
-
-		if arg == "--sandbox-root" || arg == "--history-file" || arg == "--prompt" {
+		if flagsWithValues[arg] {
 			if i+1 < len(args) {
 				i++
 			}

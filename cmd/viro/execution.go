@@ -11,14 +11,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-type ExecutionMode int
-
-const (
-	ExecuteModeCheck ExecutionMode = iota
-	ExecuteModeEval
-	ExecuteModeScript
-)
-
 type ExecutionContext struct {
 	Config      *Config
 	Input       InputSource
@@ -27,11 +19,11 @@ type ExecutionContext struct {
 	ParseOnly   bool
 }
 
-func runExecution(cfg *Config, mode ExecutionMode) int {
+func runExecution(cfg *Config, mode Mode) int {
 	var ctx *ExecutionContext
 
 	switch mode {
-	case ExecuteModeCheck:
+	case ModeCheck:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
@@ -39,7 +31,7 @@ func runExecution(cfg *Config, mode ExecutionMode) int {
 			PrintResult: false,
 			ParseOnly:   true,
 		}
-	case ExecuteModeEval:
+	case ModeEval:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &ExprInput{Expr: cfg.EvalExpr, WithStdin: cfg.ReadStdin},
@@ -47,7 +39,7 @@ func runExecution(cfg *Config, mode ExecutionMode) int {
 			PrintResult: !cfg.NoPrint,
 			ParseOnly:   false,
 		}
-	case ExecuteModeScript:
+	case ModeScript:
 		ctx = &ExecutionContext{
 			Config:      cfg,
 			Input:       &FileInput{Config: cfg, Path: cfg.ScriptFile},
@@ -70,7 +62,7 @@ func executeViroCode(ctx *ExecutionContext) (core.Value, int) {
 
 	values, err := parse.Parse(content)
 	if err != nil {
-		printParseError(err)
+		printError(err, "Parse")
 		return nil, ExitSyntax
 	}
 
@@ -87,7 +79,7 @@ func executeViroCode(ctx *ExecutionContext) (core.Value, int) {
 
 	result, err := evaluator.DoBlock(values)
 	if err != nil {
-		printRuntimeError(err)
+		printError(err, "Runtime")
 		return nil, handleError(err)
 	}
 

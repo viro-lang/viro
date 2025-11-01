@@ -39,42 +39,23 @@ func detectMode(cfg *Config) (Mode, error) {
 	modes := []struct {
 		condition bool
 		mode      Mode
-		validator func() error
 	}{
-		{cfg.ShowVersion, ModeVersion, nil},
-		{cfg.ShowHelp, ModeHelp, nil},
-		{cfg.EvalExpr != "", ModeEval, nil},
-		{cfg.CheckOnly, ModeCheck, func() error {
-			if cfg.ScriptFile == "" {
-				return fmt.Errorf("--check flag requires a script file")
-			}
-			return nil
-		}},
-		{!cfg.CheckOnly && cfg.ScriptFile != "", ModeScript, nil},
+		{cfg.ShowVersion, ModeVersion},
+		{cfg.ShowHelp, ModeHelp},
+		{cfg.EvalExpr != "", ModeEval},
+		{cfg.CheckOnly, ModeCheck},
+		{!cfg.CheckOnly && cfg.ScriptFile != "", ModeScript},
 	}
 
 	for _, m := range modes {
 		if m.condition {
 			modeCount++
 			detectedMode = m.mode
-			if m.validator != nil {
-				if err := m.validator(); err != nil {
-					return detectedMode, err
-				}
-			}
 		}
 	}
 
 	if modeCount > 1 {
 		return ModeREPL, fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
-	}
-
-	if cfg.ReadStdin && cfg.EvalExpr == "" {
-		return ModeREPL, fmt.Errorf("--stdin flag requires -c flag")
-	}
-
-	if cfg.NoPrint && cfg.EvalExpr == "" {
-		return ModeREPL, fmt.Errorf("--no-print flag requires -c flag")
 	}
 
 	if modeCount == 0 {

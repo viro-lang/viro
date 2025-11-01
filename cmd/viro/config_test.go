@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+func setupTestArgs(t *testing.T, args []string) {
+	t.Helper()
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	os.Args = args
+}
+
 func TestNewConfig(t *testing.T) {
 	cfg := NewConfig()
 	if cfg == nil {
@@ -243,8 +249,7 @@ func TestConfigFlagsPriority(t *testing.T) {
 
 	os.Setenv("VIRO_SANDBOX_ROOT", "/from/env")
 
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	os.Args = []string{"cmd", "--sandbox-root=/from/flag"}
+	setupTestArgs(t, []string{"cmd", "--sandbox-root=/from/flag"})
 
 	cfg := NewConfig()
 	if err := cfg.LoadFromEnv(); err != nil {
@@ -327,8 +332,7 @@ func TestScriptArgumentParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-			os.Args = tt.args
+			setupTestArgs(t, tt.args)
 
 			cfg := NewConfig()
 			err := cfg.LoadFromFlags()
@@ -391,8 +395,7 @@ func TestScriptArgumentsNoScriptMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-			os.Args = tt.args
+			setupTestArgs(t, tt.args)
 
 			cfg := NewConfig()
 			if err := cfg.LoadFromFlags(); err != nil {

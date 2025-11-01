@@ -30,6 +30,9 @@ func loadConfiguration() (*Config, error) {
 	if err := cfg.LoadFromFlags(); err != nil {
 		return nil, err
 	}
+	if err := cfg.ApplyDefaults(); err != nil {
+		return nil, err
+	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -43,21 +46,21 @@ func executeMode(cfg *Config) int {
 		return ExitUsage
 	}
 
-	handlers := map[Mode]func(*Config) int{
-		ModeREPL:    runREPL,
-		ModeScript:  func(cfg *Config) int { return runExecution(cfg, ExecuteModeScript) },
-		ModeEval:    func(cfg *Config) int { return runExecution(cfg, ExecuteModeEval) },
-		ModeCheck:   func(cfg *Config) int { return runExecution(cfg, ExecuteModeCheck) },
-		ModeVersion: func(cfg *Config) int { printVersion(); return ExitSuccess },
-		ModeHelp:    func(cfg *Config) int { printHelp(); return ExitSuccess },
+	switch mode {
+	case ModeREPL:
+		return runREPL(cfg)
+	case ModeScript, ModeEval, ModeCheck:
+		return runExecution(cfg, mode)
+	case ModeVersion:
+		printVersion()
+		return ExitSuccess
+	case ModeHelp:
+		printHelp()
+		return ExitSuccess
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
+		return ExitUsage
 	}
-
-	if handler, ok := handlers[mode]; ok {
-		return handler(cfg)
-	}
-
-	fmt.Fprintf(os.Stderr, "Unknown mode: %v\n", mode)
-	return ExitUsage
 }
 
 func setupSignalHandler() {

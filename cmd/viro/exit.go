@@ -53,11 +53,3 @@ func printError(err error, prefix string) {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
 }
-
-func printParseError(err error) {
-	printError(err, "Parse")
-}
-
-func printRuntimeError(err error) {
-	printError(err, "Runtime")
-}

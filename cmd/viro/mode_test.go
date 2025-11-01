@@ -72,7 +72,7 @@ func TestDetectMode(t *testing.T) {
 				CheckOnly: true,
 			},
 			want:    ModeCheck,
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "script file",
