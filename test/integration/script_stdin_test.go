@@ -2,18 +2,13 @@ package integration
 
 import (
 	"bytes"
-	"os"
-	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestScriptFromStdin(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name       string
 		script     string
@@ -74,42 +69,37 @@ func TestScriptFromStdin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-")
-			cmd.Stdin = strings.NewReader(tt.script)
-
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error type: %v", err)
-				}
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-"},
+				Stdin:  strings.NewReader(tt.script),
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
+			cfg, err := api.ConfigFromArgs([]string{"-"})
+			if err != nil {
+				t.Fatalf("ConfigFromArgs failed: %v", err)
+			}
+
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
 
 			if exitCode != tt.wantExit {
 				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
 			}
 
-			outputStr := string(output)
-			if tt.wantStdout != "" && !strings.Contains(outputStr, tt.wantStdout) {
-				t.Errorf("stdout missing expected content:\nWant: %q\nGot: %q", tt.wantStdout, outputStr)
+			if tt.wantStdout != "" && !strings.Contains(output, tt.wantStdout) {
+				t.Errorf("stdout missing expected content:\nWant: %q\nGot: %q", tt.wantStdout, output)
 			}
 
-			if tt.wantStderr != "" && !strings.Contains(outputStr, tt.wantStderr) {
-				t.Errorf("stderr missing expected content:\nWant: %q\nGot: %q", tt.wantStderr, outputStr)
+			if tt.wantStderr != "" && !strings.Contains(output, tt.wantStderr) {
+				t.Errorf("stderr missing expected content:\nWant: %q\nGot: %q", tt.wantStderr, output)
 			}
 		})
 	}
 }
 
 func TestScriptFromStdinWithPipe(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name       string
 		echoInput  string
@@ -129,23 +119,26 @@ func TestScriptFromStdinWithPipe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			echoCmd := exec.Command("echo", tt.echoInput)
-			viroCmd := exec.Command(viroPath, "-")
-
-			var buf bytes.Buffer
-			echoCmd.Stdout = &buf
-			viroCmd.Stdin = &buf
-
-			if err := echoCmd.Run(); err != nil {
-				t.Fatalf("echo failed: %v", err)
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-"},
+				Stdin:  strings.NewReader(tt.echoInput),
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
-
-			output, err := viroCmd.CombinedOutput()
+			cfg, err := api.ConfigFromArgs([]string{"-"})
 			if err != nil {
-				t.Fatalf("viro failed: %v\nOutput: %s", err, output)
+				t.Fatalf("ConfigFromArgs failed: %v", err)
 			}
 
-			if !strings.Contains(string(output), tt.wantOutput) {
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
+
+			if exitCode != api.ExitSuccess {
+				t.Fatalf("viro failed with exit code %d\nOutput: %s", exitCode, output)
+			}
+
+			if !strings.Contains(output, tt.wantOutput) {
 				t.Errorf("output = %q, want to contain %q", output, tt.wantOutput)
 			}
 		})
@@ -153,18 +146,24 @@ func TestScriptFromStdinWithPipe(t *testing.T) {
 }
 
 func TestScriptFromStdinWithQuietFlag(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
+	script := `print "should be suppressed"`
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--quiet", "-"},
+		Stdin:  strings.NewReader(script),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--quiet", "-"})
+	if err != nil {
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	script := `print "should be suppressed"`
-	cmd := exec.Command(viroPath, "--quiet", "-")
-	cmd.Stdin = strings.NewReader(script)
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
 
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
 	}
 
 	if len(output) > 0 {
@@ -173,11 +172,6 @@ func TestScriptFromStdinWithQuietFlag(t *testing.T) {
 }
 
 func TestScriptFromStdinComplexProgram(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `
 ; Factorial function
 fac: fn [n] [
@@ -191,25 +185,31 @@ fac: fn [n] [
 print fac 5
 `
 
-	cmd := exec.Command(viroPath, "-")
-	cmd.Stdin = strings.NewReader(script)
-
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-"},
+		Stdin:  strings.NewReader(script),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"-"})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "120") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "120") {
 		t.Errorf("output = %q, want to contain '120'", output)
 	}
 }
 
 func TestScriptFromStdinLargeInput(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	var scriptBuilder strings.Builder
 	scriptBuilder.WriteString("total: 0\n")
 	for i := 1; i <= 100; i++ {
@@ -219,64 +219,78 @@ func TestScriptFromStdinLargeInput(t *testing.T) {
 
 	script := scriptBuilder.String()
 
-	cmd := exec.Command(viroPath, "-")
-	cmd.Stdin = strings.NewReader(script)
-
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-"},
+		Stdin:  strings.NewReader(script),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"-"})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "100") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "100") {
 		t.Errorf("output = %q, want to contain '100'", output)
 	}
 }
 
 func TestScriptFromStdinBinaryData(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	binaryData := []byte{0xFF, 0xFE, 0xFD}
 
-	cmd := exec.Command(viroPath, "-")
-	cmd.Stdin = bytes.NewReader(binaryData)
-
-	output, err := cmd.CombinedOutput()
-
-	exitCode := 0
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-"},
+		Stdin:  bytes.NewReader(binaryData),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"-"})
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		}
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if exitCode != 2 && exitCode != 0 {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSyntax && exitCode != api.ExitSuccess {
 		t.Logf("Note: Binary data resulted in exit code %d (output: %s)", exitCode, output)
 	}
 }
 
 func TestScriptFromStdinUTF8(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "Hello 世界 🌍"`
 
-	cmd := exec.Command(viroPath, "-")
-	cmd.Stdin = strings.NewReader(script)
-
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-"},
+		Stdin:  strings.NewReader(script),
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"-"})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	outputStr := string(output)
-	if !strings.Contains(outputStr, "Hello") ||
-		!strings.Contains(outputStr, "世界") ||
-		!strings.Contains(outputStr, "🌍") {
-		t.Errorf("output = %q, want to contain UTF-8 characters", outputStr)
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "Hello") ||
+		!strings.Contains(output, "世界") ||
+		!strings.Contains(output, "🌍") {
+		t.Errorf("output = %q, want to contain UTF-8 characters", output)
 	}
 }

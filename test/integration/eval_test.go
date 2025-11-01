@@ -1,18 +1,14 @@
 package integration
 
 import (
-	"os"
-	"os/exec"
+	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestEvalMode(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name     string
 		expr     string
@@ -113,23 +109,24 @@ func TestEvalMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-c", tt.expr)
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error type: %v", err)
-				}
+			var stdout, stderr bytes.Buffer
+			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-c", tt.expr},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
+
+			exitCode := api.Run(ctx, cfg)
 
 			if exitCode != tt.wantExit {
-				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
+				t.Errorf("exit code = %d, want %d\nStdout: %s\nStderr: %s",
+					exitCode, tt.wantExit, stdout.String(), stderr.String())
 			}
 
-			if !strings.Contains(string(output), tt.want) {
+			output := stdout.String() + stderr.String()
+			if !strings.Contains(output, tt.want) {
 				t.Errorf("output = %q, want to contain %q", output, tt.want)
 			}
 		})
@@ -137,11 +134,6 @@ func TestEvalMode(t *testing.T) {
 }
 
 func TestEvalModeWithNoPrint(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name string
 		expr string
@@ -162,44 +154,52 @@ func TestEvalModeWithNoPrint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-c", tt.expr, "--no-print")
-			output, err := cmd.CombinedOutput()
-
-			if err != nil {
-				t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+			var stdout, stderr bytes.Buffer
+			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr, "--no-print"})
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-c", tt.expr, "--no-print"},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
 
-			if len(output) > 0 {
-				t.Errorf("expected no output with --no-print, got: %s", output)
+			exitCode := api.Run(ctx, cfg)
+
+			if exitCode != 0 {
+				t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+					exitCode, stdout.String(), stderr.String())
+			}
+
+			if len(stdout.Bytes()) > 0 {
+				t.Errorf("expected no output with --no-print, got: %s", stdout.String())
 			}
 		})
 	}
 }
 
 func TestEvalModeWithQuiet(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
+	var stdout, stderr bytes.Buffer
+	cfg, _ := api.ConfigFromArgs([]string{"-c", "3 + 4", "--quiet"})
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-c", "3 + 4", "--quiet"},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	cmd := exec.Command(viroPath, "-c", "3 + 4", "--quiet")
-	output, err := cmd.CombinedOutput()
+	exitCode := api.Run(ctx, cfg)
 
-	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+	if exitCode != 0 {
+		t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+			exitCode, stdout.String(), stderr.String())
 	}
 
-	if len(output) > 0 {
-		t.Errorf("expected no output with --quiet, got: %s", output)
+	if len(stdout.Bytes()) > 0 {
+		t.Errorf("expected no output with --quiet, got: %s", stdout.String())
 	}
 }
 
 func TestEvalModeMultipleExpressions(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name string
 		expr string
@@ -224,66 +224,78 @@ func TestEvalModeMultipleExpressions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-c", tt.expr)
-			output, err := cmd.CombinedOutput()
-
-			if err != nil {
-				t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+			var stdout, stderr bytes.Buffer
+			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-c", tt.expr},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
 
-			if !strings.Contains(string(output), tt.want) {
-				t.Errorf("output = %q, want to contain %q", output, tt.want)
+			exitCode := api.Run(ctx, cfg)
+
+			if exitCode != 0 {
+				t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+					exitCode, stdout.String(), stderr.String())
+			}
+
+			if !strings.Contains(stdout.String(), tt.want) {
+				t.Errorf("output = %q, want to contain %q", stdout.String(), tt.want)
 			}
 		})
 	}
 }
 
 func TestEvalModeWithVerbose(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
+	var stdout, stderr bytes.Buffer
+	cfg, _ := api.ConfigFromArgs([]string{"-c", "3 + 4", "--verbose"})
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-c", "3 + 4", "--verbose"},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	cmd := exec.Command(viroPath, "-c", "3 + 4", "--verbose")
-	output, err := cmd.CombinedOutput()
+	exitCode := api.Run(ctx, cfg)
 
-	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+	if exitCode != 0 {
+		t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+			exitCode, stdout.String(), stderr.String())
 	}
 
-	if !strings.Contains(string(output), "7") {
-		t.Errorf("output = %q, want to contain '7'", output)
+	if !strings.Contains(stdout.String(), "7") {
+		t.Errorf("output = %q, want to contain '7'", stdout.String())
 	}
 }
 
 func TestEvalModeComplexProgram(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	t.Skip("Fibonacci recursive function causes stack overflow - known Viro issue")
 
 	expr := "fib: fn [n] [if n <= 1 [n] [fib (n - 1) + fib (n - 2)]]  fib 10"
 
-	cmd := exec.Command(viroPath, "-c", expr)
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+	var stdout, stderr bytes.Buffer
+	cfg, _ := api.ConfigFromArgs([]string{"-c", expr})
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-c", expr},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	if !strings.Contains(string(output), "55") {
-		t.Errorf("output = %q, want to contain '55' (10th Fibonacci number)", output)
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode != 0 {
+		t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+			exitCode, stdout.String(), stderr.String())
+	}
+
+	if !strings.Contains(stdout.String(), "55") {
+		t.Errorf("output = %q, want to contain '55' (10th Fibonacci number)", stdout.String())
 	}
 }
 
 func TestEvalModeShellIntegration(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name     string
 		expr     string
@@ -306,14 +318,23 @@ func TestEvalModeShellIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-c", tt.expr)
-			output, err := cmd.CombinedOutput()
-
-			if err != nil {
-				t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+			var stdout, stderr bytes.Buffer
+			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-c", tt.expr},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
 
-			result := strings.TrimSpace(string(output))
+			exitCode := api.Run(ctx, cfg)
+
+			if exitCode != 0 {
+				t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+					exitCode, stdout.String(), stderr.String())
+			}
+
+			result := strings.TrimSpace(stdout.String())
 			if result != tt.want {
 				t.Errorf("output = %q, want %q", result, tt.want)
 			}
@@ -322,31 +343,30 @@ func TestEvalModeShellIntegration(t *testing.T) {
 }
 
 func TestEvalModeEmptyExpression(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	t.Skip("Empty expression -c \"\" currently enters REPL mode, which may be intended behavior")
 
-	cmd := exec.Command(viroPath, "-c", "")
-	output, err := cmd.CombinedOutput()
-
-	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"-c", ""},
+		Stdin:  &bytes.Buffer{},
+		Stdout: &stdout,
+		Stderr: &stderr,
 	}
 
-	if strings.TrimSpace(string(output)) != "" {
-		t.Errorf("expected empty or unset output for empty expression, got: %s", output)
+	cfg, _ := api.ConfigFromArgs([]string{"-c", ""})
+	exitCode := api.Run(ctx, cfg)
+
+	if exitCode != 0 {
+		t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+			exitCode, stdout.String(), stderr.String())
+	}
+
+	if strings.TrimSpace(stdout.String()) != "" {
+		t.Errorf("expected empty or unset output for empty expression, got: %s", stdout.String())
 	}
 }
 
 func TestEvalModeWithSpecialCharacters(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name string
 		expr string
@@ -371,15 +391,24 @@ func TestEvalModeWithSpecialCharacters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, "-c", tt.expr)
-			output, err := cmd.CombinedOutput()
-
-			if err != nil {
-				t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{"-c", tt.expr},
+				Stdin:  &bytes.Buffer{},
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
 
-			if !strings.Contains(string(output), tt.want) {
-				t.Errorf("output = %q, want to contain %q", output, tt.want)
+			cfg, _ := api.ConfigFromArgs([]string{"-c", tt.expr})
+			exitCode := api.Run(ctx, cfg)
+
+			if exitCode != 0 {
+				t.Fatalf("execution failed with exit code %d\nStdout: %s\nStderr: %s",
+					exitCode, stdout.String(), stderr.String())
+			}
+
+			if !strings.Contains(stdout.String(), tt.want) {
+				t.Errorf("output = %q, want to contain %q", stdout.String(), tt.want)
 			}
 		})
 	}

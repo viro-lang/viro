@@ -55,6 +55,10 @@ func (c *Config) LoadFromEnv() error {
 }
 
 func (c *Config) LoadFromFlags() error {
+	return c.LoadFromFlagsWithArgs(os.Args[1:])
+}
+
+func (c *Config) LoadFromFlagsWithArgs(args []string) error {
 	fs := flag.NewFlagSet("viro", flag.ContinueOnError)
 
 	sandboxRoot := fs.String("sandbox-root", "", "Sandbox root directory for file operations (default: current directory)")
@@ -77,7 +81,6 @@ func (c *Config) LoadFromFlags() error {
 	stdin := fs.Bool("stdin", false, "Read additional input from stdin")
 	profileFlag := fs.Bool("profile", false, "Show execution profile after script execution")
 
-	args := os.Args[1:]
 	parsed := splitCommandLineArgs(args)
 
 	var flagArgs []string

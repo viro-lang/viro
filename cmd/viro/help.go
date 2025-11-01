@@ -2,8 +2,8 @@ package main
 
 import "fmt"
 
-func printHelp() {
-	fmt.Print(`Viro - A homoiconic programming language
+func getHelpText() string {
+	return `Viro - A homoiconic programming language
 
 USAGE:
     viro [OPTIONS] [FILE [ARGS...]]
@@ -87,5 +87,9 @@ EXAMPLES:
     viro --profile script.viro
 
 For more information, visit: https://github.com/marcin-radoszewski/viro
-`)
+`
+}
+
+func printHelp() {
+	fmt.Print(getHelpText())
 }

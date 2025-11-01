@@ -1,18 +1,15 @@
 package integration
 
 import (
+	"bytes"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestScriptArgumentsIntegration(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	testScript := "../scripts/test_args.viro"
 
 	tests := []struct {
@@ -88,25 +85,37 @@ func TestScriptArgumentsIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, tt.args...)
-			output, err := cmd.CombinedOutput()
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   tt.args,
+				Stdin:  nil,
+				Stdout: &stdout,
+				Stderr: &stderr,
+			}
+			cfg, err := api.ConfigFromArgs(tt.args)
+			if err != nil {
+				t.Fatalf("ConfigFromArgs failed: %v", err)
+			}
+
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
 
 			if tt.wantStderr != "" {
-				if err == nil {
-					t.Errorf("Expected error, got none")
+				if exitCode == api.ExitSuccess {
+					t.Errorf("Expected error, got success")
 				}
-				if !strings.Contains(string(output), tt.wantStderr) {
-					t.Errorf("Output = %q, want to contain %q", string(output), tt.wantStderr)
+				if !strings.Contains(output, tt.wantStderr) {
+					t.Errorf("Output = %q, want to contain %q", output, tt.wantStderr)
 				}
 				return
 			}
 
-			if err != nil {
-				t.Fatalf("Command failed: %v\nOutput: %s", err, output)
+			if exitCode != api.ExitSuccess {
+				t.Fatalf("Command failed with exit code %d\nOutput: %s", exitCode, output)
 			}
 
 			for _, want := range tt.wantStdout {
-				if !strings.Contains(string(output), want) {
+				if !strings.Contains(output, want) {
 					t.Errorf("Output missing expected line:\nWant: %q\nGot: %s", want, output)
 				}
 			}
@@ -115,11 +124,6 @@ func TestScriptArgumentsIntegration(t *testing.T) {
 }
 
 func TestScriptArgumentsWithViroFlags(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	testScript := "../scripts/test_args.viro"
 
 	tests := []struct {
@@ -146,11 +150,23 @@ func TestScriptArgumentsWithViroFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(viroPath, tt.args...)
-			output, err := cmd.CombinedOutput()
-
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   tt.args,
+				Stdin:  nil,
+				Stdout: &stdout,
+				Stderr: &stderr,
+			}
+			cfg, err := api.ConfigFromArgs(tt.args)
 			if err != nil {
-				t.Fatalf("Command failed: %v\nOutput: %s", err, output)
+				t.Fatalf("ConfigFromArgs failed: %v", err)
+			}
+
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
+
+			if exitCode != api.ExitSuccess {
+				t.Fatalf("Command failed with exit code %d\nOutput: %s", exitCode, output)
 			}
 
 			if len(tt.wantStdout) == 0 {
@@ -161,7 +177,7 @@ func TestScriptArgumentsWithViroFlags(t *testing.T) {
 			}
 
 			for _, want := range tt.wantStdout {
-				if !strings.Contains(string(output), want) {
+				if !strings.Contains(output, want) {
 					t.Errorf("Output missing expected line:\nWant: %q\nGot: %s", want, output)
 				}
 			}
@@ -170,11 +186,6 @@ func TestScriptArgumentsWithViroFlags(t *testing.T) {
 }
 
 func TestScriptArgumentsEmptyList(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	scriptContent := `print ["Args type:" type-of system.args]
 print ["Args length:" length? system.args]`
 
@@ -189,18 +200,30 @@ print ["Args length:" length? system.args]`
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{tmpfile.Name()},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{tmpfile.Name()})
 	if err != nil {
-		t.Fatalf("Command failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "Args type: block!") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("Command failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "Args type: block!") {
 		t.Errorf("Expected system.args to be block!, got: %s", output)
 	}
 
-	if !strings.Contains(string(output), "Args length: 0") {
+	if !strings.Contains(output, "Args length: 0") {
 		t.Errorf("Expected system.args length to be 0, got: %s", output)
 	}
 }

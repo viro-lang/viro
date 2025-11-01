@@ -1,19 +1,16 @@
 package integration
 
 import (
+	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestScriptExecution(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	tests := []struct {
 		name       string
 		script     string
@@ -92,40 +89,37 @@ func TestScriptExecution(t *testing.T) {
 			}
 			tmpfile.Close()
 
-			cmd := exec.Command(viroPath, tmpfile.Name())
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error type: %v", err)
-				}
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{tmpfile.Name()},
+				Stdin:  nil,
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
+			cfg, err := api.ConfigFromArgs([]string{tmpfile.Name()})
+			if err != nil {
+				t.Fatalf("ConfigFromArgs failed: %v", err)
+			}
+
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
 
 			if exitCode != tt.wantExit {
 				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
 			}
 
-			outputStr := string(output)
-			if tt.wantStdout != "" && !strings.Contains(outputStr, tt.wantStdout) {
-				t.Errorf("stdout missing expected content:\nWant: %q\nGot: %q", tt.wantStdout, outputStr)
+			if tt.wantStdout != "" && !strings.Contains(output, tt.wantStdout) {
+				t.Errorf("stdout missing expected content:\nWant: %q\nGot: %q", tt.wantStdout, output)
 			}
 
-			if tt.wantStderr != "" && !strings.Contains(outputStr, tt.wantStderr) {
-				t.Errorf("stderr missing expected content:\nWant: %q\nGot: %q", tt.wantStderr, outputStr)
+			if tt.wantStderr != "" && !strings.Contains(output, tt.wantStderr) {
+				t.Errorf("stderr missing expected content:\nWant: %q\nGot: %q", tt.wantStderr, output)
 			}
 		})
 	}
 }
 
 func TestScriptExecutionFromFile(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	scriptsDir := "../scripts"
 	tests := []struct {
 		name       string
@@ -160,26 +154,28 @@ func TestScriptExecutionFromFile(t *testing.T) {
 				t.Skipf("test script %s not found", scriptPath)
 			}
 
-			cmd := exec.Command(viroPath, scriptPath)
-			output, err := cmd.CombinedOutput()
-
-			exitCode := 0
-			if err != nil {
-				if exitErr, ok := err.(*exec.ExitError); ok {
-					exitCode = exitErr.ExitCode()
-				} else {
-					t.Fatalf("unexpected error type: %v", err)
-				}
+			var stdout, stderr bytes.Buffer
+			ctx := &api.RuntimeContext{
+				Args:   []string{scriptPath},
+				Stdin:  nil,
+				Stdout: &stdout,
+				Stderr: &stderr,
 			}
+			cfg, err := api.ConfigFromArgs([]string{scriptPath})
+			if err != nil {
+				t.Fatalf("ConfigFromArgs failed: %v", err)
+			}
+
+			exitCode := api.Run(ctx, cfg)
+			output := stdout.String() + stderr.String()
 
 			if exitCode != tt.wantExit {
 				t.Errorf("exit code = %d, want %d\nOutput: %s", exitCode, tt.wantExit, output)
 			}
 
-			outputStr := string(output)
 			for _, want := range tt.contains {
-				if !strings.Contains(outputStr, want) {
-					t.Errorf("output missing %q:\nGot: %s", want, outputStr)
+				if !strings.Contains(output, want) {
+					t.Errorf("output missing %q:\nGot: %s", want, output)
 				}
 			}
 		})
@@ -187,11 +183,6 @@ func TestScriptExecutionFromFile(t *testing.T) {
 }
 
 func TestScriptWithRelativePath(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "relative path test"`
 	tmpfile, err := os.CreateTemp("", "test_*.viro")
 	if err != nil {
@@ -204,24 +195,31 @@ func TestScriptWithRelativePath(t *testing.T) {
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{tmpfile.Name()},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{tmpfile.Name()})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "relative path test") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "relative path test") {
 		t.Errorf("output = %q, want to contain 'relative path test'", output)
 	}
 }
 
 func TestScriptWithAbsolutePath(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "absolute path test"`
 	tmpfile, err := os.CreateTemp("", "test_*.viro")
 	if err != nil {
@@ -239,54 +237,62 @@ func TestScriptWithAbsolutePath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command(viroPath, absPath)
-	output, err := cmd.CombinedOutput()
-
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{absPath},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{absPath})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "absolute path test") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "absolute path test") {
 		t.Errorf("output = %q, want to contain 'absolute path test'", output)
 	}
 }
 
 func TestScriptFileNotFound(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"nonexistent_script.viro"},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"nonexistent_script.viro"})
+	if err != nil {
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	cmd := exec.Command(viroPath, "nonexistent_script.viro")
-	output, err := cmd.CombinedOutput()
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
 
-	if err == nil {
-		t.Fatal("expected error for nonexistent file, got none")
+	if exitCode == api.ExitSuccess {
+		t.Fatal("expected error for nonexistent file, got success")
 	}
 
-	exitErr, ok := err.(*exec.ExitError)
-	if !ok {
-		t.Fatalf("unexpected error type: %v", err)
+	if exitCode != api.ExitError {
+		t.Errorf("exit code = %d, want %d (general error)", exitCode, api.ExitError)
 	}
 
-	if exitErr.ExitCode() != 1 {
-		t.Errorf("exit code = %d, want 1 (general error)", exitErr.ExitCode())
-	}
-
-	outputStr := string(output)
-	if !strings.Contains(strings.ToLower(outputStr), "no such file") &&
-		!strings.Contains(strings.ToLower(outputStr), "not found") &&
-		!strings.Contains(outputStr, "Error loading script") {
-		t.Errorf("error message doesn't indicate file not found: %s", outputStr)
+	if !strings.Contains(strings.ToLower(output), "no such file") &&
+		!strings.Contains(strings.ToLower(output), "not found") &&
+		!strings.Contains(output, "Error loading script") {
+		t.Errorf("error message doesn't indicate file not found: %s", output)
 	}
 }
 
 func TestScriptWithQuietFlag(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "this should be suppressed"`
 	tmpfile, err := os.CreateTemp("", "test_*.viro")
 	if err != nil {
@@ -299,11 +305,23 @@ func TestScriptWithQuietFlag(t *testing.T) {
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--quiet", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--quiet", tmpfile.Name()},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--quiet", tmpfile.Name()})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
+	}
+
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
 	}
 
 	if len(output) > 0 {
@@ -312,11 +330,6 @@ func TestScriptWithQuietFlag(t *testing.T) {
 }
 
 func TestScriptWithVerboseFlag(t *testing.T) {
-	viroPath := "../../viro"
-	if _, err := os.Stat(viroPath); os.IsNotExist(err) {
-		t.Skip("viro binary not found, run 'make build' first")
-	}
-
 	script := `print "verbose test"`
 	tmpfile, err := os.CreateTemp("", "test_*.viro")
 	if err != nil {
@@ -329,14 +342,26 @@ func TestScriptWithVerboseFlag(t *testing.T) {
 	}
 	tmpfile.Close()
 
-	cmd := exec.Command(viroPath, "--verbose", tmpfile.Name())
-	output, err := cmd.CombinedOutput()
-
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--verbose", tmpfile.Name()},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--verbose", tmpfile.Name()})
 	if err != nil {
-		t.Fatalf("execution failed: %v\nOutput: %s", err, output)
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	if !strings.Contains(string(output), "verbose test") {
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
+
+	if !strings.Contains(output, "verbose test") {
 		t.Errorf("output = %q, want to contain 'verbose test'", output)
 	}
 }

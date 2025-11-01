@@ -1,11 +1,13 @@
 package integration
 
 import (
+	"bytes"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/marcin-radoszewski/viro/internal/api"
 )
 
 func TestProfileFlag(t *testing.T) {
@@ -29,36 +31,47 @@ print result
 		t.Fatalf("Failed to create test script: %v", err)
 	}
 
-	cmd := exec.Command("../../viro", "--profile", scriptPath)
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--profile", scriptPath},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--profile", scriptPath})
 	if err != nil {
-		t.Fatalf("Profile execution failed: %v\nOutput: %s", err, string(output))
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	outputStr := string(output)
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
 
-	if !strings.Contains(outputStr, "120") {
-		t.Errorf("Expected factorial result '120' in output, got:\n%s", outputStr)
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("Profile execution failed with exit code %d\nOutput: %s", exitCode, output)
 	}
 
-	if !strings.Contains(outputStr, "EXECUTION PROFILE") {
-		t.Errorf("Expected profile header in output, got:\n%s", outputStr)
+	if !strings.Contains(output, "120") {
+		t.Errorf("Expected factorial result '120' in output, got:\n%s", output)
 	}
 
-	if !strings.Contains(outputStr, "factorial") {
-		t.Errorf("Expected 'factorial' function in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "EXECUTION PROFILE") {
+		t.Errorf("Expected profile header in output, got:\n%s", output)
 	}
 
-	if !strings.Contains(outputStr, "Total Execution Time:") {
-		t.Errorf("Expected 'Total Execution Time' in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "factorial") {
+		t.Errorf("Expected 'factorial' function in profile, got:\n%s", output)
 	}
 
-	if !strings.Contains(outputStr, "Function Statistics") {
-		t.Errorf("Expected 'Function Statistics' in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "Total Execution Time:") {
+		t.Errorf("Expected 'Total Execution Time' in profile, got:\n%s", output)
 	}
 
-	if strings.Contains(outputStr, `"timestamp"`) || strings.Contains(outputStr, `"word"`) {
-		t.Errorf("Profile output should not contain trace JSON, got:\n%s", outputStr)
+	if !strings.Contains(output, "Function Statistics") {
+		t.Errorf("Expected 'Function Statistics' in profile, got:\n%s", output)
+	}
+
+	if strings.Contains(output, `"timestamp"`) || strings.Contains(output, `"word"`) {
+		t.Errorf("Profile output should not contain trace JSON, got:\n%s", output)
 	}
 }
 
@@ -76,33 +89,56 @@ print result
 		t.Fatalf("Failed to create test script: %v", err)
 	}
 
-	cmd := exec.Command("../../viro", "--profile", "--quiet", scriptPath)
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--profile", "--quiet", scriptPath},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--profile", "--quiet", scriptPath})
 	if err != nil {
-		t.Fatalf("Profile execution failed: %v\nOutput: %s", err, string(output))
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	outputStr := string(output)
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
 
-	if strings.Contains(outputStr, "EXECUTION PROFILE") {
-		t.Errorf("Profile output should be suppressed with --quiet flag, got:\n%s", outputStr)
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("Profile execution failed with exit code %d\nOutput: %s", exitCode, output)
 	}
 
-	if strings.Contains(outputStr, "30") {
-		t.Errorf("Print output should be suppressed with --quiet flag, got:\n%s", outputStr)
+	if strings.Contains(output, "EXECUTION PROFILE") {
+		t.Errorf("Profile output should be suppressed with --quiet flag, got:\n%s", output)
+	}
+
+	if strings.Contains(output, "30") {
+		t.Errorf("Print output should be suppressed with --quiet flag, got:\n%s", output)
 	}
 }
 
 func TestProfileFlagRequiresScript(t *testing.T) {
-	cmd := exec.Command("../../viro", "--profile", "-c", "3 + 4")
-	output, err := cmd.CombinedOutput()
-	if err == nil {
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--profile", "-c", "3 + 4"},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--profile", "-c", "3 + 4"})
+	if err != nil {
+		t.Fatalf("ConfigFromArgs failed: %v", err)
+	}
+
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode == api.ExitSuccess {
 		t.Fatalf("Expected error when using --profile with -c, but command succeeded")
 	}
 
-	outputStr := string(output)
-	if !strings.Contains(outputStr, "profile") && !strings.Contains(outputStr, "script") {
-		t.Errorf("Expected error message about profile requiring script, got:\n%s", outputStr)
+	if !strings.Contains(output, "profile") && !strings.Contains(output, "script") {
+		t.Errorf("Expected error message about profile requiring script, got:\n%s", output)
 	}
 }
 
@@ -134,30 +170,41 @@ print result3
 		t.Fatalf("Failed to create test script: %v", err)
 	}
 
-	cmd := exec.Command("../../viro", "--profile", scriptPath)
-	output, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	ctx := &api.RuntimeContext{
+		Args:   []string{"--profile", scriptPath},
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cfg, err := api.ConfigFromArgs([]string{"--profile", scriptPath})
 	if err != nil {
-		t.Fatalf("Profile execution failed: %v\nOutput: %s", err, string(output))
+		t.Fatalf("ConfigFromArgs failed: %v", err)
 	}
 
-	outputStr := string(output)
+	exitCode := api.Run(ctx, cfg)
+	output := stdout.String() + stderr.String()
+
+	if exitCode != api.ExitSuccess {
+		t.Fatalf("Profile execution failed with exit code %d\nOutput: %s", exitCode, output)
+	}
 
 	expectedFunctions := []string{"add", "multiply", "power"}
 	for _, fn := range expectedFunctions {
-		if !strings.Contains(outputStr, fn) {
-			t.Errorf("Expected function '%s' in profile output, got:\n%s", fn, outputStr)
+		if !strings.Contains(output, fn) {
+			t.Errorf("Expected function '%s' in profile output, got:\n%s", fn, output)
 		}
 	}
 
-	if !strings.Contains(outputStr, "Total Events:") {
-		t.Errorf("Expected 'Total Events' in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "Total Events:") {
+		t.Errorf("Expected 'Total Events' in profile, got:\n%s", output)
 	}
 
-	if !strings.Contains(outputStr, "Calls") {
-		t.Errorf("Expected 'Calls' column header in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "Calls") {
+		t.Errorf("Expected 'Calls' column header in profile, got:\n%s", output)
 	}
 
-	if !strings.Contains(outputStr, "Total Time") {
-		t.Errorf("Expected 'Total Time' column header in profile, got:\n%s", outputStr)
+	if !strings.Contains(output, "Total Time") {
+		t.Errorf("Expected 'Total Time' column header in profile, got:\n%s", output)
 	}
 }
