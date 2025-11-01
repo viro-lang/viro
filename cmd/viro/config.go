@@ -137,27 +137,6 @@ func (c *Config) ApplyDefaults() error {
 }
 
 func (c *Config) Validate() error {
-	modeCount := 0
-	if c.ShowVersion {
-		modeCount++
-	}
-	if c.ShowHelp {
-		modeCount++
-	}
-	if c.EvalExpr != "" {
-		modeCount++
-	}
-	if c.CheckOnly {
-		modeCount++
-	}
-	if !c.CheckOnly && c.ScriptFile != "" {
-		modeCount++
-	}
-
-	if modeCount > 1 {
-		return fmt.Errorf("multiple modes specified; use only one of: --version, --help, -c, or script file")
-	}
-
 	if c.CheckOnly && c.ScriptFile == "" {
 		return fmt.Errorf("--check flag requires a script file")
 	}

@@ -32,20 +32,20 @@ func (m Mode) String() string {
 	}
 }
 
-func detectMode(cfg *Config) (Mode, error) {
-	modeCount := 0
-	var detectedMode Mode
-
+func (c *Config) DetectMode() (Mode, error) {
 	modes := []struct {
 		condition bool
 		mode      Mode
 	}{
-		{cfg.ShowVersion, ModeVersion},
-		{cfg.ShowHelp, ModeHelp},
-		{cfg.EvalExpr != "", ModeEval},
-		{cfg.CheckOnly, ModeCheck},
-		{!cfg.CheckOnly && cfg.ScriptFile != "", ModeScript},
+		{c.ShowVersion, ModeVersion},
+		{c.ShowHelp, ModeHelp},
+		{c.EvalExpr != "", ModeEval},
+		{c.CheckOnly, ModeCheck},
+		{!c.CheckOnly && c.ScriptFile != "", ModeScript},
 	}
+
+	var detectedMode Mode
+	modeCount := 0
 
 	for _, m := range modes {
 		if m.condition {

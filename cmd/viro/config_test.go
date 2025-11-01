@@ -191,7 +191,7 @@ func TestConfigValidate(t *testing.T) {
 				ShowVersion: true,
 				ShowHelp:    true,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "eval and script",
@@ -199,7 +199,7 @@ func TestConfigValidate(t *testing.T) {
 				EvalExpr:   "3 + 4",
 				ScriptFile: "test.viro",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "stdin without eval",

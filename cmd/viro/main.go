@@ -40,7 +40,7 @@ func loadConfiguration() (*Config, error) {
 }
 
 func executeMode(cfg *Config) int {
-	mode, err := detectMode(cfg)
+	mode, err := cfg.DetectMode()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return ExitUsage
