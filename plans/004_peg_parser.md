@@ -336,7 +336,7 @@ go install github.com/mna/pigeon@latest
 
 4. **Preserve public API**:
    - Keep `Parse()` function signature unchanged
-   - Keep `Format()` function for debugging
+   - Keep `Format()` function
    - Maintain `ParseEval()` for REPL compatibility
 
 5. **Add grammar to version control**:

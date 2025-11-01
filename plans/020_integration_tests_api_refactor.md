@@ -483,7 +483,7 @@ If issues arise:
 1. **CI Reliability**: Tests run without binary, no build ordering issues
 2. **Test Speed**: 2-5x faster tests (no process spawning)
 3. **Test Isolation**: Better control over stdin/stdout/stderr
-4. **Debugging**: Easier to debug tests (direct function calls)
+4. **Easier troubleshooting**: Direct function calls for test debugging
 5. **Maintainability**: Standard Go CLI testing pattern
 6. **Flexibility**: Easy to test edge cases with mocked I/O
 

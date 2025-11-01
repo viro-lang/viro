@@ -174,18 +174,6 @@ func (e *Evaluator) evaluateExpression(block []core.Value, position int, lastRes
     case value.TypeWord:
         wordStr, _ := value.AsWord(element)
         
-        // Check for breakpoint (debugging)
-        if debug.GlobalDebugger != nil && debug.GlobalDebugger.HasBreakpoint(wordStr) {
-            if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
-                trace.GlobalTraceSession.Emit(trace.TraceEvent{
-                    Timestamp: time.Now(),
-                    Word:      "debug",
-                    Value:     fmt.Sprintf("breakpoint hit: %s", wordStr),
-                    Duration:  0,
-                })
-            }
-        }
-        
         resolved, found := e.Lookup(wordStr)
         if !found {
             return position, value.NoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
@@ -584,7 +572,6 @@ After Phase 1 & 2 are working:
 - Clear position tracking (no hidden mutations)
 - Matches documented execution model
 - Easier to understand control flow
-- Simpler debugging (position is explicit)
 
 ## Risks and Mitigations
 

@@ -448,9 +448,7 @@ func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).
 //
-// Contract: debug --on | --off | --breakpoint word | --remove id |
-//
-//	--step | --next | --finish | --continue | --locals | --stack
+// Contract: debug --on | --off | --breakpoint word | --remove id
 //
 // T148-T152: Implements debug commands
 func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -524,71 +522,6 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			)
 		}
 		return value.NewNoneVal(), nil
-	}
-
-	if val, ok := refValues["step"]; ok && ToTruthy(val) {
-		debug.GlobalDebugger.EnableStepping()
-		// Note: Actual stepping pause happens in evaluator.EvaluateExpression
-		return value.NewNoneVal(), nil
-	}
-
-	if val, ok := refValues["next"]; ok && ToTruthy(val) {
-		debug.GlobalDebugger.EnableStepping()
-		return value.NewNoneVal(), nil
-	}
-
-	if val, ok := refValues["finish"]; ok && ToTruthy(val) {
-		debug.GlobalDebugger.DisableStepping()
-		return value.NewNoneVal(), nil
-	}
-
-	if val, ok := refValues["continue"]; ok && ToTruthy(val) {
-		debug.GlobalDebugger.DisableStepping()
-		return value.NewNoneVal(), nil
-	}
-
-	if val, ok := refValues["locals"]; ok && ToTruthy(val) {
-		// Return object with current frame local variables
-		if debug.GlobalDebugger == nil {
-			return value.NewNoneVal(), verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{"debugger not available", "", ""},
-			)
-		}
-
-		// Get current frame locals
-		locals := debug.GlobalDebugger.GetFrameLocals(eval, eval.CurrentFrameIndex())
-
-		// Create object with local variables
-		fields := make([]string, 0, len(locals))
-		initializers := make(map[string][]core.Value)
-		for name, val := range locals {
-			fields = append(fields, name)
-			initializers[name] = []core.Value{val}
-		}
-
-		return instantiateObject(eval, -1, nil, fields, initializers)
-	}
-
-	if val, ok := refValues["stack"]; ok && ToTruthy(val) {
-		// Return block with call stack entries
-		if debug.GlobalDebugger == nil {
-			return value.NewNoneVal(), verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{"debugger not available", "", ""},
-			)
-		}
-
-		// Get call stack
-		stack := debug.GlobalDebugger.GetCallStack(eval)
-
-		// Convert to block of strings
-		stackValues := make([]core.Value, len(stack))
-		for i, frame := range stack {
-			stackValues[i] = value.NewStrVal(frame)
-		}
-
-		return value.NewBlockVal(stackValues), nil
 	}
 
 	return value.NewNoneVal(), verror.NewScriptError(

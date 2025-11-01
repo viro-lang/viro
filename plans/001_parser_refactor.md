@@ -10,7 +10,7 @@ STATUS: Implemented
 - `snippetAround` - Error context extraction
 - `syntaxError` - Parser error method
 - `ParseEval` - REPL convenience function
-- `Format` - Value formatting for debugging
+- `Format` - Value formatting
 
 **Functions with low coverage:**
 

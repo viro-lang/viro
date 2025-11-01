@@ -129,15 +129,10 @@ type ObjectInstance struct {
    - Remove evaluator dependency from object formatting
    - Update `FormatValueAsString` to use owned frames
 
-4. **Update reflection and debugging**
-   - Modify help system to work with owned frames
-   - Update object inspection/debugging tools
-
 #### Testing
 
 - All object operations work with owned frames
 - Mold formatting produces correct output
-- Reflection and debugging tools function
 - Performance benchmarks show no regression
 
 ### Phase 3: Cleanup and Optimization (Week 5-6)
@@ -209,7 +204,6 @@ type ObjectInstance struct {
 
 ### Developer Experience
 
-- **Simpler debugging**: Object state is self-contained
 - **Easier testing**: Objects can be created/tested independently
 - **Better error messages**: No "invalid frame index" errors
 

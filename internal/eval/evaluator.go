@@ -568,29 +568,9 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 }
 
 // EvaluateExpression evaluates a single expression from a block starting at the given position.
-// Handles infix operator lookahead internally for proper left-to-right evaluation.
+// EvaluateExpression handles infix operator lookahead internally for proper left-to-right evaluation.
 // Returns the new position after consuming the expression, the result value, and any error.
 func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
-	// Step hook: check if debugger should pause before evaluating this expression
-	// Don't pause on debug commands themselves to avoid infinite loops
-	if debug.GlobalDebugger != nil && debug.GlobalDebugger.ShouldPause() {
-		if position < len(block) {
-			expr := block[position]
-			if expr.GetType() == value.TypeWord {
-				word, _ := value.AsWordValue(expr)
-				if word == "debug" {
-					// Don't pause on debug commands
-				} else {
-					// Return a debug pause error instead of blocking
-					return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDDebugPause, [3]string{"", "", ""})
-				}
-			} else {
-				// Return a debug pause error instead of blocking
-				return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDDebugPause, [3]string{"", "", ""})
-			}
-		}
-	}
-
 	newPos, result, err := e.evaluateElement(block, position)
 	if err != nil {
 		return position, value.NewNoneVal(), err
