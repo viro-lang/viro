@@ -1,6 +1,7 @@
 # Agent Guidelines for Viro
 
 ## Build & Test Commands
+
 - Generate grammar: `make grammar` or `pigeon -o internal/parse/peg/parser.go grammar/viro.peg`
 - Build: `make build` (includes grammar generation) or `go build -o viro ./cmd/viro`
 - Test all: `go test ./...` or `make test`
@@ -11,9 +12,11 @@
 - Coverage: `go test -coverprofile=coverage.out ./...`
 
 ## CLI Usage
+
 The `viro` binary supports multiple execution modes:
 
 ### Modes
+
 - **REPL** (default): `./viro` - Interactive Read-Eval-Print Loop
 - **REPL with args**: `./viro -- arg1 arg2` - REPL with `system.args` populated
 - **Script execution**: `./viro script.viro arg1 arg2` - Execute file with arguments
@@ -23,27 +26,32 @@ The `viro` binary supports multiple execution modes:
 - **Help**: `./viro --help` - Show usage information
 
 ### Global Options
+
 - `--sandbox-root PATH` - Sandbox root for file operations (default: current directory)
 - `--allow-insecure-tls` - Disable TLS certificate verification (security risk!)
 - `--quiet` - Suppress non-error output
 - `--verbose` - Enable verbose output
 
 ### Eval Mode Options (with `-c`)
+
 - `--stdin` - Read additional input from stdin: `echo "[1 2 3]" | viro -c "first" --stdin`
 - `--no-print` - Don't print evaluation result: `viro -c "pow 2 10" --no-print`
 
 ### REPL Mode Options
+
 - `--no-history` - Disable command history
 - `--history-file PATH` - Custom history file location
 - `--prompt STRING` - Custom REPL prompt
 - `--no-welcome` - Skip welcome message
 
 ### Environment Variables
+
 - `VIRO_SANDBOX_ROOT` - Default sandbox root directory
 - `VIRO_ALLOW_INSECURE_TLS` - Allow insecure TLS (set to "1" or "true")
 - `VIRO_HISTORY_FILE` - REPL history file location
 
 ### Exit Codes
+
 - `0` - Success
 - `1` - General error (script/math error)
 - `2` - Syntax error (parse failure)
@@ -53,6 +61,7 @@ The `viro` binary supports multiple execution modes:
 - `130` - Interrupted (Ctrl+C)
 
 ## Code Style
+
 - **NO COMMENTS** in code; documentation belongs in package docs only
 - Use constructor functions: `value.IntVal()`, `value.StrVal()`, never direct struct creation
 - Index-based refs: Frame.Parent is `int` index, NOT pointer (prevents stack expansion bugs)
@@ -62,8 +71,9 @@ The `viro` binary supports multiple execution modes:
 - Naming: Use Viro-style native names (`first`, `length?`, `type-of` with ?, ! suffixes) not Go-style
 
 ## Workflow
-- **ALWAYS use viro-interpreter-dev agent**: When editing ANY Viro interpreter code, you MUST use the viro-interpreter-dev agent via the Task tool. This agent has specialized expertise in the Viro codebase architecture and prevents common mistakes.
-- **MANDATORY code review process**: After the viro-interpreter-dev agent finishes updates, you MUST use the viro-code-reviewer agent to review the code. The main agent may then decide whether to apply the suggested changes. If changes are applied, ALWAYS use the viro-interpreter-dev agent again (never edit directly).
+
+- **ALWAYS use viro-coder agent**: When editing ANY Viro interpreter code, you MUST use the viro-coder agent via the Task tool. This agent has specialized expertise in the Viro codebase architecture and prevents common mistakes.
+- **MANDATORY code review process**: After the viro-coder agent finishes updates, you MUST use the viro-reviewer agent to review the code. The main agent may then decide whether to apply the suggested changes. If changes are applied, ALWAYS use the viro-coder agent again (never edit directly).
 - **TDD mandatory**: Write tests FIRST in `test/contract/`, then implement in `internal/native/`
 - Consult specs: `specs/*/contracts/*.md` before implementation
 - Every code change MUST have test coverage
@@ -76,13 +86,16 @@ The `viro` binary supports multiple execution modes:
 - No real network calls in tests; use 127.0.0.1 mocked servers only
 
 ## Planning
+
 - Store plans in `plans/` directory with sequential numbering: `001_description.md`, `002_description.md`, etc.
 - Check existing plans to determine the next sequence number
 
 ## Debugging
 
 ### Quick Start
+
 Use enhanced trace system for LLM-friendly debugging:
+
 ```bash
 # In script file
 ./viro -c 'trace --on --verbose --include-args --step-level 1'
@@ -93,6 +106,7 @@ Use enhanced trace system for LLM-friendly debugging:
 ```
 
 ### CLI-Based Debugging Workflow
+
 1. **Syntax check first**: `./viro --check script.viro` - Validates parse without execution
 2. **Expression testing**: `./viro -c "expression"` - Quick REPL-less evaluation
 3. **Script with trace**: Add trace commands to script, run with `./viro script.viro`
@@ -100,12 +114,15 @@ Use enhanced trace system for LLM-friendly debugging:
 5. **Exit code testing**: Check `$?` after execution to verify error handling
 
 ### Complete Instructions
+
 **IMPORTANT**: For detailed debugging workflow, trace output format, parsing examples, and troubleshooting, see:
+
 - **[LLM Debugging Instructions](/.github/instructions/debugging-with-trace.instruction.md)** - Complete guide for LLM agents
 - [Debugging Guide](/docs/debugging-guide.md) - User-facing documentation
 - [Debugging Examples](/docs/debugging-examples.md) - Practical scenarios
 
 ### Common Patterns
+
 - **Infinite recursion**: Use `--max-depth 10` and check depth progression
 - **Variable tracking**: Use `--verbose` to see frame state changes
 - **Function arguments**: Use `--include-args` to verify parameter values

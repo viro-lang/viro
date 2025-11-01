@@ -1,0 +1,7 @@
+debug --on
+x: 10
+debug --step
+y: 20
+debug --step
+result: x + y
+debug --step

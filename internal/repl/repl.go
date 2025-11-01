@@ -78,6 +78,16 @@ type REPL struct {
 	customPrompt   string
 	noWelcome      bool
 	noHistory      bool
+	debugSession   *DebugSession // Interactive debugging state
+}
+
+// DebugSession manages interactive debugging state
+type DebugSession struct {
+	active      bool
+	evaluator   core.Evaluator
+	debugger    *debug.Debugger
+	lastCommand string
+	pausedExpr  []core.Value // The expression that was paused
 }
 
 // NewREPL creates a new REPL instance with default options.
@@ -254,7 +264,13 @@ func (r *REPL) Run() error {
 			return err
 		}
 
-		r.processLine(line, true)
+		// Check if we're in debug mode
+		if r.IsInDebugMode() {
+			r.processDebugCommand(line)
+		} else {
+			r.processLine(line, true)
+		}
+
 		if !r.shouldContinue {
 			return nil
 		}
@@ -338,6 +354,33 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.pendingLines = nil
 	r.recordHistory(joined)
 	r.evalParsedValues(values)
+}
+
+// processDebugCommand handles debug commands when in debug mode
+func (r *REPL) processDebugCommand(line string) {
+	if r == nil || !r.IsInDebugMode() {
+		return
+	}
+
+	clean := strings.TrimRight(line, "\r\n")
+	trimmed := strings.TrimSpace(clean)
+
+	// Handle debug commands
+	continueDebug, err := r.HandleDebugCommand(trimmed)
+	if err != nil {
+		r.printError(err)
+		return
+	}
+
+	// If we should continue in debug mode, stay in debug mode
+	// If not, we've exited debug mode, so resume normal execution
+	if !continueDebug {
+		// We've exited debug mode, resume normal execution
+		// The debugger should have been resumed, so the next evaluation should continue
+		return
+	}
+
+	// Still in debug mode, continue reading debug commands
 }
 
 // printWelcome displays the welcome message unless disabled.
@@ -446,9 +489,22 @@ func (r *REPL) getCurrentPrompt() string {
 	return primaryPrompt
 }
 
+// evalParsedValues evaluates parsed values and handles debug pauses
 func (r *REPL) evalParsedValues(values []core.Value) {
 	result, err := r.evaluator.DoBlock(values)
 	if err != nil {
+		// Check if this is a debug pause error
+		if vErr, ok := err.(*verror.Error); ok && vErr.ID == verror.ErrIDDebugPause {
+			// Enter debug mode and store the paused expression
+			if !r.IsInDebugMode() {
+				r.EnterDebugMode()
+			}
+			if r.debugSession != nil {
+				r.debugSession.pausedExpr = values
+			}
+			// Don't print the error, just return to let the REPL handle debug mode
+			return
+		}
 		r.printError(err)
 		return
 	}
@@ -680,4 +736,188 @@ func (r *REPL) handleHelpShortcut() {
 	if result.GetType() != value.TypeNone {
 		fmt.Fprintln(r.out, result.Form())
 	}
+}
+
+// EnterDebugMode activates interactive debugging
+func (r *REPL) EnterDebugMode() error {
+	if r == nil {
+		return fmt.Errorf("REPL is nil")
+	}
+
+	r.debugSession = &DebugSession{
+		active:    true,
+		evaluator: r.evaluator,
+		debugger:  debug.GlobalDebugger,
+	}
+
+	// Change prompt to debug mode
+	r.setPrompt(debugPrompt)
+	return nil
+}
+
+// ExitDebugMode deactivates interactive debugging
+func (r *REPL) ExitDebugMode() {
+	if r == nil || r.debugSession == nil {
+		return
+	}
+
+	r.debugSession.active = false
+	r.debugSession = nil
+
+	// Restore normal prompt
+	r.setPrompt(r.getCurrentPrompt())
+}
+
+// IsInDebugMode returns true if interactive debugging is active
+func (r *REPL) IsInDebugMode() bool {
+	return r != nil && r.debugSession != nil && r.debugSession.active
+}
+
+// HandleDebugCommand processes debug commands during interactive debugging
+func (r *REPL) HandleDebugCommand(cmd string) (continueDebug bool, err error) {
+	if r == nil || r.debugSession == nil {
+		return false, fmt.Errorf("not in debug mode")
+	}
+
+	cmd = strings.TrimSpace(strings.ToLower(cmd))
+	r.debugSession.lastCommand = cmd
+
+	switch cmd {
+	case "n", "next", "step":
+		// Step to next expression
+		r.debugSession.debugger.EnableStepping()
+		// Resume execution and re-evaluate the paused expression
+		return r.resumeAndReevaluate()
+
+	case "c", "continue":
+		// Continue execution until next breakpoint
+		r.debugSession.debugger.DisableStepping()
+		// Resume execution and re-evaluate the paused expression
+		return r.resumeAndReevaluate()
+
+	case "l", "locals":
+		// Show local variables
+		return r.showDebugLocals()
+
+	case "s", "stack":
+		// Show call stack
+		return r.showDebugStack()
+
+	case "p", "print":
+		// Print expression (requires argument)
+		return false, fmt.Errorf("print command requires an expression argument")
+
+	case "q", "quit":
+		// Exit debug mode
+		r.ExitDebugMode()
+		return false, nil
+
+	default:
+		// Check if it's a print command with argument
+		if strings.HasPrefix(cmd, "p ") || strings.HasPrefix(cmd, "print ") {
+			return r.handleDebugPrint(cmd)
+		}
+
+		return false, fmt.Errorf("unknown debug command: %s", cmd)
+	}
+}
+
+// showDebugLocals displays local variables in debug mode
+func (r *REPL) showDebugLocals() (bool, error) {
+	if r.debugSession == nil {
+		return false, fmt.Errorf("not in debug mode")
+	}
+
+	// Get current frame locals
+	frameIdx := r.evaluator.CurrentFrameIndex()
+	locals := r.debugSession.debugger.GetFrameLocals(r.evaluator, frameIdx)
+
+	if len(locals) == 0 {
+		fmt.Fprintln(r.out, "(no local variables)")
+	} else {
+		fmt.Fprintln(r.out, "Local variables:")
+		for name, val := range locals {
+			fmt.Fprintf(r.out, "  %s: %s\n", name, val.Form())
+		}
+	}
+
+	return true, nil
+}
+
+// showDebugStack displays call stack in debug mode
+func (r *REPL) showDebugStack() (bool, error) {
+	if r.debugSession == nil {
+		return false, fmt.Errorf("not in debug mode")
+	}
+
+	// Get call stack
+	stack := r.debugSession.debugger.GetCallStack(r.evaluator)
+
+	if len(stack) == 0 {
+		fmt.Fprintln(r.out, "(empty call stack)")
+	} else {
+		fmt.Fprintln(r.out, "Call stack:")
+		for i, frame := range stack {
+			fmt.Fprintf(r.out, "  [%d] %s\n", i, frame)
+		}
+	}
+
+	return true, nil
+}
+
+// handleDebugPrint evaluates and prints an expression in debug context
+func (r *REPL) handleDebugPrint(cmd string) (bool, error) {
+	if r.debugSession == nil {
+		return false, fmt.Errorf("not in debug mode")
+	}
+
+	// Extract expression from command
+	var expr string
+	if strings.HasPrefix(cmd, "p ") {
+		expr = strings.TrimPrefix(cmd, "p ")
+	} else if strings.HasPrefix(cmd, "print ") {
+		expr = strings.TrimPrefix(cmd, "print ")
+	} else {
+		return false, fmt.Errorf("invalid print command format")
+	}
+
+	if expr == "" {
+		return false, fmt.Errorf("print command requires an expression")
+	}
+
+	// Parse and evaluate the expression
+	values, err := parse.Parse(expr)
+	if err != nil {
+		return false, fmt.Errorf("parse error: %v", err)
+	}
+
+	result, err := r.evaluator.DoBlock(values)
+	if err != nil {
+		return false, fmt.Errorf("evaluation error: %v", err)
+	}
+
+	fmt.Fprintf(r.out, "%s\n", result.Form())
+	return true, nil
+}
+
+// resumeAndReevaluate resumes the debugger and re-evaluates the paused expression
+func (r *REPL) resumeAndReevaluate() (bool, error) {
+	if r.debugSession == nil || r.debugSession.pausedExpr == nil {
+		return false, fmt.Errorf("no paused expression to resume")
+	}
+
+	// Resume the debugger
+	r.debugSession.debugger.ResumeExecution()
+
+	// Exit debug mode since we're resuming execution
+	r.ExitDebugMode()
+
+	// Re-evaluate the paused expression
+	r.evalParsedValues(r.debugSession.pausedExpr)
+
+	// Clear the paused expression
+	r.debugSession.pausedExpr = nil
+
+	// Return false to exit debug mode (we've resumed)
+	return false, nil
 }

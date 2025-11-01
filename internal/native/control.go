@@ -528,6 +528,7 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 
 	if val, ok := refValues["step"]; ok && ToTruthy(val) {
 		debug.GlobalDebugger.EnableStepping()
+		// Note: Actual stepping pause happens in evaluator.EvaluateExpression
 		return value.NewNoneVal(), nil
 	}
 
@@ -547,16 +548,47 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	}
 
 	if val, ok := refValues["locals"]; ok && ToTruthy(val) {
-		// Create empty object for now (TODO: populate with actual locals)
-		fields := []string{}
+		// Return object with current frame local variables
+		if debug.GlobalDebugger == nil {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"debugger not available", "", ""},
+			)
+		}
+
+		// Get current frame locals
+		locals := debug.GlobalDebugger.GetFrameLocals(eval, eval.CurrentFrameIndex())
+
+		// Create object with local variables
+		fields := make([]string, 0, len(locals))
 		initializers := make(map[string][]core.Value)
+		for name, val := range locals {
+			fields = append(fields, name)
+			initializers[name] = []core.Value{val}
+		}
+
 		return instantiateObject(eval, -1, nil, fields, initializers)
 	}
 
 	if val, ok := refValues["stack"]; ok && ToTruthy(val) {
 		// Return block with call stack entries
-		// For now, return empty block
-		return value.NewBlockVal([]core.Value{}), nil
+		if debug.GlobalDebugger == nil {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"debugger not available", "", ""},
+			)
+		}
+
+		// Get call stack
+		stack := debug.GlobalDebugger.GetCallStack(eval)
+
+		// Convert to block of strings
+		stackValues := make([]core.Value, len(stack))
+		for i, frame := range stack {
+			stackValues[i] = value.NewStrVal(frame)
+		}
+
+		return value.NewBlockVal(stackValues), nil
 	}
 
 	return value.NewNoneVal(), verror.NewScriptError(

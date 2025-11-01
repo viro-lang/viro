@@ -3,8 +3,10 @@ package contract
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -429,5 +431,135 @@ func TestDebugInspection(t *testing.T) {
 				t.Errorf("expected type %v, got %v", tt.expectType, result.GetType())
 			}
 		})
+	}
+}
+
+// TestDebugSteppingState tests that stepping state is managed correctly
+func TestDebugSteppingState(t *testing.T) {
+	tests := []struct {
+		name     string
+		code     string
+		wantStep bool
+	}{
+		{
+			name:     "stepping enabled after debug --step",
+			code:     "debug --on\ndebug --step",
+			wantStep: true,
+		},
+		{
+			name:     "stepping disabled after debug --continue",
+			code:     "debug --on\ndebug --step\ndebug --continue",
+			wantStep: false,
+		},
+		{
+			name:     "stepping disabled after debug --finish",
+			code:     "debug --on\ndebug --step\ndebug --finish",
+			wantStep: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.code)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Check stepping state
+			if debug.GlobalDebugger.IsStepping() != tt.wantStep {
+				t.Errorf("expected stepping %v, got %v", tt.wantStep, debug.GlobalDebugger.IsStepping())
+			}
+		})
+	}
+}
+
+// TestDebugPauseResume tests the pause/resume mechanism without blocking
+func TestDebugPauseResume(t *testing.T) {
+	// Test that pause/resume works correctly
+	debug.InitDebugger()
+	d := debug.GlobalDebugger
+
+	// Initially not paused
+	if d.IsPaused() {
+		t.Error("debugger should not be paused initially")
+	}
+
+	// Test pause in goroutine
+	done := make(chan bool)
+	go func() {
+		// This should block until resume is called
+		d.PauseExecution(value.NewIntVal(42), 0, 0)
+		done <- true
+	}()
+
+	// Give it a moment to pause
+	time.Sleep(10 * time.Millisecond)
+
+	// Should be paused now
+	if !d.IsPaused() {
+		t.Error("debugger should be paused after PauseExecution")
+	}
+
+	// Check pause info
+	expr, pos, frameIdx, paused := d.GetCurrentStepInfo()
+	if !paused {
+		t.Error("GetCurrentStepInfo should report paused=true")
+	}
+	if pos != 0 || frameIdx != 0 {
+		t.Errorf("expected pos=0, frameIdx=0, got pos=%d, frameIdx=%d", pos, frameIdx)
+	}
+	if expr.GetType() != value.TypeInteger {
+		t.Errorf("expected integer expression, got %v", expr.GetType())
+	}
+
+	// Resume execution
+	d.ResumeExecution()
+
+	// Wait for pause to complete
+	select {
+	case <-done:
+		// Success - pause completed
+	case <-time.After(100 * time.Millisecond):
+		t.Error("pause did not complete after resume")
+	}
+
+	// Should not be paused anymore
+	if d.IsPaused() {
+		t.Error("debugger should not be paused after resume")
+	}
+}
+
+// TestDebugShouldPause tests the ShouldPause logic
+func TestDebugShouldPause(t *testing.T) {
+	debug.InitDebugger()
+	d := debug.GlobalDebugger
+
+	// Initially should not pause
+	if d.ShouldPause() {
+		t.Error("should not pause when debugger is off")
+	}
+
+	// Enable debugger
+	d.Enable()
+
+	// Still should not pause (no stepping)
+	if d.ShouldPause() {
+		t.Error("should not pause when stepping is disabled")
+	}
+
+	// Enable stepping
+	d.EnableStepping()
+
+	// Now should pause
+	if !d.ShouldPause() {
+		t.Error("should pause when stepping is enabled")
+	}
+
+	// Disable stepping
+	d.DisableStepping()
+
+	// Should not pause again
+	if d.ShouldPause() {
+		t.Error("should not pause after stepping is disabled")
 	}
 }

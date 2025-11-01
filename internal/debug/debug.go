@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 )
 
@@ -24,6 +25,16 @@ type Debugger struct {
 	nextID      int
 	mode        DebugMode
 	stepping    bool
+	stepState   StepState // New: state for step-by-step execution
+}
+
+// StepState manages pausing and resuming during step-by-step execution.
+type StepState struct {
+	Paused      bool          // Whether execution is currently paused
+	WaitChan    chan struct{} // Channel to pause/resume execution
+	CurrentExpr core.Value    // Current expression being evaluated
+	CurrentPos  int           // Position in current block
+	FrameIndex  int           // Current frame index
 }
 
 // DebugMode controls debugger behavior.
@@ -58,6 +69,10 @@ func InitDebugger() {
 		nextID:      1,
 		mode:        DebugModeOff,
 		stepping:    false,
+		stepState: StepState{
+			Paused:   false,
+			WaitChan: make(chan struct{}, 1), // Buffered to avoid blocking
+		},
 	}
 }
 
@@ -189,4 +204,86 @@ func (d *Debugger) HandleBreakpoint(word string) {
 	}
 
 	// Future: Add interactive debugging logic here
+}
+
+// PauseExecution pauses the evaluator at the current expression.
+// Called by the evaluator when stepping or hitting a breakpoint.
+// This method blocks until ResumeExecution is called.
+func (d *Debugger) PauseExecution(expr core.Value, pos, frameIdx int) {
+	d.mu.Lock()
+	d.stepState.Paused = true
+	d.stepState.CurrentExpr = expr
+	d.stepState.CurrentPos = pos
+	d.stepState.FrameIndex = frameIdx
+	d.mu.Unlock()
+
+	// Wait for resume signal (blocks here)
+	<-d.stepState.WaitChan
+
+	d.mu.Lock()
+	d.stepState.Paused = false
+	d.mu.Unlock()
+}
+
+// ResumeExecution resumes paused execution.
+// Called when user issues step, continue, or other resume commands.
+// Safe to call multiple times - extra signals are ignored.
+func (d *Debugger) ResumeExecution() {
+	select {
+	case d.stepState.WaitChan <- struct{}{}:
+		// Successfully sent resume signal
+	default:
+		// Channel already has a signal pending, ignore
+	}
+}
+
+// ShouldPause returns true if the evaluator should pause before the next expression.
+// This is called by the evaluator to determine if it should pause.
+// Thread-safe and atomic.
+func (d *Debugger) ShouldPause() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.stepping
+}
+
+// IsPaused returns true if execution is currently paused.
+func (d *Debugger) IsPaused() bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.stepState.Paused
+}
+
+// GetCurrentStepInfo returns information about the current paused state.
+func (d *Debugger) GetCurrentStepInfo() (core.Value, int, int, bool) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.stepState.CurrentExpr, d.stepState.CurrentPos, d.stepState.FrameIndex, d.stepState.Paused
+}
+
+// GetFrameLocals returns the local variables in the specified frame.
+func (d *Debugger) GetFrameLocals(eval core.Evaluator, frameIdx int) map[string]core.Value {
+	if eval == nil {
+		return make(map[string]core.Value)
+	}
+
+	frame := eval.GetFrameByIndex(frameIdx)
+	if frame == nil {
+		return make(map[string]core.Value)
+	}
+
+	bindings := frame.GetAll()
+	result := make(map[string]core.Value, len(bindings))
+	for _, binding := range bindings {
+		result[binding.Symbol] = binding.Value
+	}
+	return result
+}
+
+// GetCallStack returns the current call stack as a slice of function names.
+func (d *Debugger) GetCallStack(eval core.Evaluator) []string {
+	if eval == nil {
+		return []string{}
+	}
+
+	return eval.GetCallStack()
 }

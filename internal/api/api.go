@@ -8,6 +8,7 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/native"
@@ -264,6 +265,9 @@ func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator
 	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
+
+	// Initialize debugger for script execution (same as REPL)
+	debug.InitDebugger()
 
 	return evaluator
 }

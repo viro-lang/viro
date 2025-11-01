@@ -1,0 +1,4 @@
+debug --on
+debug --step
+print "Hello"
+print "World"

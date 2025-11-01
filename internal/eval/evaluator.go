@@ -286,6 +286,17 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	return value.NewNoneVal(), false
 }
 
+// GetCallStack returns a copy of the current call stack.
+// The returned slice has the most recent call first, then its caller, etc.
+func (e *Evaluator) GetCallStack() []string {
+	if len(e.callStack) == 0 {
+		return []string{}
+	}
+	stack := make([]string, len(e.callStack))
+	copy(stack, e.callStack)
+	return stack
+}
+
 // DoBlock evaluates a sequence of values as a block using position tracking.
 // Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
@@ -560,6 +571,26 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 // Handles infix operator lookahead internally for proper left-to-right evaluation.
 // Returns the new position after consuming the expression, the result value, and any error.
 func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
+	// Step hook: check if debugger should pause before evaluating this expression
+	// Don't pause on debug commands themselves to avoid infinite loops
+	if debug.GlobalDebugger != nil && debug.GlobalDebugger.ShouldPause() {
+		if position < len(block) {
+			expr := block[position]
+			if expr.GetType() == value.TypeWord {
+				word, _ := value.AsWordValue(expr)
+				if word == "debug" {
+					// Don't pause on debug commands
+				} else {
+					// Return a debug pause error instead of blocking
+					return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDDebugPause, [3]string{"", "", ""})
+				}
+			} else {
+				// Return a debug pause error instead of blocking
+				return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDDebugPause, [3]string{"", "", ""})
+			}
+		}
+	}
+
 	newPos, result, err := e.evaluateElement(block, position)
 	if err != nil {
 		return position, value.NewNoneVal(), err
