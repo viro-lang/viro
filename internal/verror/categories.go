@@ -80,7 +80,6 @@ const (
 
 	// Feature 002: Debug errors (T162)
 	ErrIDNoSuchBreakpoint = "no-such-breakpoint" // breakpoint ID not found
-	ErrIDDebugPause       = "debug-pause"        // debugger pause for interactive debugging
 
 	// Feature 002: Path evaluation errors (T091)
 	ErrIDInvalidPath      = "invalid-path"           // malformed path expression
