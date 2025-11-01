@@ -304,6 +304,24 @@ func (r *REPL) ProcessDebugCommandForTest(cmd string) (continueDebug bool, outpu
 	return continueDebug, output, err
 }
 
+// EvalLineForTest evaluates a single line and prints to the configured writer.
+func (r *REPL) EvalLineForTest(input string) {
+	if r == nil {
+		return
+	}
+	r.processLine(strings.TrimRight(input, "\r\n"), false)
+}
+
+// GetDebugSessionForTest returns the debug session for testing purposes.
+func (r *REPL) GetDebugSessionForTest() *DebugSession {
+	return r.debugSession
+}
+
+// IsDebugSessionActiveForTest returns true if the debug session is active.
+func (r *REPL) IsDebugSessionActiveForTest() bool {
+	return r.debugSession != nil && r.debugSession.active
+}
+
 // AwaitingContinuation reports whether the REPL is waiting for additional lines
 // to complete the current command (multi-line input state).
 func (r *REPL) AwaitingContinuation() bool {
