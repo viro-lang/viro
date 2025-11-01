@@ -105,10 +105,10 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 	// Initialize trace/debug sessions (Feature 002, T154)
 	// Trace is initialized with default settings (stderr, 50MB max size)
 	// These will be controlled via trace --on/--off and debug --on/--off
-	if err := trace.InitTrace("", 50); err != nil {
+	if err := bootstrap.InitTrace(false); err != nil {
 		return nil, fmt.Errorf("failed to initialize trace session: %w", err)
 	}
-	debug.InitDebugger()
+	bootstrap.InitDebugger()
 
 	// Enable trace if requested
 	if opts.TraceOn && trace.GlobalTraceSession != nil {
@@ -175,11 +175,11 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	// Initialize trace/debug sessions for tests (same as NewREPL)
 	// Use os.DevNull to avoid trace output pollution during tests
-	if err := trace.InitTrace(os.DevNull, 50); err != nil {
+	if err := bootstrap.InitTraceWithOutput(false, os.DevNull); err != nil {
 		// Log error but continue - tests should not fail due to trace init
 		fmt.Fprintf(os.Stderr, "Warning: failed to initialize trace session: %v\n", err)
 	}
-	debug.InitDebugger()
+	bootstrap.InitDebugger()
 
 	if e == nil {
 		e = bootstrap.NewEvaluatorWithNatives(out, out, strings.NewReader(""), false)

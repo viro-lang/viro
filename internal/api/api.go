@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/marcin-radoszewski/viro/internal/bootstrap"
 	"github.com/marcin-radoszewski/viro/internal/config"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
@@ -154,9 +155,9 @@ func RunExecutionWithContext(cfg *Config, mode Mode, ctx *RuntimeContext) int {
 
 	var err error
 	if cfg.Profile {
-		err = trace.InitTraceSilent()
+		err = bootstrap.InitTrace(true)
 	} else {
-		err = trace.InitTrace("", 50)
+		err = bootstrap.InitTrace(false)
 	}
 
 	if err != nil {
