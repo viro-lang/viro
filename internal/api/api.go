@@ -20,8 +20,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-const ()
-
 type RuntimeContext struct {
 	Args   []string
 	Stdin  io.Reader
@@ -302,7 +300,7 @@ func HandleErrorWithContext(err error) int {
 
 func printErrorToWriter(err error, prefix string, w io.Writer) {
 	if vErr, ok := err.(*verror.Error); ok {
-		fmt.Fprintf(w, "%v\n", vErr)
+		fmt.Fprintln(w, verror.FormatErrorWithContext(vErr))
 	} else if prefix != "" {
 		fmt.Fprintf(w, "%s error: %v\n", prefix, err)
 	} else {
