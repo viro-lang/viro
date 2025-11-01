@@ -150,6 +150,4 @@ func (d *Debugger) HandleBreakpoint(word string) {
 			Duration:  0,
 		})
 	}
-
-	// Future: Add interactive debugging logic here
 }
