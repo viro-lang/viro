@@ -163,6 +163,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BinaryAt, false, nil))
+	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinarySort, false, nil))
 	RegisterActionImpl(value.TypeBinary, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryReverse, false, nil))
