@@ -92,6 +92,11 @@ func (b *BinaryValue) At(index int) byte {
 	return b.data[index]
 }
 
+// ElementAt returns byte at index as a core.Value (implements Series interface).
+func (b *BinaryValue) ElementAt(index int) core.Value {
+	return NewIntVal(int64(b.At(index)))
+}
+
 // Length returns byte count.
 func (b *BinaryValue) Length() int {
 	return len(b.data)
@@ -133,7 +138,7 @@ func (b *BinaryValue) Remove(count int) {
 }
 
 // Clone creates a deep copy of the binary.
-func (b *BinaryValue) Clone() *BinaryValue {
+func (b *BinaryValue) Clone() Series {
 	dataCopy := make([]byte, len(b.data))
 	copy(dataCopy, b.data)
 	return &BinaryValue{

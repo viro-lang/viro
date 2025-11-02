@@ -92,6 +92,11 @@ func (s *StringValue) At(index int) rune {
 	return s.runes[index]
 }
 
+// ElementAt returns character at index as a core.Value (implements Series interface).
+func (s *StringValue) ElementAt(index int) core.Value {
+	return NewStrVal(string(s.At(index)))
+}
+
 // Length returns character count.
 func (s *StringValue) Length() int {
 	return len(s.runes)
@@ -141,7 +146,7 @@ func (s *StringValue) SetRunes(r []rune) {
 }
 
 // Clone creates a deep copy of the string.
-func (s *StringValue) Clone() *StringValue {
+func (s *StringValue) Clone() Series {
 	runesCopy := make([]rune, len(s.runes))
 	copy(runesCopy, s.runes)
 	return &StringValue{

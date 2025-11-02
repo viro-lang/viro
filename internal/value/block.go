@@ -149,6 +149,11 @@ func (b *BlockValue) At(index int) core.Value {
 	return b.Elements[index]
 }
 
+// ElementAt returns element at index as a core.Value (implements Series interface).
+func (b *BlockValue) ElementAt(index int) core.Value {
+	return b.At(index)
+}
+
 // Length returns element count.
 func (b *BlockValue) Length() int {
 	return len(b.Elements)
@@ -183,7 +188,7 @@ func (b *BlockValue) SetIndex(idx int) {
 }
 
 // Clone creates a deep copy of the block.
-func (b *BlockValue) Clone() *BlockValue {
+func (b *BlockValue) Clone() Series {
 	elemsCopy := make([]core.Value, len(b.Elements))
 	copy(elemsCopy, b.Elements)
 	return &BlockValue{
