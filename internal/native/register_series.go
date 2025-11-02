@@ -473,12 +473,12 @@ The --default refinement provides a fallback when the value/field is not found.`
 
 	registerAndBind("trim", CreateAction("trim", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-		value.NewRefinementSpec("head", false),  // flag: remove from head only
-		value.NewRefinementSpec("tail", false),  // flag: remove from tail only
-		value.NewRefinementSpec("auto", false),  // flag: auto indent relative to first line
-		value.NewRefinementSpec("lines", false), // flag: remove line breaks and extra spaces
-		value.NewRefinementSpec("all", false),   // flag: remove all whitespace
-		value.NewRefinementSpec("with", true),   // value: remove characters in string instead of whitespace
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Removes whitespace from strings with various trimming options",
@@ -494,10 +494,10 @@ The --default refinement provides a fallback when the value/field is not found.`
 		Returns: "string! The trimmed string",
 		Examples: []string{
 			`trim "  hello  "  ; => "hello"`,
-			`trim/head "  hello  "  ; => "hello  "`,
-			`trim/tail "  hello  "  ; => "  hello"`,
-			`trim/all "  hello world  "  ; => "helloworld"`,
-			`trim/with "a-b-c" "-"  ; => "abc"`,
+			`trim --head "  hello  "  ; => "hello  "`,
+			`trim --tail "  hello  "  ; => "  hello"`,
+			`trim --all "  hello world  "  ; => "helloworld"`,
+			`trim --with "-" "a-b-c"  ; => "abc"`,
 		},
 		SeeAlso: []string{"clear", "change"},
 		Tags:    []string{"series", "string", "modification"},

@@ -354,7 +354,6 @@ length? data`,
 	}
 }
 
-// T100: copy, copy --part for blocks and strings
 func TestSeries_Copy(t *testing.T) {
 	t.Run("copy block", func(t *testing.T) {
 		input := "copy [1 2 3]"
@@ -429,7 +428,6 @@ func TestSeries_Copy(t *testing.T) {
 			if scriptErr.ID != verror.ErrIDOutOfBounds {
 				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
 			}
-			// Verify error args structure
 			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "5" || scriptErr.Args[1] != "2" {
 				t.Fatalf("expected error args ['5', '2', ''], got %v", scriptErr.Args)
 			}
@@ -449,7 +447,6 @@ func TestSeries_Copy(t *testing.T) {
 			if scriptErr.ID != verror.ErrIDOutOfBounds {
 				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
 			}
-			// Verify error args structure
 			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" {
 				t.Fatalf("expected error args ['-1', '2', ''], got %v", scriptErr.Args)
 			}
@@ -481,7 +478,6 @@ func TestSeries_Copy(t *testing.T) {
 			if scriptErr.ID != verror.ErrIDOutOfBounds {
 				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
 			}
-			// Verify error args structure
 			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "10" || scriptErr.Args[1] != "5" {
 				t.Fatalf("expected error args ['10', '5', ''], got %v", scriptErr.Args)
 			}
@@ -800,7 +796,6 @@ func TestSeries_Trim(t *testing.T) {
 		want    core.Value
 		wantErr bool
 	}{
-		// Basic trim (backward compatibility)
 		{
 			name:  "trim string with whitespace",
 			input: `trim "  hello  "`,
@@ -821,7 +816,6 @@ func TestSeries_Trim(t *testing.T) {
 			input: `trim "  hello world  "`,
 			want:  value.NewStrVal("hello world"),
 		},
-		// --head refinement
 		{
 			name:  "trim --head removes leading whitespace",
 			input: `trim --head "  hello  "`,
@@ -832,7 +826,6 @@ func TestSeries_Trim(t *testing.T) {
 			input: `trim --head "hello  "`,
 			want:  value.NewStrVal("hello  "),
 		},
-		// --tail refinement
 		{
 			name:  "trim --tail removes trailing whitespace",
 			input: `trim --tail "  hello  "`,
@@ -843,7 +836,6 @@ func TestSeries_Trim(t *testing.T) {
 			input: `trim --tail "  hello"`,
 			want:  value.NewStrVal("  hello"),
 		},
-		// --auto refinement
 		{
 			name: "trim --auto with indented text",
 			input: `trim --auto "    line1
@@ -856,7 +848,6 @@ func TestSeries_Trim(t *testing.T) {
 			input: `trim --auto "  hello  "`,
 			want:  value.NewStrVal("hello"),
 		},
-		// --lines refinement
 		{
 			name: "trim --lines removes line breaks and extra spaces",
 			input: `trim --lines "hello
@@ -868,7 +859,6 @@ world"`,
 			input: `trim --lines "hello   world"`,
 			want:  value.NewStrVal("hello world"),
 		},
-		// --all refinement
 		{
 			name:  "trim --all removes all whitespace",
 			input: `trim --all "  hello world  "`,
@@ -876,10 +866,9 @@ world"`,
 		},
 		{
 			name:  "trim --all with tabs and spaces",
-			input: `trim --all "  hello\tworld  "`,
-			want:  value.NewStrVal("hello\\tworld"),
+			input: `trim --all "  hello	 world  "`,
+			want:  value.NewStrVal("helloworld"),
 		},
-		// --with refinement
 		{
 			name:  "trim --with removes specified characters",
 			input: `trim --with "-" "a-b-c"`,
@@ -890,7 +879,6 @@ world"`,
 			input: `trim --with "123" "abc123def"`,
 			want:  value.NewStrVal("abcdef"),
 		},
-		// Error cases
 		{
 			name:    "trim with mutually exclusive refinements",
 			input:   `trim --head --tail "  hello  "`,
@@ -905,6 +893,21 @@ world"`,
 			name:    "trim with non-string input",
 			input:   `trim 123`,
 			wantErr: true,
+		},
+		{
+			name:  "trim --with empty pattern does not change string",
+			input: `trim --with "" "abc"`,
+			want:  value.NewStrVal("abc"),
+		},
+		{
+			name:    "trim --with and --all are mutually exclusive",
+			input:   `trim --with "-" --all "a-b"`,
+			wantErr: true,
+		},
+		{
+			name:  "trim --lines with CRLF and multiple blank lines",
+			input: "trim --lines \"a\r\n\n b\r\n c\"",
+			want:  value.NewStrVal("a b c"),
 		},
 	}
 
@@ -927,7 +930,6 @@ world"`,
 	}
 }
 
-// T101: find, find --last for blocks and strings
 func TestSeries_Find(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1009,7 +1011,6 @@ func TestSeries_Find(t *testing.T) {
 	}
 }
 
-// T102: remove, remove --part for blocks and strings
 func TestSeries_Remove(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1127,7 +1128,6 @@ remove str --part -1`,
 	}
 }
 
-// T103: skip, take operations
 func TestSeries_SkipTake(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1218,7 +1218,6 @@ part`,
 	}
 }
 
-// T105: next operations
 func TestSeries_Next(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1285,7 +1284,6 @@ first data`,
 	}
 }
 
-// T108: back operations
 func TestSeries_Back(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1377,7 +1375,6 @@ first backData`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip binary tests since binary literals are not implemented in parser yet
 			if strings.Contains(tt.input, "#{") || strings.Contains(tt.input, "append #{}") {
 				t.Skip("Binary literals not implemented in parser yet - cannot construct binary series for testing")
 				return
@@ -1410,7 +1407,6 @@ first backData`,
 	}
 }
 
-// T106: head operations
 func TestSeries_Head(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1485,7 +1481,6 @@ first headData`,
 	}
 }
 
-// T107: tail operations
 func TestSeries_Tail(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1563,7 +1558,6 @@ first tailData`,
 	}
 }
 
-// T103: index? on series
 func TestSeries_Index(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1642,7 +1636,6 @@ index? moved`,
 	}
 }
 
-// T104: sort, reverse on series
 func TestSeries_SortReverse(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1855,7 +1848,6 @@ func TestSeries_At(t *testing.T) {
 	}
 }
 
-// T109: empty?, head?, tail? query functions
 func TestSeries_QueryFunctions(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1864,7 +1856,6 @@ func TestSeries_QueryFunctions(t *testing.T) {
 		wantErr bool
 		errID   string
 	}{
-		// empty? tests
 		{
 			name:  "empty? empty block",
 			input: "empty? []",
@@ -1896,8 +1887,6 @@ func TestSeries_QueryFunctions(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
-
-		// head? tests
 		{
 			name:  "head? block at head",
 			input: "head? [1 2 3]",
@@ -1934,8 +1923,6 @@ func TestSeries_QueryFunctions(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
-
-		// tail? tests
 		{
 			name:  "tail? block not at tail",
 			input: "tail? [1 2 3]",

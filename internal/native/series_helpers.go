@@ -132,7 +132,7 @@ func readPartCount(refValues map[string]core.Value) (int, bool, error) {
 	hasPart = hasPart && partVal.GetType() != value.TypeNone
 
 	if !hasPart {
-		return 1, false, nil // default count is 1 when no --part refinement
+		return 1, false, nil
 	}
 
 	if partVal.GetType() != value.TypeInteger {
@@ -267,9 +267,8 @@ func seriesSelect(args []core.Value, refValues map[string]core.Value, eval core.
 				if hasDefault {
 					return defaultVal, nil
 				}
-				return value.NewNoneVal(), nil // Not found
+				return value.NewNoneVal(), nil
 			}
-			// Return substring after the match
 			remainder := haystack[pos+len(needle):]
 			return value.NewStringValue(remainder), nil
 		}
@@ -285,9 +284,8 @@ func seriesSelect(args []core.Value, refValues map[string]core.Value, eval core.
 				if hasDefault {
 					return defaultVal, nil
 				}
-				return value.NewNoneVal(), nil // Not found
+				return value.NewNoneVal(), nil
 			}
-			// Return binary data after the match
 			remainder := haystack[pos+len(needle):]
 			return value.NewBinaryValue(remainder), nil
 		}
@@ -422,24 +420,12 @@ func seriesTrim(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		hasAll := hasRefinement(refValues, "all")
 		hasWith, withVal := getRefinementValue(refValues, "with")
 
+		flags := []bool{hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith}
 		flagCount := 0
-		if hasHead {
-			flagCount++
-		}
-		if hasTail {
-			flagCount++
-		}
-		if hasAuto {
-			flagCount++
-		}
-		if hasLines {
-			flagCount++
-		}
-		if hasAll {
-			flagCount++
-		}
-		if hasWith {
-			flagCount++
+		for _, flag := range flags {
+			if flag {
+				flagCount++
+			}
 		}
 
 		if flagCount > 1 {
@@ -519,7 +505,6 @@ func trimAuto(input string) string {
 		return input
 	}
 
-	// For single line, just trim
 	if len(lines) == 1 {
 		return strings.TrimSpace(input)
 	}
@@ -539,7 +524,7 @@ func trimAuto(input string) string {
 	}
 
 	if baseIndent == "" {
-		return trimDefault(input) // No indentation to preserve
+		return trimDefault(input)
 	}
 
 	result := make([]string, len(lines))
@@ -558,9 +543,7 @@ func trimLines(input string) string {
 	result := strings.ReplaceAll(input, "\n", " ")
 	result = strings.ReplaceAll(result, "\r", " ")
 
-	for strings.Contains(result, "  ") {
-		result = strings.ReplaceAll(result, "  ", " ")
-	}
+	result = strings.Join(strings.Fields(result), " ")
 
 	return strings.TrimSpace(result)
 }
