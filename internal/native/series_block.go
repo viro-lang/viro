@@ -250,15 +250,3 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return seriesTail(args[0])
 }
-
-func BlockEmpty(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesEmpty(args[0])
-}
-
-func BlockHeadQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHeadQ(args[0])
-}
-
-func BlockTailQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTailQ(args[0])
-}

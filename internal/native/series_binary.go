@@ -283,15 +283,3 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return seriesTail(args[0])
 }
-
-func BinaryEmpty(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesEmpty(args[0])
-}
-
-func BinaryHeadQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHeadQ(args[0])
-}
-
-func BinaryTailQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTailQ(args[0])
-}

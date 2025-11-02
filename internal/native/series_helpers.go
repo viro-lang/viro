@@ -97,24 +97,24 @@ func assertSeries(series core.Value) (value.Series, error) {
 	return seriesVal, nil
 }
 
-func seriesEmpty(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesEmpty(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 	return value.NewLogicVal(seriesVal.Length() == 0), nil
 }
 
-func seriesHeadQ(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesHeadQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 	return value.NewLogicVal(seriesVal.GetIndex() == 0), nil
 }
 
-func seriesTailQ(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesTailQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
