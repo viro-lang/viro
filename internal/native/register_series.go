@@ -51,6 +51,9 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockNext, false, nil))
+	RegisterActionImpl(value.TypeBlock, "back", value.NewNativeFunction("back", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockBack, false, nil))
 	RegisterActionImpl(value.TypeBlock, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockHead, false, nil))
@@ -113,6 +116,9 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringNext, false, nil))
+	RegisterActionImpl(value.TypeString, "back", value.NewNativeFunction("back", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringBack, false, nil))
 	RegisterActionImpl(value.TypeString, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringHead, false, nil))
@@ -169,6 +175,9 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryNext, false, nil))
+	RegisterActionImpl(value.TypeBinary, "back", value.NewNativeFunction("back", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryBack, false, nil))
 	RegisterActionImpl(value.TypeBinary, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryHead, false, nil))
@@ -397,6 +406,21 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Returns:  "block! string! binary! New series reference at next position",
 		Examples: []string{"next [1 2 3]  ; => [1 2 3] (index at 2)", `next "hello"  ; => "hello" (index at 2)`, "next #{DEADBEEF}  ; => #{DEADBEEF} (index at 2)"},
 		SeeAlso:  []string{"skip", "back", "head", "tail"},
+		Tags:     []string{"series", "navigation"},
+	}))
+
+	// back - action
+	registerAndBind("back", CreateAction("back", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns a series reference moved backward by one position",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to move backward"},
+		},
+		Returns:  "block! string! binary! New series reference at previous position",
+		Examples: []string{"back next [1 2 3]  ; => [1 2 3] (index at 1)", `back next "hello"  ; => "hello" (index at 1)`, "back next #{DEADBEEF}  ; => #{DEADBEEF} (index at 1)"},
+		SeeAlso:  []string{"next", "head", "tail", "skip"},
 		Tags:     []string{"series", "navigation"},
 	}))
 

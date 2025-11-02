@@ -293,6 +293,33 @@ func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newBin, nil
 }
 
+// BinaryBack implements back action for binary values.
+// Returns a new binary reference with index moved backward by 1.
+// Errors if trying to go before the head (index < 0).
+// Feature: 004-dynamic-function-invocation
+func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Check if we're already at the head
+	if bin.GetIndex() <= 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"cannot go before head", "", ""})
+	}
+
+	// Create a new reference with index moved backward
+	newBin := bin.Clone()
+	newIndex := bin.GetIndex() - 1
+	newBin.SetIndex(newIndex)
+
+	return newBin, nil
+}
+
 // BinaryHead implements head action for binary values.
 // Returns a new binary reference positioned at index 0 (head).
 // Feature: 004-dynamic-function-invocation

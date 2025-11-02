@@ -293,6 +293,33 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newStr, nil
 }
 
+// StringBack implements back action for string values.
+// Returns a new string reference with index moved backward by 1.
+// Errors if trying to go before the head (index < 0).
+// Feature: 004-dynamic-function-invocation
+func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Check if we're already at the head
+	if str.Index() <= 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"cannot go before head", "", ""})
+	}
+
+	// Create a new reference with index moved backward
+	newStr := str.Clone()
+	newIndex := str.Index() - 1
+	newStr.SetIndex(newIndex)
+
+	return newStr, nil
+}
+
 // StringHead implements head action for string values.
 // Returns a new string reference positioned at index 0 (head).
 // Feature: 004-dynamic-function-invocation
