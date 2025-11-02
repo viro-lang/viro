@@ -120,3 +120,35 @@ func seriesTailQ(series core.Value) (core.Value, error) {
 	}
 	return value.NewLogicVal(seriesVal.GetIndex() == seriesVal.Length()), nil
 }
+
+// readPartCount extracts and validates the part refinement count from refValues
+func readPartCount(refValues map[string]core.Value) (int, bool, error) {
+	partVal, hasPart := refValues["part"]
+	hasPart = hasPart && partVal.GetType() != value.TypeNone
+
+	if !hasPart {
+		return 1, false, nil // default count is 1 when no --part refinement
+	}
+
+	if partVal.GetType() != value.TypeInteger {
+		return 0, false, verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+	}
+
+	count64, ok := value.AsIntValue(partVal)
+	if !ok {
+		return 0, false, verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
+	}
+
+	return int(count64), true, nil
+}
+
+// validatePartCount validates that count is valid for the given series length
+func validatePartCount(series value.Series, count int) error {
+	if count < 0 {
+		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
+	}
+	if count > series.Length() {
+		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
+	}
+	return nil
+}
