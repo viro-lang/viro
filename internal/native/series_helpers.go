@@ -418,5 +418,5 @@ func seriesTrim(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return newStr, nil
 	}
 
-	return args[0], nil
+	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{value.TypeToString(args[0].GetType()), "", ""})
 }
