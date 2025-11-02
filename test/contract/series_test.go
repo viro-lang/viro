@@ -492,6 +492,330 @@ func TestSeries_Copy(t *testing.T) {
 
 }
 
+func TestSeries_Pick(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "pick block valid index",
+			input: "pick [1 2 3] 2",
+			want:  value.NewIntVal(2),
+		},
+		{
+			name:  "pick block first element",
+			input: "pick [1 2 3] 1",
+			want:  value.NewIntVal(1),
+		},
+		{
+			name:  "pick block last element",
+			input: "pick [1 2 3] 3",
+			want:  value.NewIntVal(3),
+		},
+		{
+			name:  "pick block out of bounds returns none",
+			input: "pick [1 2 3] 10",
+			want:  value.NewNoneVal(),
+		},
+		{
+			name:  "pick string valid index",
+			input: `pick "hello" 1`,
+			want:  value.NewStrVal("h"),
+		},
+		{
+			name:  "pick string last char",
+			input: `pick "hello" 5`,
+			want:  value.NewStrVal("o"),
+		},
+		{
+			name:  "pick string out of bounds returns none",
+			input: `pick "hello" 10`,
+			want:  value.NewNoneVal(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestSeries_Poke(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "poke block valid index",
+			input: "poke [1 2 3] 2 99",
+			want:  value.NewIntVal(99),
+		},
+		{
+			name:    "poke block out of bounds",
+			input:   "poke [1 2 3] 10 99",
+			wantErr: true,
+		},
+		{
+			name:  "poke string valid single char",
+			input: `poke "hello" 1 "H"`,
+			want:  value.NewStrVal("H"),
+		},
+		{
+			name:    "poke string with non-string",
+			input:   `poke "hello" 1 123`,
+			wantErr: true,
+		},
+		{
+			name:    "poke string with multi-char",
+			input:   `poke "hello" 1 "ab"`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestSeries_Select(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "select block found",
+			input: "select [name \"Alice\" age 30] 'age",
+			want:  value.NewIntVal(30),
+		},
+		{
+			name:  "select block not found returns none",
+			input: "select [1 2 3 4] 5",
+			want:  value.NewNoneVal(),
+		},
+		{
+			name:  "select block with default when found returns value",
+			input: "select [a 1 b 2] 'b --default 99",
+			want:  value.NewIntVal(2),
+		},
+		{
+			name:  "select block with default when not found returns default",
+			input: "select [a 1 b 2] 'c --default 99",
+			want:  value.NewIntVal(99),
+		},
+		{
+			name:  "select block word-like match lit-word vs word",
+			input: "select ['name \"Alice\" 'age 30] 'age",
+			want:  value.NewIntVal(30),
+		},
+		{
+			name:  "select string found",
+			input: `select "hello world" " "`,
+			want:  value.NewStrVal("world"),
+		},
+		{
+			name:  "select string not found returns none",
+			input: `select "hello" "z"`,
+			want:  value.NewNoneVal(),
+		},
+		{
+			name:  "select string with default when not found",
+			input: `select "hello" "z" --default "fallback"`,
+			want:  value.NewStrVal("fallback"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestSeries_Clear(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "clear block",
+			input: "clear [1 2 3]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "clear string",
+			input: `clear "hello"`,
+			want:  value.NewStrVal(""),
+		},
+
+		{
+			name:  "clear empty block",
+			input: "clear []",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestSeries_Change(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "change block",
+			input: "change next [1 2 3] 99",
+			want:  value.NewIntVal(99),
+		},
+		{
+			name:  "change string",
+			input: `change next "hello" "a"`,
+			want:  value.NewStrVal("a"),
+		},
+		{
+			name:    "change at tail errors",
+			input:   `change tail "hello" "x"`,
+			wantErr: true,
+		},
+		{
+			name:    "change block at tail errors",
+			input:   "change tail [1 2 3] 99",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestSeries_Trim(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "trim string with whitespace",
+			input: `trim "  hello  "`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name:  "trim empty string",
+			input: `trim ""`,
+			want:  value.NewStrVal(""),
+		},
+		{
+			name:  "trim string no whitespace",
+			input: `trim "hello"`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name:  "trim string with internal whitespace",
+			input: `trim "  hello world  "`,
+			want:  value.NewStrVal("hello world"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !result.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
 // T101: find, find --last for blocks and strings
 func TestSeries_Find(t *testing.T) {
 	tests := []struct {

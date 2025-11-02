@@ -28,12 +28,11 @@ var TypeRegistry map[core.ValueType]core.Frame
 func InitTypeFrames() {
 	TypeRegistry = make(map[core.ValueType]core.Frame)
 
-	// Create type frames for series types (primary use case for actions)
 	TypeRegistry[value.TypeBlock] = createTypeFrame("block!")
 	TypeRegistry[value.TypeString] = createTypeFrame("string!")
 	TypeRegistry[value.TypeBinary] = createTypeFrame("binary!")
 
-	// Note: Additional types can be registered later via RegisterTypeFrame
+	TypeRegistry[value.TypeObject] = createTypeFrame("object!")
 }
 
 // createTypeFrame creates a type frame with standard configuration.

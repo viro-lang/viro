@@ -234,7 +234,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 		},
 	))
 
-	registerAndBind("select", value.NewNativeFunction(
+	RegisterActionImpl(value.TypeObject, "select", value.NewNativeFunction(
 		"select",
 		[]value.ParamSpec{
 			value.NewParamSpec("target", true), // evaluated
@@ -243,28 +243,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 		},
 		Select,
 		false,
-		&NativeDoc{
-			Category: "Objects",
-			Summary:  "Retrieves a field value from an object or block",
-			Description: `Looks up a field in an object or searches for a key in a block.
-For objects: returns the field value, checking parent prototypes if needed.
-For blocks: searches for key-value pairs (alternating pattern) and returns the value.
-Use --default refinement to provide a fallback when field/key is not found.`,
-			Parameters: []ParamDoc{
-				{Name: "target", Type: "object! or block!", Description: "The object or block to search", Optional: false},
-				{Name: "field", Type: "word! or string!", Description: "The field name or key to look up", Optional: false},
-				{Name: "--default", Type: "any-type!", Description: "Optional default value when field not found", Optional: true},
-			},
-			Returns: "[any-type!] The field/key value, or default, or none",
-			Examples: []string{
-				"obj: object [x: 10 y: 20]\nselect obj 'x  ; => 10",
-				"select obj 'z --default 99  ; => 99 (field not found)",
-				"data: ['name \"Alice\" 'age 30]\nselect data 'age  ; => 30",
-			},
-			SeeAlso: []string{"put", "get", "object"},
-			Tags:    []string{"objects", "lookup", "field-access"},
-		},
-	))
+		nil)) // No doc needed since it's type-specific
 
 	registerAndBind("put", value.NewNativeFunction(
 		"put",
