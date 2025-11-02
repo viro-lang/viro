@@ -1,10 +1,3 @@
-// Package debug provides debugging infrastructure for Viro.
-//
-// This package manages breakpoint state for trace debugging, supporting:
-// - Breakpoint management (set, remove, check)
-// - Debug mode states (off, active)
-//
-// Per Feature 002 FR-016: Debugger with breakpoints.
 package debug
 
 import (
@@ -15,21 +8,18 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/trace"
 )
 
-// Debugger manages breakpoint state for trace debugging (Feature 002).
-// Per FR-016: supports breakpoint, remove commands.
 type Debugger struct {
 	mu          sync.Mutex
-	breakpoints map[string]int // word -> breakpoint ID
+	breakpoints map[string]int
 	nextID      int
 	mode        DebugMode
 }
 
-// DebugMode controls debugger behavior.
 type DebugMode int
 
 const (
-	DebugModeOff    DebugMode = iota // Debugger disabled
-	DebugModeActive                  // Breakpoints active
+	DebugModeOff DebugMode = iota
+	DebugModeActive
 )
 
 func (m DebugMode) String() string {
@@ -43,10 +33,8 @@ func (m DebugMode) String() string {
 	}
 }
 
-// GlobalDebugger is the active debugger instance (singleton).
 var GlobalDebugger *Debugger
 
-// InitDebugger initializes the global debugger.
 func InitDebugger() {
 	GlobalDebugger = &Debugger{
 		breakpoints: make(map[string]int),
@@ -55,7 +43,6 @@ func InitDebugger() {
 	}
 }
 
-// SetBreakpoint adds a breakpoint on the given word.
 func (d *Debugger) SetBreakpoint(word string) int {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -67,7 +54,6 @@ func (d *Debugger) SetBreakpoint(word string) int {
 	return id
 }
 
-// RemoveBreakpoint removes a breakpoint by word.
 func (d *Debugger) RemoveBreakpoint(word string) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -82,7 +68,6 @@ func (d *Debugger) RemoveBreakpoint(word string) bool {
 	return false
 }
 
-// HasBreakpoint returns true if a breakpoint is set on the word.
 func (d *Debugger) HasBreakpoint(word string) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -91,7 +76,6 @@ func (d *Debugger) HasBreakpoint(word string) bool {
 	return exists
 }
 
-// Mode returns the current debugger mode.
 func (d *Debugger) Mode() DebugMode {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -99,7 +83,6 @@ func (d *Debugger) Mode() DebugMode {
 	return d.mode
 }
 
-// Enable activates the debugger in active mode.
 func (d *Debugger) Enable() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -107,7 +90,6 @@ func (d *Debugger) Enable() {
 	d.mode = DebugModeActive
 }
 
-// Disable deactivates the debugger and clears all breakpoints.
 func (d *Debugger) Disable() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -116,8 +98,6 @@ func (d *Debugger) Disable() {
 	d.breakpoints = make(map[string]int)
 }
 
-// RemoveBreakpointByID removes a breakpoint by its ID.
-// Returns true if a breakpoint was found and removed.
 func (d *Debugger) RemoveBreakpointByID(id int64) bool {
 	d.mu.Lock()
 	defer d.mu.Unlock()
