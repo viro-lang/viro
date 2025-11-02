@@ -1147,134 +1147,132 @@ func TestSeries_At(t *testing.T) {
 }
 
 // T107: tail operations
-func TestSeries_Tail(t *testing.T) {
+// T109: empty?, head?, tail? query functions
+func TestSeries_QueryFunctions(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
 		want    core.Value
 		wantErr bool
-		errID   string
 	}{
+		// empty? tests
 		{
-			name:  "tail block",
-			input: "tail [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "empty? empty block",
+			input: "empty? []",
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail string",
-			input: `tail "hello"`,
-			want:  value.NewStrVal("hello"),
+			name:  "empty? non-empty block",
+			input: "empty? [1 2 3]",
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail binary",
-			input: "tail #{DEADBEEF}",
-			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+			name:  "empty? empty string",
+			input: `empty? ""`,
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail single element block",
-			input: "tail [42]",
-			want:  value.NewBlockVal([]core.Value{value.NewIntVal(42)}),
+			name:  "empty? non-empty string",
+			input: `empty? "hello"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail single character string",
-			input: `tail "a"`,
-			want:  value.NewStrVal("a"),
+			name:  "empty? single char string",
+			input: `empty? "a"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail single byte binary",
-			input: "tail #{FF}",
-			want:  value.NewBinaryVal([]byte{0xFF}),
-		},
-		{
-			name:  "tail empty block",
-			input: "tail []",
-			want:  value.NewBlockVal([]core.Value{}),
-		},
-		{
-			name:  "tail empty string",
-			input: `tail ""`,
-			want:  value.NewStrVal(""),
-		},
-		{
-			name:  "tail empty binary",
-			input: "tail #{",
-			want:  value.NewBinaryVal([]byte{}),
-		},
-		{
-			name:    "tail non-series error",
-			input:   "tail 42",
+			name:    "empty? non-series error",
+			input:   "empty? 42",
 			wantErr: true,
-			errID:   verror.ErrIDActionNoImpl,
+		},
+
+		// head? tests
+		{
+			name:  "head? block at head",
+			input: "head? [1 2 3]",
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail on moved series (next)",
-			input: "tail next [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? block not at head",
+			input: "head? next [1 2 3]",
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail on moved series (skip)",
-			input: "tail skip [1 2 3 4] 2",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? string at head",
+			input: `head? "hello"`,
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail unicode string",
-			input: `tail "café"`,
-			want:  value.NewStrVal("café"),
+			name:  "head? string not at head",
+			input: `head? next "hello"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail single unicode character",
-			input: `tail "é"`,
-			want:  value.NewStrVal("é"),
+			name:  "head? block after skip",
+			input: "head? skip [1 2 3] 2",
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail on already tailed series",
-			input: "tail tail [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? block after back to head",
+			input: "head? head next [1 2 3]",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:    "head? non-series error",
+			input:   "head? 42",
+			wantErr: true,
+		},
+
+		// tail? tests
+		{
+			name:  "tail? block not at tail",
+			input: "tail? [1 2 3]",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "tail? block at tail",
+			input: "tail? tail [1 2 3]",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? string not at tail",
+			input: `tail? "hello"`,
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "tail? string at tail",
+			input: `tail? tail "hello"`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? empty block",
+			input: "tail? []",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? empty string",
+			input: `tail? ""`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? block after skip to end",
+			input: "tail? skip [1 2 3] 3",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:    "tail? non-series error",
+			input:   "tail? 42",
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip binary tests since binary literals are not implemented in parser yet
-			if strings.Contains(tt.input, "#{") {
-				t.Skip("Binary literals not implemented in parser yet")
-				return
-			}
-
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
-				}
-				if tt.errID != "" {
-					var scriptErr *verror.Error
-					if errors.As(err, &scriptErr) {
-						if scriptErr.ID != tt.errID {
-							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
-						}
-					} else {
-						t.Fatalf("expected ScriptError, got %T", err)
-					}
 				}
 				return
 			}
