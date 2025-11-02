@@ -419,12 +419,77 @@ func TestSeries_Copy(t *testing.T) {
 	})
 
 	t.Run("copy --part out of range", func(t *testing.T) {
-		input := "copy --part [1 2] 5"
+		input := "copy --part 5 [1 2]"
 		evalResult, err := Evaluate(input)
 		if err == nil {
 			t.Fatalf("expected error but got result %v", evalResult)
 		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "5" || scriptErr.Args[1] != "2" {
+				t.Fatalf("expected error args ['5', '2', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
 	})
+
+	t.Run("copy --part negative count", func(t *testing.T) {
+		input := "copy --part -1 [1 2]"
+		evalResult, err := Evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" {
+				t.Fatalf("expected error args ['-1', '2', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
+	})
+
+	t.Run("copy --part zero count", func(t *testing.T) {
+		input := "copy --part 0 [1 2 3]"
+		want := value.NewBlockVal([]core.Value{})
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy --part string out of range", func(t *testing.T) {
+		input := "copy --part 10 \"hello\""
+		evalResult, err := Evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "10" || scriptErr.Args[1] != "5" {
+				t.Fatalf("expected error args ['10', '5', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
+	})
+
 }
 
 // T101: find, find --last for blocks and strings
@@ -569,6 +634,30 @@ str`,
 		{
 			name:    "remove --part out of range error",
 			input:   `remove [1 2] --part 3`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name:    "remove --part negative count error",
+			input:   `remove [1 2] --part -1`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "remove --part zero count (no-op)",
+			input: `data: [1 2 3]
+remove data --part 0
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+			}),
+		},
+		{
+			name: "remove --part from string negative count",
+			input: `str: "hello"
+remove str --part -1`,
 			wantErr: true,
 			errID:   verror.ErrIDOutOfBounds,
 		},
