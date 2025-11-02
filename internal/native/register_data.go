@@ -8,14 +8,9 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// RegisterDataNatives registers all data and object-related native functions to the root frame.
-//
-// Panics if any function is nil or if a duplicate name is detected during registration.
 func RegisterDataNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function
 	registerAndBind := func(name string, fn *value.FunctionValue) {
 		if fn == nil {
 			panic(fmt.Sprintf("RegisterDataNatives: attempted to register nil function for '%s'", name))
@@ -24,19 +19,13 @@ func RegisterDataNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterDataNatives: duplicate registration of function '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, value.NewFuncVal(fn))
-
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Register core literal keywords
 	rootFrame.Bind("true", value.NewLogicVal(true))
 	rootFrame.Bind("false", value.NewLogicVal(false))
 	rootFrame.Bind("none", value.NewNoneVal())
-
-	// ===== Group 6: Data operations  =====
 	registerAndBind("set", value.NewNativeFunction(
 		"set",
 		[]value.ParamSpec{
