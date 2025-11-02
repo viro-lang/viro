@@ -1028,8 +1028,8 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 func checkIndexBounds(index, length int64, typeName string) error {
 	if index < 1 || index > length {
-		return verror.NewScriptError(verror.ErrIDIndexOutOfRange,
-			[3]string{fmt.Sprintf("index %d out of range for %s of length %d", index, typeName, length), "", ""})
+		return verror.NewScriptError(verror.ErrIDOutOfBounds,
+			[3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), ""})
 	}
 	return nil
 }
