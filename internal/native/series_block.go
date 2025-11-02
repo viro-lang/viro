@@ -1,18 +1,12 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -30,10 +24,6 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -47,10 +37,6 @@ func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -62,10 +48,6 @@ func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -77,10 +59,6 @@ func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func BlockLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -90,10 +68,6 @@ func BlockLength(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -123,10 +97,6 @@ func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -155,10 +125,6 @@ func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -186,10 +152,6 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -213,34 +175,18 @@ func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesNext(args[0])
 }
 
 func BlockBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesBack(args[0])
 }
 
 func BlockHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesHead(args[0])
 }
 
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -263,10 +209,6 @@ func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -288,10 +230,6 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
-	}
-
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
@@ -305,18 +243,10 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func BlockIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesIndex(args[0])
 }
 
 func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	indexVal := args[1]
 	if indexVal.GetType() != value.TypeInteger {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
@@ -329,9 +259,5 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 }
 
 func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesTail(args[0])
 }
