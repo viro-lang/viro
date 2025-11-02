@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -263,4 +264,94 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	str.SetIndex(end)
 
 	return value.NewStrVal(string(takenRunes)), nil
+}
+
+func StringPoke(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if err := validateIndex(zeroBasedIndex, len(str.Runes())); err != nil {
+		return value.NewNoneVal(), err
+	}
+	r, err := validateStringValue(args[2])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	str.SetRunes(append(str.Runes()[:zeroBasedIndex], append([]rune{r}, str.Runes()[zeroBasedIndex+1:]...)...))
+	return args[2], nil
+}
+
+func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	hasDefault := false
+	defaultVal, ok := refValues["default"]
+	if ok && defaultVal.GetType() != value.TypeNone {
+		hasDefault = true
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if targetStr, ok2 := value.AsStringValue(args[1]); ok2 {
+		haystack := string(str.Runes())
+		needle := string(targetStr.Runes())
+		pos := strings.Index(haystack, needle)
+		if pos == -1 {
+			if hasDefault {
+				return defaultVal, nil
+			}
+			return value.NewNoneVal(), nil
+		}
+		remainder := haystack[pos+len(needle):]
+		return value.NewStringValue(remainder), nil
+	}
+	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+}
+
+func StringClear(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	str.SetRunes(str.Runes()[:0])
+	str.SetIndex(0)
+	return args[0], nil
+}
+
+func StringChange(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	currentIndex := str.GetIndex()
+	if err := validateIndex(currentIndex, len(str.Runes())); err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	r, err := validateStringValue(args[1])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	runes := str.Runes()
+	newRunes := append(runes[:currentIndex], append([]rune{r}, runes[currentIndex+1:]...)...)
+	str.SetRunes(newRunes)
+	newIndex := currentIndex + 1
+	if newIndex > len(newRunes) {
+		newIndex = len(newRunes)
+	}
+	str.SetIndex(newIndex)
+	return args[1], nil
 }

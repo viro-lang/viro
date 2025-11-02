@@ -1,6 +1,7 @@
 package native
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -262,4 +263,93 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	bin.SetIndex(end)
 
 	return value.NewBinaryVal(takenBytes), nil
+}
+
+func BinaryPoke(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if err := validateIndex(zeroBasedIndex, len(bin.Bytes())); err != nil {
+		return value.NewNoneVal(), err
+	}
+	b, err := validateByteValue(args[2])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	bin.Bytes()[zeroBasedIndex] = b
+	return args[2], nil
+}
+
+func BinarySelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	hasDefault := false
+	defaultVal, ok := refValues["default"]
+	if ok && defaultVal.GetType() != value.TypeNone {
+		hasDefault = true
+	}
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if targetBytes, ok2 := value.AsBinaryValue(args[1]); ok2 {
+		haystack := bin.Bytes()
+		needle := targetBytes.Bytes()
+		pos := bytes.Index(haystack, needle)
+		if pos == -1 {
+			if hasDefault {
+				return defaultVal, nil
+			}
+			return value.NewNoneVal(), nil
+		}
+		remainder := haystack[pos+len(needle):]
+		return value.NewBinaryValue(remainder), nil
+	}
+	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[1].GetType()), ""})
+}
+
+func BinaryClear(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	bin.SetIndex(0)
+	bin.Remove(bin.Length())
+	return args[0], nil
+}
+
+func BinaryChange(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	currentIndex := bin.GetIndex()
+	if err := validateIndex(currentIndex, len(bin.Bytes())); err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	b, err := validateByteValue(args[1])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	bytes := bin.Bytes()
+	bytes[currentIndex] = b
+	newIndex := currentIndex + 1
+	if newIndex > len(bytes) {
+		newIndex = len(bytes)
+	}
+	bin.SetIndex(newIndex)
+	return args[1], nil
 }

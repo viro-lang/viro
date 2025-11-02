@@ -230,3 +230,93 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	return seriesAt(args[0], zeroBasedIndex)
 }
+
+func BlockPoke(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if err := validateIndex(zeroBasedIndex, len(blk.Elements)); err != nil {
+		return value.NewNoneVal(), err
+	}
+	blk.Elements[zeroBasedIndex] = args[2]
+	return args[2], nil
+}
+
+func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	hasDefault := false
+	defaultVal, ok := refValues["default"]
+	if ok && defaultVal.GetType() != value.TypeNone {
+		hasDefault = true
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	for i := 0; i < len(blk.Elements); i++ {
+		matches := false
+		elem := blk.Elements[i]
+		searchVal := args[1]
+
+		if isWordLike(elem.GetType()) && isWordLike(searchVal.GetType()) {
+			elemSymbol, _ := value.AsWordValue(elem)
+			searchSymbol, _ := value.AsWordValue(searchVal)
+			matches = elemSymbol == searchSymbol
+		} else {
+			matches = elem.Equals(searchVal)
+		}
+
+		if matches {
+			if i+1 < len(blk.Elements) {
+				return blk.Elements[i+1], nil
+			}
+			return value.NewNoneVal(), nil
+		}
+	}
+	if hasDefault {
+		return defaultVal, nil
+	}
+	return value.NewNoneVal(), nil
+}
+
+func BlockClear(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	blk.Elements = blk.Elements[:0]
+	blk.SetIndex(0)
+	return args[0], nil
+}
+
+func BlockChange(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	currentIndex := blk.GetIndex()
+	if err := validateIndex(currentIndex, len(blk.Elements)); err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	blk.Elements[currentIndex] = args[1]
+	newIndex := currentIndex + 1
+	if newIndex > len(blk.Elements) {
+		newIndex = len(blk.Elements)
+	}
+	blk.SetIndex(newIndex)
+	return args[1], nil
+}
