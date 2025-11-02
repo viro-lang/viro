@@ -605,7 +605,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 }
 
 // EvaluateExpression evaluates a single expression from a block starting at the given position.
-// EvaluateExpression handles infix operator lookahead internally for proper left-to-right evaluation.
+// Handles infix operator lookahead internally for proper left-to-right evaluation.
 // Returns the new position after consuming the expression, the result value, and any error.
 func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
 	newPos, result, err := e.evaluateElement(block, position)
@@ -656,7 +656,7 @@ func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs 
 	var args map[string]string
 	if e.traceEnabled {
 		traceStart = time.Now()
-		args = e.captureFunctionArgs(nil, posArgs, refValues) // fn is not needed for arg capture
+		args = e.captureFunctionArgs(nil, posArgs, refValues)
 		event := trace.TraceEvent{
 			Timestamp:  traceStart,
 			Value:      "",
@@ -1240,10 +1240,12 @@ func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.
 
 	result := make(map[string]string)
 
-	positional, _ := e.separateParameters(fn)
-	for i, param := range positional {
-		if i < len(posArgs) {
-			result[param.Name] = posArgs[i].Form()
+	if fn != nil {
+		positional, _ := e.separateParameters(fn)
+		for i, param := range positional {
+			if i < len(posArgs) {
+				result[param.Name] = posArgs[i].Form()
+			}
 		}
 	}
 

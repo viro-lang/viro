@@ -302,9 +302,9 @@ func printErrorToWriter(err error, prefix string, w io.Writer) {
 	if vErr, ok := err.(*verror.Error); ok {
 		fmt.Fprintln(w, verror.FormatErrorWithContext(vErr))
 	} else if prefix != "" {
-		fmt.Fprintf(w, "%s error: %v\n", prefix, err)
+		fmt.Fprintln(w, fmt.Sprintf("%s error: %v", prefix, err))
 	} else {
-		fmt.Fprintf(w, "Error: %v\n", err)
+		fmt.Fprintln(w, fmt.Sprintf("Error: %v", err))
 	}
 }
 
