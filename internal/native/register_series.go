@@ -7,7 +7,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-func registerSeriesTypeImpls() {
+func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockFirst, false, nil))
@@ -81,7 +81,9 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockTailQ, false, nil))
+}
 
+func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringFirst, false, nil))
@@ -154,6 +156,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, StringTake, false, nil))
+}
+
+func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryFirst, false, nil))
@@ -225,11 +230,15 @@ func registerSeriesTypeImpls() {
 	}, BinaryTake, false, nil))
 }
 
+func registerSeriesTypeImpls() {
+	registerBlockSeriesActions()
+	registerStringSeriesActions()
+	registerBinarySeriesActions()
+}
+
 func RegisterSeriesNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function or action
 	registerAndBind := func(name string, val core.Value) {
 		if val.GetType() == value.TypeNone {
 			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil value for '%s'", name))
@@ -238,17 +247,12 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterSeriesNatives: duplicate registration of '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, val)
 
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Register type-specific implementations into type frames
 	registerSeriesTypeImpls()
-
-	// All series operations now use action dispatch to type-specific implementations
 
 	registerAndBind("first", CreateAction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),

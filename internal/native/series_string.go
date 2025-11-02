@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -13,8 +15,11 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	strVal := str.String()
+	if len(strVal) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
+	}
 	if str.GetIndex() >= len(strVal) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", str.GetIndex()), fmt.Sprintf("%d", len(strVal)), ""})
 	}
 
 	return value.NewStrVal(string(strVal[str.GetIndex()])), nil
@@ -28,7 +33,7 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	strVal := str.String()
 	if len(strVal) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
 	}
 
 	return value.NewStrVal(string(strVal[len(strVal)-1])), nil
@@ -95,7 +100,7 @@ func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		}
 		count := int(count64)
 		if count < 0 || count > len(str.String()) {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "string", "out of range"})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", len(str.String())), ""})
 		}
 		// Use substring
 		runes := []rune(str.String())

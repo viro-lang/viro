@@ -140,7 +140,7 @@ func TestActionWrongArity(t *testing.T) {
 	}
 }
 
-// TestActionEmptySeries tests out-of-bounds errors when accessing empty series.
+// TestActionEmptySeries tests empty series errors when accessing empty series.
 // Contract: User Story 3 - T052
 func TestActionEmptySeries(t *testing.T) {
 	tests := []struct {
@@ -151,22 +151,22 @@ func TestActionEmptySeries(t *testing.T) {
 		{
 			name:      "first on empty block",
 			input:     "first []",
-			wantErrID: "out-of-bounds",
+			wantErrID: "empty-series",
 		},
 		{
 			name:      "first on empty string",
 			input:     `first ""`,
-			wantErrID: "out-of-bounds",
+			wantErrID: "empty-series",
 		},
 		{
 			name:      "last on empty block",
 			input:     "last []",
-			wantErrID: "out-of-bounds",
+			wantErrID: "empty-series",
 		},
 		{
 			name:      "last on empty string",
 			input:     `last ""`,
-			wantErrID: "out-of-bounds",
+			wantErrID: "empty-series",
 		},
 	}
 

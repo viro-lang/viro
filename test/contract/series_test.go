@@ -37,13 +37,13 @@ func TestSeries_First(t *testing.T) {
 			name:    "empty block error",
 			input:   "first []",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "empty string error",
 			input:   "first \"\"",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "non series error",
@@ -104,13 +104,13 @@ func TestSeries_Last(t *testing.T) {
 			name:    "empty block error",
 			input:   "last []",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "empty string error",
 			input:   "last \"\"",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "non series error",

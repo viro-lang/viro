@@ -1,20 +1,3 @@
-// Package verror provides structured error handling for the Viro interpreter.
-//
-// Errors are categorized into ranges (0, 100, 200, 300, 400, 500, 900) to
-// distinguish between syntax errors, script errors, math errors, access errors,
-// user errors, and internal errors.
-//
-// Each error includes:
-//   - Category: Error type (syntax, script, math, access, user, internal)
-//   - Code: Specific error code within category
-//   - ID: String identifier for the error
-//   - Args: Up to 3 arguments for message interpolation
-//   - Near: Expression context showing where the error occurred
-//   - Where: Call stack location
-//   - Message: Formatted error message
-//
-// Error factory functions (NewSyntaxError, NewScriptError, etc.) provide
-// convenient error creation with proper categorization.
 package verror
 
 import (
@@ -22,16 +5,6 @@ import (
 	"strings"
 )
 
-// Error represents a structured interpreter error with diagnostic context.
-//
-// Design per contracts/error-handling.md:
-// - Category: Error class (0-900)
-// - Code: Specific error within category
-// - ID: Symbolic identifier for programmatic handling
-// - Args: Up to 3 arguments for message interpolation (%1, %2, %3)
-// - Near: Expression window showing error location (3 before, 3 after)
-// - Where: Call stack trace (function names)
-// - Message: Formatted human-readable error message
 type Error struct {
 	Category ErrorCategory
 	Code     int
@@ -88,8 +61,6 @@ func (e *Error) SetWhere(where []string) *Error {
 	return e
 }
 
-// Factory functions for each error category
-
 // NewSyntaxError creates a syntax error (parsing).
 func NewSyntaxError(id string, args [3]string) *Error {
 	return NewError(ErrSyntax, id, args)
@@ -115,8 +86,6 @@ func NewInternalError(id string, args [3]string) *Error {
 	return NewError(ErrInternal, id, args)
 }
 
-// formatMessage generates human-readable error message from ID and args.
-// Uses simple template substitution: %1, %2, %3.
 func formatMessage(id string, args [3]string) string {
 	template, ok := messageTemplates[id]
 	if !ok {
@@ -131,17 +100,13 @@ func formatMessage(id string, args [3]string) string {
 	return msg
 }
 
-// messageTemplates maps error IDs to message templates.
-// Templates use %1, %2, %3 for argument interpolation.
 var messageTemplates = map[string]string{
-	// Syntax errors
 	ErrIDUnexpectedEOF:  "Unexpected end of input",
 	ErrIDUnclosedBlock:  "Unclosed block '[' - missing ']'",
 	ErrIDUnclosedParen:  "Unclosed paren '(' - missing ')'",
 	ErrIDInvalidLiteral: "Invalid literal: %1",
 	ErrIDInvalidSyntax:  "Invalid syntax: %1",
 
-	// Script errors
 	ErrIDNoValue:          "No value for word: %1",
 	ErrIDTypeMismatch:     "Type mismatch for '%1': expected %2, got %3",
 	ErrIDInvalidOperation: "Invalid operation: %1",
@@ -151,7 +116,6 @@ var messageTemplates = map[string]string{
 	ErrIDNotImplemented:   "Feature not yet implemented: %1",
 	ErrIDActionNoImpl:     "Action not implemented for type: %1",
 
-	// Feature 002: Path evaluation errors (T091)
 	ErrIDInvalidPath:      "Invalid path: %1",
 	ErrIDNonePath:         "Cannot traverse path through none value",
 	ErrIDNoSuchField:      "No such field '%1' in object",
@@ -161,12 +125,10 @@ var messageTemplates = map[string]string{
 	ErrIDObjectFieldDup:   "Duplicate field '%1' in object",
 	ErrIDReservedField:    "Field '%1' is reserved in object specifications",
 
-	// Math errors
 	ErrIDDivByZero: "Division by zero",
 	ErrIDOverflow:  "Integer overflow in operation: %1",
 	ErrIDUnderflow: "Integer underflow in operation: %1",
 
-	// Feature 002: Decimal-specific math errors
 	ErrIDSqrtNegative:     "Square root of negative number: %1",
 	ErrIDLogDomain:        "Logarithm domain error: %1",
 	ErrIDExpOverflow:      "Exponential overflow: %1",
@@ -175,7 +137,6 @@ var messageTemplates = map[string]string{
 	ErrIDAsinDomain:       "asin domain error: %1 not in [-1, 1]",
 	ErrIDAcosDomain:       "acos domain error: %1 not in [-1, 1]",
 
-	// Feature 002: Access errors (Port I/O)
 	ErrIDPortClosed:            "Port is closed: %1",
 	ErrIDTLSVerificationFailed: "TLS certificate verification failed: %1",
 	ErrIDSandboxViolation:      "Sandbox violation: path escapes sandbox root: %1",
@@ -183,19 +144,15 @@ var messageTemplates = map[string]string{
 	ErrIDConnectionRefused:     "Connection refused: %1",
 	ErrIDUnknownScheme:         "Unknown port scheme: %1",
 
-	// Feature 002: Reflection errors (T162)
 	ErrIDSpecUnsupported:   "spec-of: unsupported type %1",
 	ErrIDNoBody:            "body-of: %1",
 	ErrIDSourceUnsupported: "source: unsupported type %1",
 
-	// Internal errors
 	ErrIDStackOverflow:   "Stack overflow (maximum depth exceeded)",
 	ErrIDOutOfMemory:     "Out of memory",
 	ErrIDAssertionFailed: "Internal assertion failed: %1",
 }
 
-// ToExitCode converts an error category to an appropriate exit code.
-// This centralizes exit code mapping logic across the application.
 func ToExitCode(category ErrorCategory) int {
 	switch category {
 	case ErrSyntax:

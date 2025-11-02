@@ -21,12 +21,12 @@ func TestActionFirst(t *testing.T) {
 		{name: "block with integers", input: "first [1 2 3]", want: "1"},
 		{name: "block with strings", input: `first ["a" "b"]`, want: `"a"`},
 		{name: "nested blocks", input: "first [[1 2] [3 4]]", want: "[1 2]"},
-		{name: "empty block", input: "first []", wantErr: true, errID: "out-of-bounds"},
+		{name: "empty block", input: "first []", wantErr: true, errID: "empty-series"},
 
 		// String tests
 		{name: "string", input: `first "hello"`, want: `"h"`},
 		{name: "single char string", input: `first "a"`, want: `"a"`},
-		{name: "empty string", input: `first ""`, wantErr: true, errID: "out-of-bounds"},
+		{name: "empty string", input: `first ""`, wantErr: true, errID: "empty-series"},
 
 		// Error cases
 		{name: "unsupported type", input: "first 42", wantErr: true, errID: "action-no-impl"},
@@ -34,35 +34,7 @@ func TestActionFirst(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.input)
-			if parseErr != nil {
-				t.Fatalf("Parse error: %v", parseErr)
-			}
-
-			result, err := e.DoBlock(tokens)
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error with ID %s, got nil", tt.errID)
-					return
-				}
-				evalErr := err.(*verror.Error)
-				if evalErr.ID != tt.errID {
-					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			got := result.Mold()
-			if got != tt.want {
-				t.Errorf("Got %s, want %s", got, tt.want)
-			}
+			RunSeriesTest(t, tt.input, tt.want, tt.wantErr, tt.errID)
 		})
 	}
 }
@@ -81,12 +53,12 @@ func TestActionLast(t *testing.T) {
 		{name: "block with integers", input: "last [1 2 3]", want: "3"},
 		{name: "block with strings", input: `last ["a" "b"]`, want: `"b"`},
 		{name: "nested blocks", input: "last [[1 2] [3 4]]", want: "[3 4]"},
-		{name: "empty block", input: "last []", wantErr: true, errID: "out-of-bounds"},
+		{name: "empty block", input: "last []", wantErr: true, errID: "empty-series"},
 
 		// String tests
 		{name: "string", input: `last "hello"`, want: `"o"`},
 		{name: "single char string", input: `last "a"`, want: `"a"`},
-		{name: "empty string", input: `last ""`, wantErr: true, errID: "out-of-bounds"},
+		{name: "empty string", input: `last ""`, wantErr: true, errID: "empty-series"},
 
 		// Error cases
 		{name: "unsupported type", input: "last 42", wantErr: true, errID: "action-no-impl"},
@@ -94,35 +66,7 @@ func TestActionLast(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.input)
-			if parseErr != nil {
-				t.Fatalf("Parse error: %v", parseErr)
-			}
-
-			result, err := e.DoBlock(tokens)
-
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("Expected error with ID %s, got nil", tt.errID)
-					return
-				}
-				evalErr := err.(*verror.Error)
-				if evalErr.ID != tt.errID {
-					t.Errorf("Expected error ID %s, got %s", tt.errID, evalErr.ID)
-				}
-				return
-			}
-
-			if err != nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-
-			got := result.Mold()
-			if got != tt.want {
-				t.Errorf("Got %s, want %s", got, tt.want)
-			}
+			RunSeriesTest(t, tt.input, tt.want, tt.wantErr, tt.errID)
 		})
 	}
 }

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -14,7 +16,7 @@ func seriesBack(series core.Value) (core.Value, error) {
 
 	currentIndex := seriesVal.GetIndex()
 	if currentIndex <= 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at head", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"-1", fmt.Sprintf("%d", seriesVal.Length()), ""})
 	}
 
 	newSeries := seriesVal.Clone()
@@ -70,7 +72,7 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 
 	length := seriesVal.Length()
 	if index < 0 || index >= length {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"at", "series", "index out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), ""})
 	}
 
 	return seriesVal.ElementAt(index), nil
@@ -90,7 +92,7 @@ func seriesTail(series core.Value) (core.Value, error) {
 func assertSeries(series core.Value) (value.Series, error) {
 	seriesVal, ok := series.(value.Series)
 	if !ok {
-		return nil, verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{"", "", ""})
+		return nil, verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{value.TypeToString(series.GetType()), "", ""})
 	}
 	return seriesVal, nil
 }

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -13,11 +15,11 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
 	}
 
 	if blk.GetIndex() >= len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", blk.GetIndex()), fmt.Sprintf("%d", len(blk.Elements)), ""})
 	}
 
 	return blk.Elements[blk.GetIndex()], nil
@@ -30,7 +32,7 @@ func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
 	}
 
 	return blk.Elements[len(blk.Elements)-1], nil
@@ -86,7 +88,7 @@ func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		}
 		count := int(count64)
 		if count < 0 || count > len(blk.Elements) {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", len(blk.Elements)), ""})
 		}
 		elems := make([]core.Value, count)
 		copy(elems, blk.Elements[:count])
