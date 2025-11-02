@@ -182,8 +182,7 @@ func (b *BlockValue) SetIndex(idx int) {
 	b.Index = idx
 }
 
-// Clone creates a shallow copy of the block.
-// Elements are shared (not deep cloned).
+// Clone creates a deep copy of the block.
 func (b *BlockValue) Clone() *BlockValue {
 	elemsCopy := make([]core.Value, len(b.Elements))
 	copy(elemsCopy, b.Elements)

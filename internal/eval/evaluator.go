@@ -17,8 +17,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// Evaluator represents the core evaluation engine for the Vi programming language.
-// It manages execution context including frames, call stack, and value evaluation.
 type Evaluator struct {
 	Stack        *stack.Stack
 	Frames       []core.Frame
@@ -37,8 +35,6 @@ type Evaluator struct {
 	traceShouldTraceExpr bool
 }
 
-// NewEvaluator creates a new evaluator instance with an initialized global frame.
-// The global frame serves as the top-level context for variable bindings and function definitions.
 func NewEvaluator() *Evaluator {
 	global := frame.NewFrameWithCapacity(frame.FrameClosure, -1, 80)
 	global.Name = "(top level)"
@@ -62,8 +58,6 @@ func NewEvaluator() *Evaluator {
 	return e
 }
 
-// SetOutputWriter sets the output writer for this evaluator.
-// This allows redirecting output (e.g., from print function) to different destinations.
 func (e *Evaluator) SetOutputWriter(w io.Writer) {
 	if w == nil {
 		e.OutputWriter = os.Stdout
@@ -72,13 +66,10 @@ func (e *Evaluator) SetOutputWriter(w io.Writer) {
 	}
 }
 
-// GetOutputWriter returns the current output writer.
 func (e *Evaluator) GetOutputWriter() io.Writer {
 	return e.OutputWriter
 }
 
-// SetErrorWriter sets the error writer for this evaluator.
-// This allows redirecting error output to different destinations.
 func (e *Evaluator) SetErrorWriter(w io.Writer) {
 	if w == nil {
 		e.ErrorWriter = os.Stderr
@@ -87,13 +78,10 @@ func (e *Evaluator) SetErrorWriter(w io.Writer) {
 	}
 }
 
-// GetErrorWriter returns the current error writer.
 func (e *Evaluator) GetErrorWriter() io.Writer {
 	return e.ErrorWriter
 }
 
-// SetInputReader sets the input reader for this evaluator.
-// This allows redirecting input (e.g., from input function) from different sources.
 func (e *Evaluator) SetInputReader(r io.Reader) {
 	if r == nil {
 		e.InputReader = os.Stdin
@@ -102,13 +90,10 @@ func (e *Evaluator) SetInputReader(r io.Reader) {
 	}
 }
 
-// GetInputReader returns the current input reader.
 func (e *Evaluator) GetInputReader() io.Reader {
 	return e.InputReader
 }
 
-// UpdateTraceCache refreshes the cached trace settings from the global trace session.
-// This should be called whenever trace settings change (enable/disable/filter updates).
 func (e *Evaluator) UpdateTraceCache() {
 	if trace.GlobalTraceSession == nil {
 		e.traceEnabled = false
@@ -119,8 +104,6 @@ func (e *Evaluator) UpdateTraceCache() {
 	e.traceShouldTraceExpr = e.traceEnabled && trace.GlobalTraceSession.ShouldTraceExpression()
 }
 
-// currentFrame returns the currently active frame in the evaluation context.
-// Returns nil if no frames are available.
 func (e *Evaluator) currentFrame() core.Frame {
 	if len(e.Frames) == 0 {
 		return nil
@@ -128,8 +111,6 @@ func (e *Evaluator) currentFrame() core.Frame {
 	return e.Frames[len(e.Frames)-1]
 }
 
-// currentFrameIndex returns the index of the currently active frame.
-// Returns -1 if no frames are available.
 func (e *Evaluator) currentFrameIndex() int {
 	if len(e.Frames) == 0 {
 		return -1
@@ -138,9 +119,6 @@ func (e *Evaluator) currentFrameIndex() int {
 	return current.GetIndex()
 }
 
-// popFrame removes the current frame from the evaluation context and returns its index.
-// If the frame is not captured, it may be cleared from the frame store.
-// Captured frames are converted to closure type for potential reuse.
 func (e *Evaluator) popFrame() int {
 	if len(e.Frames) == 0 {
 		return -1
@@ -156,8 +134,6 @@ func (e *Evaluator) popFrame() int {
 	return idx
 }
 
-// pushCall adds a function name to the call stack for debugging and error reporting.
-// Anonymous functions are labeled as "(anonymous)".
 func (e *Evaluator) pushCall(name string) {
 	if name == "" {
 		name = "(anonymous)"
@@ -165,8 +141,6 @@ func (e *Evaluator) pushCall(name string) {
 	e.callStack = append(e.callStack, name)
 }
 
-// popCall removes the most recent function name from the call stack.
-// Does nothing if the call stack has only one entry (top level).
 func (e *Evaluator) popCall() {
 	if len(e.callStack) <= 1 {
 		return
@@ -174,8 +148,6 @@ func (e *Evaluator) popCall() {
 	e.callStack = e.callStack[:len(e.callStack)-1]
 }
 
-// captureCallStack returns a copy of the current call stack with proper ordering.
-// The returned slice has the top-level call first and the most recent call last.
 func (e *Evaluator) captureCallStack() []string {
 	if len(e.callStack) == 0 {
 		return []string{}
@@ -187,8 +159,6 @@ func (e *Evaluator) captureCallStack() []string {
 	return where
 }
 
-// annotateError enhances error information with context from the current evaluation state.
-// Adds "near" information and call stack "where" information to script errors.
 func (e *Evaluator) annotateError(err error, vals []core.Value, idx int) error {
 	if err == nil {
 		return nil
@@ -207,8 +177,6 @@ func (e *Evaluator) annotateError(err error, vals []core.Value, idx int) error {
 	return err
 }
 
-// functionDisplayName returns a display name for a function value.
-// Returns "(anonymous)" for functions without names, otherwise returns the function name.
 func functionDisplayName(fn *value.FunctionValue) string {
 	if fn == nil || fn.Name == "" {
 		return "(anonymous)"
@@ -216,22 +184,16 @@ func functionDisplayName(fn *value.FunctionValue) string {
 	return fn.Name
 }
 
-// MarkFrameCaptured marks a frame as captured to prevent it from being cleared.
-// Captured frames are retained for closure access and potential reuse.
 func (e *Evaluator) MarkFrameCaptured(idx int) {
 	if idx >= 0 {
 		e.captured[idx] = true
 	}
 }
 
-// CurrentFrameIndex returns the index of the currently active frame.
-// This is a public accessor for the currentFrameIndex method.
 func (e *Evaluator) CurrentFrameIndex() int {
 	return e.currentFrameIndex()
 }
 
-// RegisterFrame registers a frame in the frame store and returns its index.
-// If the frame already has an index, returns it; otherwise assigns a new one.
 func (e *Evaluator) RegisterFrame(f core.Frame) int {
 	if f.GetIndex() >= 0 {
 		return f.GetIndex()
@@ -243,8 +205,6 @@ func (e *Evaluator) RegisterFrame(f core.Frame) int {
 	return idx
 }
 
-// GetFrameByIndex retrieves a frame from the frame store by its index.
-// Returns nil if the index is out of bounds.
 func (e *Evaluator) GetFrameByIndex(idx int) core.Frame {
 	if idx < 0 || idx >= len(e.frameStore) {
 		return nil
@@ -252,8 +212,6 @@ func (e *Evaluator) GetFrameByIndex(idx int) core.Frame {
 	return e.frameStore[idx]
 }
 
-// PushFrameContext adds a frame to the evaluation context and returns its index.
-// This is similar to pushFrame but may be used for different context management.
 func (e *Evaluator) PushFrameContext(f core.Frame) int {
 	idx := f.GetIndex()
 	if idx < 0 {
@@ -265,15 +223,10 @@ func (e *Evaluator) PushFrameContext(f core.Frame) int {
 	return idx
 }
 
-// PopFrameContext removes the current frame from the evaluation context.
-// This is a public accessor for the popFrame method.
 func (e *Evaluator) PopFrameContext() {
 	e.popFrame()
 }
 
-// Lookup searches for a symbol in the current frame hierarchy.
-// Starts with the current frame and walks up the parent chain until found or top level reached.
-// Returns the bound value and true if found, otherwise returns none value and false.
 func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	frame := e.currentFrame()
 	for frame != nil {
@@ -288,8 +241,6 @@ func (e *Evaluator) Lookup(symbol string) (core.Value, bool) {
 	return value.NewNoneVal(), false
 }
 
-// GetCallStack returns a copy of the current call stack.
-// The returned slice has the most recent call first, then its caller, etc.
 func (e *Evaluator) GetCallStack() []string {
 	if len(e.callStack) == 0 {
 		return []string{}
@@ -299,8 +250,6 @@ func (e *Evaluator) GetCallStack() []string {
 	return stack
 }
 
-// DoBlock evaluates a sequence of values as a block using position tracking.
-// Returns the result of the last expression or none value for empty blocks.
 func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	var traceStart time.Time
 	if e.traceEnabled {
@@ -337,7 +286,6 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	return lastResult, nil
 }
 
-// isNextInfixOperator checks if the next element is an infix operator
 func (e *Evaluator) isNextInfixOperator(block []core.Value, position int) bool {
 	if position >= len(block) {
 		return false
@@ -402,7 +350,6 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	return newPos, result, nil
 }
 
-// evaluateSetWord handles evaluation of set-words (word:).
 func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	wordStr, _ := value.AsWordValue(element)
 
@@ -441,7 +388,6 @@ func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, posi
 	return newPos, result, nil
 }
 
-// evaluateWord handles evaluation of regular words.
 func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	wordStr, _ := value.AsWordValue(element)
 
@@ -471,7 +417,6 @@ func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, positio
 	return position + 1, resolved, nil
 }
 
-// evaluatePath handles evaluation of path expressions.
 func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	path, _ := value.AsPath(element)
 	result, err := e.evalPathValue(path)
@@ -495,7 +440,6 @@ func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, positio
 	return position + 1, result, nil
 }
 
-// evaluateElement evaluates a single element without lookahead
 func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core.Value, error) {
 	if position >= len(block) {
 		return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
@@ -584,9 +528,6 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	}
 }
 
-// EvaluateExpression evaluates a single expression from a block starting at the given position.
-// EvaluateExpression handles infix operator lookahead internally for proper left-to-right evaluation.
-// Returns the new position after consuming the expression, the result value, and any error.
 func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
 	newPos, result, err := e.evaluateElement(block, position)
 	if err != nil {
@@ -610,7 +551,6 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, c
 	return newPos, result, nil
 }
 
-// evalSetPathValue handles set-path assignment in expression evaluation.
 func (e *Evaluator) evalSetPathValue(block []core.Value, position int, setPath *value.SetPathExpression) (int, core.Value, error) {
 	newPos, result, err := e.EvaluateExpression(block, position+1)
 	if err != nil {
@@ -630,7 +570,6 @@ func (e *Evaluator) evalSetPathValue(block []core.Value, position int, setPath *
 	return newPos, result, nil
 }
 
-// setupFunctionCallTracing sets up tracing for a function call.
 func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs []core.Value, refValues map[string]core.Value) (time.Time, map[string]string) {
 	var traceStart time.Time
 	var args map[string]string
@@ -654,7 +593,6 @@ func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs 
 	return traceStart, args
 }
 
-// callNativeFunction invokes a native function and handles tracing.
 func (e *Evaluator) callNativeFunction(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value, name string, position int, traceStart time.Time) (core.Value, error) {
 	result, err := e.callNative(fn, posArgs, refValues)
 	if err != nil {
@@ -666,7 +604,6 @@ func (e *Evaluator) callNativeFunction(fn *value.FunctionValue, posArgs []core.V
 	return result, nil
 }
 
-// callUserDefinedFunction invokes a user-defined function and handles tracing.
 func (e *Evaluator) callUserDefinedFunction(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value, name string, position int, traceStart time.Time) (core.Value, error) {
 	result, err := e.executeFunction(fn, posArgs, refValues)
 	if err != nil {
@@ -678,8 +615,6 @@ func (e *Evaluator) callUserDefinedFunction(fn *value.FunctionValue, posArgs []c
 	return result, nil
 }
 
-// invokeFunctionExpression invokes a function starting at the given position in a block.
-// Returns the new position after consuming the function and its arguments, the result value, and any error.
 func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue) (int, core.Value, error) {
 	name := functionDisplayName(fn)
 	e.pushCall(name)
@@ -777,7 +712,6 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	return posArgs, refValues, position, nil
 }
 
-// collectPositionalArgs collects positional arguments for a function call.
 func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.Value, positional []value.ParamSpec, posArgs []core.Value, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool, startPosition, startParamIndex int, useElementEval bool) (int, error) {
 	position := startPosition
 	paramIndex := startParamIndex
@@ -808,7 +742,6 @@ func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.
 	return position, nil
 }
 
-// evalPathValue evaluates a path expression and returns its value.
 func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error) {
 	tr, err := traversePath(e, path, false)
 	if err != nil {
@@ -822,8 +755,6 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 	return result, nil
 }
 
-// evalGetPathValue evaluates a get-path expression and returns its value.
-// Get-paths NEVER invoke functions - they just return the result.
 func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Value, error) {
 	tr, err := traversePath(e, getPath.PathExpression, false)
 	if err != nil {
@@ -833,9 +764,6 @@ func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Val
 	return tr.values[len(tr.values)-1], nil
 }
 
-// callNative invokes a native function with positional and refinement arguments.
-// Native functions are implemented in Go and called directly.
-// Returns the result of the native function call or an error.
 func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) (core.Value, error) {
 	if fn.Type != value.FuncNative {
 		return value.NewNoneVal(), verror.NewInternalError("callNative expects native function", [3]string{})
@@ -852,8 +780,6 @@ func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, re
 	return value.NewNoneVal(), verror.NewInternalError(err.Error(), [3]string{})
 }
 
-// isRefinement checks if a value represents a function refinement.
-// Refinements are words that start with "--" and modify function behavior.
 func isRefinement(val core.Value) bool {
 	if val.GetType() != value.TypeWord {
 		return false
@@ -865,7 +791,6 @@ func isRefinement(val core.Value) bool {
 	return strings.HasPrefix(wordStr, "--")
 }
 
-// refinementError creates a script error for refinement-related issues.
 func refinementError(kind, refName string) error {
 	var msg string
 	switch kind {
@@ -879,9 +804,6 @@ func refinementError(kind, refName string) error {
 	return verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{msg, "", ""})
 }
 
-// readRefinements parses refinement arguments from a token sequence.
-// Refinements can be flags (boolean) or take values.
-// Updates the refinement values map and tracks which refinements have been provided.
 func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool) (int, error) {
 	for pos < len(tokens) && isRefinement(tokens[pos]) {
 		wordStr, _ := value.AsWordValue(tokens[pos])
@@ -919,9 +841,6 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 	return pos, nil
 }
 
-// executeFunction executes a user-defined function with the given arguments and refinements.
-// Creates a new frame for the function's local scope, binds parameters, and evaluates the function body.
-// Returns the result of the last expression in the function body.
 func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) (core.Value, error) {
 	parent := fn.Parent
 	if parent == -1 {
@@ -947,7 +866,6 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 	return result, nil
 }
 
-// bindFunctionParameters binds positional and refinement parameters to a function frame.
 func (e *Evaluator) bindFunctionParameters(frame core.Frame, fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) {
 	posIndex := 0
 	for _, spec := range fn.Params {
@@ -969,14 +887,11 @@ func (e *Evaluator) bindFunctionParameters(frame core.Frame, fn *value.FunctionV
 	}
 }
 
-// pathTraversal represents the result of traversing a path expression.
-// Contains the path segments and the values encountered during traversal.
 type pathTraversal struct {
 	segments []value.PathSegment
 	values   []core.Value
 }
 
-// resolvePathBase resolves the base value for a path expression.
 func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, error) {
 	switch firstSeg.Type {
 	case value.PathSegmentWord:
@@ -1002,7 +917,6 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 	}
 }
 
-// traverseWordSegment handles traversal of word segments (object field access).
 func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
 	if current.GetType() != value.TypeObject {
 		return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{value.TypeToString(current.GetType()), "", ""})
@@ -1024,7 +938,6 @@ func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment
 	return nil
 }
 
-// traverseIndexSegment handles traversal of index segments (collection indexing).
 func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
 	index, ok := seg.Value.(int64)
 	if !ok {
@@ -1061,9 +974,6 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 	return nil
 }
 
-// traversePath navigates through a path expression to access nested values.
-// Supports object field access and collection indexing.
-// The stopBeforeLast parameter controls whether to stop before the final segment.
 func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast bool) (*pathTraversal, error) {
 	if len(path.Segments) == 0 {
 		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
@@ -1116,8 +1026,6 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 	return tr, nil
 }
 
-// checkIndexBounds validates that an index is within bounds (1-based indexing).
-// Returns nil if valid, error if out of bounds.
 func checkIndexBounds(index, length int64, typeName string) error {
 	if index < 1 || index > length {
 		return verror.NewScriptError(verror.ErrIDIndexOutOfRange,
@@ -1126,9 +1034,6 @@ func checkIndexBounds(index, length int64, typeName string) error {
 	return nil
 }
 
-// assignToPathTarget assigns a value to the target location identified by a path traversal.
-// Supports assignment to object fields and block/string indices.
-// Validates that the target is assignable and within bounds.
 func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pathStr string) (core.Value, error) {
 	if len(tr.segments) < 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
@@ -1156,7 +1061,6 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	}
 }
 
-// assignToIndexTarget assigns a value to an indexed position in a collection.
 func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
 	index, ok := finalSeg.Value.(int64)
 	if !ok {
@@ -1176,7 +1080,6 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 	return newVal, nil
 }
 
-// assignToWordTarget assigns a value to an object field.
 func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
 	fieldName, ok := finalSeg.Value.(string)
 	if !ok {
@@ -1195,7 +1098,6 @@ func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.Path
 	return newVal, nil
 }
 
-// captureFrameState returns a map of variable bindings in the current frame for tracing.
 func (e *Evaluator) captureFrameState() map[string]string {
 	if !e.traceEnabled || trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetVerbose() {
 		return nil
@@ -1212,7 +1114,6 @@ func (e *Evaluator) captureFrameState() map[string]string {
 	return result
 }
 
-// captureFunctionArgs extracts function argument names and values for tracing.
 func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) map[string]string {
 	if !e.traceEnabled || trace.GlobalTraceSession == nil || !trace.GlobalTraceSession.GetIncludeArgs() {
 		return nil
@@ -1234,7 +1135,6 @@ func (e *Evaluator) captureFunctionArgs(fn *value.FunctionValue, posArgs []core.
 	return result
 }
 
-// emitTraceResult emits a trace event with comprehensive debugging information.
 func (e *Evaluator) emitTraceResult(eventType string, word string, expr string, result core.Value, position int, traceStart time.Time, err error) {
 	if !e.traceEnabled || trace.GlobalTraceSession == nil {
 		return

@@ -1,4 +1,3 @@
-// Package native - binary-specific series operations
 package native
 
 import (
@@ -9,8 +8,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// BinaryFirst returns the byte at the current position of a binary value.
-// Feature: 004-dynamic-function-invocation
 func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
@@ -28,8 +25,6 @@ func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewIntVal(int64(bin.Bytes()[bin.GetIndex()])), nil
 }
 
-// BinaryLast returns the last byte of a binary value.
-// Feature: 004-dynamic-function-invocation
 func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
@@ -47,9 +42,6 @@ func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewIntVal(int64(bin.Last())), nil
 }
 
-// BinaryAppend appends a byte or binary value to the end of a binary value.
-// Modifies the binary in-place and returns it.
-// Feature: 004-dynamic-function-invocation
 func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
@@ -78,9 +70,6 @@ func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// BinaryInsert inserts a byte or binary value at the beginning of a binary value.
-// Modifies the binary in-place and returns it.
-// Feature: 004-dynamic-function-invocation
 func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
@@ -111,8 +100,6 @@ func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// BinaryLength returns the number of bytes in a binary value.
-// Feature: 004-dynamic-function-invocation
 func BinaryLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
@@ -126,8 +113,6 @@ func BinaryLength(args []core.Value, refValues map[string]core.Value, eval core.
 	return value.NewIntVal(int64(bin.Length())), nil
 }
 
-// BinaryCopy implements copy action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
@@ -164,8 +149,6 @@ func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewBinaryVal(append([]byte{}, bin.Bytes()...)), nil
 }
 
-// BinaryFind implements find action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinaryFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
@@ -206,8 +189,6 @@ func BinaryFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewNoneVal(), nil
 }
 
-// BinaryRemove implements remove action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
@@ -240,8 +221,6 @@ func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// BinarySkip implements skip action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
@@ -269,9 +248,6 @@ func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-// BinaryNext implements next action for binary values.
-// Returns a new binary reference with index advanced by 1.
-// Feature: 004-dynamic-function-invocation
 func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
@@ -293,10 +269,6 @@ func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newBin, nil
 }
 
-// BinaryBack implements back action for binary values.
-// Returns a new binary reference with index moved backward by 1.
-// Returns an error if already at head position.
-// Feature: 004-dynamic-function-invocation
 func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
@@ -305,9 +277,6 @@ func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return seriesBack(args[0])
 }
 
-// BinaryHead implements head action for binary values.
-// Returns a new binary reference positioned at index 0 (head).
-// Feature: 004-dynamic-function-invocation
 func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
@@ -338,8 +307,6 @@ func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewIntVal(int64(bin.GetIndex() + 1)), nil
 }
 
-// BinaryReverse implements reverse action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
@@ -358,8 +325,6 @@ func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core
 	return args[0], nil
 }
 
-// BinarySort implements sort action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
@@ -374,8 +339,6 @@ func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-// BinaryAt returns the byte at the specified 1-based index from a binary value.
-// Feature: 004-dynamic-function-invocation
 func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
@@ -401,8 +364,6 @@ func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	return value.NewIntVal(int64(bin.Bytes()[zeroBasedIndex])), nil
 }
 
-// BinaryTake implements take action for binary values.
-// Feature: 004-dynamic-function-invocation
 func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", fmt.Sprintf("%d", len(args))})
@@ -430,8 +391,6 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewBinaryVal(takenBytes), nil
 }
 
-// BinaryTail returns a new binary containing all bytes except the first one.
-// Feature: 004-dynamic-function-invocation
 func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})

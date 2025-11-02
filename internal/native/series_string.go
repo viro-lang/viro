@@ -1,4 +1,3 @@
-// Package native - string-specific series operations
 package native
 
 import (
@@ -9,8 +8,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// StringFirst returns the character at the current position of a string.
-// Feature: 004-dynamic-function-invocation
 func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
@@ -29,8 +26,6 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewStrVal(string(strVal[str.GetIndex()])), nil
 }
 
-// StringLast returns the last character of a string.
-// Feature: 004-dynamic-function-invocation
 func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
@@ -49,9 +44,6 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewStrVal(string(strVal[len(strVal)-1])), nil
 }
 
-// StringAppend appends a string to the end of another string.
-// Modifies the string in-place and returns it.
-// Feature: 004-dynamic-function-invocation
 func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
@@ -72,9 +64,6 @@ func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// StringInsert inserts a string at the beginning of another string.
-// Modifies the string in-place and returns it.
-// Feature: 004-dynamic-function-invocation
 func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
@@ -95,8 +84,6 @@ func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// StringLength returns the number of characters in a string.
-// Feature: 004-dynamic-function-invocation
 func StringLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
@@ -110,8 +97,6 @@ func StringLength(args []core.Value, refValues map[string]core.Value, eval core.
 	return value.NewIntVal(int64(len(str.String()))), nil
 }
 
-// StringCopy implements copy action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
@@ -147,8 +132,6 @@ func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewStrVal(str.String()), nil
 }
 
-// StringFind implements find action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
@@ -206,8 +189,6 @@ func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewNoneVal(), nil
 }
 
-// StringRemove implements remove action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
@@ -240,8 +221,6 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// StringSkip implements skip action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
@@ -269,9 +248,6 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-// StringNext implements next action for string values.
-// Returns a new string reference with index advanced by 1.
-// Feature: 004-dynamic-function-invocation
 func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
@@ -293,10 +269,6 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newStr, nil
 }
 
-// StringBack implements back action for string values.
-// Returns a new string reference with index moved backward by 1.
-// Returns an error if already at head position.
-// Feature: 004-dynamic-function-invocation
 func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
@@ -305,9 +277,6 @@ func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return seriesBack(args[0])
 }
 
-// StringHead implements head action for string values.
-// Returns a new string reference positioned at index 0 (head).
-// Feature: 004-dynamic-function-invocation
 func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
@@ -338,8 +307,6 @@ func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewIntVal(int64(str.GetIndex() + 1)), nil
 }
 
-// StringReverse implements reverse action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
@@ -359,8 +326,6 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 	return args[0], nil
 }
 
-// StringSort implements sort action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
@@ -375,8 +340,6 @@ func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-// StringAt returns the character at the specified 1-based index from a string.
-// Feature: 004-dynamic-function-invocation
 func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
@@ -403,8 +366,6 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	return value.NewStrVal(string(strVal[zeroBasedIndex])), nil
 }
 
-// StringTake implements take action for string values.
-// Feature: 004-dynamic-function-invocation
 func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", fmt.Sprintf("%d", len(args))})
@@ -432,8 +393,6 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewStrVal(string(takenRunes)), nil
 }
 
-// StringTail returns a new string containing all characters except the first one.
-// Feature: 004-dynamic-function-invocation
 func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})

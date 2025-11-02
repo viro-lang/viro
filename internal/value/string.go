@@ -140,8 +140,7 @@ func (s *StringValue) SetRunes(r []rune) {
 	s.runes = r
 }
 
-// Clone creates a shallow copy of the string.
-// Runes are shared (not deep cloned).
+// Clone creates a deep copy of the string.
 func (s *StringValue) Clone() *StringValue {
 	runesCopy := make([]rune, len(s.runes))
 	copy(runesCopy, s.runes)

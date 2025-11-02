@@ -132,8 +132,7 @@ func (b *BinaryValue) Remove(count int) {
 	}
 }
 
-// Clone creates a shallow copy of the binary.
-// Data is shared (not deep cloned).
+// Clone creates a deep copy of the binary.
 func (b *BinaryValue) Clone() *BinaryValue {
 	dataCopy := make([]byte, len(b.data))
 	copy(dataCopy, b.data)

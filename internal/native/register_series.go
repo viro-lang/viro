@@ -1,4 +1,3 @@
-// Package native provides built-in native functions for the Viro interpreter.
 package native
 
 import (
@@ -8,10 +7,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// registerSeriesTypeImpls registers type-specific implementations into type frames.
-// Called by RegisterSeriesNatives after type frames are initialized.
-//
-// Feature: 004-dynamic-function-invocation
 func registerSeriesTypeImpls() {
 	// Register block-specific implementations
 	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
@@ -204,9 +199,6 @@ func registerSeriesTypeImpls() {
 	}, BinaryTake, false, nil))
 }
 
-// RegisterSeriesNatives registers all series-related native functions to the root frame.
-//
-// Panics if any function is nil or if a duplicate name is detected during registration.
 func RegisterSeriesNatives(rootFrame core.Frame) {
 	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
