@@ -974,3 +974,88 @@ func TestSeries_At(t *testing.T) {
 		})
 	}
 }
+
+// T107: tail operations
+func TestSeries_Tail(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "tail block",
+			input: "tail [1 2 3 4]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+			}),
+		},
+		{
+			name:  "tail string",
+			input: `tail "hello"`,
+			want:  value.NewStrVal("ello"),
+		},
+		{
+			name:  "tail binary",
+			input: "tail #{DEADBEEF}",
+			want:  value.NewBinaryVal([]byte{0xAD, 0xBE, 0xEF}),
+		},
+		{
+			name:  "tail single element block",
+			input: "tail [42]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "tail single character string",
+			input: `tail "a"`,
+			want:  value.NewStrVal(""),
+		},
+		{
+			name:  "tail single byte binary",
+			input: "tail #{FF}",
+			want:  value.NewBinaryVal([]byte{}),
+		},
+		{
+			name:    "tail empty block error",
+			input:   "tail []",
+			wantErr: true,
+		},
+		{
+			name:    "tail empty string error",
+			input:   `tail ""`,
+			wantErr: true,
+		},
+		{
+			name:    "tail empty binary error",
+			input:   "tail #{",
+			wantErr: true,
+		},
+		{
+			name:    "tail non-series error",
+			input:   "tail 42",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
