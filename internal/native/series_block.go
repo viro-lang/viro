@@ -1,117 +1,34 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
-	}
-
-	if blk.GetIndex() >= len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", blk.GetIndex()), fmt.Sprintf("%d", len(blk.Elements)), ""})
-	}
-
-	return blk.Elements[blk.GetIndex()], nil
-}
-
-func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
-	}
-
-	return blk.Elements[len(blk.Elements)-1], nil
-}
-
-func BlockAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	blk.Elements = append(blk.Elements, args[1])
-
-	return args[0], nil
-}
-
-func BlockInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	blk.Elements = append([]core.Value{args[1]}, blk.Elements...)
-
-	return args[0], nil
-}
-
-func BlockLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	return value.NewIntVal(int64(len(blk.Elements))), nil
-}
-
-func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	count, hasPart, err := readPartCount(refValues)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if hasPart {
-		if err := validatePartCount(blk, count); err != nil {
-			return value.NewNoneVal(), err
-		}
-		elems := make([]core.Value, count)
-		copy(elems, blk.Elements[:count])
-		return value.NewBlockVal(elems), nil
-	}
-
-	return value.NewBlockVal(append([]core.Value{}, blk.Elements...)), nil
-}
-
 func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
 	sought := args[1]
 
+	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
 	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
+	elements := block.Elements
+
 	if isLast {
-		for i := len(blk.Elements) - 1; i >= 0; i-- {
-			if blk.Elements[i].Equals(sought) {
+		for i := len(elements) - 1; i >= 0; i-- {
+			if elements[i].Equals(sought) {
 				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
 	} else {
-		for i, v := range blk.Elements {
-			if v.Equals(sought) {
+		for i, elem := range elements {
+			if elem.Equals(sought) {
 				return value.NewIntVal(int64(i + 1)), nil
 			}
 		}
@@ -120,106 +37,47 @@ func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return value.NewNoneVal(), nil
 }
 
-func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
+func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	count, _, err := readPartCount(refValues)
-	if err != nil {
-		return value.NewNoneVal(), err
+	elements := block.Elements
+	for i, j := 0, len(elements)-1; i < j; i, j = i+1, j-1 {
+		elements[i], elements[j] = elements[j], elements[i]
 	}
-
-	if err := validatePartCount(blk, count); err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	blk.SetIndex(0)
-	blk.Remove(count)
-	return args[0], nil
-}
-
-func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
-	}
-
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
-
-	newIndex := blk.GetIndex() + count
-	if newIndex < 0 || newIndex > len(blk.Elements) {
-		newIndex = len(blk.Elements)
-	}
-	blk.SetIndex(newIndex)
 
 	return args[0], nil
-}
-
-func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
-	}
-
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
-
-	start := blk.GetIndex()
-	end := min(start+count, len(blk.Elements))
-	newElements := blk.Elements[start:end]
-	blk.SetIndex(end)
-
-	return value.NewBlockVal(newElements), nil
 }
 
 func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	if len(blk.Elements) == 0 {
+	if len(block.Elements) == 0 {
 		return args[0], nil
 	}
 
-	firstType := blk.Elements[0].GetType()
-	for _, v := range blk.Elements {
+	firstType := block.Elements[0].GetType()
+	for _, v := range block.Elements {
 		if v.GetType() != firstType || (v.GetType() != value.TypeInteger && v.GetType() != value.TypeString) {
 			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 		}
 	}
 
-	value.SortBlock(blk)
-	return args[0], nil
-}
-
-func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	for i, j := 0, len(blk.Elements)-1; i < j; i, j = i+1, j-1 {
-		blk.Elements[i], blk.Elements[j] = blk.Elements[j], blk.Elements[i]
-	}
-
+	value.SortBlock(block)
 	return args[0], nil
 }
 
 func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	block, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
 	indexVal := args[1]
 	if indexVal.GetType() != value.TypeInteger {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
@@ -228,7 +86,7 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	index64, _ := value.AsIntValue(indexVal)
 	zeroBasedIndex := int(index64) - 1
 
-	return seriesAt(args[0], zeroBasedIndex)
+	return seriesAt(block, zeroBasedIndex)
 }
 
 func BlockPoke(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -240,15 +98,15 @@ func BlockPoke(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	index64, _ := value.AsIntValue(indexVal)
 	zeroBasedIndex := int(index64) - 1
 
-	blk, ok := value.AsBlockValue(args[0])
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	if err := validateIndex(zeroBasedIndex, len(blk.Elements)); err != nil {
+	if err := validateIndex(zeroBasedIndex, len(block.Elements)); err != nil {
 		return value.NewNoneVal(), err
 	}
-	blk.Elements[zeroBasedIndex] = args[2]
+	block.Elements[zeroBasedIndex] = args[2]
 	return args[2], nil
 }
 
@@ -259,64 +117,34 @@ func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.E
 		hasDefault = true
 	}
 
-	blk, ok := value.AsBlockValue(args[0])
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	for i := 0; i < len(blk.Elements); i++ {
-		matches := false
-		elem := blk.Elements[i]
-		searchVal := args[1]
+	sought := args[1]
+	elements := block.Elements
 
-		if isWordLike(elem.GetType()) && isWordLike(searchVal.GetType()) {
+	for i, elem := range elements {
+		matches := false
+		if isWordLike(elem.GetType()) && isWordLike(sought.GetType()) {
 			elemSymbol, _ := value.AsWordValue(elem)
-			searchSymbol, _ := value.AsWordValue(searchVal)
+			searchSymbol, _ := value.AsWordValue(sought)
 			matches = elemSymbol == searchSymbol
 		} else {
-			matches = elem.Equals(searchVal)
+			matches = elem.Equals(sought)
 		}
 
 		if matches {
-			if i+1 < len(blk.Elements) {
-				return blk.Elements[i+1], nil
+			if i+1 < len(elements) {
+				return elements[i+1], nil
 			}
 			return value.NewNoneVal(), nil
 		}
 	}
+
 	if hasDefault {
 		return defaultVal, nil
 	}
 	return value.NewNoneVal(), nil
-}
-
-func BlockClear(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	blk.Elements = blk.Elements[:0]
-	blk.SetIndex(0)
-	return args[0], nil
-}
-
-func BlockChange(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	currentIndex := blk.GetIndex()
-	if err := validateIndex(currentIndex, len(blk.Elements)); err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	blk.Elements[currentIndex] = args[1]
-	newIndex := currentIndex + 1
-	if newIndex > len(blk.Elements) {
-		newIndex = len(blk.Elements)
-	}
-	blk.SetIndex(newIndex)
-	return args[1], nil
 }

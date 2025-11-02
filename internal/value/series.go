@@ -11,4 +11,14 @@ type Series interface {
 	Length() int
 	Clone() Series
 	ElementAt(int) core.Value
+	FirstValue() (core.Value, error)
+	LastValue() (core.Value, error)
+	AppendValue(core.Value) error
+	InsertValue(core.Value) error
+	CopyPart(count int) (Series, error)
+	RemoveCount(count int) error
+	SkipBy(count int)
+	TakeCount(count int) Series
+	ChangeValue(core.Value) error
+	ClearSeries()
 }

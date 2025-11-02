@@ -1,6 +1,7 @@
 package value
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -136,6 +137,120 @@ func (s *StringValue) Remove(count int) {
 	if s.index+count <= len(s.runes) {
 		s.runes = append(s.runes[:s.index], s.runes[s.index+count:]...)
 	}
+}
+
+func (s *StringValue) FirstValue() (core.Value, error) {
+	if len(s.runes) == 0 {
+		return NewNoneVal(), errors.New("empty series: first element")
+	}
+	if s.index >= len(s.runes) {
+		return NewNoneVal(), fmt.Errorf("out of bounds: %d >= %d", s.index, len(s.runes))
+	}
+	return NewStrVal(string(s.runes[s.index])), nil
+}
+
+func (s *StringValue) LastValue() (core.Value, error) {
+	if len(s.runes) == 0 {
+		return NewNoneVal(), errors.New("empty series: last element")
+	}
+	return NewStrVal(string(s.Last())), nil
+}
+
+func (s *StringValue) AppendValue(val core.Value) error {
+	switch val.GetType() {
+	case TypeString:
+		strVal, _ := AsStringValue(val)
+		s.Append(strVal)
+	default:
+		return fmt.Errorf("type mismatch: expected string, got %s", TypeToString(val.GetType()))
+	}
+	return nil
+}
+
+func (s *StringValue) InsertValue(val core.Value) error {
+	switch val.GetType() {
+	case TypeString:
+		strVal, _ := AsStringValue(val)
+		s.SetIndex(0)
+		s.Insert(strVal)
+	default:
+		return fmt.Errorf("type mismatch: expected string, got %s", TypeToString(val.GetType()))
+	}
+	return nil
+}
+
+func (s *StringValue) CopyPart(count int) (Series, error) {
+	if count < 0 {
+		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
+	}
+	if count > s.Length() {
+		return nil, fmt.Errorf("out of bounds: count %d > length %d", count, s.Length())
+	}
+	end := s.index + count
+	if end > len(s.runes) {
+		end = len(s.runes)
+	}
+	runesCopy := make([]rune, count)
+	copy(runesCopy, s.runes[s.index:end])
+	return NewStringValue(string(runesCopy)), nil
+}
+
+func (s *StringValue) RemoveCount(count int) error {
+	if s.index+count > len(s.runes) {
+		return fmt.Errorf("out of bounds: index %d + count %d > length %d", s.index, count, len(s.runes))
+	}
+	s.Remove(count)
+	return nil
+}
+
+func (s *StringValue) SkipBy(count int) {
+	newIndex := s.index + count
+	if newIndex < 0 {
+		newIndex = 0
+	}
+	if newIndex > len(s.runes) {
+		newIndex = len(s.runes)
+	}
+	s.SetIndex(newIndex)
+}
+
+func (s *StringValue) TakeCount(count int) Series {
+	if count < 0 {
+		count = 0
+	}
+	if count > s.Length()-s.index {
+		count = s.Length() - s.index
+	}
+	end := s.index + count
+	if end > len(s.runes) {
+		end = len(s.runes)
+	}
+	runesCopy := make([]rune, count)
+	copy(runesCopy, s.runes[s.index:end])
+	return NewStringValue(string(runesCopy))
+}
+
+func (s *StringValue) ChangeValue(val core.Value) error {
+	switch val.GetType() {
+	case TypeString:
+		strVal, _ := AsStringValue(val)
+		runes := strVal.Runes()
+		if len(runes) != 1 {
+			return fmt.Errorf("type mismatch: expected single character string, got string of length %d", len(runes))
+		}
+		if s.index >= len(s.runes) {
+			return fmt.Errorf("out of bounds: index %d >= length %d", s.index, len(s.runes))
+		}
+		s.runes[s.index] = runes[0]
+	default:
+		return fmt.Errorf("type mismatch: expected string, got %s", TypeToString(val.GetType()))
+	}
+	return nil
+}
+
+func (s *StringValue) ClearSeries() {
+	s.runes = []rune{}
+	s.index = 0
 }
 
 func SortString(s *StringValue) {
