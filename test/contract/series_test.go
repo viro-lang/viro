@@ -1,11 +1,13 @@
 package contract
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func TestSeries_First(t *testing.T) {
@@ -666,6 +668,7 @@ func TestSeries_Back(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "back block",
@@ -693,16 +696,19 @@ first data`,
 			name:    "back on series at head error",
 			input:   `back [1 2 3]`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "back on empty block at head error",
 			input:   `back []`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "back on empty string at head error",
 			input:   `back ""`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name: "back after multiple next operations",
@@ -716,15 +722,58 @@ first backData`,
 			name:    "back non-series error",
 			input:   "back 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name: "back at tail position",
+			input: `data: [1 2 3]
+tailData: skip data 3
+backData: back tailData
+first backData`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "back after skip operations",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 3
+backData: back skipped
+first backData`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "back binary skip",
+			input: `bin: append #{} 1
+bin: append bin 2
+bin: append bin 3
+moved: next next bin
+backData: back moved
+first backData`,
+			want: value.NewIntVal(2),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Skip binary tests since binary literals are not implemented in parser yet
+			if strings.Contains(tt.input, "#{") || strings.Contains(tt.input, "append #{}") {
+				t.Skip("Binary literals not implemented in parser yet - cannot construct binary series for testing")
+				return
+			}
+
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
 				}
 				return
 			}

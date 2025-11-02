@@ -265,31 +265,12 @@ func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return newBlock, nil
 }
 
-// BlockBack implements back action for block values.
-// Returns a new block reference with index moved backward by 1.
-// Errors if trying to go before the head (index < 0).
-// Feature: 004-dynamic-function-invocation
 func BlockBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
+	if err := ensureArgCount(args, 1, "back"); err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	blk, ok := value.AsBlockValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	// Check if we're already at the head
-	if blk.GetIndex() <= 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"cannot go before head", "", ""})
-	}
-
-	// Create a new reference with index moved backward
-	newBlock := blk.Clone()
-	newIndex := blk.GetIndex() - 1
-	newBlock.SetIndex(newIndex)
-
-	return newBlock, nil
+	return seriesBack(args[0], "back")
 }
 
 // BlockHead implements head action for block values.

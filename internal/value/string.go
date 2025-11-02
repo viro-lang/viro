@@ -130,6 +130,11 @@ func (s *StringValue) Index() int {
 	return s.index
 }
 
+// GetIndex returns current series position (standard interface).
+func (s *StringValue) GetIndex() int {
+	return s.index
+}
+
 // Runes returns the underlying rune slice of the string.
 func (s *StringValue) Runes() []rune {
 	return s.runes
