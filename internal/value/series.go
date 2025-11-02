@@ -11,5 +11,4 @@ type Series interface {
 	Length() int
 	Clone() Series
 	ElementAt(int) core.Value
-	TailValue() core.Value
 }

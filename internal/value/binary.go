@@ -128,12 +128,6 @@ func (b *BinaryValue) Clone() Series {
 	}
 }
 
-func (b *BinaryValue) TailValue() core.Value {
-	newBin := b.Clone().(*BinaryValue)
-	newBin.SetIndex(len(b.data))
-	return newBin
-}
-
 func (b *BinaryValue) GetIndex() int {
 	return b.index
 }

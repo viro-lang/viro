@@ -167,12 +167,6 @@ func (b *BlockValue) Clone() Series {
 	}
 }
 
-func (b *BlockValue) TailValue() core.Value {
-	newBlock := b.Clone().(*BlockValue)
-	newBlock.SetIndex(len(b.Elements))
-	return newBlock
-}
-
 func (b *BlockValue) GoString() string {
 	return fmt.Sprintf("Block{Elements: %d, Index: %d}", len(b.Elements), b.Index)
 }

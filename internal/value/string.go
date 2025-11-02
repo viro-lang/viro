@@ -128,12 +128,6 @@ func (s *StringValue) Clone() Series {
 	}
 }
 
-func (s *StringValue) TailValue() core.Value {
-	newStr := s.Clone().(*StringValue)
-	newStr.SetIndex(len(s.runes))
-	return newStr
-}
-
 func (s *StringValue) SetIndex(idx int) {
 	s.index = idx
 }

@@ -85,5 +85,7 @@ func seriesTail(series core.Value) (core.Value, error) {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
 	}
 
-	return seriesVal.TailValue(), nil
+	tailSeries := seriesVal.Clone()
+	tailSeries.SetIndex(seriesVal.Length())
+	return tailSeries, nil
 }
