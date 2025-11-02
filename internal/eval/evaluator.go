@@ -402,54 +402,6 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	return newPos, result, nil
 }
 
-// evaluateLiteralValues handles evaluation of literal values that return themselves unchanged.
-func (e *Evaluator) evaluateLiteralValues(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
-	if shouldTraceExpr {
-		e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
-	}
-	return position + 1, element, nil
-}
-
-// evaluateParenExpression handles evaluation of parenthesized expressions.
-func (e *Evaluator) evaluateParenExpression(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
-	block, _ := value.AsBlockValue(element)
-	if shouldTraceExpr {
-		e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
-	}
-	result, err := e.DoBlock(block.Elements)
-	if shouldTraceExpr && err == nil {
-		e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
-	}
-	return position + 1, result, err
-}
-
-// evaluateLitWord handles evaluation of literal words.
-func (e *Evaluator) evaluateLitWord(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
-	wordStr, _ := value.AsWordValue(element)
-	result := value.NewWordVal(wordStr)
-	if shouldTraceExpr {
-		e.emitTraceResult("eval", wordStr, fmt.Sprintf("'%s", wordStr), result, position, traceStart, nil)
-	}
-	return position + 1, result, nil
-}
-
-// evaluateGetWord handles evaluation of get-words (:word).
-func (e *Evaluator) evaluateGetWord(element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
-	wordStr, _ := value.AsWordValue(element)
-	result, ok := e.Lookup(wordStr)
-	if !ok {
-		err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), value.NewNoneVal(), position, traceStart, err)
-		}
-		return position, value.NewNoneVal(), err
-	}
-	if shouldTraceExpr {
-		e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), result, position, traceStart, nil)
-	}
-	return position + 1, result, nil
-}
-
 // evaluateSetWord handles evaluation of set-words (word:).
 func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	wordStr, _ := value.AsWordValue(element)
@@ -563,16 +515,44 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype, value.TypeBlock,
 		value.TypeFunction:
-		return e.evaluateLiteralValues(element, position, traceStart, shouldTraceExpr)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
+		}
+		return position + 1, element, nil
 
 	case value.TypeParen:
-		return e.evaluateParenExpression(element, position, traceStart, shouldTraceExpr)
+		block, _ := value.AsBlockValue(element)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
+		}
+		result, err := e.DoBlock(block.Elements)
+		if shouldTraceExpr && err == nil {
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
+		}
+		return position + 1, result, err
 
 	case value.TypeLitWord:
-		return e.evaluateLitWord(element, position, traceStart, shouldTraceExpr)
+		wordStr, _ := value.AsWordValue(element)
+		result := value.NewWordVal(wordStr)
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf("'%s", wordStr), result, position, traceStart, nil)
+		}
+		return position + 1, result, nil
 
 	case value.TypeGetWord:
-		return e.evaluateGetWord(element, position, traceStart, shouldTraceExpr)
+		wordStr, _ := value.AsWordValue(element)
+		result, ok := e.Lookup(wordStr)
+		if !ok {
+			err := verror.NewScriptError(verror.ErrIDNoValue, [3]string{wordStr, "", ""})
+			if shouldTraceExpr {
+				e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), value.NewNoneVal(), position, traceStart, err)
+			}
+			return position, value.NewNoneVal(), err
+		}
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", wordStr, fmt.Sprintf(":%s", wordStr), result, position, traceStart, nil)
+		}
+		return position + 1, result, nil
 
 	case value.TypeGetPath:
 		getPath, _ := value.AsGetPath(element)

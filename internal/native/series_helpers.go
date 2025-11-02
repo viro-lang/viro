@@ -19,10 +19,9 @@ func ensureArgCount(args []core.Value, expected int, funcName string) error {
 // seriesBack implements the shared back logic for all series types.
 // It creates a new series reference with index moved backward by 1.
 // Returns an error if already at head position.
-func seriesBack(series core.Value, funcName string) (core.Value, error) {
+func seriesBack(series core.Value) (core.Value, error) {
 	var currentIndex int
 
-	// Get current index based on series type
 	switch s := series.(type) {
 	case *value.BlockValue:
 		currentIndex = s.GetIndex()
@@ -34,12 +33,10 @@ func seriesBack(series core.Value, funcName string) (core.Value, error) {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
 	}
 
-	// Check if we're already at the head
 	if currentIndex <= 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at head", "", ""})
 	}
 
-	// Create a new reference with index moved backward
 	var newSeries core.Value
 	switch s := series.(type) {
 	case *value.BlockValue:

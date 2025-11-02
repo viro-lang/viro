@@ -22,11 +22,11 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	strVal := str.String()
-	if str.Index() >= len(strVal) {
+	if str.GetIndex() >= len(strVal) {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
 	}
 
-	return value.NewStrVal(string(strVal[str.Index()])), nil
+	return value.NewStrVal(string(strVal[str.GetIndex()])), nil
 }
 
 // StringLast returns the last character of a string.
@@ -260,7 +260,7 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
-	newIndex := str.Index() + count
+	newIndex := str.GetIndex() + count
 	if newIndex < 0 || newIndex > len(str.String()) {
 		newIndex = len(str.String())
 	}
@@ -284,7 +284,7 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	// Create a new reference with advanced index
 	newStr := str.Clone()
-	newIndex := str.Index() + 1
+	newIndex := str.GetIndex() + 1
 	if newIndex > len(str.String()) {
 		newIndex = len(str.String())
 	}
@@ -293,12 +293,16 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newStr, nil
 }
 
+// StringBack implements back action for string values.
+// Returns a new string reference with index moved backward by 1.
+// Returns an error if already at head position.
+// Feature: 004-dynamic-function-invocation
 func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if err := ensureArgCount(args, 1, "back"); err != nil {
-		return value.NewNoneVal(), err
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	return seriesBack(args[0], "back")
+	return seriesBack(args[0])
 }
 
 // StringHead implements head action for string values.
@@ -331,7 +335,7 @@ func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	return value.NewIntVal(int64(str.Index() + 1)), nil
+	return value.NewIntVal(int64(str.GetIndex() + 1)), nil
 }
 
 // StringReverse implements reverse action for string values.
@@ -397,6 +401,35 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	}
 
 	return value.NewStrVal(string(strVal[zeroBasedIndex])), nil
+}
+
+// StringTake implements take action for string values.
+// Feature: 004-dynamic-function-invocation
+func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", fmt.Sprintf("%d", len(args))})
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	countVal := args[1]
+	if countVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+	}
+
+	count64, _ := value.AsIntValue(countVal)
+	count := int(count64)
+
+	runes := str.Runes()
+	start := str.GetIndex()
+	end := min(start+count, len(runes))
+	takenRunes := runes[start:end]
+	str.SetIndex(end)
+
+	return value.NewStrVal(string(takenRunes)), nil
 }
 
 // StringTail returns a new string containing all characters except the first one.

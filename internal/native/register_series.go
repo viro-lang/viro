@@ -138,6 +138,10 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse, false, nil))
+	RegisterActionImpl(value.TypeString, "take", value.NewNativeFunction("take", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("count", true),
+	}, StringTake, false, nil))
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryFirst, false, nil))
@@ -194,9 +198,10 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinarySort, false, nil))
-	RegisterActionImpl(value.TypeBinary, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+	RegisterActionImpl(value.TypeBinary, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryReverse, false, nil))
+		value.NewParamSpec("count", true),
+	}, BinaryTake, false, nil))
 }
 
 // RegisterSeriesNatives registers all series-related native functions to the root frame.

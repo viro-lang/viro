@@ -125,12 +125,7 @@ func (s *StringValue) Insert(val interface{}) {
 	s.runes = append(s.runes[:s.index], append(toInsert, s.runes[s.index:]...)...)
 }
 
-// Index returns current series position.
-func (s *StringValue) Index() int {
-	return s.index
-}
-
-// GetIndex returns current series position (standard interface).
+// GetIndex returns current series position.
 func (s *StringValue) GetIndex() int {
 	return s.index
 }

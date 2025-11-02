@@ -103,7 +103,7 @@ String <- '"' [^"]* '"' {
     return value.NewStrVal(content), nil
 }
 
-HexDigit <- '0' / '1'
+HexDigit <- [0-9A-Fa-f]
 
 SetWord <- word:WordChars ':' !':' {
     wordStr := word.(string)

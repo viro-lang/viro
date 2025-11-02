@@ -266,11 +266,11 @@ func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Eva
 }
 
 func BlockBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if err := ensureArgCount(args, 1, "back"); err != nil {
-		return value.NewNoneVal(), err
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	return seriesBack(args[0], "back")
+	return seriesBack(args[0])
 }
 
 // BlockHead implements head action for block values.

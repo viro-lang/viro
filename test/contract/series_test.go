@@ -1113,6 +1113,7 @@ func TestSeries_Tail(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name:  "tail block",
@@ -1152,21 +1153,25 @@ func TestSeries_Tail(t *testing.T) {
 			name:    "tail empty block error",
 			input:   "tail []",
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "tail empty string error",
 			input:   `tail ""`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "tail empty binary error",
 			input:   "tail #{",
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "tail non-series error",
 			input:   "tail 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:  "tail on moved series (next)",
@@ -1218,6 +1223,16 @@ func TestSeries_Tail(t *testing.T) {
 			if tt.wantErr {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
 				}
 				return
 			}
