@@ -520,6 +520,16 @@ func TestSeries_Pick(t *testing.T) {
 			want:  value.NewNoneVal(),
 		},
 		{
+			name:  "pick block index zero returns none",
+			input: "pick [1 2 3] 0",
+			want:  value.NewNoneVal(),
+		},
+		{
+			name:  "pick block negative index returns none",
+			input: "pick [1 2 3] -1",
+			want:  value.NewNoneVal(),
+		},
+		{
 			name:  "pick string valid index",
 			input: `pick "hello" 1`,
 			want:  value.NewStrVal("h"),
@@ -570,6 +580,16 @@ func TestSeries_Poke(t *testing.T) {
 		{
 			name:    "poke block out of bounds",
 			input:   "poke [1 2 3] 10 99",
+			wantErr: true,
+		},
+		{
+			name:    "poke block index zero errors",
+			input:   "poke [1 2 3] 0 99",
+			wantErr: true,
+		},
+		{
+			name:    "poke block negative index errors",
+			input:   "poke [1 2 3] -1 99",
 			wantErr: true,
 		},
 		{
@@ -654,6 +674,11 @@ func TestSeries_Select(t *testing.T) {
 			name:  "select string with default when not found",
 			input: `select "hello" "z" --default "fallback"`,
 			want:  value.NewStrVal("fallback"),
+		},
+		{
+			name:  "select string with default when found returns value",
+			input: `select "hello world" "o" --default "fallback"`,
+			want:  value.NewStrVal(" world"),
 		},
 	}
 
