@@ -294,3 +294,15 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return seriesTail(args[0])
 }
+
+func StringEmpty(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return seriesEmpty(args[0])
+}
+
+func StringHeadQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return seriesHeadQ(args[0])
+}
+
+func StringTailQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return seriesTailQ(args[0])
+}
