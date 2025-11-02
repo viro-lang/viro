@@ -264,11 +264,7 @@ func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	index64, _ := value.AsIntValue(indexVal)
 	zeroBasedIndex := int(index64) - 1
 
-	if zeroBasedIndex < 0 || zeroBasedIndex >= len(bin.Bytes()) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "binary", "index out of range"})
-	}
-
-	return value.NewIntVal(int64(bin.Bytes()[zeroBasedIndex])), nil
+	return seriesAt(bin, zeroBasedIndex)
 }
 
 func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

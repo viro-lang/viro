@@ -265,12 +265,7 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	index64, _ := value.AsIntValue(indexVal)
 	zeroBasedIndex := int(index64) - 1
 
-	strVal := str.String()
-	if zeroBasedIndex < 0 || zeroBasedIndex >= len(strVal) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "string", "index out of range"})
-	}
-
-	return value.NewStrVal(string(strVal[zeroBasedIndex])), nil
+	return seriesAt(str, zeroBasedIndex)
 }
 
 func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
