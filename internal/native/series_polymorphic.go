@@ -1,6 +1,8 @@
 package native
 
 import (
+	"strings"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -14,7 +16,7 @@ func seriesFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 
 	val, err := seriesVal.FirstValue()
 	if err != nil {
-		if seriesVal.Length() == 0 {
+		if strings.Contains(err.Error(), "empty series") {
 			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
 		}
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"", "", ""})

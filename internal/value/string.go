@@ -196,6 +196,9 @@ func (s *StringValue) CopyPart(count int) (Series, error) {
 }
 
 func (s *StringValue) RemoveCount(count int) error {
+	if count < 0 {
+		return fmt.Errorf("out of bounds: %d must be non-negative", count)
+	}
 	if s.index+count > len(s.runes) {
 		return fmt.Errorf("out of bounds: index %d + count %d > length %d", s.index, count, len(s.runes))
 	}

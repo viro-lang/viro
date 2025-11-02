@@ -166,6 +166,23 @@ func TestBinaryValue_SeriesInterface(t *testing.T) {
 			},
 		},
 		{
+			name: "RemoveCount negative",
+			setup: func() *BinaryValue {
+				return NewBinaryValue([]byte{1, 2, 3, 4})
+			},
+			testFunc: func(t *testing.T, b *BinaryValue) {
+				err := b.RemoveCount(-1)
+				if err == nil {
+					t.Errorf("RemoveCount() expected error for negative count")
+					return
+				}
+				expectedErr := "out of bounds: -1 must be non-negative"
+				if err.Error() != expectedErr {
+					t.Errorf("RemoveCount() error = %v, want %v", err.Error(), expectedErr)
+				}
+			},
+		},
+		{
 			name: "SkipBy",
 			setup: func() *BinaryValue {
 				return NewBinaryValue([]byte{1, 2, 3, 4})
@@ -355,6 +372,23 @@ func TestStringValue_SeriesInterface(t *testing.T) {
 				}
 				if s.String() != "cd" {
 					t.Errorf("RemoveCount() = %v, want 'cd'", s.String())
+				}
+			},
+		},
+		{
+			name: "RemoveCount negative",
+			setup: func() *StringValue {
+				return NewStringValue("abcd")
+			},
+			testFunc: func(t *testing.T, s *StringValue) {
+				err := s.RemoveCount(-1)
+				if err == nil {
+					t.Errorf("RemoveCount() expected error for negative count")
+					return
+				}
+				expectedErr := "out of bounds: -1 must be non-negative"
+				if err.Error() != expectedErr {
+					t.Errorf("RemoveCount() error = %v, want %v", err.Error(), expectedErr)
 				}
 			},
 		},
@@ -560,6 +594,23 @@ func TestBlockValue_SeriesInterface(t *testing.T) {
 				val2, _ := AsIntValue(b.Elements[1])
 				if val1 != 3 || val2 != 4 {
 					t.Errorf("RemoveCount() elements = [%v, %v], want [3, 4]", val1, val2)
+				}
+			},
+		},
+		{
+			name: "RemoveCount negative",
+			setup: func() *BlockValue {
+				return NewBlockValue([]core.Value{NewIntVal(1), NewIntVal(2), NewIntVal(3), NewIntVal(4)})
+			},
+			testFunc: func(t *testing.T, b *BlockValue) {
+				err := b.RemoveCount(-1)
+				if err == nil {
+					t.Errorf("RemoveCount() expected error for negative count")
+					return
+				}
+				expectedErr := "out of bounds: -1 must be non-negative"
+				if err.Error() != expectedErr {
+					t.Errorf("RemoveCount() error = %v, want %v", err.Error(), expectedErr)
 				}
 			},
 		},

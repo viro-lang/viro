@@ -217,6 +217,9 @@ func (b *BlockValue) CopyPart(count int) (Series, error) {
 }
 
 func (b *BlockValue) RemoveCount(count int) error {
+	if count < 0 {
+		return fmt.Errorf("out of bounds: %d must be non-negative", count)
+	}
 	if b.Index+count > len(b.Elements) {
 		return fmt.Errorf("out of bounds: index %d + count %d > length %d", b.Index, count, len(b.Elements))
 	}

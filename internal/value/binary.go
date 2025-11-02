@@ -208,6 +208,9 @@ func (b *BinaryValue) CopyPart(count int) (Series, error) {
 }
 
 func (b *BinaryValue) RemoveCount(count int) error {
+	if count < 0 {
+		return fmt.Errorf("out of bounds: %d must be non-negative", count)
+	}
 	if b.index+count > len(b.data) {
 		return fmt.Errorf("out of bounds: index %d + count %d > length %d", b.index, count, len(b.data))
 	}
