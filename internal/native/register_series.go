@@ -7,7 +7,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-func registerSeriesTypeImpls() {
+func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockFirst, false, nil))
@@ -44,16 +44,16 @@ func registerSeriesTypeImpls() {
 	}, BlockSkip, false, nil))
 	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeBlock, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeBlock, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeBlock, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -70,8 +70,20 @@ func registerSeriesTypeImpls() {
 	}, BlockAt, false, nil))
 	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockTail, false, nil))
+	}, seriesTail, false, nil))
 
+	RegisterActionImpl(value.TypeBlock, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEmpty, false, nil))
+	RegisterActionImpl(value.TypeBlock, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesHeadQ, false, nil))
+	RegisterActionImpl(value.TypeBlock, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTailQ, false, nil))
+}
+
+func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringFirst, false, nil))
@@ -108,23 +120,32 @@ func registerSeriesTypeImpls() {
 	}, StringSkip, false, nil))
 	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeString, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeString, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeString, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, StringAt, false, nil))
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringTail, false, nil))
+	}, seriesTail, false, nil))
+	RegisterActionImpl(value.TypeString, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEmpty, false, nil))
+	RegisterActionImpl(value.TypeString, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesHeadQ, false, nil))
+	RegisterActionImpl(value.TypeString, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTailQ, false, nil))
 	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringSort, false, nil))
@@ -135,6 +156,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, StringTake, false, nil))
+}
+
+func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryFirst, false, nil))
@@ -171,23 +195,32 @@ func registerSeriesTypeImpls() {
 	}, BinarySkip, false, nil))
 	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeBinary, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeBinary, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeBinary, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeBinary, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BinaryAt, false, nil))
 	RegisterActionImpl(value.TypeBinary, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryTail, false, nil))
+	}, seriesTail, false, nil))
+	RegisterActionImpl(value.TypeBinary, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEmpty, false, nil))
+	RegisterActionImpl(value.TypeBinary, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesHeadQ, false, nil))
+	RegisterActionImpl(value.TypeBinary, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTailQ, false, nil))
 	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinarySort, false, nil))
@@ -197,11 +230,15 @@ func registerSeriesTypeImpls() {
 	}, BinaryTake, false, nil))
 }
 
+func registerSeriesTypeImpls() {
+	registerBlockSeriesActions()
+	registerStringSeriesActions()
+	registerBinarySeriesActions()
+}
+
 func RegisterSeriesNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function or action
 	registerAndBind := func(name string, val core.Value) {
 		if val.GetType() == value.TypeNone {
 			panic(fmt.Sprintf("RegisterSeriesNatives: attempted to register nil value for '%s'", name))
@@ -210,20 +247,13 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterSeriesNatives: duplicate registration of '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, val)
 
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Register type-specific implementations into type frames
 	registerSeriesTypeImpls()
 
-	// ===== Group 5: Series operations (12 actions) =====
-	// All series operations now use action dispatch to type-specific implementations
-
-	// first - action
 	registerAndBind("first", CreateAction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -238,7 +268,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// last - action
 	registerAndBind("last", CreateAction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -253,7 +282,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// append - action
 	registerAndBind("append", CreateAction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -270,7 +298,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// at - action
 	registerAndBind("at", CreateAction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
@@ -287,7 +314,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "indexing"},
 	}))
 
-	// insert - action
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -304,7 +330,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// length? - action
 	registerAndBind("length?", CreateAction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -319,7 +344,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// copy - action
 	registerAndBind("copy", CreateAction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
@@ -336,7 +360,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// find - action
 	registerAndBind("find", CreateAction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -355,7 +378,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "search"},
 	}))
 
-	// remove - action
 	registerAndBind("remove", CreateAction("remove", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
@@ -372,7 +394,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// skip - action
 	registerAndBind("skip", CreateAction("skip", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -389,7 +410,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// next - action
 	registerAndBind("next", CreateAction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -404,7 +424,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// back - action
 	registerAndBind("back", CreateAction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -419,7 +438,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// head - action
 	registerAndBind("head", CreateAction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -434,7 +452,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// tail - action
 	registerAndBind("tail", CreateAction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -449,7 +466,48 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// index? - action
+	registerAndBind("empty?", CreateAction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series has zero elements",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is empty, false otherwise",
+		Examples: []string{"empty? []  ; => true", "empty? [1 2 3]  ; => false", `empty? ""  ; => true`, `empty? "hello"  ; => false`},
+		SeeAlso:  []string{"length?", "head?", "tail?"},
+		Tags:     []string{"series", "query"},
+	}))
+
+	registerAndBind("head?", CreateAction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series index is at position 0 (head)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is at head position, false otherwise",
+		Examples: []string{"head? [1 2 3]  ; => true", "head? next [1 2 3]  ; => false", `head? "hello"  ; => true`, `head? next "hello"  ; => false`},
+		SeeAlso:  []string{"tail?", "index?", "head"},
+		Tags:     []string{"series", "query"},
+	}))
+
+	registerAndBind("tail?", CreateAction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series index is at the end (index == length)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is at tail position, false otherwise",
+		Examples: []string{"tail? [1 2 3]  ; => false", "tail? tail [1 2 3]  ; => true", `tail? "hello"  ; => false`, `tail? tail "hello"  ; => true`},
+		SeeAlso:  []string{"head?", "index?", "tail"},
+		Tags:     []string{"series", "query"},
+	}))
+
 	registerAndBind("index?", CreateAction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -464,7 +522,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// take - action
 	registerAndBind("take", CreateAction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -481,7 +538,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// sort - action
 	registerAndBind("sort", CreateAction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -500,7 +556,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:    []string{"series", "sorting"},
 	}))
 
-	// reverse - action
 	registerAndBind("reverse", CreateAction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{

@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -13,8 +15,11 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	strVal := str.String()
+	if len(strVal) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
+	}
 	if str.GetIndex() >= len(strVal) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", str.GetIndex()), fmt.Sprintf("%d", len(strVal)), ""})
 	}
 
 	return value.NewStrVal(string(strVal[str.GetIndex()])), nil
@@ -28,7 +33,7 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	strVal := str.String()
 	if len(strVal) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
 	}
 
 	return value.NewStrVal(string(strVal[len(strVal)-1])), nil
@@ -81,21 +86,14 @@ func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: copy only first N characters
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
+	count, hasPart, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 
 	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, ok := value.AsIntValue(partVal)
-		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count := int(count64)
-		if count < 0 || count > len(str.String()) {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "string", "out of range"})
+		if err := validatePartCount(str, count); err != nil {
+			return value.NewNoneVal(), err
 		}
 		// Use substring
 		runes := []rune(str.String())
@@ -165,21 +163,13 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: remove N characters
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
-
-	count := 1
-	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, _ := value.AsIntValue(partVal)
-		count = int(count64)
+	count, _, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	if count < 0 || count > len(str.String()) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
+	if err := validatePartCount(str, count); err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	str.SetIndex(0)
@@ -208,22 +198,6 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	str.SetIndex(newIndex)
 
 	return args[0], nil
-}
-
-func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
-}
-
-func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
 }
 
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -289,8 +263,4 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	str.SetIndex(end)
 
 	return value.NewStrVal(string(takenRunes)), nil
-}
-
-func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }

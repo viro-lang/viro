@@ -2,6 +2,7 @@ package contract
 
 import (
 	"os"
+	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
@@ -10,6 +11,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func NewTestEvaluator() *eval.Evaluator {
@@ -50,4 +52,43 @@ func Evaluate(src string) (core.Value, error) {
 
 	e := NewTestEvaluator()
 	return e.DoBlock(vals)
+}
+
+// RunSeriesTest is a unified test helper for series operations that handles
+// common error checking patterns and result validation.
+func RunSeriesTest(t *testing.T, input string, want string, wantErr bool, errID string) {
+	t.Helper()
+
+	e := NewTestEvaluator()
+	tokens, parseErr := parse.Parse(input)
+	if parseErr != nil {
+		t.Fatalf("Parse error: %v", parseErr)
+	}
+
+	result, err := e.DoBlock(tokens)
+
+	if wantErr {
+		if err == nil {
+			t.Errorf("Expected error with ID %s, got nil", errID)
+			return
+		}
+		if evalErr, ok := err.(*verror.Error); ok {
+			if evalErr.ID != errID {
+				t.Errorf("Expected error ID %s, got %s", errID, evalErr.ID)
+			}
+		} else {
+			t.Errorf("Expected verror.Error, got %T", err)
+		}
+		return
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+		return
+	}
+
+	got := result.Mold()
+	if got != want {
+		t.Errorf("Got %s, want %s", got, want)
+	}
 }

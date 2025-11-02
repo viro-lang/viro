@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -13,11 +15,11 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
 	}
 
 	if blk.GetIndex() >= len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", blk.GetIndex()), fmt.Sprintf("%d", len(blk.Elements)), ""})
 	}
 
 	return blk.Elements[blk.GetIndex()], nil
@@ -30,7 +32,7 @@ func BlockLast(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	if len(blk.Elements) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
 	}
 
 	return blk.Elements[len(blk.Elements)-1], nil
@@ -73,20 +75,14 @@ func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
+	count, hasPart, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 
 	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, ok := value.AsIntValue(partVal)
-		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count := int(count64)
-		if count < 0 || count > len(blk.Elements) {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "block", "out of range"})
+		if err := validatePartCount(blk, count); err != nil {
+			return value.NewNoneVal(), err
 		}
 		elems := make([]core.Value, count)
 		copy(elems, blk.Elements[:count])
@@ -130,20 +126,13 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
-
-	count := 1
-	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, _ := value.AsIntValue(partVal)
-		count = int(count64)
+	count, _, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	if count < 0 || count > len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
+	if err := validatePartCount(blk, count); err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	blk.SetIndex(0)
@@ -172,18 +161,6 @@ func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	blk.SetIndex(newIndex)
 
 	return args[0], nil
-}
-
-func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func BlockBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func BlockHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
 }
 
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -242,10 +219,6 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-func BlockIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
-}
-
 func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	indexVal := args[1]
 	if indexVal.GetType() != value.TypeInteger {
@@ -256,8 +229,4 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	zeroBasedIndex := int(index64) - 1
 
 	return seriesAt(args[0], zeroBasedIndex)
-}
-
-func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }

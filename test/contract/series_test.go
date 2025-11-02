@@ -37,13 +37,13 @@ func TestSeries_First(t *testing.T) {
 			name:    "empty block error",
 			input:   "first []",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "empty string error",
 			input:   "first \"\"",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "non series error",
@@ -70,15 +70,13 @@ func TestSeries_First(t *testing.T) {
 						t.Fatalf("expected ScriptError, got %T", err)
 					}
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -106,13 +104,13 @@ func TestSeries_Last(t *testing.T) {
 			name:    "empty block error",
 			input:   "last []",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "empty string error",
 			input:   "last \"\"",
 			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			errID:   verror.ErrIDEmptySeries,
 		},
 		{
 			name:    "non series error",
@@ -139,15 +137,13 @@ func TestSeries_Last(t *testing.T) {
 						t.Fatalf("expected ScriptError, got %T", err)
 					}
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -215,15 +211,13 @@ str`,
 						t.Fatalf("expected ScriptError, got %T", err)
 					}
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -235,6 +229,7 @@ func TestSeries_Insert(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "insert into block",
@@ -259,6 +254,7 @@ str`,
 			name:    "non series error",
 			input:   "insert true 1",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 	}
 
@@ -269,15 +265,23 @@ str`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -289,6 +293,7 @@ func TestSeries_LengthQ(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name:  "block length",
@@ -309,6 +314,7 @@ func TestSeries_LengthQ(t *testing.T) {
 			name:    "non series error",
 			input:   "length? 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name: "length after append",
@@ -326,15 +332,23 @@ length? data`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -405,12 +419,77 @@ func TestSeries_Copy(t *testing.T) {
 	})
 
 	t.Run("copy --part out of range", func(t *testing.T) {
-		input := "copy --part [1 2] 5"
+		input := "copy --part 5 [1 2]"
 		evalResult, err := Evaluate(input)
 		if err == nil {
 			t.Fatalf("expected error but got result %v", evalResult)
 		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "5" || scriptErr.Args[1] != "2" {
+				t.Fatalf("expected error args ['5', '2', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
 	})
+
+	t.Run("copy --part negative count", func(t *testing.T) {
+		input := "copy --part -1 [1 2]"
+		evalResult, err := Evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" {
+				t.Fatalf("expected error args ['-1', '2', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
+	})
+
+	t.Run("copy --part zero count", func(t *testing.T) {
+		input := "copy --part 0 [1 2 3]"
+		want := value.NewBlockVal([]core.Value{})
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy --part string out of range", func(t *testing.T) {
+		input := "copy --part 10 \"hello\""
+		evalResult, err := Evaluate(input)
+		if err == nil {
+			t.Fatalf("expected error but got result %v", evalResult)
+		}
+		var scriptErr *verror.Error
+		if errors.As(err, &scriptErr) {
+			if scriptErr.ID != verror.ErrIDOutOfBounds {
+				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
+			}
+			// Verify error args structure
+			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "10" || scriptErr.Args[1] != "5" {
+				t.Fatalf("expected error args ['10', '5', ''], got %v", scriptErr.Args)
+			}
+		} else {
+			t.Fatalf("expected ScriptError, got %T", err)
+		}
+	})
+
 }
 
 // T101: find, find --last for blocks and strings
@@ -420,6 +499,7 @@ func TestSeries_Find(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name:  "find in block",
@@ -455,11 +535,13 @@ func TestSeries_Find(t *testing.T) {
 			name:    "find non-series error",
 			input:   "find 42 1",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "find string with non-string error",
 			input:   `find "hello" 1`,
 			wantErr: true,
+			errID:   verror.ErrIDTypeMismatch,
 		},
 	}
 
@@ -470,15 +552,23 @@ func TestSeries_Find(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -491,6 +581,7 @@ func TestSeries_Remove(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "remove from block",
@@ -532,16 +623,43 @@ str`,
 			name:    "remove from non-series error",
 			input:   "remove 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "remove --part with non-integer error",
 			input:   `remove [1 2] --part "a"`,
 			wantErr: true,
+			errID:   verror.ErrIDTypeMismatch,
 		},
 		{
 			name:    "remove --part out of range error",
 			input:   `remove [1 2] --part 3`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name:    "remove --part negative count error",
+			input:   `remove [1 2] --part -1`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "remove --part zero count (no-op)",
+			input: `data: [1 2 3]
+remove data --part 0
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+			}),
+		},
+		{
+			name: "remove --part from string negative count",
+			input: `str: "hello"
+remove str --part -1`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 	}
 
@@ -552,15 +670,23 @@ str`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -573,6 +699,7 @@ func TestSeries_SkipTake(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "skip and take block",
@@ -605,21 +732,25 @@ part`,
 			name:    "skip non-series error",
 			input:   "skip 42 1",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "take non-series error",
 			input:   "take 42 1",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "skip with non-integer error",
 			input:   `skip [1 2] "a"`,
 			wantErr: true,
+			errID:   verror.ErrIDTypeMismatch,
 		},
 		{
 			name:    "take with non-integer error",
 			input:   `take [1 2] "a"`,
 			wantErr: true,
+			errID:   verror.ErrIDTypeMismatch,
 		},
 	}
 
@@ -630,15 +761,23 @@ part`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -651,6 +790,7 @@ func TestSeries_Next(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "next block",
@@ -677,6 +817,7 @@ first data`,
 			name:    "next non-series error",
 			input:   "next 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 	}
 
@@ -687,15 +828,23 @@ first data`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -762,7 +911,6 @@ first backData`,
 			name:    "back non-series error",
 			input:   "back 42",
 			wantErr: true,
-			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name: "back at tail position",
@@ -815,15 +963,13 @@ first backData`,
 						t.Fatalf("expected ScriptError, got %T", err)
 					}
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -836,6 +982,7 @@ func TestSeries_Head(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "head block",
@@ -870,6 +1017,7 @@ first headData`,
 			name:    "head non-series error",
 			input:   "head 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 	}
 
@@ -880,15 +1028,101 @@ first headData`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
+		})
+	}
+}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
+// T107: tail operations
+func TestSeries_Tail(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+		errID   string
+	}{
+		{
+			name: "tail block",
+			input: `data: [1 2 3]
+tailData: tail data
+first tailData`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "tail string",
+			input: `str: "hello"
+tailStr: tail str
+first tailStr`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "tail preserves original position",
+			input: `data: [1 2 3]
+movedData: next next data
+tailData: tail movedData
+first data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "tail on already at tail",
+			input: `data: [1 2 3]
+tailData: tail data
+first tailData`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name:    "tail? non-series error",
+			input:   "tail? 42",
+			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
+		},
+	}
 
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -901,6 +1135,7 @@ func TestSeries_Index(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "index? block at head",
@@ -939,6 +1174,7 @@ index? moved`,
 			name:    "index? non-series error",
 			input:   "index? 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 	}
 
@@ -949,15 +1185,23 @@ index? moved`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -970,6 +1214,7 @@ func TestSeries_SortReverse(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name: "sort block of integers",
@@ -1017,16 +1262,19 @@ str`,
 			name:    "sort non-series error",
 			input:   "sort 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "reverse non-series error",
 			input:   "reverse 42",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "sort mixed types error",
 			input:   "sort [1 \"a\"]",
 			wantErr: true,
+			errID:   verror.ErrIDNotComparable,
 		},
 	}
 
@@ -1037,15 +1285,23 @@ str`,
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
@@ -1057,6 +1313,7 @@ func TestSeries_At(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name:  "block at valid index",
@@ -1087,41 +1344,49 @@ func TestSeries_At(t *testing.T) {
 			name:    "block index out of bounds negative",
 			input:   "at [1 2 3] 0",
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "block index out of bounds too large",
 			input:   "at [1 2 3] 4",
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "string index out of bounds",
 			input:   `at "hi" 3`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "empty block error",
 			input:   "at [] 1",
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "empty string error",
 			input:   `at "" 1`,
 			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
 		},
 		{
 			name:    "wrong series type error",
 			input:   "at 42 1",
 			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "wrong index type error",
 			input:   `at [1 2 3] "a"`,
 			wantErr: true,
+			errID:   verror.ErrIDTypeMismatch,
 		},
 		{
 			name:    "too few arguments error",
 			input:   "at [1 2 3]",
 			wantErr: true,
+			errID:   verror.ErrIDArgCount,
 		},
 	}
 
@@ -1129,25 +1394,34 @@ func TestSeries_At(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
 				if err == nil {
 					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
 
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
 }
 
-// T107: tail operations
-func TestSeries_Tail(t *testing.T) {
+// T109: empty?, head?, tail? query functions
+func TestSeries_QueryFunctions(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -1155,112 +1429,123 @@ func TestSeries_Tail(t *testing.T) {
 		wantErr bool
 		errID   string
 	}{
+		// empty? tests
 		{
-			name:  "tail block",
-			input: "tail [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "empty? empty block",
+			input: "empty? []",
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail string",
-			input: `tail "hello"`,
-			want:  value.NewStrVal("hello"),
+			name:  "empty? non-empty block",
+			input: "empty? [1 2 3]",
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail binary",
-			input: "tail #{DEADBEEF}",
-			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+			name:  "empty? empty string",
+			input: `empty? ""`,
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail single element block",
-			input: "tail [42]",
-			want:  value.NewBlockVal([]core.Value{value.NewIntVal(42)}),
+			name:  "empty? non-empty string",
+			input: `empty? "hello"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail single character string",
-			input: `tail "a"`,
-			want:  value.NewStrVal("a"),
+			name:  "empty? single char string",
+			input: `empty? "a"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail single byte binary",
-			input: "tail #{FF}",
-			want:  value.NewBinaryVal([]byte{0xFF}),
-		},
-		{
-			name:  "tail empty block",
-			input: "tail []",
-			want:  value.NewBlockVal([]core.Value{}),
-		},
-		{
-			name:  "tail empty string",
-			input: `tail ""`,
-			want:  value.NewStrVal(""),
-		},
-		{
-			name:  "tail empty binary",
-			input: "tail #{",
-			want:  value.NewBinaryVal([]byte{}),
-		},
-		{
-			name:    "tail non-series error",
-			input:   "tail 42",
+			name:    "empty? non-series error",
+			input:   "empty? 42",
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+
+		// head? tests
 		{
-			name:  "tail on moved series (next)",
-			input: "tail next [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? block at head",
+			input: "head? [1 2 3]",
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail on moved series (skip)",
-			input: "tail skip [1 2 3 4] 2",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? block not at head",
+			input: "head? next [1 2 3]",
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail unicode string",
-			input: `tail "café"`,
-			want:  value.NewStrVal("café"),
+			name:  "head? string at head",
+			input: `head? "hello"`,
+			want:  value.NewLogicVal(true),
 		},
 		{
-			name:  "tail single unicode character",
-			input: `tail "é"`,
-			want:  value.NewStrVal("é"),
+			name:  "head? string not at head",
+			input: `head? next "hello"`,
+			want:  value.NewLogicVal(false),
 		},
 		{
-			name:  "tail on already tailed series",
-			input: "tail tail [1 2 3 4]",
-			want: value.NewBlockVal([]core.Value{
-				value.NewIntVal(1),
-				value.NewIntVal(2),
-				value.NewIntVal(3),
-				value.NewIntVal(4),
-			}),
+			name:  "head? block after skip",
+			input: "head? skip [1 2 3] 2",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "head? block after back to head",
+			input: "head? head next [1 2 3]",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:    "head? non-series error",
+			input:   "head? 42",
+			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
+		},
+
+		// tail? tests
+		{
+			name:  "tail? block not at tail",
+			input: "tail? [1 2 3]",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "tail? block at tail",
+			input: "tail? tail [1 2 3]",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? string not at tail",
+			input: `tail? "hello"`,
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "tail? string at tail",
+			input: `tail? tail "hello"`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? empty block",
+			input: "tail? []",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? empty string",
+			input: `tail? ""`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "tail? block after skip to end",
+			input: "tail? skip [1 2 3] 3",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:    "tail? non-series error",
+			input:   "tail? 42",
+			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Skip binary tests since binary literals are not implemented in parser yet
-			if strings.Contains(tt.input, "#{") {
-				t.Skip("Binary literals not implemented in parser yet")
-				return
-			}
-
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
@@ -1276,15 +1561,13 @@ func TestSeries_Tail(t *testing.T) {
 						t.Fatalf("expected ScriptError, got %T", err)
 					}
 				}
-				return
-			}
-
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !evalResult.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}

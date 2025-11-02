@@ -1,6 +1,8 @@
 package native
 
 import (
+	"fmt"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
@@ -12,8 +14,11 @@ func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
+	if len(bin.Bytes()) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
+	}
 	if bin.GetIndex() >= len(bin.Bytes()) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", bin.GetIndex()), fmt.Sprintf("%d", len(bin.Bytes())), ""})
 	}
 
 	return value.NewIntVal(int64(bin.Bytes()[bin.GetIndex()])), nil
@@ -26,7 +31,7 @@ func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 
 	if len(bin.Bytes()) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
 	}
 
 	return value.NewIntVal(int64(bin.Last())), nil
@@ -43,7 +48,7 @@ func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.
 	case value.TypeInteger:
 		intVal, _ := value.AsIntValue(args[1])
 		if intVal < 0 || intVal > 255 {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"byte value must be 0-255", "", ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", intVal), "255", ""})
 		}
 		bin.Append(byte(intVal))
 	case value.TypeBinary:
@@ -67,7 +72,7 @@ func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.
 	case value.TypeInteger:
 		intVal, _ := value.AsIntValue(args[1])
 		if intVal < 0 || intVal > 255 {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"byte value must be 0-255", "", ""})
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", intVal), "255", ""})
 		}
 		bin.SetIndex(0)
 		bin.Insert(byte(intVal))
@@ -97,21 +102,14 @@ func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: copy only first N bytes
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
+	count, hasPart, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 
 	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, ok := value.AsIntValue(partVal)
-		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count := int(count64)
-		if count < 0 || count > bin.Length() {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"copy --part", "binary", "out of range"})
+		if err := validatePartCount(bin, count); err != nil {
+			return value.NewNoneVal(), err
 		}
 		// Copy first count bytes
 		bytes := make([]byte, count)
@@ -165,21 +163,13 @@ func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: remove N bytes
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
-
-	count := 1
-	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, _ := value.AsIntValue(partVal)
-		count = int(count64)
+	count, _, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	if count < 0 || count > bin.Length() {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "binary", "out of range"})
+	if err := validatePartCount(bin, count); err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	bin.SetIndex(0)
@@ -208,22 +198,6 @@ func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	bin.SetIndex(newIndex)
 
 	return args[0], nil
-}
-
-func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
-}
-
-func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
 }
 
 func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -288,8 +262,4 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	bin.SetIndex(end)
 
 	return value.NewBinaryVal(takenBytes), nil
-}
-
-func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }
