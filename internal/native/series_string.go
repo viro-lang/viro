@@ -266,7 +266,7 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 	newStr.SetIndex(newIndex)
 
-	return newStr, nil
+	return newStr.(core.Value), nil
 }
 
 func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -291,7 +291,7 @@ func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	newStr := str.Clone()
 	newStr.SetIndex(0)
 
-	return newStr, nil
+	return newStr.(core.Value), nil
 }
 
 func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

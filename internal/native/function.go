@@ -63,7 +63,7 @@ func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		}
 	}
 
-	fnValue := value.NewUserFunction("", specs, bodyClone, parentIndex, nil)
+	fnValue := value.NewUserFunction("", specs, bodyClone.(*value.BlockValue), parentIndex, nil)
 	return value.NewFuncVal(fnValue), nil
 }
 

@@ -266,7 +266,7 @@ func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 	newBin.SetIndex(newIndex)
 
-	return newBin, nil
+	return newBin.(core.Value), nil
 }
 
 func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -291,7 +291,7 @@ func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	newBin := bin.Clone()
 	newBin.SetIndex(0)
 
-	return newBin, nil
+	return newBin.(core.Value), nil
 }
 
 func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
