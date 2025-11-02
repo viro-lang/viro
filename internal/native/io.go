@@ -646,7 +646,6 @@ func QueryPort(portVal core.Value) (core.Value, error) {
 		return value.NewNoneVal(), err
 	}
 
-	// TODO: Convert metadata map to object with proper Value conversion
 	// For now, return empty object
 	objFrame := frame.NewObjectFrame(-1, make([]string, 0), nil)
 	obj := value.NewObject(objFrame)

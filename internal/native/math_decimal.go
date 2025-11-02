@@ -319,7 +319,6 @@ func Round(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		}
 	}
 
-	// TODO: Handle --mode refinement for rounding mode
 	// For now, use default half-even rounding
 
 	result := new(decimal.Big)

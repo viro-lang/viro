@@ -282,4 +282,3 @@ This temporary fix (lookahead in set-word only) solves the immediate bug for REP
 - `docs/operator-precedence.md` - Explains left-to-right evaluation
 - `plans/009_reduce_lookahead_fix.md` - Look-ahead strategy for reduce function (should be obsoleted by proper fix)
 - `docs/scoping-differences.md` - May need updates for set-word scoping behavior
-- **TODO:** Create Plan 011 for refactoring EvaluateExpression to handle lookahead universally

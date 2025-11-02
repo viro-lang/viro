@@ -58,17 +58,17 @@ func NewDocTemplate(funcName, category string, paramCount int) *NativeDoc {
 		params[i] = ParamDoc{
 			Name:        fmt.Sprintf("param%d", i+1),
 			Type:        "any-type!",
-			Description: "TODO: describe this parameter",
+			Description: "Description of this parameter",
 			Optional:    false,
 		}
 	}
 
 	return &NativeDoc{
 		Category:    category,
-		Summary:     "TODO: one-line summary",
-		Description: "TODO: detailed description",
+		Summary:     "One-line summary of the function",
+		Description: "Detailed description of the function",
 		Parameters:  params,
-		Returns:     "[any-type!] TODO: describe return value",
+		Returns:     "[any-type!] Description of return value",
 		Examples: []string{
 			funcName + " example-args  ; => expected-result",
 		},
