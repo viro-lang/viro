@@ -72,6 +72,16 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 	}, BlockTail, false, nil))
 
+	RegisterActionImpl(value.TypeBlock, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockEmpty, false, nil))
+	RegisterActionImpl(value.TypeBlock, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockHeadQ, false, nil))
+	RegisterActionImpl(value.TypeBlock, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockTailQ, false, nil))
+
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringFirst, false, nil))
@@ -125,6 +135,15 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringTail, false, nil))
+	RegisterActionImpl(value.TypeString, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringEmpty, false, nil))
+	RegisterActionImpl(value.TypeString, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringHeadQ, false, nil))
+	RegisterActionImpl(value.TypeString, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringTailQ, false, nil))
 	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringSort, false, nil))
@@ -188,6 +207,15 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBinary, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryTail, false, nil))
+	RegisterActionImpl(value.TypeBinary, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryEmpty, false, nil))
+	RegisterActionImpl(value.TypeBinary, "head?", value.NewNativeFunction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryHeadQ, false, nil))
+	RegisterActionImpl(value.TypeBinary, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryTailQ, false, nil))
 	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinarySort, false, nil))
@@ -447,6 +475,51 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Examples: []string{"tail [1 2 3 4]  ; => [1 2 3 4] (index at 4)", `tail "hello"  ; => "hello" (index at 5)`, "tail #{DEADBEEF}  ; => #{DEADBEEF} (index at 4)"},
 		SeeAlso:  []string{"head", "next", "back"},
 		Tags:     []string{"series", "navigation"},
+	}))
+
+	// empty? - action
+	registerAndBind("empty?", CreateAction("empty?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series has zero elements",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is empty, false otherwise",
+		Examples: []string{"empty? []  ; => true", "empty? [1 2 3]  ; => false", `empty? ""  ; => true`, `empty? "hello"  ; => false`},
+		SeeAlso:  []string{"length?", "head?", "tail?"},
+		Tags:     []string{"series", "query"},
+	}))
+
+	// head? - action
+	registerAndBind("head?", CreateAction("head?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series index is at position 0 (head)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is at head position, false otherwise",
+		Examples: []string{"head? [1 2 3]  ; => true", "head? next [1 2 3]  ; => false", `head? "hello"  ; => true`, `head? next "hello"  ; => false`},
+		SeeAlso:  []string{"tail?", "index?", "head"},
+		Tags:     []string{"series", "query"},
+	}))
+
+	// tail? - action
+	registerAndBind("tail?", CreateAction("tail?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns true if the series index is at the end (index == length)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
+		},
+		Returns:  "logic! true if series is at tail position, false otherwise",
+		Examples: []string{"tail? [1 2 3]  ; => false", "tail? tail [1 2 3]  ; => true", `tail? "hello"  ; => false`, `tail? tail "hello"  ; => true`},
+		SeeAlso:  []string{"head?", "index?", "tail"},
+		Tags:     []string{"series", "query"},
 	}))
 
 	// index? - action
