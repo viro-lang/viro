@@ -7,9 +7,9 @@ import (
 )
 
 func seriesBack(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	currentIndex := seriesVal.GetIndex()
@@ -24,9 +24,9 @@ func seriesBack(series core.Value) (core.Value, error) {
 }
 
 func seriesNext(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	currentIndex := seriesVal.GetIndex()
@@ -44,9 +44,9 @@ func seriesNext(series core.Value) (core.Value, error) {
 }
 
 func seriesHead(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	newSeries := seriesVal.Clone()
@@ -56,9 +56,9 @@ func seriesHead(series core.Value) (core.Value, error) {
 }
 
 func seriesIndex(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	index := seriesVal.GetIndex()
@@ -66,9 +66,9 @@ func seriesIndex(series core.Value) (core.Value, error) {
 }
 
 func seriesAt(series core.Value, index int) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	length := seriesVal.Length()
@@ -80,9 +80,9 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 }
 
 func seriesTail(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	tailSeries := seriesVal.Clone()
