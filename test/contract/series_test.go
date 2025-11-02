@@ -659,6 +659,87 @@ first data`,
 	}
 }
 
+// T108: back operations
+func TestSeries_Back(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name: "back block",
+			input: `data: [1 2 3]
+backData: back next data
+first backData`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "back string",
+			input: `str: "hello"
+backStr: back next str
+first backStr`,
+			want: value.NewStrVal("h"),
+		},
+		{
+			name: "back preserves original position",
+			input: `data: [1 2 3]
+movedData: next data
+backData: back movedData
+first data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name:    "back on series at head error",
+			input:   `back [1 2 3]`,
+			wantErr: true,
+		},
+		{
+			name:    "back on empty block at head error",
+			input:   `back []`,
+			wantErr: true,
+		},
+		{
+			name:    "back on empty string at head error",
+			input:   `back ""`,
+			wantErr: true,
+		},
+		{
+			name: "back after multiple next operations",
+			input: `data: [1 2 3 4]
+moved: next next next data
+backData: back moved
+first backData`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name:    "back non-series error",
+			input:   "back 42",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+
 // T106: head operations
 func TestSeries_Head(t *testing.T) {
 	tests := []struct {
