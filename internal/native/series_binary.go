@@ -405,6 +405,5 @@ func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	// Return new binary with all bytes except the first
 	return value.NewBinaryVal(append([]byte{}, bin.Bytes()[1:]...)), nil
 }

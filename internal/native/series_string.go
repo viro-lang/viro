@@ -403,11 +403,10 @@ func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	strVal := str.String()
-	if len(strVal) == 0 {
+	runes := str.Runes()
+	if len(runes) == 0 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	// Return new string with all characters except the first
-	return value.NewStrVal(strVal[1:]), nil
+	return value.NewStrVal(string(runes[1:])), nil
 }

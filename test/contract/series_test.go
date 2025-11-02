@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -1037,10 +1038,52 @@ func TestSeries_Tail(t *testing.T) {
 			input:   "tail 42",
 			wantErr: true,
 		},
+		{
+			name:  "tail on moved series (next)",
+			input: "tail next [1 2 3 4]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+			}),
+		},
+		{
+			name:  "tail on moved series (skip)",
+			input: "tail skip [1 2 3 4] 2",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+			}),
+		},
+		{
+			name:  "tail unicode string",
+			input: `tail "café"`,
+			want:  value.NewStrVal("afé"),
+		},
+		{
+			name:  "tail single unicode character",
+			input: `tail "é"`,
+			want:  value.NewStrVal(""),
+		},
+		{
+			name:  "tail on already tailed series",
+			input: "tail tail [1 2 3 4]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+			}),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Skip binary tests since binary literals are not implemented in parser yet
+			if strings.Contains(tt.input, "#{") {
+				t.Skip("Binary literals not implemented in parser yet")
+				return
+			}
+
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {

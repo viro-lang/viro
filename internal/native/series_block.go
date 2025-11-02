@@ -415,6 +415,5 @@ func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	// Return new block with all elements except the first
 	return value.NewBlockVal(append([]core.Value{}, blk.Elements[1:]...)), nil
 }
