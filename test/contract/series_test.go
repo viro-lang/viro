@@ -800,6 +800,7 @@ func TestSeries_Trim(t *testing.T) {
 		want    core.Value
 		wantErr bool
 	}{
+		// Basic trim (backward compatibility)
 		{
 			name:  "trim string with whitespace",
 			input: `trim "  hello  "`,
@@ -819,6 +820,91 @@ func TestSeries_Trim(t *testing.T) {
 			name:  "trim string with internal whitespace",
 			input: `trim "  hello world  "`,
 			want:  value.NewStrVal("hello world"),
+		},
+		// /head refinement
+		{
+			name:  "trim/head removes leading whitespace",
+			input: `trim/head "  hello  "`,
+			want:  value.NewStrVal("hello  "),
+		},
+		{
+			name:  "trim/head with no leading whitespace",
+			input: `trim/head "hello  "`,
+			want:  value.NewStrVal("hello  "),
+		},
+		// /tail refinement
+		{
+			name:  "trim/tail removes trailing whitespace",
+			input: `trim/tail "  hello  "`,
+			want:  value.NewStrVal("  hello"),
+		},
+		{
+			name:  "trim/tail with no trailing whitespace",
+			input: `trim/tail "  hello"`,
+			want:  value.NewStrVal("  hello"),
+		},
+		// /auto refinement
+		{
+			name: "trim/auto with indented text",
+			input: `trim/auto {    line1
+    line2
+        line3}`,
+			want: value.NewStrVal("line1\nline2\n    line3"),
+		},
+		{
+			name:  "trim/auto with no common indentation",
+			input: `trim/auto "  hello  "`,
+			want:  value.NewStrVal("hello"),
+		},
+		// /lines refinement
+		{
+			name: "trim/lines removes line breaks and extra spaces",
+			input: `trim/lines "hello
+world"`,
+			want: value.NewStrVal("hello world"),
+		},
+		{
+			name:  "trim/lines collapses multiple spaces",
+			input: `trim/lines "hello   world"`,
+			want:  value.NewStrVal("hello world"),
+		},
+		// /all refinement
+		{
+			name:  "trim/all removes all whitespace",
+			input: `trim/all "  hello world  "`,
+			want:  value.NewStrVal("helloworld"),
+		},
+		{
+			name:  "trim/all with tabs and spaces",
+			input: `trim/all "  hello\tworld  "`,
+			want:  value.NewStrVal("helloworld"),
+		},
+		// /with refinement
+		{
+			name:  "trim/with removes specified characters",
+			input: `trim/with "a-b-c" "-"`,
+			want:  value.NewStrVal("abc"),
+		},
+		{
+			name:  "trim/with removes multiple characters",
+			input: `trim/with "abc123def" "123"`,
+			want:  value.NewStrVal("abcdef"),
+		},
+		// Error cases
+		{
+			name:    "trim with mutually exclusive refinements",
+			input:   `trim/head/tail "  hello  "`,
+			wantErr: true,
+		},
+		{
+			name:    "trim/with with non-string argument",
+			input:   `trim/with "hello" 123`,
+			wantErr: true,
+		},
+		{
+			name:    "trim with non-string input",
+			input:   `trim 123`,
+			wantErr: true,
 		},
 	}
 
