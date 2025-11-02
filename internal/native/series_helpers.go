@@ -413,10 +413,170 @@ func seriesPick(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 func seriesTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if str, ok := value.AsStringValue(args[0]); ok {
-		trimmed := strings.TrimSpace(string(str.Runes()))
-		newStr := value.NewStringValue(trimmed)
-		return newStr, nil
+		input := string(str.Runes())
+
+		hasHead := hasRefinement(refValues, "head")
+		hasTail := hasRefinement(refValues, "tail")
+		hasAuto := hasRefinement(refValues, "auto")
+		hasLines := hasRefinement(refValues, "lines")
+		hasAll := hasRefinement(refValues, "all")
+		hasWith, withVal := getRefinementValue(refValues, "with")
+
+		flagCount := 0
+		if hasHead {
+			flagCount++
+		}
+		if hasTail {
+			flagCount++
+		}
+		if hasAuto {
+			flagCount++
+		}
+		if hasLines {
+			flagCount++
+		}
+		if hasAll {
+			flagCount++
+		}
+		if hasWith {
+			flagCount++
+		}
+
+		if flagCount > 1 {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"trim refinements are mutually exclusive", "", ""},
+			)
+		}
+
+		if hasWith {
+			withStr, ok := value.AsStringValue(withVal)
+			if !ok {
+				return value.NewNoneVal(), verror.NewScriptError(
+					verror.ErrIDTypeMismatch,
+					[3]string{"string", value.TypeToString(withVal.GetType()), "--with"},
+				)
+			}
+			charsToRemove := string(withStr.Runes())
+			return value.NewStringValue(trimWith(input, charsToRemove)), nil
+		}
+
+		if flagCount == 0 {
+			return value.NewStringValue(trimDefault(input)), nil
+		}
+
+		if hasHead {
+			return value.NewStringValue(trimHead(input)), nil
+		}
+		if hasTail {
+			return value.NewStringValue(trimTail(input)), nil
+		}
+		if hasAuto {
+			return value.NewStringValue(trimAuto(input)), nil
+		}
+		if hasLines {
+			return value.NewStringValue(trimLines(input)), nil
+		}
+		if hasAll {
+			return value.NewStringValue(trimAll(input)), nil
+		}
+
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDAssertionFailed, [3]string{"unexpected trim refinement state", "", ""})
 	}
 
 	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{value.TypeToString(args[0].GetType()), "", ""})
+}
+
+func hasRefinement(refValues map[string]core.Value, name string) bool {
+	val, ok := refValues[name]
+	return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
+}
+
+func getRefinementValue(refValues map[string]core.Value, name string) (bool, core.Value) {
+	val, ok := refValues[name]
+	return ok && val.GetType() != value.TypeNone, val
+}
+
+func trimDefault(input string) string {
+	lines := strings.Split(input, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(line)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func trimHead(input string) string {
+	return strings.TrimLeft(input, " \t")
+}
+
+func trimTail(input string) string {
+	return strings.TrimRight(input, " \t")
+}
+
+func trimAuto(input string) string {
+	lines := strings.Split(input, "\n")
+	if len(lines) == 0 {
+		return input
+	}
+
+	// For single line, just trim
+	if len(lines) == 1 {
+		return strings.TrimSpace(input)
+	}
+
+	var baseIndent string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			for i, char := range line {
+				if char != ' ' && char != '\t' {
+					baseIndent = line[:i]
+					break
+				}
+			}
+			break
+		}
+	}
+
+	if baseIndent == "" {
+		return trimDefault(input) // No indentation to preserve
+	}
+
+	result := make([]string, len(lines))
+	for i, line := range lines {
+		if strings.HasPrefix(line, baseIndent) {
+			result[i] = line[len(baseIndent):]
+		} else {
+			result[i] = line
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+func trimLines(input string) string {
+	result := strings.ReplaceAll(input, "\n", " ")
+	result = strings.ReplaceAll(result, "\r", " ")
+
+	for strings.Contains(result, "  ") {
+		result = strings.ReplaceAll(result, "  ", " ")
+	}
+
+	return strings.TrimSpace(result)
+}
+
+func trimAll(input string) string {
+	result := strings.ReplaceAll(input, " ", "")
+	result = strings.ReplaceAll(result, "\t", "")
+	result = strings.ReplaceAll(result, "\n", "")
+	result = strings.ReplaceAll(result, "\r", "")
+	return result
+}
+
+func trimWith(input string, chars string) string {
+	result := input
+	for _, char := range chars {
+		result = strings.ReplaceAll(result, string(char), "")
+	}
+	return result
 }

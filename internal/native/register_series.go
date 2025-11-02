@@ -473,16 +473,34 @@ The --default refinement provides a fallback when the value/field is not found.`
 
 	registerAndBind("trim", CreateAction("trim", []value.ParamSpec{
 		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),  // flag: remove from head only
+		value.NewRefinementSpec("tail", false),  // flag: remove from tail only
+		value.NewRefinementSpec("auto", false),  // flag: auto indent relative to first line
+		value.NewRefinementSpec("lines", false), // flag: remove line breaks and extra spaces
+		value.NewRefinementSpec("all", false),   // flag: remove all whitespace
+		value.NewRefinementSpec("with", true),   // value: remove characters in string instead of whitespace
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Removes whitespace from the beginning and end of strings",
+		Summary:  "Removes whitespace from strings with various trimming options",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "string!", Description: "The string to trim"},
+			{Name: "--head", Type: "flag", Description: "Remove whitespace from head only", Optional: true},
+			{Name: "--tail", Type: "flag", Description: "Remove whitespace from tail only", Optional: true},
+			{Name: "--auto", Type: "flag", Description: "Auto indent lines relative to first line", Optional: true},
+			{Name: "--lines", Type: "flag", Description: "Remove all line breaks and extra spaces", Optional: true},
+			{Name: "--all", Type: "flag", Description: "Remove all whitespace", Optional: true},
+			{Name: "--with", Type: "string!", Description: "Remove characters in this string instead of whitespace", Optional: true},
 		},
-		Returns:  "string! The trimmed string",
-		Examples: []string{`trim "  hello  "  ; => "hello"`, `trim "  hello world  "  ; => "hello world"`},
-		SeeAlso:  []string{"clear", "change"},
-		Tags:     []string{"series", "string", "modification"},
+		Returns: "string! The trimmed string",
+		Examples: []string{
+			`trim "  hello  "  ; => "hello"`,
+			`trim/head "  hello  "  ; => "hello  "`,
+			`trim/tail "  hello  "  ; => "  hello"`,
+			`trim/all "  hello world  "  ; => "helloworld"`,
+			`trim/with "a-b-c" "-"  ; => "abc"`,
+		},
+		SeeAlso: []string{"clear", "change"},
+		Tags:    []string{"series", "string", "modification"},
 	}))
 
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
