@@ -71,6 +71,39 @@ func flattenValues(v any) []core.Value {
     }
     return result
 }
+}
+
+Input <- _ vals:Value* _ EOF {
+    return flattenValues(vals), nil
+}
+
+Value <- _ val:(Decimal / Integer / String / Block / Paren /
+                Path / SetPath / SetWord / GetPath / GetWord / LitWord /
+                Datatype / Word) _ {
+    return val, nil
+}
+
+Integer <- '-'? [0-9]+ !DecimalStart {
+    return value.NewIntVal(toInt(string(c.text))), nil
+}
+
+DecimalStart <- [.eE]
+
+Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? !'.' {
+    d, scale := toDecimal(string(c.text))
+    return value.DecimalVal(d, scale), nil
+} / '-'? [0-9]+ [eE] [+-]? [0-9]+ {
+    d, scale := toDecimal(string(c.text))
+    return value.DecimalVal(d, scale), nil
+}
+
+String <- '"' [^"]* '"' {
+    text := string(c.text)
+    content := text[1:len(text)-1]
+    return value.NewStrVal(content), nil
+}
+
+HexDigit <- [0-9A-Fa-f]
 
 SetWord <- word:WordChars ':' !':' {
     wordStr := word.(string)
