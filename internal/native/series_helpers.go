@@ -121,7 +121,6 @@ func seriesTailQ(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewLogicVal(seriesVal.GetIndex() == seriesVal.Length()), nil
 }
 
-// readPartCount extracts and validates the part refinement count from refValues
 func readPartCount(refValues map[string]core.Value) (int, bool, error) {
 	partVal, hasPart := refValues["part"]
 	hasPart = hasPart && partVal.GetType() != value.TypeNone
@@ -142,7 +141,6 @@ func readPartCount(refValues map[string]core.Value) (int, bool, error) {
 	return int(count64), true, nil
 }
 
-// validatePartCount validates that count is valid for the given series length
 func validatePartCount(series value.Series, count int) error {
 	if count < 0 {
 		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
