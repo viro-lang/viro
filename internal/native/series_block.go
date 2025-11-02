@@ -75,20 +75,14 @@ func BlockCopy(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
+	count, hasPart, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 
 	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, ok := value.AsIntValue(partVal)
-		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count := int(count64)
-		if count < 0 || count > len(blk.Elements) {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", len(blk.Elements)), ""})
+		if err := validatePartCount(blk, count); err != nil {
+			return value.NewNoneVal(), err
 		}
 		elems := make([]core.Value, count)
 		copy(elems, blk.Elements[:count])
@@ -132,20 +126,13 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
-
-	count := 1
-	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, _ := value.AsIntValue(partVal)
-		count = int(count64)
+	count, _, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	if count < 0 || count > len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"remove", "block", "out of range"})
+	if err := validatePartCount(blk, count); err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	blk.SetIndex(0)

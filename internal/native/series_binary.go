@@ -102,21 +102,14 @@ func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: copy only first N bytes
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
+	count, hasPart, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 
 	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, ok := value.AsIntValue(partVal)
-		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count := int(count64)
-		if count < 0 || count > bin.Length() {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", bin.Length()), ""})
+		if err := validatePartCount(bin, count); err != nil {
+			return value.NewNoneVal(), err
 		}
 		// Copy first count bytes
 		bytes := make([]byte, count)
@@ -170,21 +163,13 @@ func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	// --part refinement: remove N bytes
-	partVal, hasPart := refValues["part"]
-	hasPart = hasPart && partVal.GetType() != value.TypeNone
-
-	count := 1
-	if hasPart {
-		if partVal.GetType() != value.TypeInteger {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(partVal.GetType()), ""})
-		}
-		count64, _ := value.AsIntValue(partVal)
-		count = int(count64)
+	count, _, err := readPartCount(refValues)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
 
-	if count < 0 || count > bin.Length() {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"remove", "binary", "out of range"})
+	if err := validatePartCount(bin, count); err != nil {
+		return value.NewNoneVal(), err
 	}
 
 	bin.SetIndex(0)
