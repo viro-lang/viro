@@ -253,20 +253,7 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	// Create a new reference with advanced index
-	newStr := str.Clone()
-	newIndex := str.GetIndex() + 1
-	if newIndex > len(str.String()) {
-		newIndex = len(str.String())
-	}
-	newStr.SetIndex(newIndex)
-
-	return newStr.(core.Value), nil
+	return seriesNext(args[0])
 }
 
 func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -282,16 +269,7 @@ func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	// Create a new reference with index at head (0)
-	newStr := str.Clone()
-	newStr.SetIndex(0)
-
-	return newStr.(core.Value), nil
+	return seriesHead(args[0])
 }
 
 func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -299,12 +277,7 @@ func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	return value.NewIntVal(int64(str.GetIndex() + 1)), nil
+	return seriesIndex(args[0])
 }
 
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -398,15 +371,5 @@ func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	runes := str.Runes()
-	if len(runes) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
-	}
-
-	return value.NewStrVal(string(runes[1:])), nil
+	return seriesTail(args[0])
 }

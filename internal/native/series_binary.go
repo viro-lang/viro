@@ -253,20 +253,7 @@ func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	bin, ok := value.AsBinaryValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	// Create a new reference with advanced index
-	newBin := bin.Clone()
-	newIndex := bin.GetIndex() + 1
-	if newIndex > bin.Length() {
-		newIndex = bin.Length()
-	}
-	newBin.SetIndex(newIndex)
-
-	return newBin.(core.Value), nil
+	return seriesNext(args[0])
 }
 
 func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -282,16 +269,7 @@ func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	bin, ok := value.AsBinaryValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	// Create a new reference with index at head (0)
-	newBin := bin.Clone()
-	newBin.SetIndex(0)
-
-	return newBin.(core.Value), nil
+	return seriesHead(args[0])
 }
 
 func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -299,12 +277,7 @@ func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	bin, ok := value.AsBinaryValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	return value.NewIntVal(int64(bin.GetIndex() + 1)), nil
+	return seriesIndex(args[0])
 }
 
 func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -396,14 +369,5 @@ func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	bin, ok := value.AsBinaryValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	if len(bin.Bytes()) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
-	}
-
-	return value.NewBinaryVal(append([]byte{}, bin.Bytes()[1:]...)), nil
+	return seriesTail(args[0])
 }
