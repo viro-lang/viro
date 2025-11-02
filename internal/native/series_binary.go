@@ -388,3 +388,23 @@ func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	return value.NewIntVal(int64(bin.Bytes()[zeroBasedIndex])), nil
 }
+
+// BinaryTail returns a new binary containing all bytes except the first one.
+// Feature: 004-dynamic-function-invocation
+func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if len(bin.Bytes()) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+	}
+
+	// Return new binary with all bytes except the first
+	return value.NewBinaryVal(append([]byte{}, bin.Bytes()[1:]...)), nil
+}

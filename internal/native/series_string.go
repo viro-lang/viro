@@ -390,3 +390,24 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	return value.NewStrVal(string(strVal[zeroBasedIndex])), nil
 }
+
+// StringTail returns a new string containing all characters except the first one.
+// Feature: 004-dynamic-function-invocation
+func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	strVal := str.String()
+	if len(strVal) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+	}
+
+	// Return new string with all characters except the first
+	return value.NewStrVal(strVal[1:]), nil
+}

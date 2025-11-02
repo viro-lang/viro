@@ -71,6 +71,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BlockAt, false, nil))
+	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockTail, false, nil))
 
 	// Register string-specific implementations
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
@@ -120,6 +123,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, StringAt, false, nil))
+	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringTail, false, nil))
 	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringSort, false, nil))
@@ -173,6 +179,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BinaryAt, false, nil))
+	RegisterActionImpl(value.TypeBinary, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryTail, false, nil))
 	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinarySort, false, nil))
@@ -403,6 +412,21 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Returns:  "block! string! binary! New series reference at head position",
 		Examples: []string{"head [1 2 3]  ; => [1 2 3] (index at 1)", `head "hello"  ; => "hello" (index at 1)`, "head #{DEADBEEF}  ; => #{DEADBEEF} (index at 1)"},
 		SeeAlso:  []string{"tail", "next", "back"},
+		Tags:     []string{"series", "navigation"},
+	}))
+
+	// tail - action
+	registerAndBind("tail", CreateAction("tail", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns a series containing all elements except the first one",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get tail from"},
+		},
+		Returns:  "block! string! binary! New series containing all elements except the first",
+		Examples: []string{"tail [1 2 3 4]  ; => [2 3 4]", `tail "hello"  ; => "ello"`, "tail #{DEADBEEF}  ; => #{ADBE}"},
+		SeeAlso:  []string{"head", "first", "last"},
 		Tags:     []string{"series", "navigation"},
 	}))
 

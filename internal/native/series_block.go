@@ -398,3 +398,23 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	return blk.Elements[zeroBasedIndex], nil
 }
+
+// BlockTail returns a new block containing all elements except the first one.
+// Feature: 004-dynamic-function-invocation
+func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if len(blk.Elements) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+	}
+
+	// Return new block with all elements except the first
+	return value.NewBlockVal(append([]core.Value{}, blk.Elements[1:]...)), nil
+}
