@@ -32,10 +32,7 @@ func seriesNext(series core.Value) (core.Value, error) {
 	currentIndex := seriesVal.GetIndex()
 	length := seriesVal.Length()
 
-	newIndex := currentIndex + 1
-	if newIndex > length {
-		newIndex = length
-	}
+	newIndex := min(currentIndex+1, length)
 
 	newSeries := seriesVal.Clone()
 	newSeries.SetIndex(newIndex)
