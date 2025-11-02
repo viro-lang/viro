@@ -143,7 +143,7 @@ func BlockRemove(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	if count < 0 || count > len(blk.Elements) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "block", "out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"remove", "block", "out of range"})
 	}
 
 	blk.SetIndex(0)

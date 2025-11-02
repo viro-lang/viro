@@ -179,7 +179,7 @@ func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.
 	}
 
 	if count < 0 || count > bin.Length() {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "binary", "out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"remove", "binary", "out of range"})
 	}
 
 	bin.SetIndex(0)

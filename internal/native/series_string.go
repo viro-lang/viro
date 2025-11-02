@@ -179,7 +179,7 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 	}
 
 	if count < 0 || count > len(str.String()) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"remove", "string", "out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"remove", "string", "out of range"})
 	}
 
 	str.SetIndex(0)

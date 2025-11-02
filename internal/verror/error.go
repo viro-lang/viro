@@ -149,6 +149,7 @@ var messageTemplates = map[string]string{
 	ErrIDEmptySeries:      "Cannot get %1 of empty series",
 	ErrIDOutOfBounds:      "Index %1 out of bounds (length: %2)",
 	ErrIDNotImplemented:   "Feature not yet implemented: %1",
+	ErrIDActionNoImpl:     "Action not implemented for type: %1",
 
 	// Feature 002: Path evaluation errors (T091)
 	ErrIDInvalidPath:      "Invalid path: %1",

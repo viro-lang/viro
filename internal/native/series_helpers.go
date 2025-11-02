@@ -73,7 +73,7 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 
 	length := seriesVal.Length()
 	if index < 0 || index >= length {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "series", "index out of range"})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"at", "series", "index out of range"})
 	}
 
 	return seriesVal.ElementAt(index), nil
@@ -90,29 +90,34 @@ func seriesTail(series core.Value) (core.Value, error) {
 	return tailSeries, nil
 }
 
-func seriesEmpty(series core.Value) (core.Value, error) {
+func assertSeries(series core.Value) (value.Series, error) {
 	seriesVal, ok := series.(value.Series)
 	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+		return nil, verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{"", "", ""})
 	}
+	return seriesVal, nil
+}
 
+func seriesEmpty(series core.Value) (core.Value, error) {
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
 	return value.NewLogicVal(seriesVal.Length() == 0), nil
 }
 
 func seriesHeadQ(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
-
 	return value.NewLogicVal(seriesVal.GetIndex() == 0), nil
 }
 
 func seriesTailQ(series core.Value) (core.Value, error) {
-	seriesVal, ok := series.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	seriesVal, err := assertSeries(series)
+	if err != nil {
+		return value.NewNoneVal(), err
 	}
-
 	return value.NewLogicVal(seriesVal.GetIndex() == seriesVal.Length()), nil
 }

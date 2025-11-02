@@ -248,10 +248,8 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	// Register type-specific implementations into type frames
 	registerSeriesTypeImpls()
 
-	// ===== Group 5: Series operations (12 actions) =====
 	// All series operations now use action dispatch to type-specific implementations
 
-	// first - action
 	registerAndBind("first", CreateAction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -266,7 +264,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// last - action
 	registerAndBind("last", CreateAction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -281,7 +278,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// append - action
 	registerAndBind("append", CreateAction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -298,7 +294,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// at - action
 	registerAndBind("at", CreateAction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
@@ -315,7 +310,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "indexing"},
 	}))
 
-	// insert - action
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -332,7 +326,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// length? - action
 	registerAndBind("length?", CreateAction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -347,7 +340,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// copy - action
 	registerAndBind("copy", CreateAction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
@@ -364,7 +356,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// find - action
 	registerAndBind("find", CreateAction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -383,7 +374,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "search"},
 	}))
 
-	// remove - action
 	registerAndBind("remove", CreateAction("remove", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
@@ -400,7 +390,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "modification"},
 	}))
 
-	// skip - action
 	registerAndBind("skip", CreateAction("skip", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -417,7 +406,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// next - action
 	registerAndBind("next", CreateAction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -432,7 +420,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// back - action
 	registerAndBind("back", CreateAction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -447,7 +434,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// head - action
 	registerAndBind("head", CreateAction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -462,7 +448,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// tail - action
 	registerAndBind("tail", CreateAction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -477,7 +462,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "navigation"},
 	}))
 
-	// empty? - action
 	registerAndBind("empty?", CreateAction("empty?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -492,7 +476,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// head? - action
 	registerAndBind("head?", CreateAction("head?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -507,7 +490,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// tail? - action
 	registerAndBind("tail?", CreateAction("tail?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -522,7 +504,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// index? - action
 	registerAndBind("index?", CreateAction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -537,7 +518,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "query"},
 	}))
 
-	// take - action
 	registerAndBind("take", CreateAction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -554,7 +534,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series"},
 	}))
 
-	// sort - action
 	registerAndBind("sort", CreateAction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
@@ -573,7 +552,6 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:    []string{"series", "sorting"},
 	}))
 
-	// reverse - action
 	registerAndBind("reverse", CreateAction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
