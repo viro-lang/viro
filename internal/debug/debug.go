@@ -114,20 +114,23 @@ func (d *Debugger) RemoveBreakpointByID(id int64) bool {
 	return false
 }
 
-// HandleBreakpoint checks for breakpoints and emits trace events.
-// Called by evaluator before word evaluation to centralize breakpoint handling.
-func (d *Debugger) HandleBreakpoint(word string) {
+func (d *Debugger) HandleBreakpoint(word string, position int, depth int) {
 	if !d.HasBreakpoint(word) {
 		return
 	}
 
-	// Emit trace event if tracing is enabled
 	if trace.GlobalTraceSession != nil && trace.GlobalTraceSession.IsEnabled() {
-		trace.GlobalTraceSession.Emit(trace.TraceEvent{
-			Timestamp: time.Now(),
-			Word:      "debug",
-			Value:     fmt.Sprintf("breakpoint hit: %s", word),
-			Duration:  0,
-		})
+		event := trace.TraceEvent{
+			Timestamp:  time.Now(),
+			Word:       word,
+			Value:      fmt.Sprintf("breakpoint hit: %s", word),
+			Duration:   0,
+			EventType:  "eval",
+			Step:       trace.GlobalTraceSession.NextStep(),
+			Depth:      depth,
+			Position:   position,
+			Expression: word,
+		}
+		trace.GlobalTraceSession.Emit(event)
 	}
 }
