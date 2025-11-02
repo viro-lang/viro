@@ -1,18 +1,12 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -27,10 +21,6 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -45,10 +35,6 @@ func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -65,10 +51,6 @@ func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -85,10 +67,6 @@ func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func StringLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -98,10 +76,6 @@ func StringLength(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -133,10 +107,6 @@ func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -190,10 +160,6 @@ func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -222,10 +188,6 @@ func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -249,42 +211,22 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesNext(args[0])
 }
 
 func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesBack(args[0])
 }
 
 func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesHead(args[0])
 }
 
 func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesIndex(args[0])
 }
 
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -300,10 +242,6 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 }
 
 func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -314,10 +252,6 @@ func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -340,10 +274,6 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 }
 
 func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
@@ -367,9 +297,5 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesTail(args[0])
 }
