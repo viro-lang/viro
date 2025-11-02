@@ -8,7 +8,6 @@ import (
 )
 
 func registerSeriesTypeImpls() {
-	// Register block-specific implementations
 	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockFirst, false, nil))
@@ -73,7 +72,6 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 	}, BlockTail, false, nil))
 
-	// Register string-specific implementations
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringFirst, false, nil))
