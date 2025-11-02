@@ -1420,7 +1420,6 @@ func TestSeries_At(t *testing.T) {
 	}
 }
 
-// T107: tail operations
 // T109: empty?, head?, tail? query functions
 func TestSeries_QueryFunctions(t *testing.T) {
 	tests := []struct {
