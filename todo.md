@@ -27,7 +27,7 @@ List of things to implement:
 - while should accept logic! or integer! (as it's documentation states)
   STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
 
-- implement all the series functions: pick, poke, select, clear, change, trim, clear
+- implement all the series functions: pick, poke, select, clear, change, trim
 
 - the 'read' native should support reading directories and return block with filenames
 
