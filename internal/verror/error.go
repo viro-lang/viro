@@ -119,7 +119,6 @@ var messageTemplates = map[string]string{
 	ErrIDInvalidPath:      "Invalid path: %1",
 	ErrIDNonePath:         "Cannot traverse path through none value",
 	ErrIDNoSuchField:      "No such field '%1' in object",
-	ErrIDIndexOutOfRange:  "%1", // full message in arg
 	ErrIDPathTypeMismatch: "Type mismatch: path requires object or series type, got %1",
 	ErrIDImmutableTarget:  "Cannot assign to immutable target: %1",
 	ErrIDObjectFieldDup:   "Duplicate field '%1' in object",
