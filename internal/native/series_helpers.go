@@ -89,3 +89,30 @@ func seriesTail(series core.Value) (core.Value, error) {
 	tailSeries.SetIndex(seriesVal.Length())
 	return tailSeries, nil
 }
+
+func seriesEmpty(series core.Value) (core.Value, error) {
+	seriesVal, ok := series.(value.Series)
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	}
+
+	return value.NewLogicVal(seriesVal.Length() == 0), nil
+}
+
+func seriesHeadQ(series core.Value) (core.Value, error) {
+	seriesVal, ok := series.(value.Series)
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	}
+
+	return value.NewLogicVal(seriesVal.GetIndex() == 0), nil
+}
+
+func seriesTailQ(series core.Value) (core.Value, error) {
+	seriesVal, ok := series.(value.Series)
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series", value.TypeToString(series.GetType()), ""})
+	}
+
+	return value.NewLogicVal(seriesVal.GetIndex() == seriesVal.Length()), nil
+}
