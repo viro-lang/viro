@@ -21,16 +21,13 @@ List of things to implement:
 - comprehensive cli interface
   STATUS: NOT IMPLEMENTED - No main.go exists yet, so CLI flags (including trace-file and trace-max-size) are missing
 
-||||||| parent of fb24281 (Update)
 - extend help system for user-defined functions
   STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
 
-=======
->>>>>>> fb24281 (Update)
 - while should accept logic! or integer! (as it's documentation states)
   STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
 
-- implement all the series functions
+- implement all the series functions: empty?, head?, tail?, pick, poke, select, clear, change, trim, clear
 
 - the 'read' native should support reading directories and return block with filenames
 
