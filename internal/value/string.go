@@ -7,20 +7,11 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// StringValue represents a UTF-8 character sequence.
-// Stored as []rune internally for proper character series semantics
-// (character-level operations, not byte-level).
-//
-// Design decision per research.md:
-// - strings are character series, not byte series
-// - first "hello" → 'h' (character), not byte 104
-// - Multi-byte Unicode handled correctly
 type StringValue struct {
-	runes []rune // character sequence
-	index int    // current position for series operations
+	runes []rune
+	index int
 }
 
-// NewStringValue creates a StringValue from a Go string.
 func NewStringValue(s string) *StringValue {
 	return &StringValue{
 		runes: []rune(s),
@@ -28,22 +19,18 @@ func NewStringValue(s string) *StringValue {
 	}
 }
 
-// String converts StringValue to Go string for display and I/O.
 func (s *StringValue) String() string {
 	return string(s.runes)
 }
 
-// Mold returns the mold-formatted string representation (with quotes).
 func (s *StringValue) Mold() string {
 	return fmt.Sprintf(`"%s"`, s.String())
 }
 
-// Form returns the form-formatted string representation (without quotes).
 func (s *StringValue) Form() string {
 	return s.String()
 }
 
-// EqualsString performs deep equality comparison with another StringValue.
 func (s *StringValue) EqualsString(other *StringValue) bool {
 	if len(s.runes) != len(other.runes) {
 		return false
@@ -74,8 +61,6 @@ func (s *StringValue) GetType() core.ValueType {
 func (s *StringValue) GetPayload() any {
 	return s
 }
-
-// Series operations (contracts/series.md)
 
 func (s *StringValue) First() rune {
 	return s.runes[0]
@@ -119,8 +104,7 @@ func (s *StringValue) Insert(val interface{}) {
 		toInsert = []rune(v)
 	}
 
-	// Insert at current index
-	s.runes = append(s.runes[:s.index], append(toInsert, s.runes[s.index:]...)...)
+	s.runes = append(toInsert, s.runes...)
 }
 
 func (s *StringValue) GetIndex() int {
@@ -145,10 +129,9 @@ func (s *StringValue) Clone() Series {
 }
 
 func (s *StringValue) TailValue() core.Value {
-	if len(s.runes) == 0 {
-		return NewStrVal("")
-	}
-	return NewStrVal(string(s.runes[1:]))
+	newStr := s.Clone().(*StringValue)
+	newStr.SetIndex(len(s.runes))
+	return newStr
 }
 
 func (s *StringValue) SetIndex(idx int) {
@@ -161,7 +144,6 @@ func (s *StringValue) Remove(count int) {
 	}
 }
 
-// SortString sorts the runes in the string in ascending order.
 func SortString(s *StringValue) {
 	sort.SliceStable(s.runes, func(i, j int) bool {
 		return s.runes[i] < s.runes[j]

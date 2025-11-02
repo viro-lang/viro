@@ -1159,6 +1159,7 @@ func TestSeries_Tail(t *testing.T) {
 			name:  "tail block",
 			input: "tail [1 2 3 4]",
 			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
 				value.NewIntVal(2),
 				value.NewIntVal(3),
 				value.NewIntVal(4),
@@ -1167,27 +1168,27 @@ func TestSeries_Tail(t *testing.T) {
 		{
 			name:  "tail string",
 			input: `tail "hello"`,
-			want:  value.NewStrVal("ello"),
+			want:  value.NewStrVal("hello"),
 		},
 		{
 			name:  "tail binary",
 			input: "tail #{DEADBEEF}",
-			want:  value.NewBinaryVal([]byte{0xAD, 0xBE, 0xEF}),
+			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
 		},
 		{
 			name:  "tail single element block",
 			input: "tail [42]",
-			want:  value.NewBlockVal([]core.Value{}),
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(42)}),
 		},
 		{
 			name:  "tail single character string",
 			input: `tail "a"`,
-			want:  value.NewStrVal(""),
+			want:  value.NewStrVal("a"),
 		},
 		{
 			name:  "tail single byte binary",
 			input: "tail #{FF}",
-			want:  value.NewBinaryVal([]byte{}),
+			want:  value.NewBinaryVal([]byte{0xFF}),
 		},
 		{
 			name:  "tail empty block",
@@ -1214,6 +1215,7 @@ func TestSeries_Tail(t *testing.T) {
 			name:  "tail on moved series (next)",
 			input: "tail next [1 2 3 4]",
 			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
 				value.NewIntVal(2),
 				value.NewIntVal(3),
 				value.NewIntVal(4),
@@ -1223,6 +1225,7 @@ func TestSeries_Tail(t *testing.T) {
 			name:  "tail on moved series (skip)",
 			input: "tail skip [1 2 3 4] 2",
 			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
 				value.NewIntVal(2),
 				value.NewIntVal(3),
 				value.NewIntVal(4),
@@ -1231,17 +1234,19 @@ func TestSeries_Tail(t *testing.T) {
 		{
 			name:  "tail unicode string",
 			input: `tail "café"`,
-			want:  value.NewStrVal("afé"),
+			want:  value.NewStrVal("café"),
 		},
 		{
 			name:  "tail single unicode character",
 			input: `tail "é"`,
-			want:  value.NewStrVal(""),
+			want:  value.NewStrVal("é"),
 		},
 		{
 			name:  "tail on already tailed series",
 			input: "tail tail [1 2 3 4]",
 			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
 				value.NewIntVal(3),
 				value.NewIntVal(4),
 			}),

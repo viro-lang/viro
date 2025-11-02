@@ -441,13 +441,13 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns a series containing all elements except the first one",
+		Summary:  "Returns a series positioned at the tail",
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "block! string! binary!", Description: "The series to get tail from"},
+			{Name: "series", Type: "block! string! binary!", Description: "The series to position at tail"},
 		},
-		Returns:  "block! string! binary! New series containing all elements except the first",
-		Examples: []string{"tail [1 2 3 4]  ; => [2 3 4]", `tail "hello"  ; => "ello"`, "tail #{DEADBEEF}  ; => #{ADBE}"},
-		SeeAlso:  []string{"head", "first", "last"},
+		Returns:  "block! string! binary! New series reference at tail position",
+		Examples: []string{"tail [1 2 3 4]  ; => [1 2 3 4] (index at 4)", `tail "hello"  ; => "hello" (index at 5)`, "tail #{DEADBEEF}  ; => #{DEADBEEF} (index at 4)"},
+		SeeAlso:  []string{"head", "next", "back"},
 		Tags:     []string{"series", "navigation"},
 	}))
 

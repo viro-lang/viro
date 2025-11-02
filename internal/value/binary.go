@@ -6,13 +6,11 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// BinaryValue represents a sequence of raw bytes.
 type BinaryValue struct {
 	data  []byte
 	index int
 }
 
-// NewBinaryValue creates a BinaryValue from a byte slice.
 func NewBinaryValue(data []byte) *BinaryValue {
 	return &BinaryValue{
 		data:  data,
@@ -20,30 +18,25 @@ func NewBinaryValue(data []byte) *BinaryValue {
 	}
 }
 
-// Bytes returns the underlying byte slice.
 func (b *BinaryValue) Bytes() []byte {
 	return b.data
 }
 
-// String converts BinaryValue to hex string representation.
 func (b *BinaryValue) String() string {
 	return b.Mold()
 }
 
-// Mold returns the mold-formatted binary representation.
 func (b *BinaryValue) Mold() string {
 	if len(b.data) == 0 {
 		return "#{}"
 	}
-	return "#{" + string(b.data) + "}" // Simplified for now
+	return "#{" + string(b.data) + "}"
 }
 
-// Form returns the form-formatted binary representation (same as mold for binary).
 func (b *BinaryValue) Form() string {
 	return b.Mold()
 }
 
-// EqualsBinary performs deep equality comparison with another BinaryValue.
 func (b *BinaryValue) EqualsBinary(other *BinaryValue) bool {
 	if len(b.data) != len(other.data) {
 		return false
@@ -74,8 +67,6 @@ func (b *BinaryValue) GetType() core.ValueType {
 func (b *BinaryValue) GetPayload() any {
 	return b
 }
-
-// Series operations (contracts/series.md)
 
 func (b *BinaryValue) First() byte {
 	return b.data[0]
@@ -119,8 +110,7 @@ func (b *BinaryValue) Insert(val interface{}) {
 		toInsert = v.data
 	}
 
-	// Insert at current index
-	b.data = append(b.data[:b.index], append(toInsert, b.data[b.index:]...)...)
+	b.data = append(toInsert, b.data...)
 }
 
 func (b *BinaryValue) Remove(count int) {
@@ -139,10 +129,9 @@ func (b *BinaryValue) Clone() Series {
 }
 
 func (b *BinaryValue) TailValue() core.Value {
-	if len(b.data) == 0 {
-		return NewBinaryVal([]byte{})
-	}
-	return NewBinaryVal(b.data[1:])
+	newBin := b.Clone().(*BinaryValue)
+	newBin.SetIndex(len(b.data))
+	return newBin
 }
 
 func (b *BinaryValue) GetIndex() int {
@@ -153,7 +142,6 @@ func (b *BinaryValue) SetIndex(index int) {
 	b.index = index
 }
 
-// SortBinary sorts the bytes in the binary value in ascending order.
 func SortBinary(b *BinaryValue) {
 	sort.SliceStable(b.data, func(i, j int) bool {
 		return b.data[i] < b.data[j]

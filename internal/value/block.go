@@ -8,21 +8,12 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// BlockValue represents an ordered sequence of values.
-// Used for both blocks [...] (deferred evaluation) and parens (...)  (immediate evaluation).
-// The distinction is made by the typ field.
-//
-// Design per data-model.md:
-// - Blocks evaluate to themselves (return self without evaluating contents)
-// - Parens evaluate their contents immediately
-// - Both share the same underlying structure
 type BlockValue struct {
-	Elements []core.Value   // ordered value sequence
-	Index    int            // current series position (0-based)
-	typ      core.ValueType // TypeBlock or TypeParen
+	Elements []core.Value
+	Index    int
+	typ      core.ValueType
 }
 
-// NewBlockValue creates a BlockValue with given elements.
 func NewBlockValue(elements []core.Value) *BlockValue {
 	if elements == nil {
 		elements = []core.Value{}
@@ -45,12 +36,10 @@ func NewBlockValueWithType(elements []core.Value, typ core.ValueType) *BlockValu
 	}
 }
 
-// String returns a string representation with block syntax.
 func (b *BlockValue) String() string {
 	return "[" + b.StringElements() + "]"
 }
 
-// Mold returns the mold-formatted block representation (with brackets).
 func (b *BlockValue) Mold() string {
 	if len(b.Elements) == 0 {
 		return "[]"
@@ -62,7 +51,6 @@ func (b *BlockValue) Mold() string {
 	return "[" + strings.Join(parts, " ") + "]"
 }
 
-// Form returns the form-formatted block representation (without brackets).
 func (b *BlockValue) Form() string {
 	if len(b.Elements) == 0 {
 		return ""
@@ -74,8 +62,6 @@ func (b *BlockValue) Form() string {
 	return strings.Join(parts, " ")
 }
 
-// MoldElements returns space-separated molded element representations.
-// Used by Paren mold formatting.
 func (b *BlockValue) MoldElements() string {
 	if len(b.Elements) == 0 {
 		return ""
@@ -87,8 +73,6 @@ func (b *BlockValue) MoldElements() string {
 	return strings.Join(parts, " ")
 }
 
-// StringElements returns space-separated element representations.
-// Used by both Block and Paren string formatting.
 func (b *BlockValue) StringElements() string {
 	if len(b.Elements) == 0 {
 		return ""
@@ -100,7 +84,6 @@ func (b *BlockValue) StringElements() string {
 	return strings.Join(parts, " ")
 }
 
-// EqualsBlock performs deep equality comparison with another BlockValue.
 func (b *BlockValue) EqualsBlock(other *BlockValue) bool {
 	if len(b.Elements) != len(other.Elements) {
 		return false
@@ -132,8 +115,6 @@ func (b *BlockValue) GetPayload() any {
 	return b
 }
 
-// Series operations (contracts/series.md)
-
 func (b *BlockValue) First() core.Value {
 	return b.Elements[0]
 }
@@ -159,8 +140,7 @@ func (b *BlockValue) Append(val core.Value) {
 }
 
 func (b *BlockValue) Insert(val core.Value) {
-	// Insert at current index, shifting remaining elements right
-	b.Elements = append(b.Elements[:b.Index], append([]core.Value{val}, b.Elements[b.Index:]...)...)
+	b.Elements = append([]core.Value{val}, b.Elements...)
 }
 
 func (b *BlockValue) Remove(count int) {
@@ -188,22 +168,15 @@ func (b *BlockValue) Clone() Series {
 }
 
 func (b *BlockValue) TailValue() core.Value {
-	if len(b.Elements) == 0 {
-		return NewBlockVal([]core.Value{})
-	}
-	return NewBlockVal(append([]core.Value{}, b.Elements[1:]...))
+	newBlock := b.Clone().(*BlockValue)
+	newBlock.SetIndex(len(b.Elements))
+	return newBlock
 }
 
-func (b *BlockValue) Empty() bool {
-	return len(b.Elements) == 0
-}
-
-// For debugging/testing
 func (b *BlockValue) GoString() string {
 	return fmt.Sprintf("Block{Elements: %d, Index: %d}", len(b.Elements), b.Index)
 }
 
-// SortBlock sorts a block in-place.
 func SortBlock(b *BlockValue) {
 	sort.SliceStable(b.Elements, func(i, j int) bool {
 		elemI := b.Elements[i]
