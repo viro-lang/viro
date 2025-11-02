@@ -412,7 +412,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}))
 
 	registerAndBind("select", CreateAction("select", []value.ParamSpec{
-		value.NewParamSpec("series", true),
+		value.NewParamSpec("target", true),
 		value.NewParamSpec("value", true),
 		value.NewRefinementSpec("default", true),
 	}, &NativeDoc{
