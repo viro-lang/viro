@@ -77,32 +77,26 @@ func (s *StringValue) GetPayload() any {
 
 // Series operations (contracts/series.md)
 
-// First returns the first character (error if empty handled by caller).
 func (s *StringValue) First() rune {
 	return s.runes[0]
 }
 
-// Last returns the last character (error if empty handled by caller).
 func (s *StringValue) Last() rune {
 	return s.runes[len(s.runes)-1]
 }
 
-// At returns character at index (bounds checking by caller).
 func (s *StringValue) At(index int) rune {
 	return s.runes[index]
 }
 
-// ElementAt returns character at index as a core.Value (implements Series interface).
 func (s *StringValue) ElementAt(index int) core.Value {
 	return NewStrVal(string(s.At(index)))
 }
 
-// Length returns character count.
 func (s *StringValue) Length() int {
 	return len(s.runes)
 }
 
-// Append adds a character or string to the end (in-place mutation).
 func (s *StringValue) Append(val interface{}) {
 	switch v := val.(type) {
 	case rune:
@@ -114,7 +108,6 @@ func (s *StringValue) Append(val interface{}) {
 	}
 }
 
-// Insert adds a character or string at current position (in-place mutation).
 func (s *StringValue) Insert(val interface{}) {
 	var toInsert []rune
 	switch v := val.(type) {
@@ -130,22 +123,18 @@ func (s *StringValue) Insert(val interface{}) {
 	s.runes = append(s.runes[:s.index], append(toInsert, s.runes[s.index:]...)...)
 }
 
-// GetIndex returns current series position.
 func (s *StringValue) GetIndex() int {
 	return s.index
 }
 
-// Runes returns the underlying rune slice of the string.
 func (s *StringValue) Runes() []rune {
 	return s.runes
 }
 
-// SetRunes sets the underlying rune slice of the string.
 func (s *StringValue) SetRunes(r []rune) {
 	s.runes = r
 }
 
-// Clone creates a deep copy of the string.
 func (s *StringValue) Clone() Series {
 	runesCopy := make([]rune, len(s.runes))
 	copy(runesCopy, s.runes)
@@ -155,13 +144,16 @@ func (s *StringValue) Clone() Series {
 	}
 }
 
-// SetIndex updates current series position (bounds checking by caller).
+func (s *StringValue) TailValue() core.Value {
+	if len(s.runes) == 0 {
+		return NewStrVal("")
+	}
+	return NewStrVal(string(s.runes[1:]))
+}
 
 func (s *StringValue) SetIndex(idx int) {
 	s.index = idx
 }
-
-// Remove removes a specified number of characters from the current position (in-place mutation).
 
 func (s *StringValue) Remove(count int) {
 	if s.index+count <= len(s.runes) {

@@ -77,32 +77,26 @@ func (b *BinaryValue) GetPayload() any {
 
 // Series operations (contracts/series.md)
 
-// First returns the first byte (error if empty handled by caller).
 func (b *BinaryValue) First() byte {
 	return b.data[0]
 }
 
-// Last returns the last byte (error if empty handled by caller).
 func (b *BinaryValue) Last() byte {
 	return b.data[len(b.data)-1]
 }
 
-// At returns byte at index (bounds checking by caller).
 func (b *BinaryValue) At(index int) byte {
 	return b.data[index]
 }
 
-// ElementAt returns byte at index as a core.Value (implements Series interface).
 func (b *BinaryValue) ElementAt(index int) core.Value {
 	return NewIntVal(int64(b.At(index)))
 }
 
-// Length returns byte count.
 func (b *BinaryValue) Length() int {
 	return len(b.data)
 }
 
-// Append adds a byte or binary value to the end (in-place mutation).
 func (b *BinaryValue) Append(val interface{}) {
 	switch v := val.(type) {
 	case byte:
@@ -114,7 +108,6 @@ func (b *BinaryValue) Append(val interface{}) {
 	}
 }
 
-// Insert adds a byte or binary value at current position (in-place mutation).
 func (b *BinaryValue) Insert(val interface{}) {
 	var toInsert []byte
 	switch v := val.(type) {
@@ -130,14 +123,12 @@ func (b *BinaryValue) Insert(val interface{}) {
 	b.data = append(b.data[:b.index], append(toInsert, b.data[b.index:]...)...)
 }
 
-// Remove removes a specified number of bytes from the current position (in-place mutation).
 func (b *BinaryValue) Remove(count int) {
 	if b.index+count <= len(b.data) {
 		b.data = append(b.data[:b.index], b.data[b.index+count:]...)
 	}
 }
 
-// Clone creates a deep copy of the binary.
 func (b *BinaryValue) Clone() Series {
 	dataCopy := make([]byte, len(b.data))
 	copy(dataCopy, b.data)
@@ -147,12 +138,17 @@ func (b *BinaryValue) Clone() Series {
 	}
 }
 
-// GetIndex returns current series position.
+func (b *BinaryValue) TailValue() core.Value {
+	if len(b.data) == 0 {
+		return NewBinaryVal([]byte{})
+	}
+	return NewBinaryVal(b.data[1:])
+}
+
 func (b *BinaryValue) GetIndex() int {
 	return b.index
 }
 
-// SetIndex sets the current series position.
 func (b *BinaryValue) SetIndex(index int) {
 	b.index = index
 }

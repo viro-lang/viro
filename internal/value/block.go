@@ -134,60 +134,49 @@ func (b *BlockValue) GetPayload() any {
 
 // Series operations (contracts/series.md)
 
-// First returns the first element (error if empty handled by caller).
 func (b *BlockValue) First() core.Value {
 	return b.Elements[0]
 }
 
-// Last returns the last element (error if empty handled by caller).
 func (b *BlockValue) Last() core.Value {
 	return b.Elements[len(b.Elements)-1]
 }
 
-// At returns element at index (bounds checking by caller).
 func (b *BlockValue) At(index int) core.Value {
 	return b.Elements[index]
 }
 
-// ElementAt returns element at index as a core.Value (implements Series interface).
 func (b *BlockValue) ElementAt(index int) core.Value {
 	return b.At(index)
 }
 
-// Length returns element count.
 func (b *BlockValue) Length() int {
 	return len(b.Elements)
 }
 
-// Append adds a value to the end (in-place mutation).
 func (b *BlockValue) Append(val core.Value) {
 	b.Elements = append(b.Elements, val)
 }
 
-// Insert adds a value at current position (in-place mutation).
 func (b *BlockValue) Insert(val core.Value) {
 	// Insert at current index, shifting remaining elements right
 	b.Elements = append(b.Elements[:b.Index], append([]core.Value{val}, b.Elements[b.Index:]...)...)
 }
 
-// Remove removes a specified number of elements from the current position (in-place mutation).
 func (b *BlockValue) Remove(count int) {
 	if b.Index+count <= len(b.Elements) {
 		b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+count:]...)
 	}
 }
 
-// Index returns current series position.
 func (b *BlockValue) GetIndex() int {
 	return b.Index
 }
 
-// SetIndex updates current series position (bounds checking by caller).
 func (b *BlockValue) SetIndex(idx int) {
 	b.Index = idx
 }
 
-// Clone creates a deep copy of the block.
 func (b *BlockValue) Clone() Series {
 	elemsCopy := make([]core.Value, len(b.Elements))
 	copy(elemsCopy, b.Elements)
@@ -198,7 +187,13 @@ func (b *BlockValue) Clone() Series {
 	}
 }
 
-// Empty returns true if block has no elements.
+func (b *BlockValue) TailValue() core.Value {
+	if len(b.Elements) == 0 {
+		return NewBlockVal([]core.Value{})
+	}
+	return NewBlockVal(append([]core.Value{}, b.Elements[1:]...))
+}
+
 func (b *BlockValue) Empty() bool {
 	return len(b.Elements) == 0
 }
