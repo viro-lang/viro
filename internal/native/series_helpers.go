@@ -318,11 +318,17 @@ func seriesClear(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func seriesChange(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	currentIndex := seriesVal.GetIndex()
+	if err := validateIndex(currentIndex, seriesVal.Length()); err != nil {
+		return value.NewNoneVal(), err
+	}
+
 	if blk, ok := value.AsBlockValue(args[0]); ok {
-		currentIndex := blk.GetIndex()
-		if err := validateIndex(currentIndex, len(blk.Elements)); err != nil {
-			return value.NewNoneVal(), err
-		}
 		blk.Elements[currentIndex] = args[1]
 		newIndex := currentIndex + 1
 		if newIndex > len(blk.Elements) {
@@ -333,15 +339,11 @@ func seriesChange(args []core.Value, refValues map[string]core.Value, eval core.
 	}
 
 	if str, ok := value.AsStringValue(args[0]); ok {
-		currentIndex := str.GetIndex()
-		runes := str.Runes()
-		if err := validateIndex(currentIndex, len(runes)); err != nil {
-			return value.NewNoneVal(), err
-		}
 		r, err := validateStringValue(args[1])
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
+		runes := str.Runes()
 		newRunes := append(runes[:currentIndex], append([]rune{r}, runes[currentIndex+1:]...)...)
 		str.SetRunes(newRunes)
 		newIndex := currentIndex + 1
@@ -353,15 +355,11 @@ func seriesChange(args []core.Value, refValues map[string]core.Value, eval core.
 	}
 
 	if bin, ok := value.AsBinaryValue(args[0]); ok {
-		currentIndex := bin.GetIndex()
-		bytes := bin.Bytes()
-		if err := validateIndex(currentIndex, len(bytes)); err != nil {
-			return value.NewNoneVal(), err
-		}
 		b, err := validateByteValue(args[1])
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
+		bytes := bin.Bytes()
 		bytes[currentIndex] = b
 		newIndex := currentIndex + 1
 		if newIndex > len(bytes) {
@@ -375,6 +373,11 @@ func seriesChange(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func seriesPick(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+
 	indexVal := args[1]
 	if indexVal.GetType() != value.TypeInteger {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
@@ -383,30 +386,11 @@ func seriesPick(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	index64, _ := value.AsIntValue(indexVal)
 	zeroBasedIndex := int(index64) - 1
 
-	if blk, ok := value.AsBlockValue(args[0]); ok {
-		if zeroBasedIndex < 0 || zeroBasedIndex >= len(blk.Elements) {
-			return value.NewNoneVal(), nil
-		}
-		return blk.Elements[zeroBasedIndex], nil
+	if zeroBasedIndex < 0 || zeroBasedIndex >= seriesVal.Length() {
+		return value.NewNoneVal(), nil
 	}
 
-	if str, ok := value.AsStringValue(args[0]); ok {
-		runes := str.Runes()
-		if zeroBasedIndex < 0 || zeroBasedIndex >= len(runes) {
-			return value.NewNoneVal(), nil
-		}
-		return value.NewStringValue(string(runes[zeroBasedIndex])), nil
-	}
-
-	if bin, ok := value.AsBinaryValue(args[0]); ok {
-		bytes := bin.Bytes()
-		if zeroBasedIndex < 0 || zeroBasedIndex >= len(bytes) {
-			return value.NewNoneVal(), nil
-		}
-		return value.NewIntVal(int64(bytes[zeroBasedIndex])), nil
-	}
-
-	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{value.TypeToString(args[0].GetType()), "", ""})
+	return seriesVal.ElementAt(zeroBasedIndex), nil
 }
 
 func seriesTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
