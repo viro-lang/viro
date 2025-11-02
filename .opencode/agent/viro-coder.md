@@ -67,7 +67,6 @@ description: >-
   specialized expertise of the viro-interpreter-dev agent.</commentary>
 
   </example>
-mode: subagent
 model: github-copilot/grok-code-fast-1
 textVerbosity: low
 ---
