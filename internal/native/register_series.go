@@ -51,6 +51,12 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockNext, false, nil))
+	RegisterActionImpl(value.TypeBlock, "head", value.NewNativeFunction("head", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockHead, false, nil))
+	RegisterActionImpl(value.TypeBlock, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockIndex, false, nil))
 	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -104,10 +110,12 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringNext, false, nil))
-	RegisterActionImpl(value.TypeString, "take", value.NewNativeFunction("take", []value.ParamSpec{
+	RegisterActionImpl(value.TypeString, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-		value.NewParamSpec("count", true),
-	}, StringTake, false, nil))
+	}, StringHead, false, nil))
+	RegisterActionImpl(value.TypeString, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringIndex, false, nil))
 	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
@@ -155,10 +163,12 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryNext, false, nil))
-	RegisterActionImpl(value.TypeBinary, "take", value.NewNativeFunction("take", []value.ParamSpec{
+	RegisterActionImpl(value.TypeBinary, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-		value.NewParamSpec("count", true),
-	}, BinaryTake, false, nil))
+	}, BinaryHead, false, nil))
+	RegisterActionImpl(value.TypeBinary, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryIndex, false, nil))
 	RegisterActionImpl(value.TypeBinary, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
@@ -379,6 +389,36 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Examples: []string{"next [1 2 3]  ; => [1 2 3] (index at 2)", `next "hello"  ; => "hello" (index at 2)`, "next #{DEADBEEF}  ; => #{DEADBEEF} (index at 2)"},
 		SeeAlso:  []string{"skip", "back", "head", "tail"},
 		Tags:     []string{"series", "navigation"},
+	}))
+
+	// head - action
+	registerAndBind("head", CreateAction("head", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns a series reference positioned at the head (position 0)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to position at head"},
+		},
+		Returns:  "block! string! binary! New series reference at head position",
+		Examples: []string{"head [1 2 3]  ; => [1 2 3] (index at 1)", `head "hello"  ; => "hello" (index at 1)`, "head #{DEADBEEF}  ; => #{DEADBEEF} (index at 1)"},
+		SeeAlso:  []string{"tail", "next", "back"},
+		Tags:     []string{"series", "navigation"},
+	}))
+
+	// index? - action
+	registerAndBind("index?", CreateAction("index?", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the current index position of a series (1-based)",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get index from"},
+		},
+		Returns:  "integer! The current index position (1-based)",
+		Examples: []string{"index? [1 2 3]  ; => 1", `index? next "hello"  ; => 2`, "index? skip #{DEADBEEF} 2  ; => 3"},
+		SeeAlso:  []string{"head", "next", "skip"},
+		Tags:     []string{"series", "query"},
 	}))
 
 	// take - action

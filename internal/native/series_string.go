@@ -293,11 +293,12 @@ func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newStr, nil
 }
 
-// StringTake implements take action for string values.
+// StringHead implements head action for string values.
+// Returns a new string reference positioned at index 0 (head).
 // Feature: 004-dynamic-function-invocation
-func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
+func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	str, ok := value.AsStringValue(args[0])
@@ -305,20 +306,24 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+	// Create a new reference with index at head (0)
+	newStr := str.Clone()
+	newStr.SetIndex(0)
+
+	return newStr, nil
+}
+
+func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
 
-	start := str.Index()
-	end := min(start+count, len(str.String()))
-	newRunes := str.Runes()[start:end]
-	str.SetIndex(end)
-
-	return value.NewStrVal(string(newRunes)), nil
+	return value.NewIntVal(int64(str.Index() + 1)), nil
 }
 
 // StringReverse implements reverse action for string values.

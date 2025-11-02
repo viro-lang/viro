@@ -658,6 +658,140 @@ first data`,
 	}
 }
 
+// T106: head operations
+func TestSeries_Head(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name: "head block",
+			input: `data: [1 2 3]
+headData: head data
+first headData`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "head string",
+			input: `str: "hello"
+headStr: head str
+first headStr`,
+			want: value.NewStrVal("h"),
+		},
+		{
+			name: "head preserves original position",
+			input: `data: [1 2 3]
+movedData: next next data
+headData: head movedData
+first headData`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "head on already at head",
+			input: `data: [1 2 3]
+headData: head data
+first headData`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name:    "head non-series error",
+			input:   "head 42",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+
+// T103: index? on series
+func TestSeries_Index(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name: "index? block at head",
+			input: `data: [1 2 3]
+index? data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "index? string at head",
+			input: `str: "hello"
+index? str`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "index? block after next",
+			input: `data: [1 2 3]
+moved: next data
+index? moved`,
+			want: value.NewIntVal(2),
+		},
+		{
+			name: "index? string after skip",
+			input: `str: "hello"
+moved: skip str 2
+index? moved`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "index? block at tail",
+			input: `data: [1 2 3]
+moved: skip data 3
+index? moved`,
+			want: value.NewIntVal(4),
+		},
+		{
+			name:    "index? non-series error",
+			input:   "index? 42",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+
 // T104: sort, reverse on series
 func TestSeries_SortReverse(t *testing.T) {
 	tests := []struct {

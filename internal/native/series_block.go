@@ -265,6 +265,26 @@ func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return newBlock, nil
 }
 
+// BlockHead implements head action for block values.
+// Returns a new block reference positioned at index 0 (head).
+// Feature: 004-dynamic-function-invocation
+func BlockHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Create a new reference with index at head (0)
+	newBlock := blk.Clone()
+	newBlock.SetIndex(0)
+
+	return newBlock, nil
+}
+
 // BlockTake implements take action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -341,8 +361,19 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// BlockAt returns the element at the specified 1-based index from a block.
-// Feature: 004-dynamic-function-invocation
+func BlockIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	return value.NewIntVal(int64(blk.GetIndex() + 1)), nil
+}
+
 func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})

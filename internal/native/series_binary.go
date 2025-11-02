@@ -293,11 +293,12 @@ func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return newBin, nil
 }
 
-// BinaryTake implements take action for binary values.
+// BinaryHead implements head action for binary values.
+// Returns a new binary reference positioned at index 0 (head).
 // Feature: 004-dynamic-function-invocation
-func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", string(rune(len(args) + '0'))})
+func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
 	}
 
 	bin, ok := value.AsBinaryValue(args[0])
@@ -305,20 +306,24 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+	// Create a new reference with index at head (0)
+	newBin := bin.Clone()
+	newBin.SetIndex(0)
+
+	return newBin, nil
+}
+
+func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
 	}
 
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
 
-	start := bin.GetIndex()
-	end := min(start+count, bin.Length())
-	newBytes := bin.Bytes()[start:end]
-	bin.SetIndex(end)
-
-	return value.NewBinaryVal(newBytes), nil
+	return value.NewIntVal(int64(bin.GetIndex() + 1)), nil
 }
 
 // BinaryReverse implements reverse action for binary values.
