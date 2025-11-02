@@ -58,6 +58,9 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockSort, false, nil))
+	RegisterActionImpl(value.TypeBlock, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockReverse, false, nil))
 	RegisterActionImpl(value.TypeBlock, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
@@ -109,15 +112,12 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, StringAt, false, nil))
-	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
+	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-		value.NewParamSpec("index", true),
-	}, StringAt, false, nil))
+	}, StringSort, false, nil))
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse, false, nil))
-
-	// Register binary-specific implementations
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryFirst, false, nil))
