@@ -150,9 +150,6 @@ func validatePartCount(series value.Series, count int) error {
 	if count < 0 {
 		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
 	}
-	if count > series.Length() {
-		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
-	}
 	return nil
 }
 

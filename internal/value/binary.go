@@ -195,15 +195,12 @@ func (b *BinaryValue) CopyPart(count int) (Series, error) {
 	if count < 0 {
 		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
 	}
-	if count > b.Length() {
-		return nil, fmt.Errorf("out of bounds: count %d > length %d", count, b.Length())
-	}
-	end := b.index + count
-	if end > len(b.data) {
-		end = len(b.data)
+	remaining := len(b.data) - b.index
+	if count > remaining {
+		count = remaining
 	}
 	dataCopy := make([]byte, count)
-	copy(dataCopy, b.data[b.index:end])
+	copy(dataCopy, b.data[b.index:b.index+count])
 	return NewBinaryValue(dataCopy), nil
 }
 

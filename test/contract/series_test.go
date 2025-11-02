@@ -419,20 +419,15 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part out of range", func(t *testing.T) {
 		input := "copy --part 5 [1 2]"
+		want := value.NewBlockVal([]core.Value{
+			value.NewIntVal(1), value.NewIntVal(2),
+		})
 		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-		var scriptErr *verror.Error
-		if errors.As(err, &scriptErr) {
-			if scriptErr.ID != verror.ErrIDOutOfBounds {
-				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
-			}
-			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "5" || scriptErr.Args[1] != "2" {
-				t.Fatalf("expected error args ['5', '2', ''], got %v", scriptErr.Args)
-			}
-		} else {
-			t.Fatalf("expected ScriptError, got %T", err)
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
 		}
 	})
 
@@ -469,20 +464,47 @@ func TestSeries_Copy(t *testing.T) {
 
 	t.Run("copy --part string out of range", func(t *testing.T) {
 		input := "copy --part 10 \"hello\""
+		want := value.NewStrVal("hello")
 		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-		var scriptErr *verror.Error
-		if errors.As(err, &scriptErr) {
-			if scriptErr.ID != verror.ErrIDOutOfBounds {
-				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
-			}
-			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "10" || scriptErr.Args[1] != "5" {
-				t.Fatalf("expected error args ['10', '5', ''], got %v", scriptErr.Args)
-			}
-		} else {
-			t.Fatalf("expected ScriptError, got %T", err)
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy --part from advanced index", func(t *testing.T) {
+		input := `
+			b: [1 2 3 4 5]
+			b: next next b
+			copy --part 5 b
+		`
+		want := value.NewBlockVal([]core.Value{
+			value.NewIntVal(3), value.NewIntVal(4), value.NewIntVal(5),
+		})
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy --part string from advanced index", func(t *testing.T) {
+		input := `
+			s: "hello"
+			s: next next s
+			copy --part 5 s
+		`
+		want := value.NewStrVal("llo")
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
 		}
 	})
 

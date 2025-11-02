@@ -183,15 +183,12 @@ func (s *StringValue) CopyPart(count int) (Series, error) {
 	if count < 0 {
 		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
 	}
-	if count > s.Length() {
-		return nil, fmt.Errorf("out of bounds: count %d > length %d", count, s.Length())
-	}
-	end := s.index + count
-	if end > len(s.runes) {
-		end = len(s.runes)
+	remaining := len(s.runes) - s.index
+	if count > remaining {
+		count = remaining
 	}
 	runesCopy := make([]rune, count)
-	copy(runesCopy, s.runes[s.index:end])
+	copy(runesCopy, s.runes[s.index:s.index+count])
 	return NewStringValue(string(runesCopy)), nil
 }
 

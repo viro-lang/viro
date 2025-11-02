@@ -204,15 +204,12 @@ func (b *BlockValue) CopyPart(count int) (Series, error) {
 	if count < 0 {
 		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
 	}
-	if count > b.Length() {
-		return nil, fmt.Errorf("out of bounds: count %d > length %d", count, b.Length())
-	}
-	end := b.Index + count
-	if end > len(b.Elements) {
-		end = len(b.Elements)
+	remaining := len(b.Elements) - b.Index
+	if count > remaining {
+		count = remaining
 	}
 	elemsCopy := make([]core.Value, count)
-	copy(elemsCopy, b.Elements[b.Index:end])
+	copy(elemsCopy, b.Elements[b.Index:b.Index+count])
 	return NewBlockValue(elemsCopy), nil
 }
 

@@ -144,6 +144,36 @@ func TestBinaryValue_SeriesInterface(t *testing.T) {
 			},
 		},
 		{
+			name: "CopyPart from advanced index exceeding remaining",
+			setup: func() *BinaryValue {
+				b := NewBinaryValue([]byte{1, 2, 3, 4, 5})
+				b.SetIndex(2) // Point to element 3 (index 2)
+				return b
+			},
+			testFunc: func(t *testing.T, b *BinaryValue) {
+				copied, err := b.CopyPart(5) // Request 5, only 3 remain
+				if err != nil {
+					t.Errorf("CopyPart() unexpected error: %v", err)
+					return
+				}
+				copiedBin, ok := copied.(*BinaryValue)
+				if !ok {
+					t.Errorf("CopyPart() returned wrong type")
+					return
+				}
+				if len(copiedBin.Bytes()) != 3 {
+					t.Errorf("CopyPart() length = %d, want 3", len(copiedBin.Bytes()))
+				}
+				// Verify correct values and no trailing zeros
+				expected := []byte{3, 4, 5}
+				for i, v := range expected {
+					if copiedBin.Bytes()[i] != v {
+						t.Errorf("CopyPart() byte[%d] = %v, want %v", i, copiedBin.Bytes()[i], v)
+					}
+				}
+			},
+		},
+		{
 			name: "RemoveCount",
 			setup: func() *BinaryValue {
 				return NewBinaryValue([]byte{1, 2, 3, 4})
@@ -356,6 +386,38 @@ func TestStringValue_SeriesInterface(t *testing.T) {
 				}
 				if copiedStr.String() != "bc" {
 					t.Errorf("CopyPart() = %v, want 'bc'", copiedStr.String())
+				}
+			},
+		},
+		{
+			name: "CopyPart from advanced index exceeding remaining",
+			setup: func() *StringValue {
+				s := NewStringValue("hello")
+				s.SetIndex(2) // Point to 'l' (index 2)
+				return s
+			},
+			testFunc: func(t *testing.T, s *StringValue) {
+				copied, err := s.CopyPart(5) // Request 5, only 3 remain
+				if err != nil {
+					t.Errorf("CopyPart() unexpected error: %v", err)
+					return
+				}
+				copiedStr, ok := copied.(*StringValue)
+				if !ok {
+					t.Errorf("CopyPart() returned wrong type")
+					return
+				}
+				if len(copiedStr.Runes()) != 3 {
+					t.Errorf("CopyPart() length = %d, want 3", len(copiedStr.Runes()))
+				}
+				if copiedStr.String() != "llo" {
+					t.Errorf("CopyPart() = %v, want 'llo'", copiedStr.String())
+				}
+				// Verify no NUL characters (trailing zeros in rune form)
+				for i, r := range copiedStr.Runes() {
+					if r == 0 {
+						t.Errorf("CopyPart() rune[%d] is NUL character", i)
+					}
 				}
 			},
 		},
@@ -573,6 +635,43 @@ func TestBlockValue_SeriesInterface(t *testing.T) {
 				val2, _ := AsIntValue(copiedBlock.Elements[1])
 				if val1 != 2 || val2 != 3 {
 					t.Errorf("CopyPart() elements = [%v, %v], want [2, 3]", val1, val2)
+				}
+			},
+		},
+		{
+			name: "CopyPart from advanced index exceeding remaining",
+			setup: func() *BlockValue {
+				b := NewBlockValue([]core.Value{NewIntVal(1), NewIntVal(2), NewIntVal(3), NewIntVal(4), NewIntVal(5)})
+				b.SetIndex(2) // Point to element 3
+				return b
+			},
+			testFunc: func(t *testing.T, b *BlockValue) {
+				copied, err := b.CopyPart(5) // Request 5, only 3 remain
+				if err != nil {
+					t.Errorf("CopyPart() unexpected error: %v", err)
+					return
+				}
+				copiedBlock, ok := copied.(*BlockValue)
+				if !ok {
+					t.Errorf("CopyPart() returned wrong type")
+					return
+				}
+				if len(copiedBlock.Elements) != 3 {
+					t.Errorf("CopyPart() length = %d, want 3", len(copiedBlock.Elements))
+				}
+				// Verify no nil elements
+				for i, elem := range copiedBlock.Elements {
+					if elem == nil {
+						t.Errorf("CopyPart() element[%d] is nil", i)
+					}
+				}
+				// Verify correct values
+				expected := []int64{3, 4, 5}
+				for i, elem := range copiedBlock.Elements {
+					intVal, ok := AsIntValue(elem)
+					if !ok || intVal != expected[i] {
+						t.Errorf("CopyPart() element[%d] = %v, want %d", i, elem, expected[i])
+					}
 				}
 			},
 		},
