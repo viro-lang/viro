@@ -392,7 +392,7 @@ func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, positio
 	wordStr, _ := value.AsWordValue(element)
 
 	if debug.GlobalDebugger != nil {
-		debug.GlobalDebugger.HandleBreakpoint(wordStr)
+		debug.GlobalDebugger.HandleBreakpoint(wordStr, position, len(e.callStack)-1)
 	}
 
 	resolved, found := e.Lookup(wordStr)
