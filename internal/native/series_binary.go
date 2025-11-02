@@ -1,18 +1,12 @@
 package native
 
 import (
-	"fmt"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"first", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -26,10 +20,6 @@ func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"last", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -43,10 +33,6 @@ func BinaryLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"append", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -71,10 +57,6 @@ func BinaryAppend(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"insert", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -101,10 +83,6 @@ func BinaryInsert(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func BinaryLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"length?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -114,10 +92,6 @@ func BinaryLength(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"copy", "1", "0"})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -150,10 +124,6 @@ func BinaryCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"find", "2", string(rune(len(args) + '0'))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -190,10 +160,6 @@ func BinaryFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"remove", "1", "0"})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -222,10 +188,6 @@ func BinaryRemove(args []core.Value, refValues map[string]core.Value, eval core.
 }
 
 func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"skip", "2", string(rune(len(args) + '0'))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -249,42 +211,22 @@ func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesNext(args[0])
 }
 
 func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"back", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesBack(args[0])
 }
 
 func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"head", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesHead(args[0])
 }
 
 func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"index?", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesIndex(args[0])
 }
 
 func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"reverse", "1", "0"})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -299,10 +241,6 @@ func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core
 }
 
 func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"sort", "1", "0"})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -313,10 +251,6 @@ func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -338,10 +272,6 @@ func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 }
 
 func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"take", "2", fmt.Sprintf("%d", len(args))})
-	}
-
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
@@ -365,9 +295,5 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"tail", "1", fmt.Sprintf("%d", len(args))})
-	}
-
 	return seriesTail(args[0])
 }
