@@ -140,6 +140,17 @@ func (s *StringValue) SetRunes(r []rune) {
 	s.runes = r
 }
 
+// Clone creates a shallow copy of the string.
+// Runes are shared (not deep cloned).
+func (s *StringValue) Clone() *StringValue {
+	runesCopy := make([]rune, len(s.runes))
+	copy(runesCopy, s.runes)
+	return &StringValue{
+		runes: runesCopy,
+		index: s.index,
+	}
+}
+
 // SetIndex updates current series position (bounds checking by caller).
 
 func (s *StringValue) SetIndex(idx int) {

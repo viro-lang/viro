@@ -9,7 +9,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// StringFirst returns the first character of a string.
+// StringFirst returns the character at the current position of a string.
 // Feature: 004-dynamic-function-invocation
 func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
@@ -22,11 +22,11 @@ func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	strVal := str.String()
-	if len(strVal) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+	if str.Index() >= len(strVal) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
 	}
 
-	return value.NewStrVal(string(strVal[0])), nil
+	return value.NewStrVal(string(strVal[str.Index()])), nil
 }
 
 // StringLast returns the last character of a string.
@@ -269,6 +269,30 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
+// StringNext implements next action for string values.
+// Returns a new string reference with index advanced by 1.
+// Feature: 004-dynamic-function-invocation
+func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Create a new reference with advanced index
+	newStr := str.Clone()
+	newIndex := str.Index() + 1
+	if newIndex > len(str.String()) {
+		newIndex = len(str.String())
+	}
+	newStr.SetIndex(newIndex)
+
+	return newStr, nil
+}
+
 // StringTake implements take action for string values.
 // Feature: 004-dynamic-function-invocation
 func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -332,4 +356,32 @@ func StringSort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	value.SortString(str)
 	return args[0], nil
+}
+
+// StringAt returns the character at the specified 1-based index from a string.
+// Feature: 004-dynamic-function-invocation
+func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	strVal := str.String()
+	if zeroBasedIndex < 0 || zeroBasedIndex >= len(strVal) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "string", "index out of range"})
+	}
+
+	return value.NewStrVal(string(strVal[zeroBasedIndex])), nil
 }

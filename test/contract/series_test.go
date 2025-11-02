@@ -601,6 +601,63 @@ part`,
 	}
 }
 
+// T105: next operations
+func TestSeries_Next(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name: "next block",
+			input: `data: [1 2 3]
+nextData: next data
+first nextData`,
+			want: value.NewIntVal(2),
+		},
+		{
+			name: "next string",
+			input: `str: "hello"
+nextStr: next str
+first nextStr`,
+			want: value.NewStrVal("e"),
+		},
+		{
+			name: "next preserves original position",
+			input: `data: [1 2 3]
+nextData: next data
+first data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name:    "next non-series error",
+			input:   "next 42",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+
 // T104: sort, reverse on series
 func TestSeries_SortReverse(t *testing.T) {
 	tests := []struct {
@@ -664,6 +721,101 @@ str`,
 		{
 			name:    "sort mixed types error",
 			input:   "sort [1 \"a\"]",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if !evalResult.Equals(tt.want) {
+				t.Fatalf("expected %v, got %v", tt.want, evalResult)
+			}
+		})
+	}
+}
+
+func TestSeries_At(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+	}{
+		{
+			name:  "block at valid index",
+			input: "at [1 2 3 4 5] 3",
+			want:  value.NewIntVal(3),
+		},
+		{
+			name:  "block at first index",
+			input: "at [1 2 3] 1",
+			want:  value.NewIntVal(1),
+		},
+		{
+			name:  "block at last index",
+			input: "at [1 2 3] 3",
+			want:  value.NewIntVal(3),
+		},
+		{
+			name:  "string at valid index",
+			input: `at "hello" 2`,
+			want:  value.NewStrVal("e"),
+		},
+		{
+			name:  "string at first index",
+			input: `at "world" 1`,
+			want:  value.NewStrVal("w"),
+		},
+		{
+			name:    "block index out of bounds negative",
+			input:   "at [1 2 3] 0",
+			wantErr: true,
+		},
+		{
+			name:    "block index out of bounds too large",
+			input:   "at [1 2 3] 4",
+			wantErr: true,
+		},
+		{
+			name:    "string index out of bounds",
+			input:   `at "hi" 3`,
+			wantErr: true,
+		},
+		{
+			name:    "empty block error",
+			input:   "at [] 1",
+			wantErr: true,
+		},
+		{
+			name:    "empty string error",
+			input:   `at "" 1`,
+			wantErr: true,
+		},
+		{
+			name:    "wrong series type error",
+			input:   "at 42 1",
+			wantErr: true,
+		},
+		{
+			name:    "wrong index type error",
+			input:   `at [1 2 3] "a"`,
+			wantErr: true,
+		},
+		{
+			name:    "too few arguments error",
+			input:   "at [1 2 3]",
 			wantErr: true,
 		},
 	}

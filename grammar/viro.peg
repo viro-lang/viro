@@ -77,7 +77,7 @@ Input <- _ vals:Value* _ EOF {
     return flattenValues(vals), nil
 }
 
-Value <- _ val:(Decimal / Integer / String / Block / Paren /
+Value <- _ val:(Decimal / Integer / Binary / String / Block / Paren /
                 Path / SetPath / SetWord / GetPath / GetWord / LitWord /
                 Datatype / Word) _ {
     return val, nil
@@ -101,6 +101,12 @@ String <- '"' [^"]* '"' {
     text := string(c.text)
     content := text[1:len(text)-1]
     return value.NewStrVal(content), nil
+}
+
+HexDigit <- '0' / '1'
+
+Binary <- 'bin' HexDigit 'end' {
+    return nil, nil
 }
 
 SetWord <- word:WordChars ':' !':' {
@@ -266,3 +272,7 @@ _ <- ([ \t\n\r] / Comment)*
 Comment <- ';' [^\n]* '\n'?
 
 EOF <- !.
+
+Binary <- 'bin' ('0' / '1') 'end' {
+    return nil, nil
+}

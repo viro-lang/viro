@@ -9,7 +9,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// BinaryFirst returns the first byte of a binary value.
+// BinaryFirst returns the byte at the current position of a binary value.
 // Feature: 004-dynamic-function-invocation
 func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
@@ -21,11 +21,11 @@ func BinaryFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	if len(bin.Bytes()) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
+	if bin.GetIndex() >= len(bin.Bytes()) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
 	}
 
-	return value.NewIntVal(int64(bin.First())), nil
+	return value.NewIntVal(int64(bin.Bytes()[bin.GetIndex()])), nil
 }
 
 // BinaryLast returns the last byte of a binary value.
@@ -269,6 +269,30 @@ func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
+// BinaryNext implements next action for binary values.
+// Returns a new binary reference with index advanced by 1.
+// Feature: 004-dynamic-function-invocation
+func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Create a new reference with advanced index
+	newBin := bin.Clone()
+	newIndex := bin.GetIndex() + 1
+	if newIndex > bin.Length() {
+		newIndex = bin.Length()
+	}
+	newBin.SetIndex(newIndex)
+
+	return newBin, nil
+}
+
 // BinaryTake implements take action for binary values.
 // Feature: 004-dynamic-function-invocation
 func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -331,4 +355,31 @@ func BinarySort(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	value.SortBinary(bin)
 	return args[0], nil
+}
+
+// BinaryAt returns the byte at the specified 1-based index from a binary value.
+// Feature: 004-dynamic-function-invocation
+func BinaryAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
+	}
+
+	bin, ok := value.AsBinaryValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"binary", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	if zeroBasedIndex < 0 || zeroBasedIndex >= len(bin.Bytes()) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "binary", "index out of range"})
+	}
+
+	return value.NewIntVal(int64(bin.Bytes()[zeroBasedIndex])), nil
 }

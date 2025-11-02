@@ -132,6 +132,17 @@ func (b *BinaryValue) Remove(count int) {
 	}
 }
 
+// Clone creates a shallow copy of the binary.
+// Data is shared (not deep cloned).
+func (b *BinaryValue) Clone() *BinaryValue {
+	dataCopy := make([]byte, len(b.data))
+	copy(dataCopy, b.data)
+	return &BinaryValue{
+		data:  dataCopy,
+		index: b.index,
+	}
+}
+
 // GetIndex returns current series position.
 func (b *BinaryValue) GetIndex() int {
 	return b.index

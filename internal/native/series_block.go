@@ -9,7 +9,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// BlockFirst returns the first element of a block.
+// BlockFirst returns the element at the current position of a block.
 // Feature: 004-dynamic-function-invocation
 func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
@@ -25,7 +25,11 @@ func BlockFirst(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is empty", "", ""})
 	}
 
-	return blk.Elements[0], nil
+	if blk.GetIndex() >= len(blk.Elements) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"series is at tail", "", ""})
+	}
+
+	return blk.Elements[blk.GetIndex()], nil
 }
 
 // BlockLast returns the last element of a block.
@@ -237,6 +241,30 @@ func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return args[0], nil
 }
 
+// BlockNext implements next action for block values.
+// Returns a new block reference with index advanced by 1.
+// Feature: 004-dynamic-function-invocation
+func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"next", "1", fmt.Sprintf("%d", len(args))})
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Create a new reference with advanced index
+	newBlock := blk.Clone()
+	newIndex := blk.GetIndex() + 1
+	if newIndex > len(blk.Elements) {
+		newIndex = len(blk.Elements)
+	}
+	newBlock.SetIndex(newIndex)
+
+	return newBlock, nil
+}
+
 // BlockTake implements take action for block values.
 // Feature: 004-dynamic-function-invocation
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -305,9 +333,37 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
 	}
 
+	// Reverse the elements in place
 	for i, j := 0, len(blk.Elements)-1; i < j; i, j = i+1, j-1 {
 		blk.Elements[i], blk.Elements[j] = blk.Elements[j], blk.Elements[i]
 	}
 
 	return args[0], nil
+}
+
+// BlockAt returns the element at the specified 1-based index from a block.
+// Feature: 004-dynamic-function-invocation
+func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDArgCount, [3]string{"at", "2", fmt.Sprintf("%d", len(args))})
+	}
+
+	blk, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
+	if zeroBasedIndex < 0 || zeroBasedIndex >= len(blk.Elements) {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDIndexOutOfRange, [3]string{"at", "block", "index out of range"})
+	}
+
+	return blk.Elements[zeroBasedIndex], nil
 }

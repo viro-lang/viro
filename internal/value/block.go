@@ -190,6 +190,7 @@ func (b *BlockValue) Clone() *BlockValue {
 	return &BlockValue{
 		Elements: elemsCopy,
 		Index:    b.Index,
+		typ:      b.typ,
 	}
 }
 

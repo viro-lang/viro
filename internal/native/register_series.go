@@ -48,6 +48,9 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, BlockSkip, false, nil))
+	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BlockNext, false, nil))
 	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -55,9 +58,10 @@ func registerSeriesTypeImpls() {
 	RegisterActionImpl(value.TypeBlock, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockSort, false, nil))
-	RegisterActionImpl(value.TypeBlock, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
+	RegisterActionImpl(value.TypeBlock, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockReverse, false, nil))
+		value.NewParamSpec("index", true),
+	}, BlockAt, false, nil))
 
 	// Register string-specific implementations
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
@@ -94,13 +98,21 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, StringSkip, false, nil))
+	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, StringNext, false, nil))
 	RegisterActionImpl(value.TypeString, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, StringTake, false, nil))
-	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringSort, false, nil))
+		value.NewParamSpec("index", true),
+	}, StringAt, false, nil))
+	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, StringAt, false, nil))
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse, false, nil))
@@ -140,13 +152,17 @@ func registerSeriesTypeImpls() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, BinarySkip, false, nil))
+	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, BinaryNext, false, nil))
 	RegisterActionImpl(value.TypeBinary, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, BinaryTake, false, nil))
-	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
+	RegisterActionImpl(value.TypeBinary, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinarySort, false, nil))
+		value.NewParamSpec("index", true),
+	}, BinaryAt, false, nil))
 	RegisterActionImpl(value.TypeBinary, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinaryReverse, false, nil))
@@ -226,6 +242,23 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Examples: []string{"append [1 2] 3  ; => [1 2 3]", `append "hel" "lo"  ; => "hello"`, "append #{DEAD} 190  ; => #{DEADBE}"},
 		SeeAlso:  []string{"insert", "skip", "take"},
 		Tags:     []string{"series", "modification"},
+	}))
+
+	// at - action
+	registerAndBind("at", CreateAction("at", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the element at the specified 1-based index from a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get element from"},
+			{Name: "index", Type: "integer!", Description: "1-based index of the element to return"},
+		},
+		Returns:  "any! The element at the specified index",
+		Examples: []string{"at [1 2 3] 2  ; => 2", `at "hello" 1  ; => "h"`, "at #{DEADBEEF} 3  ; => 190"},
+		SeeAlso:  []string{"first", "last", "skip", "take"},
+		Tags:     []string{"series", "indexing"},
 	}))
 
 	// insert - action
@@ -328,6 +361,21 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Examples: []string{"skip [1 2 3 4] 2  ; => [1 2 3 4] (index at 3)", `skip "hello" 2  ; => "hello" (index at 3)`, "skip #{DEADBEEF} 2  ; => #{DEADBEEF} (index at 3)"},
 		SeeAlso:  []string{"take", "first", "last"},
 		Tags:     []string{"series"},
+	}))
+
+	// next - action
+	registerAndBind("next", CreateAction("next", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns a series reference advanced by one position",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to advance"},
+		},
+		Returns:  "block! string! binary! New series reference at next position",
+		Examples: []string{"next [1 2 3]  ; => [1 2 3] (index at 2)", `next "hello"  ; => "hello" (index at 2)`, "next #{DEADBEEF}  ; => #{DEADBEEF} (index at 2)"},
+		SeeAlso:  []string{"skip", "back", "head", "tail"},
+		Tags:     []string{"series", "navigation"},
 	}))
 
 	// take - action
