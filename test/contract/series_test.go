@@ -508,6 +508,39 @@ func TestSeries_Copy(t *testing.T) {
 		}
 	})
 
+	t.Run("copy part from tail position yields empty", func(t *testing.T) {
+		input := `
+			b: [1 2 3]
+			b: skip b 3
+			c: copy --part 2 b
+			length? c
+		`
+		want := value.NewIntVal(0)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("string copy part from tail position", func(t *testing.T) {
+		input := `
+			s: "abc"
+			s: skip s 3
+			c: copy --part 2 s
+			length? c
+		`
+		want := value.NewIntVal(0)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
 }
 
 func TestSeries_Pick(t *testing.T) {

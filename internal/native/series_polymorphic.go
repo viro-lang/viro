@@ -93,7 +93,7 @@ func seriesCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	copied, err := seriesVal.CopyPart(count)
 	if err != nil {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"", "", ""})
+		return value.NewNoneVal(), err
 	}
 	return copied.(core.Value), nil
 }
