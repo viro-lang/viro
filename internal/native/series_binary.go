@@ -200,22 +200,6 @@ func BinarySkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-func BinaryNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func BinaryBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func BinaryHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
-}
-
-func BinaryIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
-}
-
 func BinaryReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	bin, ok := value.AsBinaryValue(args[0])
 	if !ok {
@@ -278,8 +262,4 @@ func BinaryTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	bin.SetIndex(end)
 
 	return value.NewBinaryVal(takenBytes), nil
-}
-
-func BinaryTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }

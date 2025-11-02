@@ -8,8 +8,8 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func seriesBack(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -25,8 +25,8 @@ func seriesBack(series core.Value) (core.Value, error) {
 	return newSeries.(core.Value), nil
 }
 
-func seriesNext(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -42,8 +42,8 @@ func seriesNext(series core.Value) (core.Value, error) {
 	return newSeries.(core.Value), nil
 }
 
-func seriesHead(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -54,8 +54,8 @@ func seriesHead(series core.Value) (core.Value, error) {
 	return newSeries.(core.Value), nil
 }
 
-func seriesIndex(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -78,8 +78,8 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 	return seriesVal.ElementAt(index), nil
 }
 
-func seriesTail(series core.Value) (core.Value, error) {
-	seriesVal, err := assertSeries(series)
+func seriesTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}

@@ -44,16 +44,16 @@ func registerBlockSeriesActions() {
 	}, BlockSkip, false, nil))
 	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeBlock, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeBlock, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeBlock, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
@@ -70,7 +70,7 @@ func registerBlockSeriesActions() {
 	}, BlockAt, false, nil))
 	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockTail, false, nil))
+	}, seriesTail, false, nil))
 
 	RegisterActionImpl(value.TypeBlock, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
@@ -120,23 +120,23 @@ func registerStringSeriesActions() {
 	}, StringSkip, false, nil))
 	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeString, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeString, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeString, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeString, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, StringAt, false, nil))
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringTail, false, nil))
+	}, seriesTail, false, nil))
 	RegisterActionImpl(value.TypeString, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesEmpty, false, nil))
@@ -195,23 +195,23 @@ func registerBinarySeriesActions() {
 	}, BinarySkip, false, nil))
 	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryNext, false, nil))
+	}, seriesNext, false, nil))
 	RegisterActionImpl(value.TypeBinary, "back", value.NewNativeFunction("back", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryBack, false, nil))
+	}, seriesBack, false, nil))
 	RegisterActionImpl(value.TypeBinary, "head", value.NewNativeFunction("head", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryHead, false, nil))
+	}, seriesHead, false, nil))
 	RegisterActionImpl(value.TypeBinary, "index?", value.NewNativeFunction("index?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryIndex, false, nil))
+	}, seriesIndex, false, nil))
 	RegisterActionImpl(value.TypeBinary, "at", value.NewNativeFunction("at", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BinaryAt, false, nil))
 	RegisterActionImpl(value.TypeBinary, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryTail, false, nil))
+	}, seriesTail, false, nil))
 	RegisterActionImpl(value.TypeBinary, "empty?", value.NewNativeFunction("empty?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesEmpty, false, nil))

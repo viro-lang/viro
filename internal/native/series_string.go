@@ -200,22 +200,6 @@ func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[0], nil
 }
 
-func StringNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func StringBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func StringHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
-}
-
-func StringIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
-}
-
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
@@ -279,8 +263,4 @@ func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	str.SetIndex(end)
 
 	return value.NewStrVal(string(takenRunes)), nil
-}
-
-func StringTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }

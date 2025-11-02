@@ -163,18 +163,6 @@ func BlockSkip(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return args[0], nil
 }
 
-func BlockNext(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesNext(args[0])
-}
-
-func BlockBack(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesBack(args[0])
-}
-
-func BlockHead(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesHead(args[0])
-}
-
 func BlockTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	blk, ok := value.AsBlockValue(args[0])
 	if !ok {
@@ -231,10 +219,6 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-func BlockIndex(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesIndex(args[0])
-}
-
 func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	indexVal := args[1]
 	if indexVal.GetType() != value.TypeInteger {
@@ -245,8 +229,4 @@ func BlockAt(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	zeroBasedIndex := int(index64) - 1
 
 	return seriesAt(args[0], zeroBasedIndex)
-}
-
-func BlockTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return seriesTail(args[0])
 }
