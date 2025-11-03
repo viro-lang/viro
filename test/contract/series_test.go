@@ -440,8 +440,8 @@ func TestSeries_Copy(t *testing.T) {
 			if scriptErr.ID != verror.ErrIDOutOfBounds {
 				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
 			}
-			if len(scriptErr.Args) < 2 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" {
-				t.Fatalf("expected error args ['-1', '2', ''], got %v", scriptErr.Args)
+			if len(scriptErr.Args) < 3 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" || scriptErr.Args[2] != "0" {
+				t.Fatalf("expected error args ['-1', '2', '0'], got %v", scriptErr.Args)
 			}
 		} else {
 			t.Fatalf("expected ScriptError, got %T", err)
@@ -1188,6 +1188,7 @@ func TestSeries_SkipTake(t *testing.T) {
 		want    core.Value
 		wantErr bool
 		errID   string
+		errArgs []string
 	}{
 		{
 			name: "skip and take block",
@@ -1240,6 +1241,69 @@ part`,
 			wantErr: true,
 			errID:   verror.ErrIDTypeMismatch,
 		},
+		{
+			name:    "take negative count error block",
+			input:   "take [1 2 3] -1",
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+			errArgs: []string{"-1", "3", "0"},
+		},
+		{
+			name:    "take negative count error string",
+			input:   `take "hello" -1`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+			errArgs: []string{"-1", "5", "0"},
+		},
+		{
+			name:  "take zero count block",
+			input: "take [1 2 3] 0",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "take zero count string",
+			input: `take "hello" 0`,
+			want:  value.NewStrVal(""),
+		},
+		{
+			name:  "take oversized count clamps block",
+			input: "take [1 2 3] 10",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+			}),
+		},
+		{
+			name:  "take oversized count clamps string",
+			input: `take "hello" 10`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name: "take from advanced index clamps",
+			input: `data: [1 2 3 4 5]
+data: next next data
+take data 10`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3),
+				value.NewIntVal(4),
+				value.NewIntVal(5),
+			}),
+		},
+		{
+			name: "take from tail position returns empty",
+			input: `data: [1 2 3]
+data: skip data 3
+take data 2`,
+			want: value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name: "take string from tail position returns empty",
+			input: `str: "abc"
+str: skip str 3
+take str 2`,
+			want: value.NewStrVal(""),
+		},
 	}
 
 	for _, tt := range tests {
@@ -1254,6 +1318,16 @@ part`,
 					if errors.As(err, &scriptErr) {
 						if scriptErr.ID != tt.errID {
 							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+						if tt.errArgs != nil {
+							if len(scriptErr.Args) != len(tt.errArgs) {
+								t.Fatalf("expected error args length %d, got %d", len(tt.errArgs), len(scriptErr.Args))
+							}
+							for i, expected := range tt.errArgs {
+								if scriptErr.Args[i] != expected {
+									t.Fatalf("expected error arg[%d] %v, got %v", i, expected, scriptErr.Args[i])
+								}
+							}
 						}
 					} else {
 						t.Fatalf("expected ScriptError, got %T", err)
@@ -1344,6 +1418,7 @@ func TestSeries_Back(t *testing.T) {
 		want    core.Value
 		wantErr bool
 		errID   string
+		errArgs []string
 	}{
 		{
 			name: "back block",
@@ -1372,6 +1447,7 @@ first data`,
 			input:   `back [1 2 3]`,
 			wantErr: true,
 			errID:   verror.ErrIDOutOfBounds,
+			errArgs: []string{"-1", "3", "0"},
 		},
 		{
 			name:    "back on empty block at head error",
@@ -1443,6 +1519,16 @@ first backData`,
 					if errors.As(err, &scriptErr) {
 						if scriptErr.ID != tt.errID {
 							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+						if tt.errArgs != nil {
+							if len(scriptErr.Args) != len(tt.errArgs) {
+								t.Fatalf("expected error args length %d, got %d", len(tt.errArgs), len(scriptErr.Args))
+							}
+							for i, expected := range tt.errArgs {
+								if scriptErr.Args[i] != expected {
+									t.Fatalf("expected error arg[%d] %v, got %v", i, expected, scriptErr.Args[i])
+								}
+							}
 						}
 					} else {
 						t.Fatalf("expected ScriptError, got %T", err)
