@@ -135,6 +135,18 @@ func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTailQ, false, nil))
+	RegisterActionImpl(value.TypeBlock, "intersect", value.NewNativeFunction("intersect", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BlockIntersect, false, nil))
+	RegisterActionImpl(value.TypeBlock, "difference", value.NewNativeFunction("difference", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BlockDifference, false, nil))
+	RegisterActionImpl(value.TypeBlock, "union", value.NewNativeFunction("union", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BlockUnion, false, nil))
 }
 
 func registerStringSeriesActions() {
@@ -264,6 +276,18 @@ func registerStringSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, seriesTake, false, nil))
+	RegisterActionImpl(value.TypeString, "intersect", value.NewNativeFunction("intersect", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, StringIntersect, false, nil))
+	RegisterActionImpl(value.TypeString, "difference", value.NewNativeFunction("difference", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, StringDifference, false, nil))
+	RegisterActionImpl(value.TypeString, "union", value.NewNativeFunction("union", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, StringUnion, false, nil))
 }
 
 func registerBinarySeriesActions() {
@@ -374,6 +398,18 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "tail?", value.NewNativeFunction("tail?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTailQ, false, nil))
+	RegisterActionImpl(value.TypeBinary, "intersect", value.NewNativeFunction("intersect", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BinaryIntersect, false, nil))
+	RegisterActionImpl(value.TypeBinary, "difference", value.NewNativeFunction("difference", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BinaryDifference, false, nil))
+	RegisterActionImpl(value.TypeBinary, "union", value.NewNativeFunction("union", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, BinaryUnion, false, nil))
 	RegisterActionImpl(value.TypeBinary, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BinarySort, false, nil))
@@ -1012,4 +1048,73 @@ Empty delimiter is not allowed and will raise an error. Consecutive delimiters c
 			SeeAlso:  []string{"join", "form", "mold"},
 			Tags:     []string{"series", "string", "split"},
 		}))
+
+	registerAndBind("intersect", CreateAction("intersect", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the intersection of two series",
+		Description: `Returns a new series containing unique elements that exist in both series.
+The order of elements in the result follows the order they appear in the first series.
+Duplicates are removed from the result.`,
+		Parameters: []ParamDoc{
+			{Name: "s1", Type: "block! string! binary!", Description: "First series"},
+			{Name: "s2", Type: "block! string! binary!", Description: "Second series"},
+		},
+		Returns: "block! string! binary! Series containing unique common elements",
+		Examples: []string{
+			"intersect [1 2 3] [2 3 4]  ; => [2 3]",
+			`intersect "hello" "world"  ; => "lo"`,
+			"intersect #{010203} #{020304}  ; => #{0203}",
+		},
+		SeeAlso: []string{"union", "difference"},
+		Tags:    []string{"series", "set"},
+	}))
+
+	registerAndBind("difference", CreateAction("difference", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the difference of two series",
+		Description: `Returns a new series containing unique elements from the first series that do not exist in the second series.
+The order of elements in the result follows the order they appear in the first series.
+Duplicates are removed from the result.`,
+		Parameters: []ParamDoc{
+			{Name: "s1", Type: "block! string! binary!", Description: "First series"},
+			{Name: "s2", Type: "block! string! binary!", Description: "Second series"},
+		},
+		Returns: "block! string! binary! Series containing unique elements from first series not in second",
+		Examples: []string{
+			"difference [1 2 3] [2 3 4]  ; => [1]",
+			`difference "hello" "world"  ; => "he"`,
+			"difference #{010203} #{020304}  ; => #{01}",
+		},
+		SeeAlso: []string{"union", "intersect"},
+		Tags:    []string{"series", "set"},
+	}))
+
+	registerAndBind("union", CreateAction("union", []value.ParamSpec{
+		value.NewParamSpec("s1", true),
+		value.NewParamSpec("s2", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the union of two series",
+		Description: `Returns a new series containing all unique elements from both series.
+The order of elements follows the order they appear in the first series, then the second series.
+Duplicates are removed from the result.`,
+		Parameters: []ParamDoc{
+			{Name: "s1", Type: "block! string! binary!", Description: "First series"},
+			{Name: "s2", Type: "block! string! binary!", Description: "Second series"},
+		},
+		Returns: "block! string! binary! Series containing all unique elements from both series",
+		Examples: []string{
+			"union [1 2 3] [2 3 4]  ; => [1 2 3 4]",
+			`union "hello" "world"  ; => "helowrd"`,
+			"union #{010203} #{020304}  ; => #{01020304}",
+		},
+		SeeAlso: []string{"intersect", "difference"},
+		Tags:    []string{"series", "set"},
+	}))
 }
