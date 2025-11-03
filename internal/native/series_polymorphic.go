@@ -20,7 +20,7 @@ func seriesFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 		if strings.Contains(err.Error(), "empty series") {
 			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
 		}
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"", fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", seriesVal.GetIndex())})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", seriesVal.GetIndex()), fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", seriesVal.GetIndex())})
 	}
 	return val, nil
 }
