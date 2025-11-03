@@ -1,108 +1,12 @@
 package native
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
-
-func StringFirst(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	strVal := str.String()
-	if len(strVal) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
-	}
-	if str.GetIndex() >= len(strVal) {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", str.GetIndex()), fmt.Sprintf("%d", len(strVal)), ""})
-	}
-
-	return value.NewStrVal(string(strVal[str.GetIndex()])), nil
-}
-
-func StringLast(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	strVal := str.String()
-	if len(strVal) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
-	}
-
-	return value.NewStrVal(string(strVal[len(strVal)-1])), nil
-}
-
-func StringAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	appendStr, ok := value.AsStringValue(args[1])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
-	}
-
-	str.Append(appendStr)
-
-	return args[0], nil
-}
-
-func StringInsert(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	insertStr, ok := value.AsStringValue(args[1])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
-	}
-
-	str.Insert(insertStr)
-
-	return args[0], nil
-}
-
-func StringLength(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	return value.NewIntVal(int64(len(str.String()))), nil
-}
-
-func StringCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	count, hasPart, err := readPartCount(refValues)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if hasPart {
-		if err := validatePartCount(str, count); err != nil {
-			return value.NewNoneVal(), err
-		}
-		// Use substring
-		runes := []rune(str.String())
-		return value.NewStrVal(string(runes[:count])), nil
-	}
-
-	// Full copy
-	return value.NewStrVal(str.String()), nil
-}
 
 func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	str, ok := value.AsStringValue(args[0])
@@ -110,94 +14,32 @@ func StringFind(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	sought, ok := value.AsStringValue(args[1])
+	sought := args[1]
+	soughtStr, ok := value.AsStringValue(sought)
 	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(sought.GetType()), ""})
 	}
 
 	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
 	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
-	runes := []rune(str.String())
-	soughtRunes := []rune(sought.String())
-
-	if len(soughtRunes) == 0 {
-		return value.NewNoneVal(), nil // Empty string not found
-	}
+	haystack := str.String()
+	needle := soughtStr.String()
 
 	if isLast {
-		for i := len(runes) - len(soughtRunes); i >= 0; i-- {
-			match := true
-			for j := range soughtRunes {
-				if runes[i+j] != soughtRunes[j] {
-					match = false
-					break
-				}
-			}
-			if match {
-				return value.NewIntVal(int64(i + 1)), nil
-			}
+		pos := strings.LastIndex(haystack, needle)
+		if pos == -1 {
+			return value.NewNoneVal(), nil
 		}
+		return value.NewIntVal(int64(pos + 1)), nil
 	} else {
-		for i := 0; i <= len(runes)-len(soughtRunes); i++ {
-			match := true
-			for j := range soughtRunes {
-				if runes[i+j] != soughtRunes[j] {
-					match = false
-					break
-				}
-			}
-			if match {
-				return value.NewIntVal(int64(i + 1)), nil
-			}
+		pos := strings.Index(haystack, needle)
+		if pos == -1 {
+			return value.NewNoneVal(), nil
 		}
+		return value.NewIntVal(int64(pos + 1)), nil
 	}
-
-	return value.NewNoneVal(), nil
-}
-
-func StringRemove(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	count, _, err := readPartCount(refValues)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if err := validatePartCount(str, count); err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	str.SetIndex(0)
-	str.Remove(count)
-	return args[0], nil
-}
-
-func StringSkip(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	str, ok := value.AsStringValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
-	}
-
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
-	}
-
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
-
-	newIndex := str.GetIndex() + count
-	if newIndex < 0 || newIndex > len(str.String()) {
-		newIndex = len(str.String())
-	}
-	str.SetIndex(newIndex)
-
-	return args[0], nil
 }
 
 func StringReverse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -206,12 +48,12 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	r := str.Runes()
-	for i, j := 0, len(r)-1; i < j; i, j = i+1, j-1 {
-		r[i], r[j] = r[j], r[i]
+	runes := str.Runes()
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
 	}
-	str.SetRunes(r)
 
+	str.SetRunes(runes)
 	return args[0], nil
 }
 
@@ -242,25 +84,121 @@ func StringAt(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	return seriesAt(str, zeroBasedIndex)
 }
 
-func StringTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func StringPoke(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	indexVal := args[1]
+	if indexVal.GetType() != value.TypeInteger {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(indexVal.GetType()), ""})
+	}
+
+	index64, _ := value.AsIntValue(indexVal)
+	zeroBasedIndex := int(index64) - 1
+
 	str, ok := value.AsStringValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	countVal := args[1]
-	if countVal.GetType() != value.TypeInteger {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"integer", value.TypeToString(countVal.GetType()), ""})
+	if err := validateIndex(zeroBasedIndex, len(str.Runes())); err != nil {
+		return value.NewNoneVal(), err
+	}
+	r, err := validateStringValue(args[2])
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	str.Runes()[zeroBasedIndex] = r
+	return args[2], nil
+}
+
+func StringTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
 	}
 
-	count64, _ := value.AsIntValue(countVal)
-	count := int(count64)
+	input := string(str.Runes())
 
-	runes := str.Runes()
-	start := str.GetIndex()
-	end := min(start+count, len(runes))
-	takenRunes := runes[start:end]
-	str.SetIndex(end)
+	hasHead := hasRefinement(refValues, "head")
+	hasTail := hasRefinement(refValues, "tail")
+	hasAuto := hasRefinement(refValues, "auto")
+	hasLines := hasRefinement(refValues, "lines")
+	hasAll := hasRefinement(refValues, "all")
+	hasWith, withVal := getRefinementValue(refValues, "with")
 
-	return value.NewStrVal(string(takenRunes)), nil
+	flagCount := countTrue(hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith)
+
+	if flagCount > 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim refinements are mutually exclusive", "", ""},
+		)
+	}
+
+	if hasWith {
+		withStr, ok := value.AsStringValue(withVal)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"string", value.TypeToString(withVal.GetType()), "--with"},
+			)
+		}
+		charsToRemove := string(withStr.Runes())
+		str.SetRunes([]rune(trimWith(input, charsToRemove)))
+		return args[0], nil
+	}
+
+	if flagCount == 0 {
+		str.SetRunes([]rune(trimDefault(input)))
+		return args[0], nil
+	}
+
+	if hasHead {
+		str.SetRunes([]rune(trimHead(input)))
+		return args[0], nil
+	}
+	if hasTail {
+		str.SetRunes([]rune(trimTail(input)))
+		return args[0], nil
+	}
+	if hasAuto {
+		str.SetRunes([]rune(trimAuto(input)))
+		return args[0], nil
+	}
+	if hasLines {
+		str.SetRunes([]rune(trimLines(input)))
+		return args[0], nil
+	}
+	if hasAll {
+		str.SetRunes([]rune(trimAll(input)))
+		return args[0], nil
+	}
+
+	panic("unreachable: all trim refinement combinations should be handled above")
+}
+
+func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	hasDefault := false
+	defaultVal, ok := refValues["default"]
+	if ok && defaultVal.GetType() != value.TypeNone {
+		hasDefault = true
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	if targetStr, ok2 := value.AsStringValue(args[1]); ok2 {
+		haystack := str.String()
+		needle := targetStr.String()
+		pos := strings.Index(haystack, needle)
+		if pos == -1 {
+			if hasDefault {
+				return defaultVal, nil
+			}
+			return value.NewNoneVal(), nil
+		}
+		remainder := haystack[pos+len(needle):]
+		return value.NewStringValue(remainder), nil
+	}
+	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
 }

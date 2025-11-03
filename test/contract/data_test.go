@@ -468,3 +468,66 @@ func TestData_Reduce(t *testing.T) {
 		})
 	}
 }
+
+func TestObject_Select(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "select existing field from object",
+			input: "obj: object [x: 10 y: 20]\nselect obj 'x",
+			want:  "10",
+		},
+		{
+			name:  "select missing field returns none",
+			input: "obj: object [x: 10 y: 20]\nselect obj 'z",
+			want:  "none",
+		},
+		{
+			name:  "select with default when field exists",
+			input: "obj: object [x: 10 y: 20]\nselect obj 'x --default 99",
+			want:  "10",
+		},
+		{
+			name:  "select with default when field missing",
+			input: "obj: object [x: 10 y: 20]\nselect obj 'z --default 99",
+			want:  "99",
+		},
+		{
+			name:  "select from object with prototype",
+			input: "base: object [x: 10]\nderived: make base [y: 20]\nselect derived 'x",
+			want:  "10",
+		},
+		{
+			name:  "select field shadowed in derived",
+			input: "base: object [x: 10]\nderived: make base [x: 99 y: 20]\nselect derived 'x",
+			want:  "99",
+		},
+		{
+			name:  "select missing field with prototype and default",
+			input: "base: object [x: 10]\nderived: make base [y: 20]\nselect derived 'z --default 999",
+			want:  "999",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got none")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if result.Mold() != tt.want {
+				t.Fatalf("expected %s, got %s", tt.want, result.Mold())
+			}
+		})
+	}
+}

@@ -10,25 +10,25 @@ import (
 func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockFirst, false, nil))
+	}, seriesFirst, false, nil))
 	RegisterActionImpl(value.TypeBlock, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockLast, false, nil))
+	}, seriesLast, false, nil))
 	RegisterActionImpl(value.TypeBlock, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, BlockAppend, false, nil))
+	}, seriesAppend, false, nil))
 	RegisterActionImpl(value.TypeBlock, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, BlockInsert, false, nil))
+	}, seriesInsert, false, nil))
 	RegisterActionImpl(value.TypeBlock, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BlockLength, false, nil))
+	}, seriesLength, false, nil))
 	RegisterActionImpl(value.TypeBlock, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, BlockCopy, false, nil))
+	}, seriesCopy, false, nil))
 	RegisterActionImpl(value.TypeBlock, "find", value.NewNativeFunction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -37,11 +37,11 @@ func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, BlockRemove, false, nil))
+	}, seriesRemove, false, nil))
 	RegisterActionImpl(value.TypeBlock, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, BlockSkip, false, nil))
+	}, seriesSkip, false, nil))
 	RegisterActionImpl(value.TypeBlock, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesNext, false, nil))
@@ -57,7 +57,7 @@ func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, BlockTake, false, nil))
+	}, seriesTake, false, nil))
 	RegisterActionImpl(value.TypeBlock, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, BlockSort, false, nil))
@@ -68,6 +68,36 @@ func registerBlockSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BlockAt, false, nil))
+	RegisterActionImpl(value.TypeBlock, "pick", value.NewNativeFunction("pick", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, seriesPick, false, nil))
+	RegisterActionImpl(value.TypeBlock, "poke", value.NewNativeFunction("poke", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+		value.NewParamSpec("value", true),
+	}, BlockPoke, false, nil))
+	RegisterActionImpl(value.TypeBlock, "select", value.NewNativeFunction("select", []value.ParamSpec{
+		value.NewParamSpec("target", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
+	}, BlockSelect, false, nil))
+	RegisterActionImpl(value.TypeBlock, "clear", value.NewNativeFunction("clear", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesClear, false, nil))
+	RegisterActionImpl(value.TypeBlock, "change", value.NewNativeFunction("change", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, seriesChange, false, nil))
+	RegisterActionImpl(value.TypeBlock, "trim", value.NewNativeFunction("trim", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
+	}, BlockTrim, false, nil))
 	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -86,25 +116,25 @@ func registerBlockSeriesActions() {
 func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringFirst, false, nil))
+	}, seriesFirst, false, nil))
 	RegisterActionImpl(value.TypeString, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringLast, false, nil))
+	}, seriesLast, false, nil))
 	RegisterActionImpl(value.TypeString, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, StringAppend, false, nil))
+	}, seriesAppend, false, nil))
 	RegisterActionImpl(value.TypeString, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, StringInsert, false, nil))
+	}, seriesInsert, false, nil))
 	RegisterActionImpl(value.TypeString, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, StringLength, false, nil))
+	}, seriesLength, false, nil))
 	RegisterActionImpl(value.TypeString, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, StringCopy, false, nil))
+	}, seriesCopy, false, nil))
 	RegisterActionImpl(value.TypeString, "find", value.NewNativeFunction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -113,11 +143,11 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, StringRemove, false, nil))
+	}, seriesRemove, false, nil))
 	RegisterActionImpl(value.TypeString, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, StringSkip, false, nil))
+	}, seriesSkip, false, nil))
 	RegisterActionImpl(value.TypeString, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesNext, false, nil))
@@ -134,6 +164,36 @@ func registerStringSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, StringAt, false, nil))
+	RegisterActionImpl(value.TypeString, "pick", value.NewNativeFunction("pick", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, seriesPick, false, nil))
+	RegisterActionImpl(value.TypeString, "poke", value.NewNativeFunction("poke", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+		value.NewParamSpec("value", true),
+	}, StringPoke, false, nil))
+	RegisterActionImpl(value.TypeString, "select", value.NewNativeFunction("select", []value.ParamSpec{
+		value.NewParamSpec("target", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
+	}, StringSelect, false, nil))
+	RegisterActionImpl(value.TypeString, "clear", value.NewNativeFunction("clear", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesClear, false, nil))
+	RegisterActionImpl(value.TypeString, "change", value.NewNativeFunction("change", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, seriesChange, false, nil))
+	RegisterActionImpl(value.TypeString, "trim", value.NewNativeFunction("trim", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
+	}, StringTrim, false, nil))
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -155,31 +215,31 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, StringTake, false, nil))
+	}, seriesTake, false, nil))
 }
 
 func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "first", value.NewNativeFunction("first", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryFirst, false, nil))
+	}, seriesFirst, false, nil))
 	RegisterActionImpl(value.TypeBinary, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryLast, false, nil))
+	}, seriesLast, false, nil))
 	RegisterActionImpl(value.TypeBinary, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, BinaryAppend, false, nil))
+	}, seriesAppend, false, nil))
 	RegisterActionImpl(value.TypeBinary, "insert", value.NewNativeFunction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
-	}, BinaryInsert, false, nil))
+	}, seriesInsert, false, nil))
 	RegisterActionImpl(value.TypeBinary, "length?", value.NewNativeFunction("length?", []value.ParamSpec{
 		value.NewParamSpec("series", true),
-	}, BinaryLength, false, nil))
+	}, seriesLength, false, nil))
 	RegisterActionImpl(value.TypeBinary, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, BinaryCopy, false, nil))
+	}, seriesCopy, false, nil))
 	RegisterActionImpl(value.TypeBinary, "find", value.NewNativeFunction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -188,11 +248,11 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "remove", value.NewNativeFunction("remove", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
-	}, BinaryRemove, false, nil))
+	}, seriesRemove, false, nil))
 	RegisterActionImpl(value.TypeBinary, "skip", value.NewNativeFunction("skip", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, BinarySkip, false, nil))
+	}, seriesSkip, false, nil))
 	RegisterActionImpl(value.TypeBinary, "next", value.NewNativeFunction("next", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesNext, false, nil))
@@ -209,6 +269,27 @@ func registerBinarySeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("index", true),
 	}, BinaryAt, false, nil))
+	RegisterActionImpl(value.TypeBinary, "pick", value.NewNativeFunction("pick", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, seriesPick, false, nil))
+	RegisterActionImpl(value.TypeBinary, "poke", value.NewNativeFunction("poke", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+		value.NewParamSpec("value", true),
+	}, BinaryPoke, false, nil))
+	RegisterActionImpl(value.TypeBinary, "select", value.NewNativeFunction("select", []value.ParamSpec{
+		value.NewParamSpec("target", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
+	}, BinarySelect, false, nil))
+	RegisterActionImpl(value.TypeBinary, "clear", value.NewNativeFunction("clear", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesClear, false, nil))
+	RegisterActionImpl(value.TypeBinary, "change", value.NewNativeFunction("change", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, seriesChange, false, nil))
 	RegisterActionImpl(value.TypeBinary, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -227,7 +308,7 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "take", value.NewNativeFunction("take", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
-	}, BinaryTake, false, nil))
+	}, seriesTake, false, nil))
 }
 
 func registerSeriesTypeImpls() {
@@ -314,6 +395,134 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Tags:     []string{"series", "indexing"},
 	}))
 
+	registerAndBind("pick", CreateAction("pick", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the element at the specified 1-based index from a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get element from"},
+			{Name: "index", Type: "integer!", Description: "1-based index of the element to return"},
+		},
+		Returns:  "any! The element at the specified index, or none if index is out of bounds",
+		Examples: []string{"pick [1 2 3] 2  ; => 2", `pick "hello" 1  ; => "h"`, "pick #{DEADBEEF} 3  ; => 190", "pick [1 2 3] 10  ; => none"},
+		SeeAlso:  []string{"at", "first", "last", "poke"},
+		Tags:     []string{"series", "indexing"},
+	}))
+
+	registerAndBind("poke", CreateAction("poke", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("index", true),
+		value.NewParamSpec("value", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Sets the element at the specified 1-based index in a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to modify"},
+			{Name: "index", Type: "integer!", Description: "1-based index of the element to set"},
+			{Name: "value", Type: "any!", Description: "The new value to set at the index"},
+		},
+		Returns:  "any! The value that was set",
+		Examples: []string{"poke [1 2 3] 2 99  ; => 99, series becomes [1 99 3]", `poke "hello" 1 "H"  ; => "H", series becomes "Hello"`},
+		SeeAlso:  []string{"at", "change", "insert"},
+		Tags:     []string{"series", "modification", "indexing"},
+	}))
+
+	registerAndBind("select", CreateAction("select", []value.ParamSpec{
+		value.NewParamSpec("target", true),
+		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Finds a value in a series or field in an object and returns associated value",
+		Description: `Polymorphic lookup action that works on series and objects.
+
+For blocks: searches for the value and returns the next element (key-value pairs).
+For strings/binary: finds the pattern and returns the remaining portion after it.
+For objects: looks up the field name and returns its value (searches prototype chain).
+
+The --default refinement provides a fallback when the value/field is not found.`,
+		Parameters: []ParamDoc{
+			{Name: "target", Type: "block! string! binary! object!", Description: "The series or object to search"},
+			{Name: "value", Type: "any!", Description: "For series: value to find. For objects: field name (word or string)"},
+			{Name: "--default", Type: "any!", Description: "Optional fallback value when search/lookup fails"},
+		},
+		Returns: "any! The found value, or default, or none",
+		Examples: []string{
+			"select [a 1 b 2] 'b  ; => 2",
+			`select "hello world" " "  ; => "world"`,
+			"obj: object [x: 10]\nselect obj 'x  ; => 10",
+			"select obj 'missing --default 99  ; => 99",
+		},
+		SeeAlso: []string{"find", "at", "index?", "put", "get"},
+		Tags:    []string{"series", "search", "objects", "lookup"},
+	}))
+
+	registerAndBind("clear", CreateAction("clear", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Removes all elements from a series and resets index to head",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to clear"},
+		},
+		Returns:  "block! string! binary! The cleared series (same reference)",
+		Examples: []string{"clear [1 2 3]  ; => [], series becomes empty with index at head", `clear "hello"  ; => "", series becomes empty with index at head`},
+		SeeAlso:  []string{"append", "insert", "remove"},
+		Tags:     []string{"series", "modification"},
+	}))
+
+	registerAndBind("change", CreateAction("change", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("value", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Replaces the element at the current index with a new value",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to modify"},
+			{Name: "value", Type: "any!", Description: "The new value to set at current index (string: single character, binary: 0-255)"},
+		},
+		Returns:  "any! The value that was set",
+		Examples: []string{"change next [1 2 3] 99  ; => 99, series becomes [1 99 3]", `change next "hello" "H"  ; => "H", series becomes "Hello" (single char only)`},
+		SeeAlso:  []string{"poke", "at", "insert"},
+		Tags:     []string{"series", "modification"},
+	}))
+
+	registerAndBind("trim", CreateAction("trim", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Removes whitespace or none-like values from series",
+		Description: `For strings: removes whitespace (default trims from both ends).
+For blocks: removes none values (default trims from both ends).
+
+Note: --auto and --lines refinements are only supported for strings.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "string! block!", Description: "The series to trim"},
+			{Name: "--head", Type: "flag", Description: "Trim from head only", Optional: true},
+			{Name: "--tail", Type: "flag", Description: "Trim from tail only", Optional: true},
+			{Name: "--auto", Type: "flag", Description: "Auto-indent (strings only)", Optional: true},
+			{Name: "--lines", Type: "flag", Description: "Remove line breaks (strings only)", Optional: true},
+			{Name: "--all", Type: "flag", Description: "Remove all occurrences", Optional: true},
+			{Name: "--with", Type: "any!", Description: "Specify what to remove", Optional: true},
+		},
+		Returns: "string! block! The trimmed series (modified in place)",
+		Examples: []string{
+			`trim "  hello  "  ; => "hello"`,
+			"trim [none 1 none 2 none]  ; => [1 none 2]",
+			"trim --all [none 1 none 2 none]  ; => [1 2]",
+		},
+		SeeAlso: []string{"clear", "change", "remove"},
+		Tags:    []string{"series", "modification"},
+	}))
+
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -350,14 +559,23 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Copies a series",
+		Description: `Creates a copy of the series. With --part, copies only the specified number of elements
+from the current position. Negative counts raise an OutOfBounds error. Zero count returns an empty series.
+Oversized counts are clamped to the remaining elements from current position.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
-			{Name: "--part", Type: "integer!", Description: "Copy only first N elements", Optional: true},
+			{Name: "--part", Type: "integer!", Description: "Copy only first N elements from current position (must be >= 0)", Optional: true},
 		},
-		Returns:  "block! string! binary! A copy of the series",
-		Examples: []string{"copy [1 2 3]  ; => [1 2 3]", `copy "hello"  ; => "hello"`, "copy #{DEADBEEF}  ; => #{DEADBEEF}"},
-		SeeAlso:  []string{"append", "insert"},
-		Tags:     []string{"series"},
+		Returns: "block! string! binary! A copy of the series",
+		Examples: []string{
+			"copy [1 2 3]  ; => [1 2 3]",
+			`copy "hello"  ; => "hello"`,
+			"copy #{DEADBEEF}  ; => #{DEADBEEF}",
+			"copy --part 2 [1 2 3 4]  ; => [1 2]",
+			"copy --part 0 [1 2 3]  ; => []",
+		},
+		SeeAlso: []string{"append", "insert", "take"},
+		Tags:    []string{"series"},
 	}))
 
 	registerAndBind("find", CreateAction("find", []value.ParamSpec{
@@ -384,14 +602,23 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Removes elements from a series",
+		Description: `Removes elements from the series starting at the current position.
+With --part, removes the specified number of elements. Negative counts raise an OutOfBounds error.
+Zero count is a no-op. Oversized counts (where index+count exceeds length) raise an OutOfBounds error.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to remove from"},
-			{Name: "--part", Type: "integer!", Description: "Remove n elements", Optional: true},
+			{Name: "--part", Type: "integer!", Description: "Remove n elements from current position (must be >= 0, index+count <= length)", Optional: true},
 		},
-		Returns:  "block! string! binary! The modified series",
-		Examples: []string{"remove [1 2 3]  ; => [2 3]", "remove --part 2 [1 2 3]  ; => [3]", `remove "hello"  ; => "ello"`, "remove #{DEADBEEF}  ; => #{ADBE}"},
-		SeeAlso:  []string{"append", "insert"},
-		Tags:     []string{"series", "modification"},
+		Returns: "block! string! binary! The modified series",
+		Examples: []string{
+			"remove [1 2 3]  ; => [2 3]",
+			"remove --part 2 [1 2 3]  ; => [3]",
+			`remove "hello"  ; => "ello"`,
+			"remove #{DEADBEEF}  ; => #{ADBE}",
+			"remove --part 0 [1 2 3]  ; => [1 2 3] (no-op)",
+		},
+		SeeAlso: []string{"append", "insert", "clear"},
+		Tags:    []string{"series", "modification"},
 	}))
 
 	registerAndBind("skip", CreateAction("skip", []value.ParamSpec{
@@ -528,14 +755,23 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Takes n elements from a series",
+		Description: `Returns a new series containing the first n elements from the current position.
+Negative counts raise an OutOfBounds error. Zero count returns an empty series.
+Oversized counts are clamped to the remaining elements from current position.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to take from"},
-			{Name: "count", Type: "integer!", Description: "Number of elements to take"},
+			{Name: "count", Type: "integer!", Description: "Number of elements to take (must be >= 0)"},
 		},
-		Returns:  "block! string! binary! Series containing first count elements",
-		Examples: []string{"take [1 2 3 4] 2  ; => [1 2]", `take "hello" 2  ; => "he"`, "take #{DEADBEEF} 2  ; => #{DEAD}"},
-		SeeAlso:  []string{"skip", "first", "last"},
-		Tags:     []string{"series"},
+		Returns: "block! string! binary! Series containing first count elements",
+		Examples: []string{
+			"take [1 2 3 4] 2  ; => [1 2]",
+			`take "hello" 2  ; => "he"`,
+			"take #{DEADBEEF} 2  ; => #{DEAD}",
+			"take [1 2 3] 0  ; => []",
+			"take [1 2 3] 10  ; => [1 2 3] (clamped)",
+		},
+		SeeAlso: []string{"skip", "first", "last", "copy"},
+		Tags:    []string{"series"},
 	}))
 
 	registerAndBind("sort", CreateAction("sort", []value.ParamSpec{

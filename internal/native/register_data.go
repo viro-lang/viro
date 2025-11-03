@@ -8,14 +8,9 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// RegisterDataNatives registers all data and object-related native functions to the root frame.
-//
-// Panics if any function is nil or if a duplicate name is detected during registration.
 func RegisterDataNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function
 	registerAndBind := func(name string, fn *value.FunctionValue) {
 		if fn == nil {
 			panic(fmt.Sprintf("RegisterDataNatives: attempted to register nil function for '%s'", name))
@@ -24,19 +19,13 @@ func RegisterDataNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterDataNatives: duplicate registration of function '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, value.NewFuncVal(fn))
-
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Register core literal keywords
 	rootFrame.Bind("true", value.NewLogicVal(true))
 	rootFrame.Bind("false", value.NewLogicVal(false))
 	rootFrame.Bind("none", value.NewNoneVal())
-
-	// ===== Group 6: Data operations  =====
 	registerAndBind("set", value.NewNativeFunction(
 		"set",
 		[]value.ParamSpec{
@@ -234,7 +223,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 		},
 	))
 
-	registerAndBind("select", value.NewNativeFunction(
+	RegisterActionImpl(value.TypeObject, "select", value.NewNativeFunction(
 		"select",
 		[]value.ParamSpec{
 			value.NewParamSpec("target", true), // evaluated
@@ -243,28 +232,7 @@ new or overriding field definitions. The new object shares the parent's fields b
 		},
 		Select,
 		false,
-		&NativeDoc{
-			Category: "Objects",
-			Summary:  "Retrieves a field value from an object or block",
-			Description: `Looks up a field in an object or searches for a key in a block.
-For objects: returns the field value, checking parent prototypes if needed.
-For blocks: searches for key-value pairs (alternating pattern) and returns the value.
-Use --default refinement to provide a fallback when field/key is not found.`,
-			Parameters: []ParamDoc{
-				{Name: "target", Type: "object! or block!", Description: "The object or block to search", Optional: false},
-				{Name: "field", Type: "word! or string!", Description: "The field name or key to look up", Optional: false},
-				{Name: "--default", Type: "any-type!", Description: "Optional default value when field not found", Optional: true},
-			},
-			Returns: "[any-type!] The field/key value, or default, or none",
-			Examples: []string{
-				"obj: object [x: 10 y: 20]\nselect obj 'x  ; => 10",
-				"select obj 'z --default 99  ; => 99 (field not found)",
-				"data: ['name \"Alice\" 'age 30]\nselect data 'age  ; => 30",
-			},
-			SeeAlso: []string{"put", "get", "object"},
-			Tags:    []string{"objects", "lookup", "field-access"},
-		},
-	))
+		nil)) // No doc needed since it's type-specific
 
 	registerAndBind("put", value.NewNativeFunction(
 		"put",

@@ -257,8 +257,8 @@ func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator
 
 	rootFrame := evaluator.GetFrameByIndex(0)
 	native.RegisterMathNatives(rootFrame)
-	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterDataNatives(rootFrame)
+	native.RegisterSeriesNatives(rootFrame)
 	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
