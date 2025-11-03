@@ -247,3 +247,38 @@ func TestActionLength(t *testing.T) {
 		})
 	}
 }
+
+// TestActionSplit tests the 'split' action on strings.
+// Contract: series-actions.md - split
+func TestActionSplit(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+		errID   string
+	}{
+		// Basic functionality
+		{name: "split by space", input: `split "hello world" " "`, want: `["hello" "world"]`},
+		{name: "split by comma", input: `split "a,b,c" ","`, want: `["a" "b" "c"]`},
+		{name: "split by multi-char delimiter", input: `split "one--two--three" "--"`, want: `["one" "two" "three"]`},
+		{name: "split with no delimiter found", input: `split "hello" "x"`, want: `["hello"]`},
+		{name: "split empty string", input: `split "" " "`, want: `[""]`},
+		{name: "split at beginning", input: `split ",hello" ","`, want: `["" "hello"]`},
+		{name: "split at end", input: `split "hello," ","`, want: `["hello" ""]`},
+		{name: "split consecutive delimiters", input: `split "a,,b" ","`, want: `["a" "" "b"]`},
+		{name: "split delimiter equals entire string", input: `split "," ","`, want: `["" ""]`},
+
+		// Error cases
+		{name: "empty delimiter", input: `split "abc" ""`, wantErr: true, errID: "invalid-operation"},
+		{name: "non-string input", input: `split 123 ","`, wantErr: true, errID: "action-no-impl"},
+		{name: "non-string delimiter", input: `split "hello" 32`, wantErr: true, errID: "type-mismatch"},
+		{name: "wrong arity - one arg", input: `split "hello"`, wantErr: true, errID: "arg-count"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			RunSeriesTest(t, tt.input, tt.want, tt.wantErr, tt.errID)
+		})
+	}
+}

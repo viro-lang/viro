@@ -42,7 +42,7 @@ print "--- compose (selective evaluation) ---"
 name: "World"
 count: 42
 template: compose [Hello (name) the answer is (count)]
-print template
+print (mold template)
 
 print ""
 print "--- join ---"

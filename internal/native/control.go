@@ -225,6 +225,43 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	return value.NewBlockVal(reducedElements), nil
 }
 
+// Compose implements the `compose` native.
+//
+// Contract: compose block -> block!
+// - Takes a block (not evaluated initially)
+// - Evaluates parenthetical expressions within the block
+// - Returns new block with composition
+func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("compose", 1, len(args))
+	}
+
+	if args[0].GetType() != value.TypeBlock && args[0].GetType() != value.TypeParen {
+		return value.NewNoneVal(), typeError("compose", "block", args[0])
+	}
+
+	block, _ := value.AsBlockValue(args[0])
+	vals := block.Elements
+	composedElements := make([]core.Value, 0)
+
+	for _, element := range vals {
+		if element.GetType() == value.TypeParen {
+			// Evaluate parenthetical expression
+			parenBlock, _ := value.AsBlockValue(element)
+			result, err := eval.DoBlock(parenBlock.Elements)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
+			composedElements = append(composedElements, result)
+		} else {
+			// Keep element as-is
+			composedElements = append(composedElements, element)
+		}
+	}
+
+	return value.NewBlockVal(composedElements), nil
+}
+
 // ToTruthy converts a value to truthy/falsy per Viro semantics.
 //
 // Contract per contracts/control-flow.md:

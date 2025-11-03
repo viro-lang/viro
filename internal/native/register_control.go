@@ -159,4 +159,26 @@ Returns a function value that can be called. Functions capture their defining co
 			SeeAlso:  []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure"},
 		},
 	))
+
+	// Group 12: Block manipulation (1 function - needs evaluator)
+	registerAndBind("compose", value.NewNativeFunction(
+		"compose",
+		[]value.ParamSpec{
+			value.NewParamSpec("block", false), // NOT evaluated (block)
+		},
+		Compose,
+		false,
+		&NativeDoc{
+			Category: "Control",
+			Summary:  "Evaluates parenthetical expressions within a block",
+			Description: `Takes a block and evaluates any parenthetical expressions (expressions in parentheses)
+within it. Other elements remain unevaluated. Returns a new block with the evaluated results.`,
+			Parameters: []ParamDoc{
+				{Name: "block", Type: "block!", Description: "The block containing expressions to compose", Optional: false},
+			},
+			Returns:  "[block!] A new block with parenthetical expressions evaluated",
+			Examples: []string{"name: \"World\"\ncompose [Hello (name)]  ; => [Hello \"World\"]", "x: 10\ny: 20\ncompose [result: (x + y) is (x * 2)]  ; => [result: 30 is 20]"},
+			SeeAlso:  []string{"reduce", "form"}, Tags: []string{"control", "evaluation", "block", "compose"},
+		},
+	))
 }

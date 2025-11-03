@@ -112,6 +112,29 @@ For blocks, omits outer brackets. For strings, omits quotes. Does not evaluate b
 		},
 	))
 
+	registerAndBind("join", value.NewNativeFunction(
+		"join",
+		[]value.ParamSpec{
+			value.NewParamSpec("value1", true), // evaluated
+			value.NewParamSpec("value2", true), // evaluated
+		},
+		Join,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Concatenates two values into a string",
+			Description: `Converts both values to strings using form and concatenates them.
+Automatically converts numbers, blocks, and other types to their string representations.`,
+			Parameters: []ParamDoc{
+				{Name: "value1", Type: "any-type!", Description: "First value to concatenate", Optional: false},
+				{Name: "value2", Type: "any-type!", Description: "Second value to concatenate", Optional: false},
+			},
+			Returns:  "[string!] Concatenated string",
+			Examples: []string{`join "Hello" " World"  ; => "Hello World"`, `join "Number: " 42  ; => "Number: 42"`, `join "x: " [1 2 3]  ; => "x: 1 2 3"`},
+			SeeAlso:  []string{"form", "mold"}, Tags: []string{"data", "string", "concatenation"},
+		},
+	))
+
 	registerAndBind("mold", value.NewNativeFunction(
 		"mold",
 		[]value.ParamSpec{

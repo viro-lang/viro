@@ -202,3 +202,39 @@ func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.
 	}
 	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
 }
+
+func StringSplit(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("split", 2, len(args))
+	}
+
+	// Validate first argument is string
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	// Validate second argument is string
+	delimiter, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+	}
+
+	// Check for empty delimiter
+	if delimiter.String() == "" {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{"empty delimiter not allowed", "", ""})
+	}
+
+	// Split the string
+	haystack := str.String()
+	delim := delimiter.String()
+	parts := strings.Split(haystack, delim)
+
+	// Convert each part to StringValue
+	elements := make([]core.Value, len(parts))
+	for i, part := range parts {
+		elements[i] = value.NewStrVal(part)
+	}
+
+	return value.NewBlockVal(elements), nil
+}
