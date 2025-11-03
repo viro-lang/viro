@@ -128,6 +128,10 @@ After closing, the port should not be used for further I/O operations. Returns n
 		[]value.ParamSpec{
 			value.NewParamSpec("source", true),       // evaluated
 			value.NewRefinementSpec("binary", false), // --binary flag
+			value.NewRefinementSpec("lines", false),  // --lines flag
+			value.NewRefinementSpec("part", true),    // --part length
+			value.NewRefinementSpec("seek", true),    // --seek index
+			value.NewRefinementSpec("as", true),      // --as encoding
 		},
 		ReadNative,
 		false,
@@ -140,14 +144,22 @@ opens the file, reads its contents, and closes it automatically.
 Returns the data as a string by default, or as binary! when --binary is used.
 
 Refinements:
-  --binary: Return data as binary! instead of string!`,
+  --binary: Return data as binary! instead of string!
+  --lines: Return block of lines instead of single string
+  --part length: Read only specified number of units (bytes or lines)
+  --seek index: Start reading from specific byte position
+  --as encoding: Read with specified encoding (default: utf-8)`,
 			Parameters: []ParamDoc{
 				{Name: "source", Type: "port! string!", Description: "A port or file path to read from", Optional: false},
 			},
-			Returns: "[string! binary!] The data read from the source",
+			Returns: "[string! binary! block!] The data read from the source",
 			Examples: []string{
 				`content: read "file://data.txt"  ; read as string`,
 				`data: read --binary "file://image.png"  ; read as binary`,
+				`lines: read --lines "file://data.txt"  ; read as block of lines`,
+				`partial: read --part 100 "file://data.txt"  ; read first 100 bytes`,
+				`lines: read --lines --part 5 "file://data.txt"  ; read first 5 lines`,
+				`data: read --seek 1000 "file://data.txt"  ; read from byte 1000`,
 				`p: open "file://data.txt"\ndata: read p\nclose p`,
 			},
 			SeeAlso: []string{"write", "load", "open", "close"}, Tags: []string{"ports", "io", "read", "file", "binary"},
