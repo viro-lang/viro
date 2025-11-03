@@ -498,14 +498,59 @@ func ClosePort(portVal core.Value) error {
 
 // ReadPort implements the `read` native (T067)
 func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
-	// Check if binary mode is requested
+	// Parse refinements
 	isBinary := false
+	isLines := false
+	partCount := -1
+	seekPos := int64(0)
+	encoding := "utf-8"
+
 	if opts != nil {
 		if binaryVal, ok := opts["binary"]; ok {
 			if binaryVal.GetType() == value.TypeLogic {
 				isBinary, _ = value.AsLogicValue(binaryVal)
 			}
 		}
+		if linesVal, ok := opts["lines"]; ok {
+			if linesVal.GetType() == value.TypeLogic {
+				isLines, _ = value.AsLogicValue(linesVal)
+			}
+		}
+		if partVal, ok := opts["part"]; ok {
+			if partVal.GetType() == value.TypeInteger {
+				pc, _ := value.AsIntValue(partVal)
+				partCount = int(pc)
+			}
+		}
+		if seekVal, ok := opts["seek"]; ok {
+			if seekVal.GetType() == value.TypeInteger {
+				sp, _ := value.AsIntValue(seekVal)
+				if sp < 0 {
+					return value.NewNoneVal(), fmt.Errorf("--seek position must be non-negative, got %d", sp)
+				}
+				seekPos = sp
+			}
+		}
+		if asVal, ok := opts["as"]; ok {
+			if asVal.GetType() == value.TypeWord {
+				wordVal, _ := value.AsWordValue(asVal)
+				encoding = string(wordVal)
+			} else if asVal.GetType() == value.TypeString {
+				strVal, _ := value.AsStringValue(asVal)
+				encoding = strVal.String()
+			}
+		}
+	}
+
+	// Validate conflicting options
+	if isBinary && isLines {
+		return value.NewNoneVal(), fmt.Errorf("--binary and --lines cannot be used together")
+	}
+	if isBinary && encoding != "utf-8" {
+		return value.NewNoneVal(), fmt.Errorf("--binary and --as cannot be used together")
+	}
+	if encoding != "utf-8" {
+		return value.NewNoneVal(), fmt.Errorf("encoding support not yet implemented (only utf-8 supported)")
 	}
 
 	// Open temporary port
@@ -516,13 +561,37 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 
 	port, _ := value.AsPort(portVal)
 
-	// Read all content
+	// Handle --seek for file ports
+	if seekPos >= 0 && port.Scheme == "file" {
+		if fileDriver, ok := port.Driver.(*fileDriver); ok {
+			if _, err := fileDriver.file.Seek(seekPos, 0); err != nil {
+				ClosePort(portVal)
+				return value.NewNoneVal(), fmt.Errorf("seek failed: %w", err)
+			}
+		}
+	}
+
+	// Read content based on mode
 	buf := make([]byte, 4096)
 	var data []byte
 	totalBytes := 0
 
+	// Determine read limit (bytes for binary/string mode, no limit for lines mode)
+	readLimit := -1
+	if partCount > 0 && !isLines {
+		readLimit = partCount
+	}
+
 	for {
-		n, err := port.Driver.Read(buf)
+		readSize := len(buf)
+		if readLimit > 0 && totalBytes+readSize > readLimit {
+			readSize = readLimit - totalBytes
+		}
+		if readSize <= 0 {
+			break
+		}
+
+		n, err := port.Driver.Read(buf[:readSize])
 		if n > 0 {
 			data = append(data, buf[:n]...)
 			totalBytes += n
@@ -535,15 +604,41 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 			ClosePort(portVal)
 			return value.NewNoneVal(), err
 		}
+		if readLimit > 0 && totalBytes >= readLimit {
+			break
+		}
 	}
 
 	trace.TracePortRead(port.Scheme, spec, totalBytes)
 	ClosePort(portVal)
 
-	// Return binary or string based on mode
+	// Return based on mode
 	if isBinary {
 		return value.NewBinaryVal(data), nil
 	}
+
+	if isLines {
+		content := string(data)
+		lines := strings.Split(content, "\n")
+		
+		// Remove trailing empty line only if content ends with newline
+		if len(lines) > 0 && len(content) > 0 && content[len(content)-1] == '\n' && lines[len(lines)-1] == "" {
+			lines = lines[:len(lines)-1]
+		}
+
+		// Apply --part limit for lines
+		if partCount > 0 && len(lines) > partCount {
+			lines = lines[:partCount]
+		}
+
+		// Convert to block of strings
+		elements := make([]core.Value, len(lines))
+		for i, line := range lines {
+			elements[i] = value.NewStrVal(line)
+		}
+		return value.NewBlockVal(elements), nil
+	}
+
 	return value.NewStrVal(string(data)), nil
 }
 
