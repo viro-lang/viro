@@ -216,10 +216,6 @@ func registerStringSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, seriesTake, false, nil))
-	// RegisterActionImpl(value.TypeString, "split", value.NewNativeFunction("split", []value.ParamSpec{
-	// 	value.NewParamSpec("string", true),
-	// 	value.NewParamSpec("delimiter", true),
-	// }, StringSplit, false, nil))
 }
 
 func registerBinarySeriesActions() {

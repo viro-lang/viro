@@ -31,10 +31,10 @@ counter: make object! [
 counter.increment
 counter.increment
 counter.increment
-print (counter.get-value)
+print counter.get-value
 
 counter.decrement
-print (counter.get-value)
+print counter.get-value
 
 print ""
 print "--- Object with initialization ---"
@@ -42,7 +42,7 @@ point: make object! [
     x: 0
     y: 0
     distance-from-origin: fn [] [
-        sqrt ((+ (* x x) (* y y)))
+        sqrt (* x x) + (* y y)
     ]
 ]
 
