@@ -587,6 +587,83 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	return result, nil
 }
 
+func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("do", 1, len(args))
+	}
+
+	val := args[0]
+
+	nextVal, hasNext := refValues["next"]
+	if hasNext && nextVal.GetType() != value.TypeNone {
+		var wordName string
+		switch nextVal.GetType() {
+		case value.TypeLitWord, value.TypeGetWord, value.TypeWord:
+			wordName, _ = value.AsWordValue(nextVal)
+		default:
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--next requires a word", "", ""},
+			)
+		}
+
+		if val.GetType() != value.TypeBlock {
+			newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
+			if newPos > 0 {
+				return result, nil
+			}
+			return value.NewNoneVal(), nil
+		}
+
+		block, _ := value.AsBlockValue(val)
+		vals := block.Elements
+		startIndex := block.Index
+
+		currentFrameIdx := eval.CurrentFrameIndex()
+		currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
+		if startIndex >= len(vals) {
+			nextBlock := block.Clone()
+			nextBlock.SetIndex(startIndex)
+			currentFrame.Bind(wordName, nextBlock.(core.Value))
+			return value.NewNoneVal(), nil
+		}
+
+		newPos, result, err := eval.EvaluateExpression(vals, startIndex)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+
+		nextBlock := block.Clone()
+		nextBlock.SetIndex(newPos)
+		currentFrame.Bind(wordName, nextBlock.(core.Value))
+
+		return result, nil
+	}
+
+	if val.GetType() == value.TypeBlock {
+		block, _ := value.AsBlockValue(val)
+		startIndex := block.Index
+		if startIndex >= len(block.Elements) {
+			return value.NewNoneVal(), nil
+		}
+		return eval.DoBlock(block.Elements[startIndex:])
+	}
+
+	newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	if newPos > 0 {
+		return result, nil
+	}
+
+	return value.NewNoneVal(), nil
+}
+
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).
 //
 // Contract: debug --on | --off | --breakpoint word | --remove id
