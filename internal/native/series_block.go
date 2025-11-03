@@ -138,6 +138,19 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		)
 	}
 
+	if hasAuto {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim --auto not supported for block", "", ""},
+		)
+	}
+	if hasLines {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim --lines not supported for block", "", ""},
+		)
+	}
+
 	if hasWith {
 		return blockTrimWith(block, withVal), nil
 	}
@@ -156,7 +169,10 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return blockTrimAll(block), nil
 	}
 
-	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDAssertionFailed, [3]string{"unexpected trim refinement state", "", ""})
+	return value.NewNoneVal(), verror.NewScriptError(
+		verror.ErrIDInvalidOperation,
+		[3]string{"unexpected trim refinement state", "", ""},
+	)
 }
 
 func isNoneLike(v core.Value) bool {
