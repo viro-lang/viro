@@ -2,9 +2,11 @@
 package peg
 
 import (
+    "encoding/hex"
     "fmt"
     "strconv"
     "strings"
+    "unicode"
     "github.com/ericlagergren/decimal"
     "github.com/marcin-radoszewski/viro/internal/core"
     "github.com/marcin-radoszewski/viro/internal/value"
@@ -59,17 +61,41 @@ func toSlice(v any) []any {
 }
 
 func flattenValues(v any) []core.Value {
-    if v == nil {
-        return []core.Value{}
-    }
-    slice := toSlice(v)
-    result := make([]core.Value, 0, len(slice))
-    for _, item := range slice {
-        if val, ok := item.(core.Value); ok {
-            result = append(result, val)
-        }
-    }
-    return result
+	if v == nil {
+		return []core.Value{}
+	}
+	slice := toSlice(v)
+	result := make([]core.Value, 0, len(slice))
+	for _, item := range slice {
+		if val, ok := item.(core.Value); ok {
+			result = append(result, val)
+		}
+	}
+	return result
+}
+
+func parseHex(hexStr string) ([]byte, error) {
+	cleaned := strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, hexStr)
+	
+	if cleaned == "" {
+		return []byte{}, nil
+	}
+	
+	if len(cleaned) % 2 != 0 {
+		return nil, fmt.Errorf("binary literal requires even number of hex digits")
+	}
+	
+	bytes, err := hex.DecodeString(cleaned)
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex character in binary literal")
+	}
+	
+	return bytes, nil
 }
 }
 
@@ -77,10 +103,10 @@ Input <- _ vals:Value* _ EOF {
     return flattenValues(vals), nil
 }
 
-Value <- _ val:(Decimal / Integer / String / Block / Paren /
+Value <- _ val:(Decimal / Integer / Binary / String / Block / Paren /
                 Path / SetPath / SetWord / GetPath / GetWord / LitWord /
                 Datatype / Word) _ {
-    return val, nil
+	return val, nil
 }
 
 Integer <- '-'? [0-9]+ !DecimalStart {
@@ -98,9 +124,22 @@ Decimal <- '-'? [0-9]+ '.' [0-9]+ ([eE] [+-]? [0-9]+)? !'.' {
 }
 
 String <- '"' [^"]* '"' {
-    text := string(c.text)
-    content := text[1:len(text)-1]
-    return value.NewStrVal(content), nil
+	text := string(c.text)
+	content := text[1:len(text)-1]
+	return value.NewStrVal(content), nil
+}
+
+Binary <- '#' '{' content:HexContent '}' {
+	hexStr := string(content.([]byte))
+	bytes, err := parseHex(hexStr)
+	if err != nil {
+		return nil, err
+	}
+	return value.NewBinaryVal(bytes), nil
+}
+
+HexContent <- [0-9A-Fa-f \t\n\r]* {
+	return c.text, nil
 }
 
 HexDigit <- [0-9A-Fa-f]

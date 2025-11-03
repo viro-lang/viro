@@ -163,28 +163,3 @@ func TestRefinementPlacementErrors(t *testing.T) {
 		})
 	}
 }
-
-// TestInfixWithRefinements verifies that infix operators work correctly with refinements
-func TestInfixWithRefinements(t *testing.T) {
-	t.Skip("Infix operators with refinements are not yet implemented")
-
-	// This test documents expected behavior for future implementation
-	script := `
-		customAdd: fn [a b --verbose] [
-			result: a + b
-			if verbose [print ["Adding:" a "+" b "=" result]]
-			result
-		]
-		5 customAdd --verbose 10
-	`
-
-	result, err := Evaluate(script)
-	if err != nil {
-		t.Fatalf("Evaluation error: %v", err)
-	}
-
-	expected := "15"
-	if result.Mold() != expected {
-		t.Errorf("Expected %s, got %s", expected, result.Mold())
-	}
-}
