@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
@@ -28,34 +29,43 @@ func (b *BinaryValue) String() string {
 	return b.Mold()
 }
 
-func (b *BinaryValue) Mold() string {
+func (b *BinaryValue) formatHex(maxBytes int, showEllipsis bool) string {
 	if len(b.data) == 0 {
 		return "#{}"
 	}
-	result := "#{"
-	for i, byteVal := range b.data {
-		if i > 0 {
-			result += " "
-		}
-		result += fmt.Sprintf("%02X", byteVal)
+
+	bytesToFormat := len(b.data)
+	if maxBytes > 0 && bytesToFormat > maxBytes {
+		bytesToFormat = maxBytes
 	}
-	result += "}"
-	return result
+
+	var builder strings.Builder
+	builder.WriteString("#{")
+
+	for i := 0; i < bytesToFormat; i++ {
+		if i > 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(fmt.Sprintf("%02X", b.data[i]))
+	}
+
+	if showEllipsis && bytesToFormat < len(b.data) {
+		builder.WriteString(fmt.Sprintf(" ... (%d bytes)", len(b.data)))
+	}
+
+	builder.WriteString("}")
+	return builder.String()
+}
+
+func (b *BinaryValue) Mold() string {
+	return b.formatHex(0, false)
 }
 
 func (b *BinaryValue) Form() string {
 	if len(b.data) <= 64 {
 		return b.Mold()
 	}
-	result := "#{"
-	for i := 0; i < 8; i++ {
-		if i > 0 {
-			result += " "
-		}
-		result += fmt.Sprintf("%02X", b.data[i])
-	}
-	result += fmt.Sprintf(" ... (%d bytes)}", len(b.data))
-	return result
+	return b.formatHex(8, true)
 }
 
 func (b *BinaryValue) EqualsBinary(other *BinaryValue) bool {
