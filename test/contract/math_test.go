@@ -265,6 +265,93 @@ func TestArithmeticOverflow(t *testing.T) {
 	}
 }
 
+func TestNativeMod(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []core.Value
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "basic modulo",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3)},
+			expected: value.NewIntVal(1),
+			wantErr:  false,
+		},
+		{
+			name:     "zero remainder",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(5)},
+			expected: value.NewIntVal(0),
+			wantErr:  false,
+		},
+		{
+			name:     "negative dividend",
+			args:     []core.Value{value.NewIntVal(-10), value.NewIntVal(3)},
+			expected: value.NewIntVal(-1),
+			wantErr:  false,
+		},
+		{
+			name:     "modulo by 1",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(1)},
+			expected: value.NewIntVal(0),
+			wantErr:  false,
+		},
+		{
+			name:     "large numbers",
+			args:     []core.Value{value.NewIntVal(1000000), value.NewIntVal(7)},
+			expected: value.NewIntVal(1),
+			wantErr:  false,
+		},
+		{
+			name:     "division by zero error",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(0)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "type error non-integer first arg",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewIntVal(3)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "type error non-integer second arg",
+			args:     []core.Value{value.NewIntVal(10), value.NewStrVal("hello")},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "arity error too few args",
+			args:     []core.Value{value.NewIntVal(10)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "arity error too many args",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3), value.NewIntVal(5)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
+			result, err := native.Mod(tt.args, map[string]core.Value{}, e)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Mod(%v) error = %v, wantErr %v", tt.args, err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !result.Equals(tt.expected) {
+				t.Errorf("Mod(%v) = %v, want %v", tt.args, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestEqualityAllTypes(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -230,6 +230,29 @@ func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		})
 }
 
+// Mod implements the mod native function.
+//
+// Contract: mod value1 value2 → remainder
+// - Arguments can be integers or decimals
+// - Returns remainder after division (modulo operation)
+// - Division by zero is an error
+// - Supports infix notation
+func Mod(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
+		if b, ok := value.AsIntValue(args[1]); ok && b == 0 {
+			return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+		}
+	}
+
+	return mathOp("mod", args,
+		func(a, b int64) (int64, bool) {
+			return a % b, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Rem(result, a, b)
+		})
+}
+
 // LessThan implements the < native function.
 //
 // Contract: < value1 value2 → logic

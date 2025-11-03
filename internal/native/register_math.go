@@ -126,6 +126,31 @@ Raises an error if dividing by zero.`,
 		},
 	))
 
+	registerAndBind("mod", value.NewNativeFunction(
+		"mod",
+		[]value.ParamSpec{
+			value.NewParamSpec("dividend", true),
+			value.NewParamSpec("divisor", true),
+		},
+		Mod,
+		true,
+		&NativeDoc{
+			Category: "Math",
+			Summary:  "Calculates the remainder after division",
+			Description: `Performs modulo operation (remainder after integer division).
+Returns the remainder when dividend is divided by divisor.
+The sign of the result follows the dividend. Supports infix notation.`,
+			Parameters: []ParamDoc{
+				{Name: "dividend", Type: "integer! decimal!", Description: "The number to be divided", Optional: false},
+				{Name: "divisor", Type: "integer! decimal!", Description: "The number to divide by (must not be zero)", Optional: false},
+			},
+			Returns:  "[integer! decimal!] The remainder after division",
+			Examples: []string{"10 mod 3  ; => 1", "17 mod 5  ; => 2", "100 mod 7  ; => 2", "mod 10 3  ; => 1"},
+			SeeAlso:  []string{"/", "*", "-"},
+			Tags:     []string{"arithmetic", "math", "modulo", "remainder"},
+		},
+	))
+
 	// ===== Group 2: Comparison operators (6 functions) =====
 	registerAndBind("<", value.NewNativeFunction(
 		"<",
