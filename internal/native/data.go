@@ -506,14 +506,15 @@ func ToInteger(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return val, nil
 
 	case value.TypeDecimal:
-		if dec, ok := value.AsDecimal(val); ok && dec != nil && dec.Magnitude != nil {
-			i, ok := dec.Magnitude.Int64()
-			if !ok {
-				return value.NewNoneVal(), verror.NewMathError("to-integer-overflow", [3]string{dec.String(), "", ""})
-			}
-			return value.NewIntVal(i), nil
+		dec, ok := value.AsDecimal(val)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-decimal", [3]string{"", "", ""})
 		}
-		return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-decimal", [3]string{"", "", ""})
+		i, ok := dec.Magnitude.Int64()
+		if !ok {
+			return value.NewNoneVal(), verror.NewMathError("to-integer-overflow", [3]string{dec.String(), "", ""})
+		}
+		return value.NewIntVal(i), nil
 
 	case value.TypeString:
 		if str, ok := value.AsStringValue(val); ok {
@@ -562,6 +563,7 @@ func ToDecimal(args []core.Value, refValues map[string]core.Value, eval core.Eva
 			if !ok || d.IsNaN(0) {
 				return value.NewNoneVal(), verror.NewScriptError("to-decimal-invalid-string", [3]string{goStr, "", ""})
 			}
+			// Calculate scale for proper formatting - uses helper from math_decimal.go
 			scale := int16(0)
 			if idx := findDecimalPoint(goStr); idx >= 0 {
 				scale = int16(len(goStr) - idx - 1)
