@@ -280,6 +280,16 @@ func trimAll(input string) string {
 	return result
 }
 
+func countTrue(flags ...bool) int {
+	count := 0
+	for _, flag := range flags {
+		if flag {
+			count++
+		}
+	}
+	return count
+}
+
 func trimWith(input string, chars string) string {
 	result := input
 	for _, char := range chars {

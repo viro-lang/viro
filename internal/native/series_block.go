@@ -123,13 +123,7 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	hasAll := hasRefinement(refValues, "all")
 	hasWith, withVal := getRefinementValue(refValues, "with")
 
-	flags := []bool{hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith}
-	flagCount := 0
-	for _, flag := range flags {
-		if flag {
-			flagCount++
-		}
-	}
+	flagCount := countTrue(hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith)
 
 	if flagCount > 1 {
 		return value.NewNoneVal(), verror.NewScriptError(
@@ -169,10 +163,7 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return blockTrimAll(block), nil
 	}
 
-	return value.NewNoneVal(), verror.NewScriptError(
-		verror.ErrIDInvalidOperation,
-		[3]string{"unexpected trim refinement state", "", ""},
-	)
+	panic("unreachable: all trim refinement combinations should be handled above")
 }
 
 func isNoneLike(v core.Value) bool {
