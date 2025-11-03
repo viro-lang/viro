@@ -53,6 +53,7 @@ func StringReverse(args []core.Value, refValues map[string]core.Value, eval core
 		runes[i], runes[j] = runes[j], runes[i]
 	}
 
+	str.SetRunes(runes)
 	return args[0], nil
 }
 
