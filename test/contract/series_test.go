@@ -89,6 +89,7 @@ func TestSeries_Last(t *testing.T) {
 		want    core.Value
 		wantErr bool
 		errID   string
+		errArgs []string
 	}{
 		{
 			name:  "block last element",
@@ -117,6 +118,13 @@ func TestSeries_Last(t *testing.T) {
 			input:   "last true",
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name: "last at tail position",
+			input: `data: [1 2 3]
+tailData: tail data
+last tailData`,
+			want: value.NewIntVal(3),
 		},
 	}
 
@@ -1627,6 +1635,7 @@ func TestSeries_Tail(t *testing.T) {
 		want    core.Value
 		wantErr bool
 		errID   string
+		errArgs []string
 	}{
 		{
 			name: "tail block",
@@ -1643,6 +1652,24 @@ tailStr: tail str
 first tailStr`,
 			wantErr: true,
 			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "first at tail position error args",
+			input: `data: [1 2 3]
+tailData: tail data
+first tailData`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+			errArgs: []string{"3", "3", "3"},
+		},
+		{
+			name: "first at tail position error args",
+			input: `data: [1 2 3]
+tailData: tail data
+first tailData`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+			errArgs: []string{"3", "3", "3"},
 		},
 		{
 			name: "tail preserves original position",
