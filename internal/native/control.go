@@ -587,6 +587,75 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	return result, nil
 }
 
+func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("do", 1, len(args))
+	}
+
+	val := args[0]
+
+	nextVal, hasNext := refValues["next"]
+	if hasNext && nextVal.GetType() != value.TypeNone {
+		var wordName string
+		switch nextVal.GetType() {
+		case value.TypeLitWord, value.TypeGetWord, value.TypeWord:
+			wordName, _ = value.AsWordValue(nextVal)
+		default:
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--next requires a word", "", ""},
+			)
+		}
+
+		if val.GetType() != value.TypeBlock {
+			newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
+			if newPos > 0 {
+				return result, nil
+			}
+			return value.NewNoneVal(), nil
+		}
+
+		block, _ := value.AsBlockValue(val)
+		vals := block.Elements
+
+		if len(vals) == 0 {
+			return value.NewNoneVal(), nil
+		}
+
+		newPos, result, err := eval.EvaluateExpression(vals, 0)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+
+		currentFrameIdx := eval.CurrentFrameIndex()
+		currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
+		nextBlock := block.Clone()
+		nextBlock.SetIndex(newPos)
+		currentFrame.Bind(wordName, nextBlock.(core.Value))
+
+		return result, nil
+	}
+
+	if val.GetType() == value.TypeBlock {
+		block, _ := value.AsBlockValue(val)
+		return eval.DoBlock(block.Elements)
+	}
+
+	newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+	if newPos > 0 {
+		return result, nil
+	}
+
+	return value.NewNoneVal(), nil
+}
+
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).
 //
 // Contract: debug --on | --off | --breakpoint word | --remove id

@@ -193,7 +193,7 @@ Returns a function value that can be called. Functions capture their defining co
 		},
 	))
 
-	// Group 12: Block manipulation (1 function - needs evaluator)
+	// Group 12: Block manipulation (2 functions - need evaluator)
 	registerAndBind("compose", value.NewNativeFunction(
 		"compose",
 		[]value.ParamSpec{
@@ -212,6 +212,38 @@ within it. Other elements remain unevaluated. Returns a new block with the evalu
 			Returns:  "[block!] A new block with parenthetical expressions evaluated",
 			Examples: []string{"name: \"World\"\ncompose [Hello (name)]  ; => [Hello \"World\"]", "x: 10\ny: 20\ncompose [result: (x + y) is (x * 2)]  ; => [result: 30 is 20]"},
 			SeeAlso:  []string{"reduce", "form"}, Tags: []string{"control", "evaluation", "block", "compose"},
+		},
+	))
+
+	registerAndBind("do", value.NewNativeFunction(
+		"do",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+			{Name: "next", Type: value.TypeNone, Optional: true, Refinement: true, TakesValue: true, Eval: false},
+		},
+		Do,
+		false,
+		&NativeDoc{
+			Category: "Control",
+			Summary:  "Evaluates a value",
+			Description: `Evaluates a given value. If the value is a block, evaluates all expressions in the block.
+If the value is not a block, evaluates the expression.
+
+Refinements:
+  --next word: Evaluate only the next expression in a block and bind the remaining block to the specified word.
+               If the value is not a block, the word is not bound.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to evaluate", Optional: false},
+			},
+			Returns:  "[any-type!] The result of the evaluation",
+			Examples: []string{
+				"a: [print \"Foo\" 10]\ndo a  ; prints \"Foo\" and returns 10",
+				"do a --next b  ; prints \"Foo\" and binds remaining block to b",
+				"print head? b  ; prints false",
+				"print index? b  ; prints 3",
+			},
+			SeeAlso: []string{"reduce", "compose", "eval"},
+			Tags:    []string{"control", "evaluation", "do"},
 		},
 	))
 }
