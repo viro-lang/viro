@@ -485,40 +485,60 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), arityError("foreach", 3, len(args))
 	}
 
-	series := args[0]
+	seriesVal := args[0]
 
-	if series.GetType() != value.TypeBlock {
-		return value.NewNoneVal(), typeError("foreach", "block", series)
+	if !value.IsSeries(seriesVal.GetType()) {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"foreach requires series type (block!, string!, binary!)", "", ""},
+		)
 	}
 
-	if args[1].GetType() != value.TypeBlock {
-		return value.NewNoneVal(), typeError("foreach", "block for variables", args[1])
-	}
+	varsArg := args[1]
 
 	if args[2].GetType() != value.TypeBlock {
 		return value.NewNoneVal(), typeError("foreach", "block for body", args[2])
 	}
 
-	wordBlock, _ := value.AsBlockValue(args[1])
 	bodyBlock, _ := value.AsBlockValue(args[2])
 
-	if len(wordBlock.Elements) != 1 {
+	var varNames []string
+
+	if value.IsWord(varsArg.GetType()) {
+		varName, _ := value.AsWordValue(varsArg)
+		varNames = []string{varName}
+	} else if varsArg.GetType() == value.TypeBlock {
+		wordBlock, _ := value.AsBlockValue(varsArg)
+		if len(wordBlock.Elements) == 0 {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"foreach vars block must contain at least one word", "", ""},
+			)
+		}
+		varNames = make([]string, len(wordBlock.Elements))
+		for i, varElement := range wordBlock.Elements {
+			if !value.IsWord(varElement.GetType()) {
+				return value.NewNoneVal(), typeError("foreach", "word for variable name", varElement)
+			}
+			varName, _ := value.AsWordValue(varElement)
+			varNames[i] = varName
+		}
+	} else {
 		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDInvalidOperation,
-			[3]string{"foreach currently supports single variable only", "", ""},
+			verror.ErrIDTypeMismatch,
+			[3]string{"foreach vars must be a word or block of words", "", ""},
 		)
 	}
 
-	varElement := wordBlock.Elements[0]
-	if varElement.GetType() != value.TypeWord {
-		return value.NewNoneVal(), typeError("foreach", "word for variable name", varElement)
+	series, ok := seriesVal.(value.Series)
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"value does not implement Series interface", "", ""},
+		)
 	}
-	varName, _ := value.AsWordValue(varElement)
 
-	seriesBlock, _ := value.AsBlockValue(series)
-	elements := seriesBlock.Elements
-
-	if len(elements) == 0 {
+	if series.Length() == 0 {
 		return value.NewNoneVal(), nil
 	}
 
@@ -528,8 +548,19 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
-	for _, element := range elements {
-		currentFrame.Bind(varName, element)
+	numVars := len(varNames)
+	length := series.Length()
+
+	for i := 0; i < length; {
+		for j := 0; j < numVars && i < length; j++ {
+			element := series.ElementAt(i)
+			currentFrame.Bind(varNames[j], element)
+			i++
+		}
+
+		if i > length {
+			break
+		}
 
 		result, err = eval.DoBlock(bodyBlock.Elements)
 

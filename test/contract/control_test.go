@@ -430,6 +430,42 @@ func TestControlFlow_Foreach(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "foreach with single word var (quoted)",
+			input:    "foreach [1 2 3] n [n]",
+			expected: value.NewIntVal(3),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with string series",
+			input:    "result: \"\"\nforeach \"abc\" [c] [result: (join result c)]\nresult",
+			expected: value.NewStrVal("abc"),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with string series and single word var",
+			input:    "count: 0\nforeach \"hello\" c [count: (+ count 1)]\ncount",
+			expected: value.NewIntVal(5),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with multiple vars",
+			input:    "foreach [1 2 3 4] [a b] [b]",
+			expected: value.NewIntVal(4),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with multiple vars accumulate",
+			input:    "sum: 0\nforeach [1 2 3 4 5 6] [a b] [sum: (+ sum (+ a b))]\nsum",
+			expected: value.NewIntVal(21),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with multiple vars odd length",
+			input:    "foreach [1 2 3 4 5] [a b] [a]",
+			expected: value.NewIntVal(5),
+			wantErr:  false,
+		},
+		{
 			name:    "foreach wrong arity zero args",
 			input:   "foreach",
 			wantErr: true,
@@ -445,13 +481,8 @@ func TestControlFlow_Foreach(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "foreach non-block series",
+			name:    "foreach non-series value",
 			input:   "foreach 42 [n] [n]",
-			wantErr: true,
-		},
-		{
-			name:    "foreach non-block variable block",
-			input:   "foreach [1 2 3] n [n]",
 			wantErr: true,
 		},
 		{
@@ -460,13 +491,18 @@ func TestControlFlow_Foreach(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "foreach multiple variables not supported",
-			input:   "foreach [1 2 3] [x y] [x]",
+			name:    "foreach non-word in variable block",
+			input:   "foreach [1 2 3] [42] [n]",
 			wantErr: true,
 		},
 		{
-			name:    "foreach non-word in variable block",
-			input:   "foreach [1 2 3] [42] [n]",
+			name:    "foreach empty vars block",
+			input:   "foreach [1 2 3] [] [n]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach vars is integer",
+			input:   "foreach [1 2 3] 42 [n]",
 			wantErr: true,
 		},
 	}
