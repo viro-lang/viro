@@ -223,10 +223,12 @@ count`
 
 // TestControlFlow_While validates the 'while' iteration native.
 //
-// Contract: while [condition-block] [body-block]
-// - Both blocks required
-// - Re-evaluates condition-block before each iteration
-// - Stops when condition-block evaluates to falsy
+// Contract: while condition [body-block]
+// - Condition can be any value or block
+// - If condition is a block, it is re-evaluated before each iteration
+// - If condition is not a block, it is evaluated once and constant
+// - Body must be a block
+// - Stops when condition evaluates to falsy
 // - Returns result of last body evaluation (or none if never true)
 func TestControlFlow_While(t *testing.T) {
 	tests := []struct {
@@ -236,16 +238,28 @@ func TestControlFlow_While(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "while false returns none",
+			name:     "while with block false returns none",
 			input:    "while [false] [42]",
 			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 		{
-			name: "while with counter",
+			name: "while with block counter",
 			input: `n: 0
 while [(< n 3)] [n: (+ n 1)]`,
 			expected: value.NewIntVal(3),
+			wantErr:  false,
+		},
+		{
+			name:     "while with literal false (constant)",
+			input:    "while false [42]",
+			expected: value.NewNoneVal(),
+			wantErr:  false,
+		},
+		{
+			name:     "while with none (constant, falsy)",
+			input:    "while none [42]",
+			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
 	}

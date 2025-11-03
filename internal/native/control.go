@@ -138,8 +138,10 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 // While implements the 'while' conditional loop native.
 //
-// Contract: while [condition] [body]
-// - Condition must be a block (re-evaluated each iteration)
+// Contract: while condition [body]
+// - Condition can be any value or block
+// - If condition is a block, it is re-evaluated before each iteration
+// - If condition is not a block, it is evaluated once and must remain constant
 // - Body must be a block
 // - Loops while condition evaluates to truthy
 // - Returns result of last iteration, or none if never executed
@@ -148,38 +150,51 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		return value.NewNoneVal(), arityError("while", 2, len(args))
 	}
 
-	// First argument must be a block (condition)
-	if args[0].GetType() != value.TypeBlock {
-		return value.NewNoneVal(), typeError("while", "block for condition", args[0])
-	}
+	// First argument is the condition (already evaluated if not a block)
+	condition := args[0]
 
 	// Second argument must be a block (body)
 	if args[1].GetType() != value.TypeBlock {
 		return value.NewNoneVal(), typeError("while", "block for body", args[1])
 	}
 
-	conditionBlock, _ := value.AsBlockValue(args[0])
 	bodyBlock, _ := value.AsBlockValue(args[1])
 
 	result := value.NewNoneVal()
 
-	// Loop while condition is truthy
-	for {
-		// Evaluate condition block
-		conditionResult, err := eval.DoBlock(conditionBlock.Elements)
-		if err != nil {
-			return value.NewNoneVal(), err
-		}
+	// Check if condition is a block (needs re-evaluation each iteration)
+	if condition.GetType() == value.TypeBlock {
+		conditionBlock, _ := value.AsBlockValue(condition)
 
-		// Check if condition is truthy
-		if !ToTruthy(conditionResult) {
-			break
-		}
+		// Loop while condition block evaluates to truthy
+		for {
+			// Evaluate condition block
+			conditionResult, err := eval.DoBlock(conditionBlock.Elements)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
 
-		// Evaluate body block
-		result, err = eval.DoBlock(bodyBlock.Elements)
-		if err != nil {
-			return value.NewNoneVal(), err
+			// Check if condition is truthy
+			if !ToTruthy(conditionResult) {
+				break
+			}
+
+			// Evaluate body block
+			result, err = eval.DoBlock(bodyBlock.Elements)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
+		}
+	} else {
+		// Condition is not a block, it's already evaluated and constant
+		// Loop while condition is truthy (will be infinite if condition is always truthy)
+		for ToTruthy(condition) {
+			// Evaluate body block
+			var err error
+			result, err = eval.DoBlock(bodyBlock.Elements)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
 		}
 	}
 
