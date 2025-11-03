@@ -859,6 +859,12 @@ func TestSeries_Trim(t *testing.T) {
 		errID   string
 	}{
 		{
+			name:    "trim with no arguments",
+			input:   "trim",
+			wantErr: true,
+			errID:   verror.ErrIDArgCount,
+		},
+		{
 			name:  "trim string with whitespace",
 			input: `trim "  hello  "`,
 			want:  value.NewStrVal("hello"),
