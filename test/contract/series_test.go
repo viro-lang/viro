@@ -856,6 +856,7 @@ func TestSeries_Trim(t *testing.T) {
 		input   string
 		want    core.Value
 		wantErr bool
+		errID   string
 	}{
 		{
 			name:  "trim string with whitespace",
@@ -1020,22 +1021,74 @@ world"`,
 			input: `trim --with "x" [1 2 3]`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
 		},
+		{
+			name:    "trim --auto on block returns error",
+			input:   "trim --auto [none 1 none]",
+			wantErr: true,
+			errID:   verror.ErrIDInvalidOperation,
+		},
+		{
+			name:    "trim --lines on block returns error",
+			input:   "trim --lines [1 none 2]",
+			wantErr: true,
+			errID:   verror.ErrIDInvalidOperation,
+		},
+		{
+			name:  "trim all none values",
+			input: "trim [none none none]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "trim --all all none values",
+			input: "trim --all [none none none]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "trim --with none removes literal none",
+			input: "trim --with none [none 1 none]",
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1)}),
+		},
+		{
+			name:  "trim --with 5 complete removal",
+			input: "trim --with 5 [5]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "trim mutates string in place",
+			input: `s: "  hi  " trim s s`,
+			want:  value.NewStrVal("hi"),
+		},
+		{
+			name:  "trim --all mutates string in place",
+			input: `s: "  h i  " trim --all s s`,
+			want:  value.NewStrVal("hi"),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := Evaluate(tt.input)
+			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {
-					t.Fatalf("expected error but got none")
+					t.Fatalf("expected error but got nil result %v", evalResult)
 				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if !result.Equals(tt.want) {
-				t.Fatalf("expected %v, got %v", tt.want, result)
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
 		})
 	}
