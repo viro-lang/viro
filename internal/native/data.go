@@ -1,8 +1,10 @@
 package native
 
 import (
+	"strconv"
 	"strings"
 
+	"github.com/ericlagergren/decimal"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/trace"
@@ -485,4 +487,105 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	trace.TraceObjectFieldWrite(fieldName, newVal.Form())
 
 	return newVal, nil
+}
+
+// ToInteger implements the `to-integer` native for converting values to integers.
+//
+// Contract: to-integer value -> integer!
+// - Converts integer (pass-through), decimal (truncate), string (parse) to integer
+// - Returns error for invalid conversions
+func ToInteger(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("to-integer", 1, len(args))
+	}
+
+	val := args[0]
+
+	switch val.GetType() {
+	case value.TypeInteger:
+		return val, nil
+
+	case value.TypeDecimal:
+		dec, ok := value.AsDecimal(val)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-decimal", [3]string{"", "", ""})
+		}
+		i, ok := dec.Magnitude.Int64()
+		if !ok {
+			return value.NewNoneVal(), verror.NewMathError("to-integer-overflow", [3]string{dec.String(), "", ""})
+		}
+		return value.NewIntVal(i), nil
+
+	case value.TypeString:
+		if str, ok := value.AsStringValue(val); ok {
+			goStr := str.String()
+			i, err := strconv.ParseInt(goStr, 10, 64)
+			if err != nil {
+				return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-string", [3]string{goStr, "", ""})
+			}
+			return value.NewIntVal(i), nil
+		}
+		return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-string", [3]string{"", "", ""})
+
+	default:
+		return value.NewNoneVal(), typeError("to-integer", "integer, decimal, or string", val)
+	}
+}
+
+// ToDecimal implements the `to-decimal` native for converting values to decimals.
+//
+// Contract: to-decimal value -> decimal!
+// - Converts integer (exact), decimal (pass-through), string (parse) to decimal
+// - Returns error for invalid conversions
+func ToDecimal(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("to-decimal", 1, len(args))
+	}
+
+	val := args[0]
+
+	switch val.GetType() {
+	case value.TypeInteger:
+		if i, ok := value.AsIntValue(val); ok {
+			d := decimal.New(i, 0)
+			return value.DecimalVal(d, 0), nil
+		}
+		return value.NewNoneVal(), verror.NewScriptError("to-decimal-invalid-integer", [3]string{"", "", ""})
+
+	case value.TypeDecimal:
+		return val, nil
+
+	case value.TypeString:
+		if str, ok := value.AsStringValue(val); ok {
+			goStr := str.String()
+			d := new(decimal.Big)
+			_, ok := d.SetString(goStr)
+			if !ok || d.IsNaN(0) {
+				return value.NewNoneVal(), verror.NewScriptError("to-decimal-invalid-string", [3]string{goStr, "", ""})
+			}
+			// Calculate scale for proper formatting - uses helper from math_decimal.go
+			scale := int16(0)
+			if idx := findDecimalPoint(goStr); idx >= 0 {
+				scale = int16(len(goStr) - idx - 1)
+			}
+			return value.DecimalVal(d, scale), nil
+		}
+		return value.NewNoneVal(), verror.NewScriptError("to-decimal-invalid-string", [3]string{"", "", ""})
+
+	default:
+		return value.NewNoneVal(), typeError("to-decimal", "integer, decimal, or string", val)
+	}
+}
+
+// ToString implements the `to-string` native for converting values to strings.
+//
+// Contract: to-string value -> string!
+// - Converts any value to string using its Form representation
+func ToString(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("to-string", 1, len(args))
+	}
+
+	val := args[0]
+	return value.NewStrVal(val.Form()), nil
 }
