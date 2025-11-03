@@ -109,6 +109,17 @@ none`,
 			want:     "none\nblock!\n0\nnone",
 			wantExit: 0,
 		},
+		{
+			name: "do respects block internal index",
+			script: `a: [ print "Foo" 10 ]
+do a --next 'b
+print "Calling do b:"
+result: do b
+print result
+none`,
+			want:     "Foo\nCalling do b:\n10\nnone",
+			wantExit: 0,
+		},
 	}
 
 	for _, tt := range tests {
