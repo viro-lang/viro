@@ -552,10 +552,14 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	length := series.Length()
 
 	for i := 0; i < length; {
-		for j := 0; j < numVars && i < length; j++ {
-			element := series.ElementAt(i)
-			currentFrame.Bind(varNames[j], element)
-			i++
+		for j := 0; j < numVars; j++ {
+			if i < length {
+				element := series.ElementAt(i)
+				currentFrame.Bind(varNames[j], element)
+				i++
+			} else {
+				currentFrame.Bind(varNames[j], value.NewNoneVal())
+			}
 		}
 
 		result, err = eval.DoBlock(bodyBlock.Elements)

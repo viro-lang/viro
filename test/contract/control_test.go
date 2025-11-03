@@ -466,6 +466,12 @@ func TestControlFlow_Foreach(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "foreach with multiple vars odd length binds none",
+			input:    "result: []\nforeach \"abc\" [a b] [result: (append result a) result: (append result b)]\nresult",
+			expected: value.NewBlockVal([]core.Value{value.NewStrVal("a"), value.NewStrVal("b"), value.NewStrVal("c"), value.NewNoneVal()}),
+			wantErr:  false,
+		},
+		{
 			name:    "foreach wrong arity zero args",
 			input:   "foreach",
 			wantErr: true,
