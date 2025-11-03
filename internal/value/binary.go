@@ -227,9 +227,6 @@ func (b *BinaryValue) SkipBy(count int) {
 }
 
 func (b *BinaryValue) TakeCount(count int) Series {
-	if count < 0 {
-		count = 0
-	}
 	if count > b.Length()-b.index {
 		count = b.Length() - b.index
 	}

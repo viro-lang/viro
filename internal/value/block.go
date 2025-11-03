@@ -236,9 +236,6 @@ func (b *BlockValue) SkipBy(count int) {
 }
 
 func (b *BlockValue) TakeCount(count int) Series {
-	if count < 0 {
-		count = 0
-	}
 	if count > b.Length()-b.Index {
 		count = b.Length() - b.Index
 	}

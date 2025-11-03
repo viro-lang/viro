@@ -215,9 +215,6 @@ func (s *StringValue) SkipBy(count int) {
 }
 
 func (s *StringValue) TakeCount(count int) Series {
-	if count < 0 {
-		count = 0
-	}
 	if count > s.Length()-s.index {
 		count = s.Length() - s.index
 	}
