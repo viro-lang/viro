@@ -17,29 +17,20 @@ func BlockIntersect(args []core.Value, refValues map[string]core.Value, eval cor
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[1].GetType()), ""})
 	}
 
-	resultMap := make(map[string]core.Value)
 	set2 := make(map[string]bool)
-
 	for _, elem := range block2.Elements {
 		key := elem.Mold()
 		set2[key] = true
 	}
 
-	for _, elem := range block1.Elements {
-		key := elem.Mold()
-		if set2[key] {
-			if _, exists := resultMap[key]; !exists {
-				resultMap[key] = elem
-			}
-		}
-	}
+	seen := make(map[string]bool)
+	result := make([]core.Value, 0)
 
-	result := make([]core.Value, 0, len(resultMap))
 	for _, elem := range block1.Elements {
 		key := elem.Mold()
-		if val, exists := resultMap[key]; exists {
-			result = append(result, val)
-			delete(resultMap, key)
+		if set2[key] && !seen[key] {
+			seen[key] = true
+			result = append(result, elem)
 		}
 	}
 
@@ -63,22 +54,14 @@ func BlockDifference(args []core.Value, refValues map[string]core.Value, eval co
 		set2[key] = true
 	}
 
-	resultMap := make(map[string]core.Value)
-	for _, elem := range block1.Elements {
-		key := elem.Mold()
-		if !set2[key] {
-			if _, exists := resultMap[key]; !exists {
-				resultMap[key] = elem
-			}
-		}
-	}
+	seen := make(map[string]bool)
+	result := make([]core.Value, 0)
 
-	result := make([]core.Value, 0, len(resultMap))
 	for _, elem := range block1.Elements {
 		key := elem.Mold()
-		if val, exists := resultMap[key]; exists {
-			result = append(result, val)
-			delete(resultMap, key)
+		if !set2[key] && !seen[key] {
+			seen[key] = true
+			result = append(result, elem)
 		}
 	}
 
