@@ -271,9 +271,13 @@ func TestActionSplit(t *testing.T) {
 
 		// Error cases
 		{name: "empty delimiter", input: `split "abc" ""`, wantErr: true, errID: "invalid-operation"},
-		{name: "non-string input", input: `split 123 ","`, wantErr: true, errID: "action-no-impl"},
+		{name: "non-string input", input: `split 123 ","`, wantErr: true, errID: "type-mismatch"},
 		{name: "non-string delimiter", input: `split "hello" 32`, wantErr: true, errID: "type-mismatch"},
+		{name: "wrong arity - zero args", input: `split`, wantErr: true, errID: "arg-count"},
 		{name: "wrong arity - one arg", input: `split "hello"`, wantErr: true, errID: "arg-count"},
+		{name: "wrong arity - three args", input: `split "hello" "," "extra"`, want: `"extra"`},
+		{name: "integer input", input: `split 42 " "`, wantErr: true, errID: "type-mismatch"},
+		{name: "block input", input: `split [1 2 3] ","`, wantErr: true, errID: "type-mismatch"},
 	}
 
 	for _, tt := range tests {

@@ -519,9 +519,27 @@ func TestData_Join(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:    "join with wrong arity - zero args",
+			input:   `join`,
+			wantErr: true,
+		},
+		{
 			name:    "join with wrong arity - one arg",
 			input:   `join "test"`,
 			wantErr: true,
+		},
+
+		{
+			name:     "join with integer first arg",
+			input:    `join 42 "string"`,
+			expected: value.NewStrVal("42string"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with block first arg",
+			input:    `join [1 2] "suffix"`,
+			expected: value.NewStrVal("1 2suffix"),
+			wantErr:  false,
 		},
 	}
 
@@ -627,6 +645,12 @@ compose [result: (x + 5) is correct]`,
 			wantErr: false,
 		},
 		{
+			name:    "compose with wrong arity - zero args",
+			input:   `compose`,
+			wantErr: true,
+		},
+
+		{
 			name:    "compose non-block argument",
 			input:   `compose "not a block"`,
 			wantErr: true,
@@ -635,6 +659,13 @@ compose [result: (x + 5) is correct]`,
 			name:    "compose with evaluation error",
 			input:   `compose [(1 / 0)]`,
 			wantErr: true,
+		},
+		{
+			name: "compose with paren input",
+			input: `x: 42
+compose (x)`,
+			expected: value.NewIntVal(42),
+			wantErr:  false,
 		},
 	}
 

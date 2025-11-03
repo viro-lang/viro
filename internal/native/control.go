@@ -236,7 +236,13 @@ func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), arityError("compose", 1, len(args))
 	}
 
-	if args[0].GetType() != value.TypeBlock && args[0].GetType() != value.TypeParen {
+	if args[0].GetType() == value.TypeParen {
+		// For paren input, evaluate the paren directly
+		parenBlock, _ := value.AsBlockValue(args[0])
+		return eval.DoBlock(parenBlock.Elements)
+	}
+
+	if args[0].GetType() != value.TypeBlock {
 		return value.NewNoneVal(), typeError("compose", "block", args[0])
 	}
 

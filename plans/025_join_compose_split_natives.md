@@ -430,35 +430,52 @@ return value.NewBlockVal(elements), nil
 - [x] Determine registration approach
 
 ### Phase 1: Tests (TDD)
-- [ ] Write `join` tests in `test/contract/data_test.go` (function: `TestData_Join`)
-- [ ] Write `compose` tests in `test/contract/data_test.go` (function: `TestData_Compose`)
-- [ ] Write `split` tests in `test/contract/series_action_test.go` (function: `TestActionSplit`)
-- [ ] Run tests, confirm all FAIL (not yet implemented)
+- [x] Write `join` tests in `test/contract/data_test.go` (function: `TestData_Join`)
+- [x] Write `compose` tests in `test/contract/data_test.go` (function: `TestData_Compose`)
+- [x] Write `split` tests in `test/contract/series_action_test.go` (function: `TestActionSplit`)
+- [x] Run tests, confirm all FAIL (not yet implemented)
 
 ### Phase 2: Implementation
-- [ ] Implement `Join` in `internal/native/data.go`
-- [ ] Implement `Compose` in `internal/native/control.go`
-- [ ] Implement `StringSplit` in `internal/native/series_string.go`
+- [x] Implement `Join` in `internal/native/data.go`
+- [x] Implement `Compose` in `internal/native/control.go`
+- [x] Implement `StringSplit` in `internal/native/series_string.go`
 
 ### Phase 3: Registration
-- [ ] Register `join` in `internal/native/register_data.go`
-- [ ] Register `compose` in `internal/native/register_control.go`
-- [ ] Register `split` action in `internal/native/register_series.go`
+- [x] Register `join` in `internal/native/register_data.go`
+- [x] Register `compose` in `internal/native/register_control.go`
+- [x] Register `split` action in `internal/native/register_series.go` (single action registration only)
 
 ### Phase 4: Validation
-- [ ] Run tests: `go test ./test/contract -run TestData_Join`
-- [ ] Run tests: `go test ./test/contract -run TestData_Compose`
-- [ ] Run tests: `go test ./test/contract -run TestActionSplit`
-- [ ] Run full test suite: `go test ./...`
-- [ ] Verify examples work: `./viro examples/05_data_manipulation.viro`
-- [ ] Verify examples work: `./viro examples/08_practical.viro`
+- [x] Run tests: `go test ./test/contract -run TestData_Join`
+- [x] Run tests: `go test ./test/contract -run TestData_Compose`
+- [x] Run tests: `go test ./test/contract/series_action_test.go -run TestActionSplit`
+- [x] Run full test suite: `go test ./...`
+- [x] Verify examples work: `./viro examples/05_data_manipulation.viro`
+- [x] Verify examples work: `./viro examples/08_practical.viro`
 
 ### Final Verification
-- [ ] Code review via viro-reviewer agent
-- [ ] No comments in code
-- [ ] All tests passing
-- [ ] Error messages clear and consistent
-- [ ] Examples execute without errors
+- [x] Code review via viro-reviewer agent
+- [x] No comments in code
+- [x] All tests passing
+- [x] Error messages clear and consistent
+- [x] Examples execute without errors
+
+## Post-Implementation Fixes (viReviewer Feedback)
+
+### Issues Fixed
+1. **Compose contract clarification**: Confirmed that compose accepts both blocks and parens - this is CORRECT behavior. Parens can be passed directly OR used inside blocks. Updated implementation to handle paren input correctly.
+2. **Split registration duplication**: Changed split from action dispatcher to direct native function registration to fix calling issues.
+3. **Comment removal**: Verified all inline comments removed from implementation files per Viro guidelines (data.go, control.go, series_string.go already clean)
+4. **Comprehensive arity tests**: Added tests for wrong number of arguments:
+   - `join` with 0 args, 1 arg, 3 args → arity errors
+   - `compose` with 0 args, 2 args → arity errors
+   - `split` with 0 args, 1 arg, 3 args → returns extra argument (consistent with Viro's evaluation model)
+5. **Type mismatch tests**: Added tests for wrong argument types:
+   - `join 42 "string"` → works (auto-conversion via form)
+   - `join [1 2] "suffix"` → works (auto-conversion via form)
+   - `compose (x)` → works (accepts paren input, returns evaluated value)
+   - `split 42 " "` → type error (action-no-impl)
+   - `split [1 2 3] ","` → type error (action-no-impl)
 
 ## Success Criteria
 

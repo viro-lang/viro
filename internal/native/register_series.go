@@ -216,10 +216,10 @@ func registerStringSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, seriesTake, false, nil))
-	RegisterActionImpl(value.TypeString, "split", value.NewNativeFunction("split", []value.ParamSpec{
-		value.NewParamSpec("string", true),
-		value.NewParamSpec("delimiter", true),
-	}, StringSplit, false, nil))
+	// RegisterActionImpl(value.TypeString, "split", value.NewNativeFunction("split", []value.ParamSpec{
+	// 	value.NewParamSpec("string", true),
+	// 	value.NewParamSpec("delimiter", true),
+	// }, StringSplit, false, nil))
 }
 
 func registerBinarySeriesActions() {
@@ -810,21 +810,26 @@ Oversized counts are clamped to the remaining elements from current position.`,
 		Tags:     []string{"series"},
 	}))
 
-	registerAndBind("split", CreateAction("split", []value.ParamSpec{
-		value.NewParamSpec("string", true),
-		value.NewParamSpec("delimiter", true),
-	}, &NativeDoc{
-		Category: "Series",
-		Summary:  "Splits a string by delimiter into a block of strings",
-		Description: `Splits a string by a delimiter and returns a block containing the resulting substrings.
-Empty delimiter is not allowed and will raise an error. Consecutive delimiters create empty strings in the result.`,
-		Parameters: []ParamDoc{
-			{Name: "string", Type: "string!", Description: "The string to split"},
-			{Name: "delimiter", Type: "string!", Description: "The delimiter to split by (cannot be empty)"},
+	registerAndBind("split", value.NewNativeFunction(
+		"split",
+		[]value.ParamSpec{
+			value.NewParamSpec("string", true),
+			value.NewParamSpec("delimiter", true),
 		},
-		Returns:  "[block!] Block containing the split string parts",
-		Examples: []string{`split "hello world" " "  ; => ["hello" "world"]`, `split "a,b,c" ","  ; => ["a" "b" "c"]`, `split "a,,b" ","  ; => ["a" "" "b"]`},
-		SeeAlso:  []string{"join", "form", "mold"},
-		Tags:     []string{"series", "string", "split"},
-	}))
+		StringSplit,
+		false,
+		&NativeDoc{
+			Category: "Series",
+			Summary:  "Splits a string by delimiter into a block of strings",
+			Description: `Splits a string by a delimiter and returns a block containing the resulting substrings.
+Empty delimiter is not allowed and will raise an error. Consecutive delimiters create empty strings in the result.`,
+			Parameters: []ParamDoc{
+				{Name: "string", Type: "string!", Description: "The string to split"},
+				{Name: "delimiter", Type: "string!", Description: "The delimiter to split by (cannot be empty)"},
+			},
+			Returns:  "[block!] Block containing the split string parts",
+			Examples: []string{`split "hello world" " "  ; => ["hello" "world"]`, `split "a,b,c" ","  ; => ["a" "b" "c"]`, `split "a,,b" ","  ; => ["a" "" "b"]`},
+			SeeAlso:  []string{"join", "form", "mold"},
+			Tags:     []string{"series", "string", "split"},
+		}))
 }
