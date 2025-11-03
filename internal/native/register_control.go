@@ -123,14 +123,16 @@ The count must be a non-negative integer. Returns the result of the last iterati
 			Category: "Control",
 			Summary:  "Executes a block repeatedly while a condition is true",
 			Description: `Evaluates the condition, and if it's true (non-zero, non-empty), evaluates the body block.
-Repeats this process until the condition becomes false. Returns the result of the last iteration,
-or none if the condition is initially false. Be careful to avoid infinite loops.`,
+Repeats this process until the condition becomes false. If the condition is a block, it is re-evaluated
+before each iteration. If the condition is not a block, it is evaluated once at the start and must remain
+constant. Returns the result of the last iteration, or none if the condition is initially false.
+Be careful to avoid infinite loops.`,
 			Parameters: []ParamDoc{
-				{Name: "condition", Type: "block! logic! integer!", Description: "The condition to test (evaluated before each iteration)", Optional: false},
+				{Name: "condition", Type: "any-type!", Description: "The condition to test (blocks are re-evaluated each iteration, other values are constant)", Optional: false},
 				{Name: "body", Type: "block!", Description: "The code to execute while condition is true", Optional: false},
 			},
 			Returns:  "[any-type! none!] The result of the last iteration",
-			Examples: []string{"x: 0\nwhile [x < 5] [x: x + 1]  ; x becomes 5", "count: 10\nwhile [count > 0] [print count count: count - 1]", "while [false] [print \"never\"]  ; => none"},
+			Examples: []string{"x: 0\nwhile [x < 5] [x: x + 1]  ; x becomes 5", "count: 10\nwhile [count > 0] [print count count: count - 1]", "while false [print \"never\"]  ; => none"},
 			SeeAlso:  []string{"loop", "if", "when"}, Tags: []string{"control", "loop", "while", "iteration"},
 		},
 	))
