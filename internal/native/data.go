@@ -80,6 +80,22 @@ func Form(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	return value.NewStrVal(val.Form()), nil
 }
 
+// Join implements the `join` native.
+//
+// Contract: join value1 value2 -> string!
+// - Converts both values to strings using form
+// - Concatenates them
+// - Returns new string
+func Join(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("join", 2, len(args))
+	}
+
+	str1 := args[0].Form()
+	str2 := args[1].Form()
+	return value.NewStrVal(str1 + str2), nil
+}
+
 // Mold implements the `mold` native.
 //
 // Contract: mold value -> string! code-readable representation

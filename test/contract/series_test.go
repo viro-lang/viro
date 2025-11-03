@@ -2,7 +2,6 @@ package contract
 
 import (
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -1621,11 +1620,6 @@ first backData`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if strings.Contains(tt.input, "#{") || strings.Contains(tt.input, "append #{}") {
-				t.Skip("Binary literals not implemented in parser yet - cannot construct binary series for testing")
-				return
-			}
-
 			evalResult, err := Evaluate(tt.input)
 			if tt.wantErr {
 				if err == nil {

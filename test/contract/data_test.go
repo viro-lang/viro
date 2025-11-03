@@ -469,6 +469,228 @@ func TestData_Reduce(t *testing.T) {
 	}
 }
 
+// TestData_Join validates the 'join' native.
+//
+// Contract: join value1 value2 → string!
+// - Converts both values to strings using form
+// - Concatenates them
+// - Returns new string
+func TestData_Join(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "join string and string",
+			input:    `join "Hello" " World"`,
+			expected: value.NewStrVal("Hello World"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with empty strings",
+			input:    `join "x" ""`,
+			expected: value.NewStrVal("x"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with integer conversion",
+			input:    `join "Number: " 42`,
+			expected: value.NewStrVal("Number: 42"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with block conversion",
+			input:    `join "Block: " [1 2 3]`,
+			expected: value.NewStrVal("Block: 1 2 3"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with logic conversion",
+			input:    `join "Result: " true`,
+			expected: value.NewStrVal("Result: true"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with none conversion",
+			input:    `join "Value: " none`,
+			expected: value.NewStrVal("Value: none"),
+			wantErr:  false,
+		},
+		{
+			name:    "join with wrong arity - zero args",
+			input:   `join`,
+			wantErr: true,
+		},
+		{
+			name:    "join with wrong arity - one arg",
+			input:   `join "test"`,
+			wantErr: true,
+		},
+
+		{
+			name:     "join with integer first arg",
+			input:    `join 42 "string"`,
+			expected: value.NewStrVal("42string"),
+			wantErr:  false,
+		},
+		{
+			name:     "join with block first arg",
+			input:    `join [1 2] "suffix"`,
+			expected: value.NewStrVal("1 2suffix"),
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestData_Compose validates the 'compose' native.
+//
+// Contract: compose block → block!
+// - Takes a block (not evaluated initially)
+// - Evaluates parenthetical expressions within the block
+// - Returns new block with composition
+func TestData_Compose(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name: "compose with single parenthetical",
+			input: `name: "World"
+compose [Hello (name)]`,
+			expected: value.NewBlockVal([]core.Value{value.NewWordVal("Hello"), value.NewStrVal("World")}),
+			wantErr:  false,
+		},
+		{
+			name: "compose with multiple parentheticals",
+			input: `name: "World"
+count: 42
+compose [Hello (name) the answer is (count)]`,
+			expected: value.NewBlockVal([]core.Value{
+				value.NewWordVal("Hello"),
+				value.NewStrVal("World"),
+				value.NewWordVal("the"),
+				value.NewWordVal("answer"),
+				value.NewWordVal("is"),
+				value.NewIntVal(42),
+			}),
+			wantErr: false,
+		},
+		{
+			name: "compose with mixed evaluated and unevaluated",
+			input: `x: 10
+compose [result: (x + 5) is correct]`,
+			expected: value.NewBlockVal([]core.Value{
+				value.NewSetWordVal("result"),
+				value.NewIntVal(15),
+				value.NewWordVal("is"),
+				value.NewWordVal("correct"),
+			}),
+			wantErr: false,
+		},
+		{
+			name:  "compose with no parentheticals",
+			input: `compose [1 2 3 "hello"]`,
+			expected: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1),
+				value.NewIntVal(2),
+				value.NewIntVal(3),
+				value.NewStrVal("hello"),
+			}),
+			wantErr: false,
+		},
+		{
+			name:     "compose empty block",
+			input:    `compose []`,
+			expected: value.NewBlockVal([]core.Value{}),
+			wantErr:  false,
+		},
+		{
+			name:  "compose with nested blocks",
+			input: `compose [[1 (2 + 3)]]`,
+			expected: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{
+					value.NewIntVal(1),
+					value.NewParenVal([]core.Value{
+						value.NewIntVal(2),
+						value.NewWordVal("+"),
+						value.NewIntVal(3),
+					}),
+				}),
+			}),
+			wantErr: false,
+		},
+		{
+			name:    "compose with wrong arity - zero args",
+			input:   `compose`,
+			wantErr: true,
+		},
+
+		{
+			name:    "compose non-block argument",
+			input:   `compose "not a block"`,
+			wantErr: true,
+		},
+		{
+			name:    "compose with evaluation error",
+			input:   `compose [(1 / 0)]`,
+			wantErr: true,
+		},
+		{
+			name: "compose with paren input",
+			input: `x: 42
+compose (x)`,
+			expected: value.NewIntVal(42),
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestObject_Select(t *testing.T) {
 	tests := []struct {
 		name    string

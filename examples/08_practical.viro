@@ -2,12 +2,12 @@ print "=== Practical Examples ==="
 print ""
 
 print "--- Temperature converter ---"
-celsius-to-fahrenheit: func [c] [
-    (+ (* c (/ 9 5)) 32)
+celsius-to-fahrenheit: fn [c] [
+    c * 9.0 / 5 + 32
 ]
 
-fahrenheit-to-celsius: func [f] [
-    (* f - 32 5 / 9)
+fahrenheit-to-celsius: fn [f] [
+    f - 32 * 5.0 / 9
 ]
 
 print "25°C in Fahrenheit:"
@@ -18,16 +18,16 @@ print (fahrenheit-to-celsius 77)
 
 print ""
 print "--- Is prime? ---"
-is-prime?: func [n] [
-    if (<= n 1) [false] [
-        if (= n 2) [true] [
+is-prime?: fn [n] [
+    if n <= 1 [false] [
+        if n = 2 [true] [
             divisor: 2
             prime: true
-            while [(and prime (<= (* divisor divisor) n))] [
-                if (= (mod n divisor) 0) [
+            while [prime and ((* divisor divisor) <= n)] [
+                when (mod n divisor) = 0 [
                     prime: false
                 ]
-                divisor: (+ divisor 1)
+                divisor: divisor + 1
             ]
             prime
         ]
@@ -42,8 +42,8 @@ print (is-prime? 97)
 
 print ""
 print "--- GCD (Greatest Common Divisor) ---"
-gcd: func [a b] [
-    while [(<> b 0)] [
+gcd: fn [a b] [
+    while [b <> 0] [
         temp: b
         b: mod a b
         a: temp
@@ -51,29 +51,29 @@ gcd: func [a b] [
     a
 ]
 
-print (gcd 48 18)
-print (gcd 100 50)
-print (gcd 17 13)
+print gcd 48 18
+print gcd 100 50
+print gcd 17 13
 
 print ""
 print "--- String reversal ---"
-reverse-string: func [str] [
+reverse-string: fn [str] [
     result: ""
     i: length? str
-    while [(> i 0)] [
+    while [i > 0] [
         char: at str i
         result: join result char
-        i: (- i 1)
+        i: i - 1
     ]
     result
 ]
 
-print (reverse-string "Hello")
-print (reverse-string "Viro")
+print reverse-string "Hello"
+print reverse-string "Viro"
 
 print ""
 print "--- Word count ---"
-count-words: func [text] [
+count-words: fn [text] [
     words: split text " "
     length? words
 ]
@@ -81,4 +81,4 @@ count-words: func [text] [
 sentence: "The quick brown fox jumps"
 print sentence
 print "Word count:"
-print (count-words sentence)
+print count-words sentence

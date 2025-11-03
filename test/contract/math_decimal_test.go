@@ -66,10 +66,6 @@ func TestDecimalConstructor(t *testing.T) {
 
 // T027: decimal promotion in mixed arithmetic
 func TestDecimalPromotion(t *testing.T) {
-	// This test validates FR-003: integer→decimal promotion
-	// Will be implemented when arithmetic natives are ready
-	t.Skip("Requires arithmetic natives implementation")
-
 	// Expected behavior:
 	// integer + decimal → decimal result
 	// decimal * integer → decimal result with correct scale
@@ -94,8 +90,6 @@ func TestAdvancedMathDomain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Requires math native implementation")
-			// Will validate domain checks per FR-004
 		})
 	}
 }
@@ -118,8 +112,6 @@ func TestLogDomainErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Requires log natives implementation")
-			// Will validate per FR-004 domain restrictions
 		})
 	}
 }
@@ -146,8 +138,6 @@ func TestTrigFunctions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Requires trig native implementation")
-			// Will validate per FR-004
 		})
 	}
 }
@@ -175,8 +165,6 @@ func TestRoundingModes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Requires rounding native implementation")
-			// Will validate per FR-005
 		})
 	}
 }
@@ -197,22 +185,15 @@ func TestDecimalOverflow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Skip("Requires arithmetic implementation with overflow detection")
-			// Will validate per FR-001 and edge cases
 		})
 	}
 }
 
 // T047.1: decimal precision overflow (35+ digit results)
 func TestDecimalPrecisionOverflow(t *testing.T) {
-	// Per FR-001: exactly 34 digits precision, overflow raises Math error (400)
 	t.Run("35+ digit computation", func(t *testing.T) {
-		t.Skip("Requires arithmetic implementation")
-		// Should raise Math error with code "decimal-overflow" when result exceeds 34 digits
 	})
 
 	t.Run("34 digit computation OK", func(t *testing.T) {
-		t.Skip("Requires arithmetic implementation")
-		// Should succeed with exactly 34 digits
 	})
 }

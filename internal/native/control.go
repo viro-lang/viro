@@ -225,6 +225,40 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	return value.NewBlockVal(reducedElements), nil
 }
 
+func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("compose", 1, len(args))
+	}
+
+	if args[0].GetType() == value.TypeParen {
+		parenBlock, _ := value.AsBlockValue(args[0])
+		return eval.DoBlock(parenBlock.Elements)
+	}
+
+	if args[0].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("compose", "block", args[0])
+	}
+
+	block, _ := value.AsBlockValue(args[0])
+	vals := block.Elements
+	composedElements := make([]core.Value, 0)
+
+	for _, element := range vals {
+		if element.GetType() == value.TypeParen {
+			parenBlock, _ := value.AsBlockValue(element)
+			result, err := eval.DoBlock(parenBlock.Elements)
+			if err != nil {
+				return value.NewNoneVal(), err
+			}
+			composedElements = append(composedElements, result)
+		} else {
+			composedElements = append(composedElements, element)
+		}
+	}
+
+	return value.NewBlockVal(composedElements), nil
+}
+
 // ToTruthy converts a value to truthy/falsy per Viro semantics.
 //
 // Contract per contracts/control-flow.md:
@@ -444,6 +478,67 @@ func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	enabled := trace.GlobalTraceSession.IsEnabled()
 	return value.NewLogicVal(enabled), nil
+}
+
+func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("foreach", 3, len(args))
+	}
+
+	series := args[0]
+
+	if series.GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block", series)
+	}
+
+	if args[1].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block for variables", args[1])
+	}
+
+	if args[2].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block for body", args[2])
+	}
+
+	wordBlock, _ := value.AsBlockValue(args[1])
+	bodyBlock, _ := value.AsBlockValue(args[2])
+
+	if len(wordBlock.Elements) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"foreach currently supports single variable only", "", ""},
+		)
+	}
+
+	varElement := wordBlock.Elements[0]
+	if varElement.GetType() != value.TypeWord {
+		return value.NewNoneVal(), typeError("foreach", "word for variable name", varElement)
+	}
+	varName, _ := value.AsWordValue(varElement)
+
+	seriesBlock, _ := value.AsBlockValue(series)
+	elements := seriesBlock.Elements
+
+	if len(elements) == 0 {
+		return value.NewNoneVal(), nil
+	}
+
+	var result core.Value
+	var err error
+
+	currentFrameIdx := eval.CurrentFrameIndex()
+	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
+	for _, element := range elements {
+		currentFrame.Bind(varName, element)
+
+		result, err = eval.DoBlock(bodyBlock.Elements)
+
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+	}
+
+	return result, nil
 }
 
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).

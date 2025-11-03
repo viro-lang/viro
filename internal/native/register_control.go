@@ -42,8 +42,8 @@ func RegisterControlNatives(rootFrame core.Frame) {
 	registerAndBind("when", value.NewNativeFunction(
 		"when",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true), // evaluated
-			value.NewParamSpec("body", false),     // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("body", false),
 		},
 		When,
 		false,
@@ -65,9 +65,9 @@ the result of the body block. If the condition is false, returns none. This is a
 	registerAndBind("if", value.NewNativeFunction(
 		"if",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true),     // evaluated
-			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
-			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("true-branch", false),
+			value.NewParamSpec("false-branch", false),
 		},
 		If,
 		false,
@@ -91,8 +91,8 @@ This is a two-branch conditional (if-then-else).`,
 	registerAndBind("loop", value.NewNativeFunction(
 		"loop",
 		[]value.ParamSpec{
-			value.NewParamSpec("count", true), // evaluated
-			value.NewParamSpec("body", false), // NOT evaluated (block)
+			value.NewParamSpec("count", true),
+			value.NewParamSpec("body", false),
 		},
 		Loop,
 		false,
@@ -114,8 +114,8 @@ The count must be a non-negative integer. Returns the result of the last iterati
 	registerAndBind("while", value.NewNativeFunction(
 		"while",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true), // evaluated
-			value.NewParamSpec("body", false),     // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("body", false),
 		},
 		While,
 		false,
@@ -135,12 +135,41 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 		},
 	))
 
+	registerAndBind("foreach", value.NewNativeFunction(
+		"foreach",
+		[]value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewParamSpec("vars", false),
+			value.NewParamSpec("body", false),
+		},
+		Foreach,
+		false,
+		&NativeDoc{
+			Category:    "Control",
+			Summary:     "Iterates over a series, binding each element to a variable",
+			Description: "Iterates over a series, binding each element to a variable and executing a body block. The loop variable is bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series is empty. Currently supports single variable only.",
+			Parameters: []ParamDoc{
+				{Name: "series", Type: "block!", Description: "The series to iterate over (evaluated)", Optional: false},
+				{Name: "vars", Type: "block!", Description: "Block containing a single word for the loop variable", Optional: false},
+				{Name: "body", Type: "block!", Description: "The code to execute for each element", Optional: false},
+			},
+			Returns: "[any-type! none!] The result of the last iteration, or none if series is empty",
+			Examples: []string{
+				"foreach [1 2 3] [n] [print n]  ; prints: 1 2 3",
+				"sum: 0\nforeach [10 20 30] [n] [sum: (+ sum n)]  ; sum becomes 60",
+				"foreach [\"a\" \"b\" \"c\"] [letter] [print letter]",
+			},
+			SeeAlso: []string{"loop", "while", "map", "filter"},
+			Tags:    []string{"control", "iteration", "loop", "foreach"},
+		},
+	))
+
 	// Group 11: Function creation (1 function - needs evaluator)
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
-			value.NewParamSpec("params", false), // NOT evaluated (block)
-			value.NewParamSpec("body", false),   // NOT evaluated (block)
+			value.NewParamSpec("params", false),
+			value.NewParamSpec("body", false),
 		},
 		Fn,
 		false,
@@ -157,6 +186,28 @@ Returns a function value that can be called. Functions capture their defining co
 			Returns:  "[function!] The newly created function",
 			Examples: []string{"square: fn [n] [n * n]  ; => function", "add: fn [a b] [a + b]\nadd 3 4  ; => 7", "greet: fn [name] [print [\"Hello\" name]]\ngreet \"Alice\"  ; prints: Hello Alice"},
 			SeeAlso:  []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure"},
+		},
+	))
+
+	// Group 12: Block manipulation (1 function - needs evaluator)
+	registerAndBind("compose", value.NewNativeFunction(
+		"compose",
+		[]value.ParamSpec{
+			value.NewParamSpec("block", false),
+		},
+		Compose,
+		false,
+		&NativeDoc{
+			Category: "Control",
+			Summary:  "Evaluates parenthetical expressions within a block",
+			Description: `Takes a block and evaluates any parenthetical expressions (expressions in parentheses)
+within it. Other elements remain unevaluated. Returns a new block with the evaluated results.`,
+			Parameters: []ParamDoc{
+				{Name: "block", Type: "block!", Description: "The block containing expressions to compose", Optional: false},
+			},
+			Returns:  "[block!] A new block with parenthetical expressions evaluated",
+			Examples: []string{"name: \"World\"\ncompose [Hello (name)]  ; => [Hello \"World\"]", "x: 10\ny: 20\ncompose [result: (x + y) is (x * 2)]  ; => [result: 30 is 20]"},
+			SeeAlso:  []string{"reduce", "form"}, Tags: []string{"control", "evaluation", "block", "compose"},
 		},
 	))
 }

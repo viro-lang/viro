@@ -458,7 +458,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 	case value.TypeInteger, value.TypeString, value.TypeLogic,
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype, value.TypeBlock,
-		value.TypeFunction:
+		value.TypeFunction, value.TypeBinary:
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
 		}
