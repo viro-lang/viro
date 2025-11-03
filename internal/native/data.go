@@ -1,7 +1,7 @@
 package native
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/ericlagergren/decimal"
@@ -518,18 +518,8 @@ func ToInteger(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	case value.TypeString:
 		if str, ok := value.AsStringValue(val); ok {
 			goStr := str.String()
-			// Check if the string contains a decimal point
-			if strings.Contains(goStr, ".") {
-				return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-string", [3]string{goStr, "", ""})
-			}
-			var i int64
-			n, err := fmt.Sscanf(goStr, "%d", &i)
-			if err != nil || n != 1 {
-				return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-string", [3]string{goStr, "", ""})
-			}
-			// Verify that the entire string was consumed
-			formatted := fmt.Sprintf("%d", i)
-			if formatted != goStr {
+			i, err := strconv.ParseInt(goStr, 10, 64)
+			if err != nil {
 				return value.NewNoneVal(), verror.NewScriptError("to-integer-invalid-string", [3]string{goStr, "", ""})
 			}
 			return value.NewIntVal(i), nil
