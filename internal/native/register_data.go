@@ -287,4 +287,71 @@ Returns the assigned value.`,
 			Tags:    []string{"objects", "mutation", "field-update"},
 		},
 	))
+
+	registerAndBind("to-integer", value.NewNativeFunction(
+		"to-integer",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		ToInteger,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Converts a value to an integer",
+			Description: `Converts integer (pass-through), decimal (truncate), or string (parse) to integer.
+Decimal values are truncated towards zero. String values must contain valid integer format.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "integer! decimal! string!", Description: "The value to convert", Optional: false},
+			},
+			Returns:  "[integer!] The converted integer value",
+			Examples: []string{"to-integer 42  ; => 42", "to-integer 3.7  ; => 3", `to-integer "123"  ; => 123`},
+			SeeAlso:  []string{"to-decimal", "to-string", "type?"},
+			Tags:     []string{"data", "conversion", "type"},
+		},
+	))
+
+	registerAndBind("to-decimal", value.NewNativeFunction(
+		"to-decimal",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		ToDecimal,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Converts a value to a decimal",
+			Description: `Converts integer (exact), decimal (pass-through), or string (parse) to decimal.
+Integer values are converted to exact decimal representation. String values must contain valid decimal format.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "integer! decimal! string!", Description: "The value to convert", Optional: false},
+			},
+			Returns:  "[decimal!] The converted decimal value",
+			Examples: []string{"to-decimal 42  ; => 42.0", "to-decimal 3.7  ; => 3.7", `to-decimal "12.34"  ; => 12.34`},
+			SeeAlso:  []string{"to-integer", "to-string", "type?"},
+			Tags:     []string{"data", "conversion", "type"},
+		},
+	))
+
+	registerAndBind("to-string", value.NewNativeFunction(
+		"to-string",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		ToString,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Converts a value to a string",
+			Description: `Converts any value to a string using its Form representation.
+For strings, returns the value unchanged. For integers and decimals, returns string representation.
+For blocks and other types, returns their human-readable form.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to convert", Optional: false},
+			},
+			Returns:  "[string!] The converted string value",
+			Examples: []string{"to-string 42  ; => \"42\"", "to-string 3.7  ; => \"3.70\"", `to-string [1 2 3]  ; => "1 2 3"`},
+			SeeAlso:  []string{"to-integer", "to-decimal", "form", "mold"},
+			Tags:     []string{"data", "conversion", "type", "string"},
+		},
+	))
 }
