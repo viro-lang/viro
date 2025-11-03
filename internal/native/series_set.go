@@ -79,21 +79,21 @@ func BlockUnion(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[1].GetType()), ""})
 	}
 
-	seen := make(map[string]core.Value)
+	seen := make(map[string]bool)
 	result := make([]core.Value, 0)
 
 	for _, elem := range block1.Elements {
 		key := elem.Mold()
-		if _, exists := seen[key]; !exists {
-			seen[key] = elem
+		if !seen[key] {
+			seen[key] = true
 			result = append(result, elem)
 		}
 	}
 
 	for _, elem := range block2.Elements {
 		key := elem.Mold()
-		if _, exists := seen[key]; !exists {
-			seen[key] = elem
+		if !seen[key] {
+			seen[key] = true
 			result = append(result, elem)
 		}
 	}
