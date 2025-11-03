@@ -197,70 +197,6 @@ func seriesPick(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return seriesVal.ElementAt(zeroBasedIndex), nil
 }
 
-func seriesTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if str, ok := value.AsStringValue(args[0]); ok {
-		input := string(str.Runes())
-
-		hasHead := hasRefinement(refValues, "head")
-		hasTail := hasRefinement(refValues, "tail")
-		hasAuto := hasRefinement(refValues, "auto")
-		hasLines := hasRefinement(refValues, "lines")
-		hasAll := hasRefinement(refValues, "all")
-		hasWith, withVal := getRefinementValue(refValues, "with")
-
-		flags := []bool{hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith}
-		flagCount := 0
-		for _, flag := range flags {
-			if flag {
-				flagCount++
-			}
-		}
-
-		if flagCount > 1 {
-			return value.NewNoneVal(), verror.NewScriptError(
-				verror.ErrIDInvalidOperation,
-				[3]string{"trim refinements are mutually exclusive", "", ""},
-			)
-		}
-
-		if hasWith {
-			withStr, ok := value.AsStringValue(withVal)
-			if !ok {
-				return value.NewNoneVal(), verror.NewScriptError(
-					verror.ErrIDTypeMismatch,
-					[3]string{"string", value.TypeToString(withVal.GetType()), "--with"},
-				)
-			}
-			charsToRemove := string(withStr.Runes())
-			return value.NewStringValue(trimWith(input, charsToRemove)), nil
-		}
-
-		if flagCount == 0 {
-			return value.NewStringValue(trimDefault(input)), nil
-		}
-
-		if hasHead {
-			return value.NewStringValue(trimHead(input)), nil
-		}
-		if hasTail {
-			return value.NewStringValue(trimTail(input)), nil
-		}
-		if hasAuto {
-			return value.NewStringValue(trimAuto(input)), nil
-		}
-		if hasLines {
-			return value.NewStringValue(trimLines(input)), nil
-		}
-		if hasAll {
-			return value.NewStringValue(trimAll(input)), nil
-		}
-
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDAssertionFailed, [3]string{"unexpected trim refinement state", "", ""})
-	}
-
-	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDActionNoImpl, [3]string{value.TypeToString(args[0].GetType()), "", ""})
-}
-
 func hasRefinement(refValues map[string]core.Value, name string) bool {
 	val, ok := refValues[name]
 	return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
@@ -342,6 +278,16 @@ func trimAll(input string) string {
 	result = strings.ReplaceAll(result, "\n", "")
 	result = strings.ReplaceAll(result, "\r", "")
 	return result
+}
+
+func countTrue(flags ...bool) int {
+	count := 0
+	for _, flag := range flags {
+		if flag {
+			count++
+		}
+	}
+	return count
 }
 
 func trimWith(input string, chars string) string {

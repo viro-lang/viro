@@ -109,6 +109,72 @@ func StringPoke(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[2], nil
 }
 
+func StringTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	input := string(str.Runes())
+
+	hasHead := hasRefinement(refValues, "head")
+	hasTail := hasRefinement(refValues, "tail")
+	hasAuto := hasRefinement(refValues, "auto")
+	hasLines := hasRefinement(refValues, "lines")
+	hasAll := hasRefinement(refValues, "all")
+	hasWith, withVal := getRefinementValue(refValues, "with")
+
+	flagCount := countTrue(hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith)
+
+	if flagCount > 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim refinements are mutually exclusive", "", ""},
+		)
+	}
+
+	if hasWith {
+		withStr, ok := value.AsStringValue(withVal)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"string", value.TypeToString(withVal.GetType()), "--with"},
+			)
+		}
+		charsToRemove := string(withStr.Runes())
+		str.SetRunes([]rune(trimWith(input, charsToRemove)))
+		return args[0], nil
+	}
+
+	if flagCount == 0 {
+		str.SetRunes([]rune(trimDefault(input)))
+		return args[0], nil
+	}
+
+	if hasHead {
+		str.SetRunes([]rune(trimHead(input)))
+		return args[0], nil
+	}
+	if hasTail {
+		str.SetRunes([]rune(trimTail(input)))
+		return args[0], nil
+	}
+	if hasAuto {
+		str.SetRunes([]rune(trimAuto(input)))
+		return args[0], nil
+	}
+	if hasLines {
+		str.SetRunes([]rune(trimLines(input)))
+		return args[0], nil
+	}
+	if hasAll {
+		str.SetRunes([]rune(trimAll(input)))
+		return args[0], nil
+	}
+
+	panic("unreachable: all trim refinement combinations should be handled above")
+}
+
 func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	hasDefault := false
 	defaultVal, ok := refValues["default"]

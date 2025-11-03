@@ -89,6 +89,15 @@ func registerBlockSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
 	}, seriesChange, false, nil))
+	RegisterActionImpl(value.TypeBlock, "trim", value.NewNativeFunction("trim", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
+	}, BlockTrim, false, nil))
 	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -184,7 +193,7 @@ func registerStringSeriesActions() {
 		value.NewRefinementSpec("lines", false),
 		value.NewRefinementSpec("all", false),
 		value.NewRefinementSpec("with", true),
-	}, seriesTrim, false, nil))
+	}, StringTrim, false, nil))
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -490,26 +499,28 @@ The --default refinement provides a fallback when the value/field is not found.`
 		value.NewRefinementSpec("with", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Removes whitespace from strings with various trimming options",
+		Summary:  "Removes whitespace or none-like values from series",
+		Description: `For strings: removes whitespace (default trims from both ends).
+For blocks: removes none values (default trims from both ends).
+
+Note: --auto and --lines refinements are only supported for strings.`,
 		Parameters: []ParamDoc{
-			{Name: "series", Type: "string!", Description: "The string to trim"},
-			{Name: "--head", Type: "flag", Description: "Remove whitespace from head only", Optional: true},
-			{Name: "--tail", Type: "flag", Description: "Remove whitespace from tail only", Optional: true},
-			{Name: "--auto", Type: "flag", Description: "Auto indent lines relative to first line", Optional: true},
-			{Name: "--lines", Type: "flag", Description: "Remove all line breaks and extra spaces", Optional: true},
-			{Name: "--all", Type: "flag", Description: "Remove all whitespace", Optional: true},
-			{Name: "--with", Type: "string!", Description: "Remove characters in this string instead of whitespace", Optional: true},
+			{Name: "series", Type: "string! block!", Description: "The series to trim"},
+			{Name: "--head", Type: "flag", Description: "Trim from head only", Optional: true},
+			{Name: "--tail", Type: "flag", Description: "Trim from tail only", Optional: true},
+			{Name: "--auto", Type: "flag", Description: "Auto-indent (strings only)", Optional: true},
+			{Name: "--lines", Type: "flag", Description: "Remove line breaks (strings only)", Optional: true},
+			{Name: "--all", Type: "flag", Description: "Remove all occurrences", Optional: true},
+			{Name: "--with", Type: "any!", Description: "Specify what to remove", Optional: true},
 		},
-		Returns: "string! The trimmed string",
+		Returns: "string! block! The trimmed series (modified in place)",
 		Examples: []string{
 			`trim "  hello  "  ; => "hello"`,
-			`trim --head "  hello  "  ; => "hello  "`,
-			`trim --tail "  hello  "  ; => "  hello"`,
-			`trim --all "  hello world  "  ; => "helloworld"`,
-			`trim --with "-" "a-b-c"  ; => "abc"`,
+			"trim [none 1 none 2 none]  ; => [1 none 2]",
+			"trim --all [none 1 none 2 none]  ; => [1 2]",
 		},
-		SeeAlso: []string{"clear", "change"},
-		Tags:    []string{"series", "string", "modification"},
+		SeeAlso: []string{"clear", "change", "remove"},
+		Tags:    []string{"series", "modification"},
 	}))
 
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{

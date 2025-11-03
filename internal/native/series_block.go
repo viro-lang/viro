@@ -110,6 +110,136 @@ func BlockPoke(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	return args[2], nil
 }
 
+func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	block, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	hasHead := hasRefinement(refValues, "head")
+	hasTail := hasRefinement(refValues, "tail")
+	hasAuto := hasRefinement(refValues, "auto")   // ignored for blocks
+	hasLines := hasRefinement(refValues, "lines") // ignored for blocks
+	hasAll := hasRefinement(refValues, "all")
+	hasWith, withVal := getRefinementValue(refValues, "with")
+
+	flagCount := countTrue(hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith)
+
+	if flagCount > 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim refinements are mutually exclusive", "", ""},
+		)
+	}
+
+	if hasAuto {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim --auto not supported for block", "", ""},
+		)
+	}
+	if hasLines {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim --lines not supported for block", "", ""},
+		)
+	}
+
+	if hasWith {
+		return blockTrimWith(block, withVal), nil
+	}
+
+	if flagCount == 0 {
+		return blockTrimDefault(block), nil
+	}
+
+	if hasHead {
+		return blockTrimHead(block), nil
+	}
+	if hasTail {
+		return blockTrimTail(block), nil
+	}
+	if hasAll {
+		return blockTrimAll(block), nil
+	}
+
+	panic("unreachable: all trim refinement combinations should be handled above")
+}
+
+func isNoneLike(v core.Value) bool {
+	if v.GetType() == value.TypeNone {
+		return true
+	}
+	if v.GetType() == value.TypeWord {
+		if word, ok := value.AsWordValue(v); ok && word == "none" {
+			return true
+		}
+	}
+	return false
+}
+
+func blockTrimDefault(block *value.BlockValue) core.Value {
+	start := 0
+	end := len(block.Elements) - 1
+
+	for start <= end && isNoneLike(block.Elements[start]) {
+		start++
+	}
+
+	for end >= start && isNoneLike(block.Elements[end]) {
+		end--
+	}
+
+	block.Elements = block.Elements[start : end+1]
+	return block
+}
+
+func blockTrimHead(block *value.BlockValue) core.Value {
+	start := 0
+	for start < len(block.Elements) && isNoneLike(block.Elements[start]) {
+		start++
+	}
+
+	block.Elements = block.Elements[start:]
+	return block
+}
+
+func blockTrimTail(block *value.BlockValue) core.Value {
+	end := len(block.Elements) - 1
+	for end >= 0 && isNoneLike(block.Elements[end]) {
+		end--
+	}
+
+	block.Elements = block.Elements[:end+1]
+	return block
+}
+
+func blockTrimAll(block *value.BlockValue) core.Value {
+	elements := make([]core.Value, 0, len(block.Elements))
+
+	for _, elem := range block.Elements {
+		if !isNoneLike(elem) {
+			elements = append(elements, elem)
+		}
+	}
+
+	block.Elements = elements
+	return block
+}
+
+func blockTrimWith(block *value.BlockValue, withVal core.Value) core.Value {
+	elements := make([]core.Value, 0, len(block.Elements))
+
+	for _, elem := range block.Elements {
+		if !elem.Equals(withVal) {
+			elements = append(elements, elem)
+		}
+	}
+
+	block.Elements = elements
+	return block
+}
+
 func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	hasDefault := false
 	defaultVal, ok := refValues["default"]
