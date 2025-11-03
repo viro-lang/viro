@@ -148,30 +148,40 @@ func StringTrim(args []core.Value, refValues map[string]core.Value, eval core.Ev
 			)
 		}
 		charsToRemove := string(withStr.Runes())
-		return value.NewStringValue(trimWith(input, charsToRemove)), nil
+		str.SetRunes([]rune(trimWith(input, charsToRemove)))
+		return args[0], nil
 	}
 
 	if flagCount == 0 {
-		return value.NewStringValue(trimDefault(input)), nil
+		str.SetRunes([]rune(trimDefault(input)))
+		return args[0], nil
 	}
 
 	if hasHead {
-		return value.NewStringValue(trimHead(input)), nil
+		str.SetRunes([]rune(trimHead(input)))
+		return args[0], nil
 	}
 	if hasTail {
-		return value.NewStringValue(trimTail(input)), nil
+		str.SetRunes([]rune(trimTail(input)))
+		return args[0], nil
 	}
 	if hasAuto {
-		return value.NewStringValue(trimAuto(input)), nil
+		str.SetRunes([]rune(trimAuto(input)))
+		return args[0], nil
 	}
 	if hasLines {
-		return value.NewStringValue(trimLines(input)), nil
+		str.SetRunes([]rune(trimLines(input)))
+		return args[0], nil
 	}
 	if hasAll {
-		return value.NewStringValue(trimAll(input)), nil
+		str.SetRunes([]rune(trimAll(input)))
+		return args[0], nil
 	}
 
-	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDAssertionFailed, [3]string{"unexpected trim refinement state", "", ""})
+	return value.NewNoneVal(), verror.NewScriptError(
+		verror.ErrIDInvalidOperation,
+		[3]string{"unexpected trim refinement state", "", ""},
+	)
 }
 
 func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
