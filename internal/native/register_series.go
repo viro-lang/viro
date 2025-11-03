@@ -486,7 +486,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get sixth element from"},
 		},
 		Returns:  "any! The sixth element of the series",
-		Examples: []string{"sixth [1 2 3 4 5 6]  ; => 6", `sixth "hello world"  ; => " "`, "sixth #{DEADBEEF0102}  ; => 1"},
+		Examples: []string{"sixth [1 2 3 4 5 6]  ; => 6", `sixth "hello world"  ; => " "`, "sixth #{DEADBEEF0102}  ; => 2"},
 		SeeAlso:  []string{"fourth", "seventh", "at"},
 		Tags:     []string{"series"},
 	}))
@@ -500,7 +500,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get seventh element from"},
 		},
 		Returns:  "any! The seventh element of the series",
-		Examples: []string{"seventh [1 2 3 4 5 6 7]  ; => 7", `seventh "hello world"  ; => "w"`, "seventh #{DEADBEEF0102}  ; => 2"},
+		Examples: []string{"seventh [1 2 3 4 5 6 7]  ; => 7", `seventh "hello world"  ; => "w"`, "seventh #{DEADBEEF010203}  ; => 3"},
 		SeeAlso:  []string{"sixth", "eighth", "at"},
 		Tags:     []string{"series"},
 	}))
@@ -514,7 +514,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get eighth element from"},
 		},
 		Returns:  "any! The eighth element of the series",
-		Examples: []string{"eighth [1 2 3 4 5 6 7 8]  ; => 8", `eighth "hello world"  ; => "o"`, "eighth #{DEADBEEF01020304}  ; => 3"},
+		Examples: []string{"eighth [1 2 3 4 5 6 7 8]  ; => 8", `eighth "hello world"  ; => "o"`, "eighth #{DEADBEEF0102030405}  ; => 4"},
 		SeeAlso:  []string{"seventh", "ninth", "at"},
 		Tags:     []string{"series"},
 	}))
@@ -528,7 +528,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get ninth element from"},
 		},
 		Returns:  "any! The ninth element of the series",
-		Examples: []string{"ninth [1 2 3 4 5 6 7 8 9]  ; => 9", `ninth "hello world"  ; => "r"`, "ninth #{DEADBEEF01020304}  ; => 4"},
+		Examples: []string{"ninth [1 2 3 4 5 6 7 8 9]  ; => 9", `ninth "hello world"  ; => "r"`, "ninth #{DEADBEEF010203040506}  ; => 5"},
 		SeeAlso:  []string{"eighth", "tenth", "at"},
 		Tags:     []string{"series"},
 	}))
@@ -542,7 +542,7 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get tenth element from"},
 		},
 		Returns:  "any! The tenth element of the series",
-		Examples: []string{"tenth [1 2 3 4 5 6 7 8 9 10]  ; => 10", `tenth "hello world"  ; => "l"`, "tenth #{DEADBEEF0102030405}  ; => 5"},
+		Examples: []string{"tenth [1 2 3 4 5 6 7 8 9 10]  ; => 10", `tenth "hello world"  ; => "l"`, "tenth #{DEADBEEF01020304050607}  ; => 6"},
 		SeeAlso:  []string{"ninth", "at"},
 		Tags:     []string{"series"},
 	}))
