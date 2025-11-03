@@ -14,6 +14,30 @@ func registerBlockSeriesActions() {
 	RegisterActionImpl(value.TypeBlock, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesLast, false, nil))
+	RegisterActionImpl(value.TypeBlock, "second", value.NewNativeFunction("second", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSecond, false, nil))
+	RegisterActionImpl(value.TypeBlock, "third", value.NewNativeFunction("third", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesThird, false, nil))
+	RegisterActionImpl(value.TypeBlock, "fourth", value.NewNativeFunction("fourth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesFourth, false, nil))
+	RegisterActionImpl(value.TypeBlock, "sixth", value.NewNativeFunction("sixth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSixth, false, nil))
+	RegisterActionImpl(value.TypeBlock, "seventh", value.NewNativeFunction("seventh", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSeventh, false, nil))
+	RegisterActionImpl(value.TypeBlock, "eighth", value.NewNativeFunction("eighth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEighth, false, nil))
+	RegisterActionImpl(value.TypeBlock, "ninth", value.NewNativeFunction("ninth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesNinth, false, nil))
+	RegisterActionImpl(value.TypeBlock, "tenth", value.NewNativeFunction("tenth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTenth, false, nil))
 	RegisterActionImpl(value.TypeBlock, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -120,6 +144,30 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesLast, false, nil))
+	RegisterActionImpl(value.TypeString, "second", value.NewNativeFunction("second", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSecond, false, nil))
+	RegisterActionImpl(value.TypeString, "third", value.NewNativeFunction("third", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesThird, false, nil))
+	RegisterActionImpl(value.TypeString, "fourth", value.NewNativeFunction("fourth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesFourth, false, nil))
+	RegisterActionImpl(value.TypeString, "sixth", value.NewNativeFunction("sixth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSixth, false, nil))
+	RegisterActionImpl(value.TypeString, "seventh", value.NewNativeFunction("seventh", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSeventh, false, nil))
+	RegisterActionImpl(value.TypeString, "eighth", value.NewNativeFunction("eighth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEighth, false, nil))
+	RegisterActionImpl(value.TypeString, "ninth", value.NewNativeFunction("ninth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesNinth, false, nil))
+	RegisterActionImpl(value.TypeString, "tenth", value.NewNativeFunction("tenth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTenth, false, nil))
 	RegisterActionImpl(value.TypeString, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -225,6 +273,30 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "last", value.NewNativeFunction("last", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesLast, false, nil))
+	RegisterActionImpl(value.TypeBinary, "second", value.NewNativeFunction("second", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSecond, false, nil))
+	RegisterActionImpl(value.TypeBinary, "third", value.NewNativeFunction("third", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesThird, false, nil))
+	RegisterActionImpl(value.TypeBinary, "fourth", value.NewNativeFunction("fourth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesFourth, false, nil))
+	RegisterActionImpl(value.TypeBinary, "sixth", value.NewNativeFunction("sixth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSixth, false, nil))
+	RegisterActionImpl(value.TypeBinary, "seventh", value.NewNativeFunction("seventh", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesSeventh, false, nil))
+	RegisterActionImpl(value.TypeBinary, "eighth", value.NewNativeFunction("eighth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesEighth, false, nil))
+	RegisterActionImpl(value.TypeBinary, "ninth", value.NewNativeFunction("ninth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesNinth, false, nil))
+	RegisterActionImpl(value.TypeBinary, "tenth", value.NewNativeFunction("tenth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, seriesTenth, false, nil))
 	RegisterActionImpl(value.TypeBinary, "append", value.NewNativeFunction("append", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
@@ -360,6 +432,118 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		Returns:  "any! The last element of the series",
 		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`, "last #{DEADBEEF}  ; => 239"},
 		SeeAlso:  []string{"first", "skip", "take"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("second", CreateAction("second", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the second element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get second element from"},
+		},
+		Returns:  "any! The second element of the series",
+		Examples: []string{"second [1 2 3]  ; => 2", `second "hello"  ; => "e"`, "second #{DEADBEEF}  ; => 173"},
+		SeeAlso:  []string{"first", "third", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("third", CreateAction("third", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the third element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get third element from"},
+		},
+		Returns:  "any! The third element of the series",
+		Examples: []string{"third [1 2 3]  ; => 3", `third "hello"  ; => "l"`, "third #{DEADBEEF}  ; => 190"},
+		SeeAlso:  []string{"second", "fourth", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("fourth", CreateAction("fourth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the fourth element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get fourth element from"},
+		},
+		Returns:  "any! The fourth element of the series",
+		Examples: []string{"fourth [1 2 3 4]  ; => 4", `fourth "hello"  ; => "l"`, "fourth #{DEADBEEF}  ; => 239"},
+		SeeAlso:  []string{"third", "sixth", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("sixth", CreateAction("sixth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the sixth element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get sixth element from"},
+		},
+		Returns:  "any! The sixth element of the series",
+		Examples: []string{"sixth [1 2 3 4 5 6]  ; => 6", `sixth "hello world"  ; => " "`, "sixth #{DEADBEEF0102}  ; => 1"},
+		SeeAlso:  []string{"fourth", "seventh", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("seventh", CreateAction("seventh", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the seventh element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get seventh element from"},
+		},
+		Returns:  "any! The seventh element of the series",
+		Examples: []string{"seventh [1 2 3 4 5 6 7]  ; => 7", `seventh "hello world"  ; => "w"`, "seventh #{DEADBEEF0102}  ; => 2"},
+		SeeAlso:  []string{"sixth", "eighth", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("eighth", CreateAction("eighth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the eighth element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get eighth element from"},
+		},
+		Returns:  "any! The eighth element of the series",
+		Examples: []string{"eighth [1 2 3 4 5 6 7 8]  ; => 8", `eighth "hello world"  ; => "o"`, "eighth #{DEADBEEF01020304}  ; => 3"},
+		SeeAlso:  []string{"seventh", "ninth", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("ninth", CreateAction("ninth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the ninth element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get ninth element from"},
+		},
+		Returns:  "any! The ninth element of the series",
+		Examples: []string{"ninth [1 2 3 4 5 6 7 8 9]  ; => 9", `ninth "hello world"  ; => "r"`, "ninth #{DEADBEEF01020304}  ; => 4"},
+		SeeAlso:  []string{"eighth", "tenth", "at"},
+		Tags:     []string{"series"},
+	}))
+
+	registerAndBind("tenth", CreateAction("tenth", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Returns the tenth element of a series",
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "block! string! binary!", Description: "The series to get tenth element from"},
+		},
+		Returns:  "any! The tenth element of the series",
+		Examples: []string{"tenth [1 2 3 4 5 6 7 8 9 10]  ; => 10", `tenth "hello world"  ; => "l"`, "tenth #{DEADBEEF0102030405}  ; => 5"},
+		SeeAlso:  []string{"ninth", "at"},
 		Tags:     []string{"series"},
 	}))
 
