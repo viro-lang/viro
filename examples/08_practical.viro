@@ -23,7 +23,7 @@ is-prime?: fn [n] [
         if n = 2 [true] [
             divisor: 2
             prime: true
-            while [prime and ((* divisor divisor) <=  n)] [
+            while [prime and ((* divisor divisor) <= n)] [
                 when (mod n divisor) = 0 [
                     prime: false
                 ]

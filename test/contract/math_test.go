@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"math"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -307,6 +308,12 @@ func TestNativeMod(t *testing.T) {
 			args:     []core.Value{value.NewIntVal(1000000), value.NewIntVal(7)},
 			expected: value.NewIntVal(1),
 			wantErr:  false,
+		},
+		{
+			name:     "overflow MinInt64 mod -1",
+			args:     []core.Value{value.NewIntVal(math.MinInt64), value.NewIntVal(-1)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
 		},
 		{
 			name:     "division by zero error",

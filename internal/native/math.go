@@ -238,6 +238,10 @@ func Mod(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 	return mathOp("mod", args,
 		func(a, b int64) (int64, bool) {
+			// Check for overflow: MinInt64 % -1 panics
+			if a == math.MinInt64 && b == -1 {
+				return 0, true
+			}
 			return a % b, false
 		},
 		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
