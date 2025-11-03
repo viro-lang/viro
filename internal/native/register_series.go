@@ -5,7 +5,6 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func registerBlockSeriesActions() {
@@ -312,29 +311,6 @@ func registerBinarySeriesActions() {
 	}, seriesTake, false, nil))
 }
 
-func trimDispatcher(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDArgCount,
-			[3]string{"trim", "at least 1", "0"},
-		)
-	}
-
-	firstArg := args[0]
-	firstArgType := firstArg.GetType()
-
-	if firstArgType == value.TypeString {
-		return StringTrim(args, refValues, eval)
-	} else if firstArgType == value.TypeBlock {
-		return BlockTrim(args, refValues, eval)
-	} else {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDActionNoImpl,
-			[3]string{"trim", value.TypeToString(firstArgType), ""},
-		)
-	}
-}
-
 func registerSeriesTypeImpls() {
 	registerBlockSeriesActions()
 	registerStringSeriesActions()
@@ -513,7 +489,7 @@ The --default refinement provides a fallback when the value/field is not found.`
 		Tags:     []string{"series", "modification"},
 	}))
 
-	registerAndBind("trim", value.NewNativeFunction("trim", []value.ParamSpec{
+	registerAndBind("trim", CreateAction("trim", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("head", false),
 		value.NewRefinementSpec("tail", false),
@@ -521,7 +497,31 @@ The --default refinement provides a fallback when the value/field is not found.`
 		value.NewRefinementSpec("lines", false),
 		value.NewRefinementSpec("all", false),
 		value.NewRefinementSpec("with", true),
-	}, trimDispatcher, false, nil))
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Removes whitespace or none-like values from series",
+		Description: `For strings: removes whitespace (default trims from both ends).
+For blocks: removes none values (default trims from both ends).
+
+Note: --auto and --lines refinements are only supported for strings.`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "string! block!", Description: "The series to trim"},
+			{Name: "--head", Type: "flag", Description: "Trim from head only", Optional: true},
+			{Name: "--tail", Type: "flag", Description: "Trim from tail only", Optional: true},
+			{Name: "--auto", Type: "flag", Description: "Auto-indent (strings only)", Optional: true},
+			{Name: "--lines", Type: "flag", Description: "Remove line breaks (strings only)", Optional: true},
+			{Name: "--all", Type: "flag", Description: "Remove all occurrences", Optional: true},
+			{Name: "--with", Type: "any!", Description: "Specify what to remove", Optional: true},
+		},
+		Returns: "string! block! The trimmed series (modified in place)",
+		Examples: []string{
+			`trim "  hello  "  ; => "hello"`,
+			"trim [none 1 none 2 none]  ; => [1 none 2]",
+			"trim --all [none 1 none 2 none]  ; => [1 2]",
+		},
+		SeeAlso: []string{"clear", "change", "remove"},
+		Tags:    []string{"series", "modification"},
+	}))
 
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),
