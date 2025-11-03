@@ -525,6 +525,9 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 		if seekVal, ok := opts["seek"]; ok {
 			if seekVal.GetType() == value.TypeInteger {
 				sp, _ := value.AsIntValue(seekVal)
+				if sp < 0 {
+					return value.NewNoneVal(), fmt.Errorf("--seek position must be non-negative, got %d", sp)
+				}
 				seekPos = sp
 			}
 		}
@@ -559,7 +562,7 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 	port, _ := value.AsPort(portVal)
 
 	// Handle --seek for file ports
-	if seekPos > 0 && port.Scheme == "file" {
+	if seekPos >= 0 && port.Scheme == "file" {
 		if fileDriver, ok := port.Driver.(*fileDriver); ok {
 			if _, err := fileDriver.file.Seek(seekPos, 0); err != nil {
 				ClosePort(portVal)
@@ -573,20 +576,16 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 	var data []byte
 	totalBytes := 0
 
-	// Determine read limit
-	bytesLimit := -1
-	if partCount > 0 {
-		if isLines {
-			bytesLimit = -1
-		} else {
-			bytesLimit = partCount
-		}
+	// Determine read limit (bytes for binary/string mode, no limit for lines mode)
+	readLimit := -1
+	if partCount > 0 && !isLines {
+		readLimit = partCount
 	}
 
 	for {
 		readSize := len(buf)
-		if bytesLimit > 0 && totalBytes+readSize > bytesLimit {
-			readSize = bytesLimit - totalBytes
+		if readLimit > 0 && totalBytes+readSize > readLimit {
+			readSize = readLimit - totalBytes
 		}
 		if readSize <= 0 {
 			break
@@ -605,7 +604,7 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 			ClosePort(portVal)
 			return value.NewNoneVal(), err
 		}
-		if bytesLimit > 0 && totalBytes >= bytesLimit {
+		if readLimit > 0 && totalBytes >= readLimit {
 			break
 		}
 	}
@@ -622,8 +621,8 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 		content := string(data)
 		lines := strings.Split(content, "\n")
 		
-		// Remove trailing empty line if content ends with newline
-		if len(lines) > 0 && lines[len(lines)-1] == "" {
+		// Remove trailing empty line only if content ends with newline
+		if len(lines) > 0 && len(content) > 0 && content[len(content)-1] == '\n' && lines[len(lines)-1] == "" {
 			lines = lines[:len(lines)-1]
 		}
 

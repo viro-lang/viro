@@ -110,6 +110,11 @@ func TestReadRefinementsErrors(t *testing.T) {
 			script:      `read --binary --lines "test.txt"`,
 			shouldError: true,
 		},
+		{
+			name:        "Negative seek position",
+			script:      `read --seek -1 "test.txt"`,
+			shouldError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -126,6 +131,67 @@ func TestReadRefinementsErrors(t *testing.T) {
 			}
 			if !tt.shouldError && err != nil {
 				t.Errorf("Unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestReadRefinementsEdgeCases(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := eval.InitSandbox(tmpDir); err != nil {
+		t.Fatalf("Failed to init sandbox: %v", err)
+	}
+	native.SandboxRoot = tmpDir
+
+	testFile := filepath.Join(tmpDir, "test.txt")
+	testContent := "line1\n\n"
+	if err := os.WriteFile(testFile, []byte(testContent), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	testFileNoNewline := filepath.Join(tmpDir, "test_no_newline.txt")
+	testContentNoNewline := "line1"
+	if err := os.WriteFile(testFileNoNewline, []byte(testContentNoNewline), 0644); err != nil {
+		t.Fatalf("Failed to write test file: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		script   string
+		expected string
+	}{
+		{
+			name:     "Lines with empty line preserved",
+			script:   `read --lines "test.txt"`,
+			expected: `["line1" ""]`,
+		},
+		{
+			name:     "Lines without trailing newline",
+			script:   `read --lines "test_no_newline.txt"`,
+			expected: `["line1"]`,
+		},
+		{
+			name:     "Seek to position 0",
+			script:   `read --seek 0 "test_no_newline.txt"`,
+			expected: `"line1"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluator := NewTestEvaluator()
+			vals, parseErr := parse.Parse(tt.script)
+			if parseErr != nil {
+				t.Fatalf("Parse failed for %q: %v", tt.script, parseErr)
+			}
+			result, err := evaluator.DoBlock(vals)
+			if err != nil {
+				t.Fatalf("Evaluation error: %v", err)
+			}
+
+			resultStr := strings.TrimSpace(result.Mold())
+			if resultStr != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, resultStr)
 			}
 		})
 	}
