@@ -2,11 +2,11 @@ print "=== Practical Examples ==="
 print ""
 
 print "--- Temperature converter ---"
-celsius-to-fahrenheit: func [c] [
+celsius-to-fahrenheit: fn [c] [
     (+ (* c (/ 9 5)) 32)
 ]
 
-fahrenheit-to-celsius: func [f] [
+fahrenheit-to-celsius: fn [f] [
     (* f - 32 5 / 9)
 ]
 
@@ -18,7 +18,7 @@ print (fahrenheit-to-celsius 77)
 
 print ""
 print "--- Is prime? ---"
-is-prime?: func [n] [
+is-prime?: fn [n] [
     if (<= n 1) [false] [
         if (= n 2) [true] [
             divisor: 2
@@ -42,7 +42,7 @@ print (is-prime? 97)
 
 print ""
 print "--- GCD (Greatest Common Divisor) ---"
-gcd: func [a b] [
+gcd: fn [a b] [
     while [(<> b 0)] [
         temp: b
         b: mod a b
@@ -57,7 +57,7 @@ print (gcd 17 13)
 
 print ""
 print "--- String reversal ---"
-reverse-string: func [str] [
+reverse-string: fn [str] [
     result: ""
     i: length? str
     while [(> i 0)] [
@@ -73,7 +73,7 @@ print (reverse-string "Viro")
 
 print ""
 print "--- Word count ---"
-count-words: func [text] [
+count-words: fn [text] [
     words: split text " "
     length? words
 ]

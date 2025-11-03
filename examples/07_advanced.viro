@@ -2,7 +2,7 @@ print "=== Advanced Examples ==="
 print ""
 
 print "--- Higher-order functions: map ---"
-map: func [series fn] [
+map: fn [series fn] [
     result: []
     foreach series fn [item] [
         append result (fn item)
@@ -11,13 +11,13 @@ map: func [series fn] [
 ]
 
 numbers: [1 2 3 4 5]
-double: func [n] [(* n 2)]
+double: fn [n] [(* n 2)]
 doubled: map numbers :double
 print doubled
 
 print ""
 print "--- Filter function ---"
-filter: func [series predicate] [
+filter: fn [series predicate] [
     result: []
     foreach series predicate [item] [
         when (predicate item) [
@@ -27,7 +27,7 @@ filter: func [series predicate] [
     result
 ]
 
-is-even?: func [n] [
+is-even?: fn [n] [
     (= (mod n 2) 0)
 ]
 
@@ -36,7 +36,7 @@ print evens
 
 print ""
 print "--- Sum calculation ---"
-sum: func [numbers] [
+sum: fn [numbers] [
     total: 0
     foreach numbers [n] [
         total: (+ total n)
@@ -49,7 +49,7 @@ print (sum [10 20 30])
 
 print ""
 print "--- Finding maximum ---"
-max-value: func [numbers] [
+max-value: fn [numbers] [
     if (= (length? numbers) 0) [none] [
         maximum: first numbers
         foreach (next numbers) [n] [
@@ -66,7 +66,7 @@ print (max-value [100 50 75 200 25])
 
 print ""
 print "--- Sorting (bubble sort) ---"
-bubble-sort: func [arr] [
+bubble-sort: fn [arr] [
     n: length? arr
     sorted: copy arr
     i: 1
