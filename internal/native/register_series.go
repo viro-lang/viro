@@ -167,6 +167,7 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "select", value.NewNativeFunction("select", []value.ParamSpec{
 		value.NewParamSpec("target", true),
 		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
 	}, StringSelect, false, nil))
 	RegisterActionImpl(value.TypeString, "clear", value.NewNativeFunction("clear", []value.ParamSpec{
 		value.NewParamSpec("series", true),
@@ -271,6 +272,7 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "select", value.NewNativeFunction("select", []value.ParamSpec{
 		value.NewParamSpec("target", true),
 		value.NewParamSpec("value", true),
+		value.NewRefinementSpec("default", true),
 	}, BinarySelect, false, nil))
 	RegisterActionImpl(value.TypeBinary, "clear", value.NewNativeFunction("clear", []value.ParamSpec{
 		value.NewParamSpec("series", true),
