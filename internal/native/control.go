@@ -558,10 +558,6 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			i++
 		}
 
-		if i > length {
-			break
-		}
-
 		result, err = eval.DoBlock(bodyBlock.Elements)
 
 		if err != nil {
