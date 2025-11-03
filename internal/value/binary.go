@@ -32,11 +32,30 @@ func (b *BinaryValue) Mold() string {
 	if len(b.data) == 0 {
 		return "#{}"
 	}
-	return "#{" + string(b.data) + "}"
+	result := "#{"
+	for i, byteVal := range b.data {
+		if i > 0 {
+			result += " "
+		}
+		result += fmt.Sprintf("%02X", byteVal)
+	}
+	result += "}"
+	return result
 }
 
 func (b *BinaryValue) Form() string {
-	return b.Mold()
+	if len(b.data) <= 64 {
+		return b.Mold()
+	}
+	result := "#{"
+	for i := 0; i < 8; i++ {
+		if i > 0 {
+			result += " "
+		}
+		result += fmt.Sprintf("%02X", b.data[i])
+	}
+	result += fmt.Sprintf(" ... (%d bytes)}", len(b.data))
+	return result
 }
 
 func (b *BinaryValue) EqualsBinary(other *BinaryValue) bool {
