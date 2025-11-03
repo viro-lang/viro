@@ -260,9 +260,9 @@ new or overriding field definitions. The new object shares the parent's fields b
 	registerAndBind("put", value.NewNativeFunction(
 		"put",
 		[]value.ParamSpec{
-			value.NewParamSpec("object", true), // evaluated
-			value.NewParamSpec("field", false), // NOT evaluated (word/string)
-			value.NewParamSpec("value", true),  // evaluated
+			value.NewParamSpec("object", true),
+			value.NewParamSpec("field", true),
+			value.NewParamSpec("value", true),
 		},
 		Put,
 		false,
