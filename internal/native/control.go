@@ -621,7 +621,13 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		block, _ := value.AsBlockValue(val)
 		vals := block.Elements
 
+		currentFrameIdx := eval.CurrentFrameIndex()
+		currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
 		if len(vals) == 0 {
+			nextBlock := block.Clone()
+			nextBlock.SetIndex(0)
+			currentFrame.Bind(wordName, nextBlock.(core.Value))
 			return value.NewNoneVal(), nil
 		}
 
@@ -629,9 +635,6 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
-
-		currentFrameIdx := eval.CurrentFrameIndex()
-		currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
 		nextBlock := block.Clone()
 		nextBlock.SetIndex(newPos)

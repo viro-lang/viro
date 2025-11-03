@@ -98,6 +98,17 @@ none`,
 			want:     "42\nblock!\nnone",
 			wantExit: 0,
 		},
+		{
+			name: "do --next with empty block",
+			script: `a: []
+result: do a --next 'b
+print mold result
+print type? b
+print length? b
+none`,
+			want:     "none\nblock!\n0\nnone",
+			wantExit: 0,
+		},
 	}
 
 	for _, tt := range tests {
