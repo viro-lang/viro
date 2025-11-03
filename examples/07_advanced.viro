@@ -4,7 +4,7 @@ print ""
 print "--- Higher-order functions: map ---"
 map: fn [series fn] [
     result: []
-    foreach series fn [item] [
+    foreach series [item] [
         append result (fn item)
     ]
     result
@@ -19,7 +19,7 @@ print ""
 print "--- Filter function ---"
 filter: fn [series predicate] [
     result: []
-    foreach series predicate [item] [
+    foreach series [item] [
         when (predicate item) [
             append result item
         ]
@@ -73,13 +73,11 @@ bubble-sort: fn [arr] [
     loop (- n 1) [
         j: 1
         loop (- n i) [
-            pos1: at sorted j
-            pos2: at sorted (+ j 1)
-            val1: first pos1
-            val2: first pos2
+            val1: at sorted j
+            val2: at sorted (+ j 1)
             when (> val1 val2) [
-                change pos1 val2
-                change pos2 val1
+                poke sorted j val2
+                poke sorted (+ j 1) val1
             ]
             j: (+ j 1)
         ]
