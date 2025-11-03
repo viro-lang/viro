@@ -5,6 +5,7 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func registerBlockSeriesActions() {
@@ -89,6 +90,15 @@ func registerBlockSeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("value", true),
 	}, seriesChange, false, nil))
+	RegisterActionImpl(value.TypeBlock, "trim", value.NewNativeFunction("trim", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewRefinementSpec("head", false),
+		value.NewRefinementSpec("tail", false),
+		value.NewRefinementSpec("auto", false),
+		value.NewRefinementSpec("lines", false),
+		value.NewRefinementSpec("all", false),
+		value.NewRefinementSpec("with", true),
+	}, BlockTrim, false, nil))
 	RegisterActionImpl(value.TypeBlock, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -184,7 +194,7 @@ func registerStringSeriesActions() {
 		value.NewRefinementSpec("lines", false),
 		value.NewRefinementSpec("all", false),
 		value.NewRefinementSpec("with", true),
-	}, seriesTrim, false, nil))
+	}, StringTrim, false, nil))
 	RegisterActionImpl(value.TypeString, "tail", value.NewNativeFunction("tail", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, seriesTail, false, nil))
@@ -300,6 +310,29 @@ func registerBinarySeriesActions() {
 		value.NewParamSpec("series", true),
 		value.NewParamSpec("count", true),
 	}, seriesTake, false, nil))
+}
+
+func trimDispatcher(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDArgCount,
+			[3]string{"trim", "at least 1", "0"},
+		)
+	}
+
+	firstArg := args[0]
+	firstArgType := firstArg.GetType()
+
+	if firstArgType == value.TypeString {
+		return StringTrim(args, refValues, eval)
+	} else if firstArgType == value.TypeBlock {
+		return BlockTrim(args, refValues, eval)
+	} else {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDActionNoImpl,
+			[3]string{"trim", value.TypeToString(firstArgType), ""},
+		)
+	}
 }
 
 func registerSeriesTypeImpls() {
@@ -480,7 +513,7 @@ The --default refinement provides a fallback when the value/field is not found.`
 		Tags:     []string{"series", "modification"},
 	}))
 
-	registerAndBind("trim", CreateAction("trim", []value.ParamSpec{
+	registerAndBind("trim", value.NewNativeFunction("trim", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("head", false),
 		value.NewRefinementSpec("tail", false),
@@ -488,29 +521,7 @@ The --default refinement provides a fallback when the value/field is not found.`
 		value.NewRefinementSpec("lines", false),
 		value.NewRefinementSpec("all", false),
 		value.NewRefinementSpec("with", true),
-	}, &NativeDoc{
-		Category: "Series",
-		Summary:  "Removes whitespace from strings with various trimming options",
-		Parameters: []ParamDoc{
-			{Name: "series", Type: "string!", Description: "The string to trim"},
-			{Name: "--head", Type: "flag", Description: "Remove whitespace from head only", Optional: true},
-			{Name: "--tail", Type: "flag", Description: "Remove whitespace from tail only", Optional: true},
-			{Name: "--auto", Type: "flag", Description: "Auto indent lines relative to first line", Optional: true},
-			{Name: "--lines", Type: "flag", Description: "Remove all line breaks and extra spaces", Optional: true},
-			{Name: "--all", Type: "flag", Description: "Remove all whitespace", Optional: true},
-			{Name: "--with", Type: "string!", Description: "Remove characters in this string instead of whitespace", Optional: true},
-		},
-		Returns: "string! The trimmed string",
-		Examples: []string{
-			`trim "  hello  "  ; => "hello"`,
-			`trim --head "  hello  "  ; => "hello  "`,
-			`trim --tail "  hello  "  ; => "  hello"`,
-			`trim --all "  hello world  "  ; => "helloworld"`,
-			`trim --with "-" "a-b-c"  ; => "abc"`,
-		},
-		SeeAlso: []string{"clear", "change"},
-		Tags:    []string{"series", "string", "modification"},
-	}))
+	}, trimDispatcher, false, nil))
 
 	registerAndBind("insert", CreateAction("insert", []value.ParamSpec{
 		value.NewParamSpec("series", true),

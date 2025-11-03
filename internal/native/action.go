@@ -73,7 +73,6 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 }
 
 // RegisterActionImpl registers a type-specific implementation for an action.
-// This binds a function into the type frame for the specified value type.
 //
 // Parameters:
 //   - typ: The value type (e.g., TypeBlock, TypeString)
@@ -84,6 +83,7 @@ func CreateAction(name string, params []value.ParamSpec, doc *NativeDoc) core.Va
 //
 // Feature: 004-dynamic-function-invocation
 func RegisterActionImpl(typ core.ValueType, actionName string, fn *value.FunctionValue) {
+
 	// Get the type frame for this value type
 	typeFrame, found := frame.GetTypeFrame(typ)
 	if !found {

@@ -109,6 +109,71 @@ func StringPoke(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return args[2], nil
 }
 
+func StringTrim(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	input := string(str.Runes())
+
+	hasHead := hasRefinement(refValues, "head")
+	hasTail := hasRefinement(refValues, "tail")
+	hasAuto := hasRefinement(refValues, "auto")
+	hasLines := hasRefinement(refValues, "lines")
+	hasAll := hasRefinement(refValues, "all")
+	hasWith, withVal := getRefinementValue(refValues, "with")
+
+	flags := []bool{hasHead, hasTail, hasAuto, hasLines, hasAll, hasWith}
+	flagCount := 0
+	for _, flag := range flags {
+		if flag {
+			flagCount++
+		}
+	}
+
+	if flagCount > 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"trim refinements are mutually exclusive", "", ""},
+		)
+	}
+
+	if hasWith {
+		withStr, ok := value.AsStringValue(withVal)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"string", value.TypeToString(withVal.GetType()), "--with"},
+			)
+		}
+		charsToRemove := string(withStr.Runes())
+		return value.NewStringValue(trimWith(input, charsToRemove)), nil
+	}
+
+	if flagCount == 0 {
+		return value.NewStringValue(trimDefault(input)), nil
+	}
+
+	if hasHead {
+		return value.NewStringValue(trimHead(input)), nil
+	}
+	if hasTail {
+		return value.NewStringValue(trimTail(input)), nil
+	}
+	if hasAuto {
+		return value.NewStringValue(trimAuto(input)), nil
+	}
+	if hasLines {
+		return value.NewStringValue(trimLines(input)), nil
+	}
+	if hasAll {
+		return value.NewStringValue(trimAll(input)), nil
+	}
+
+	return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDAssertionFailed, [3]string{"unexpected trim refinement state", "", ""})
+}
+
 func StringSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	hasDefault := false
 	defaultVal, ok := refValues["default"]

@@ -970,6 +970,56 @@ world"`,
 			input: "trim --lines \"a\r\n\n b\r\n c\"",
 			want:  value.NewStrVal("a b c"),
 		},
+		{
+			name:  "trim block default removes leading and trailing none",
+			input: `trim [none none 1 2 3]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name:  "trim block default removes trailing none",
+			input: `trim [1 2 3 none none]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name:  "trim block default preserves internal none",
+			input: `trim [none 1 none 2 none]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewWordVal("none"), value.NewIntVal(2)}),
+		},
+		{
+			name:  "trim block --head removes leading none",
+			input: `trim --head [none none 1 2 3]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name:  "trim block --tail removes trailing none",
+			input: `trim --tail [1 2 3 none none]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name:  "trim block --all removes all none",
+			input: `trim --all [none 1 none 2 none]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+		},
+		{
+			name:  "trim block --with removes specific value",
+			input: `trim --with 5 [5 1 5 2 5]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+		},
+		{
+			name:  "trim block --with removes specific string",
+			input: `trim --with "x" ["x" "a" "x" "b" "x"]`,
+			want:  value.NewBlockVal([]core.Value{value.NewStrVal("a"), value.NewStrVal("b")}),
+		},
+		{
+			name:    "trim block with mutually exclusive refinements",
+			input:   `trim --head --tail [none 1 none]`,
+			wantErr: true,
+		},
+		{
+			name:  "trim block --with with non-matching type",
+			input: `trim --with "x" [1 2 3]`,
+			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
 	}
 
 	for _, tt := range tests {
