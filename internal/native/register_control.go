@@ -145,12 +145,9 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 		Foreach,
 		false,
 		&NativeDoc{
-			Category: "Control",
-			Summary:  "Iterates over a series, binding each element to a variable",
-			Description: `Evaluates the body block for each element in the series. The loop variable is bound
-in the current frame and rebound with each iteration. Currently supports only a single variable. Returns the
-result of the last iteration, or none if the series is empty. When the series is empty, the loop variable
-remains unbound (or retains its previous value if it existed).`,
+			Category:    "Control",
+			Summary:     "Iterates over a series, binding each element to a variable",
+			Description: "Iterates over a series, binding each element to a variable and executing a body block. The loop variable is bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series is empty. Currently supports single variable only.",
 			Parameters: []ParamDoc{
 				{Name: "series", Type: "block!", Description: "The series to iterate over (evaluated)", Optional: false},
 				{Name: "vars", Type: "block!", Description: "Block containing a single word for the loop variable", Optional: false},
