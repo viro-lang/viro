@@ -489,6 +489,75 @@ func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewLogicVal(enabled), nil
 }
 
+// Foreach implements the 'foreach' iteration native.
+//
+// Contract: foreach series [word] [body]
+// - Series must be a block (evaluated)
+// - Word block contains the loop variable name(s) (NOT evaluated)
+// - Body block is executed for each element (NOT evaluated)
+// - Binds loop variable in current frame (accessible to body block)
+// - Returns result of last iteration, or none if series is empty
+func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("foreach", 3, len(args))
+	}
+
+	series := args[0]
+
+	if series.GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block", series)
+	}
+
+	if args[1].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block for variables", args[1])
+	}
+
+	if args[2].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("foreach", "block for body", args[2])
+	}
+
+	wordBlock, _ := value.AsBlockValue(args[1])
+	bodyBlock, _ := value.AsBlockValue(args[2])
+
+	if len(wordBlock.Elements) != 1 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{"foreach currently supports single variable only", "", ""},
+		)
+	}
+
+	varElement := wordBlock.Elements[0]
+	if varElement.GetType() != value.TypeWord {
+		return value.NewNoneVal(), typeError("foreach", "word for variable name", varElement)
+	}
+	varName, _ := value.AsWordValue(varElement)
+
+	seriesBlock, _ := value.AsBlockValue(series)
+	elements := seriesBlock.Elements
+
+	if len(elements) == 0 {
+		return value.NewNoneVal(), nil
+	}
+
+	var result core.Value
+	var err error
+
+	currentFrameIdx := eval.CurrentFrameIndex()
+	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
+	for _, element := range elements {
+		currentFrame.Bind(varName, element)
+
+		result, err = eval.DoBlock(bodyBlock.Elements)
+
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+	}
+
+	return result, nil
+}
+
 // Debug implements the 'debug' native for debugger control (Feature 002, FR-021).
 //
 // Contract: debug --on | --off | --breakpoint word | --remove id

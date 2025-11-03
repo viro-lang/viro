@@ -385,3 +385,71 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 		})
 	}
 }
+
+func TestControlFlow_Foreach(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "foreach returns last value",
+			input:    "foreach [1 2 3] [n] [n]",
+			expected: value.NewIntVal(3),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach empty series returns none",
+			input:    "foreach [] [n] [n]",
+			expected: value.NewNoneVal(),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with variable binding",
+			input:    "foreach [1 2 3] [x] [(* x 2)]",
+			expected: value.NewIntVal(6),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach accumulates in outer variable",
+			input:    "sum: 0\nforeach [10 20 30] [n] [sum: (+ sum n)]\nsum",
+			expected: value.NewIntVal(60),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with single element",
+			input:    "foreach [42] [x] [x]",
+			expected: value.NewIntVal(42),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with string elements",
+			input:    "result: \"\"\nforeach [\"a\" \"b\" \"c\"] [s] [result: (join result s)]\nresult",
+			expected: value.NewStrVal("abc"),
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}

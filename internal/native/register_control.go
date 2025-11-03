@@ -135,6 +135,37 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 		},
 	))
 
+	registerAndBind("foreach", value.NewNativeFunction(
+		"foreach",
+		[]value.ParamSpec{
+			value.NewParamSpec("series", true), // evaluated
+			value.NewParamSpec("vars", false),  // NOT evaluated (block of words)
+			value.NewParamSpec("body", false),  // NOT evaluated (block)
+		},
+		Foreach,
+		false,
+		&NativeDoc{
+			Category: "Control",
+			Summary:  "Iterates over a series, binding each element to a variable",
+			Description: `Evaluates the body block for each element in the series, binding the element
+to the specified variable name. Returns the result of the last iteration, or none if the series is empty.
+Creates a new scope for each iteration to bind the loop variable.`,
+			Parameters: []ParamDoc{
+				{Name: "series", Type: "block!", Description: "The series to iterate over (evaluated)", Optional: false},
+				{Name: "vars", Type: "block!", Description: "Block containing variable name(s) for loop variable(s)", Optional: false},
+				{Name: "body", Type: "block!", Description: "The code to execute for each element", Optional: false},
+			},
+			Returns: "[any-type! none!] The result of the last iteration, or none if series is empty",
+			Examples: []string{
+				"foreach [1 2 3] [n] [print n]  ; prints: 1 2 3",
+				"sum: 0\nforeach [10 20 30] [n] [sum: (+ sum n)]  ; sum becomes 60",
+				"foreach [\"a\" \"b\" \"c\"] [letter] [print letter]",
+			},
+			SeeAlso: []string{"loop", "while", "map", "filter"},
+			Tags:    []string{"control", "iteration", "loop", "foreach"},
+		},
+	))
+
 	// Group 11: Function creation (1 function - needs evaluator)
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
