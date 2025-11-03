@@ -30,11 +30,12 @@ func (b *BinaryValue) String() string {
 }
 
 func (b *BinaryValue) formatHex(maxBytes int, showEllipsis bool) string {
-	if len(b.data) == 0 {
+	if len(b.data) == 0 || b.index >= len(b.data) {
 		return "#{}"
 	}
 
-	bytesToFormat := len(b.data)
+	visibleData := b.data[b.index:]
+	bytesToFormat := len(visibleData)
 	if maxBytes > 0 && bytesToFormat > maxBytes {
 		bytesToFormat = maxBytes
 	}
@@ -46,11 +47,11 @@ func (b *BinaryValue) formatHex(maxBytes int, showEllipsis bool) string {
 		if i > 0 {
 			builder.WriteString(" ")
 		}
-		builder.WriteString(fmt.Sprintf("%02X", b.data[i]))
+		builder.WriteString(fmt.Sprintf("%02X", visibleData[i]))
 	}
 
-	if showEllipsis && bytesToFormat < len(b.data) {
-		builder.WriteString(fmt.Sprintf(" ... (%d bytes)", len(b.data)))
+	if showEllipsis && bytesToFormat < len(visibleData) {
+		builder.WriteString(fmt.Sprintf(" ... (%d bytes)", len(visibleData)))
 	}
 
 	builder.WriteString("}")
@@ -62,7 +63,11 @@ func (b *BinaryValue) Mold() string {
 }
 
 func (b *BinaryValue) Form() string {
-	if len(b.data) <= 64 {
+	if b.index >= len(b.data) {
+		return "#{}"
+	}
+	visibleLength := len(b.data) - b.index
+	if visibleLength <= 64 {
 		return b.Mold()
 	}
 	return b.formatHex(8, true)

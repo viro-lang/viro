@@ -45,8 +45,12 @@ func (b *BlockValue) Mold() string {
 	if len(b.Elements) == 0 {
 		return "[]"
 	}
-	parts := make([]string, len(b.Elements))
-	for i, elem := range b.Elements {
+	if b.Index >= len(b.Elements) {
+		return "[]"
+	}
+	visibleElements := b.Elements[b.Index:]
+	parts := make([]string, len(visibleElements))
+	for i, elem := range visibleElements {
 		parts[i] = elem.Mold()
 	}
 	return "[" + strings.Join(parts, " ") + "]"
@@ -56,8 +60,12 @@ func (b *BlockValue) Form() string {
 	if len(b.Elements) == 0 {
 		return ""
 	}
-	parts := make([]string, len(b.Elements))
-	for i, elem := range b.Elements {
+	if b.Index >= len(b.Elements) {
+		return ""
+	}
+	visibleElements := b.Elements[b.Index:]
+	parts := make([]string, len(visibleElements))
+	for i, elem := range visibleElements {
 		parts[i] = elem.Form()
 	}
 	return strings.Join(parts, " ")

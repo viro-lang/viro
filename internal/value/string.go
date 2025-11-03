@@ -25,11 +25,18 @@ func (s *StringValue) String() string {
 }
 
 func (s *StringValue) Mold() string {
-	return fmt.Sprintf(`"%s"`, s.String())
+	if s.index >= len(s.runes) {
+		return `""`
+	}
+	visibleRunes := s.runes[s.index:]
+	return fmt.Sprintf(`"%s"`, string(visibleRunes))
 }
 
 func (s *StringValue) Form() string {
-	return s.String()
+	if s.index >= len(s.runes) {
+		return ""
+	}
+	return string(s.runes[s.index:])
 }
 
 func (s *StringValue) EqualsString(other *StringValue) bool {

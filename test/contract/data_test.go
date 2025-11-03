@@ -753,3 +753,105 @@ func TestObject_Select(t *testing.T) {
 		})
 	}
 }
+
+func TestData_MoldFormWithSeriesIndex(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+	}{
+		{
+			name:     "mold respects block index with next",
+			input:    "mold next [1 2 3]",
+			expected: value.NewStrVal("[2 3]"),
+		},
+		{
+			name:     "mold respects block index with next next",
+			input:    "mold next next [1 2 3]",
+			expected: value.NewStrVal("[3]"),
+		},
+		{
+			name:     "mold respects block index at tail",
+			input:    "mold next next next [1 2 3]",
+			expected: value.NewStrVal("[]"),
+		},
+		{
+			name:     "form respects block index with next",
+			input:    "form next [1 2 3]",
+			expected: value.NewStrVal("2 3"),
+		},
+		{
+			name:     "form respects block index with next next",
+			input:    "form next next [1 2 3]",
+			expected: value.NewStrVal("3"),
+		},
+		{
+			name:     "form respects block index at tail",
+			input:    "form next next next [1 2 3]",
+			expected: value.NewStrVal(""),
+		},
+		{
+			name:     "mold respects string index with next",
+			input:    `mold next "hello"`,
+			expected: value.NewStrVal(`"ello"`),
+		},
+		{
+			name:     "mold respects string index with multiple next",
+			input:    `mold next next "hello"`,
+			expected: value.NewStrVal(`"llo"`),
+		},
+		{
+			name:     "mold respects string index at end",
+			input:    `mold next next next next next "hello"`,
+			expected: value.NewStrVal(`""`),
+		},
+		{
+			name:     "form respects string index with next",
+			input:    `form next "hello"`,
+			expected: value.NewStrVal("ello"),
+		},
+		{
+			name:     "form respects string index with multiple next",
+			input:    `form next next "hello"`,
+			expected: value.NewStrVal("llo"),
+		},
+		{
+			name:     "form respects string index at end",
+			input:    `form next next next next next "hello"`,
+			expected: value.NewStrVal(""),
+		},
+		{
+			name:     "mold respects binary index with next",
+			input:    `mold next #{01 02 03}`,
+			expected: value.NewStrVal("#{02 03}"),
+		},
+		{
+			name:     "form respects binary index with next",
+			input:    `form next #{01 02 03}`,
+			expected: value.NewStrVal("#{02 03}"),
+		},
+		{
+			name:     "mold with skip respects index",
+			input:    `mold skip [10 20 30 40] 2`,
+			expected: value.NewStrVal("[30 40]"),
+		},
+		{
+			name:     "form with skip respects index",
+			input:    `form skip "testing" 4`,
+			expected: value.NewStrVal("ing"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
