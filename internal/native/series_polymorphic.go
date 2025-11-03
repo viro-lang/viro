@@ -1,6 +1,7 @@
 package native
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -119,7 +120,7 @@ func seriesRemove(args []core.Value, refValues map[string]core.Value, eval core.
 
 	err = seriesVal.RemoveCount(count)
 	if err != nil {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", seriesVal.GetIndex())})
 	}
 	return args[0], nil
 }
@@ -155,6 +156,10 @@ func seriesTake(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
+
+	if count < 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", seriesVal.GetIndex())})
+	}
 
 	taken := seriesVal.TakeCount(count)
 	return taken.(core.Value), nil

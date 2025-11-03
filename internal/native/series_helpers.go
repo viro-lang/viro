@@ -17,7 +17,7 @@ func seriesBack(args []core.Value, refValues map[string]core.Value, eval core.Ev
 
 	currentIndex := seriesVal.GetIndex()
 	if currentIndex <= 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"-1", fmt.Sprintf("%d", seriesVal.Length()), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", currentIndex-1), fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", currentIndex)})
 	}
 
 	newSeries := seriesVal.Clone()
@@ -148,7 +148,7 @@ func readPartCount(refValues map[string]core.Value) (int, bool, error) {
 
 func validatePartCount(series value.Series, count int) error {
 	if count < 0 || count > series.Length() {
-		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), ""})
+		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), fmt.Sprintf("%d", series.GetIndex())})
 	}
 	return nil
 }

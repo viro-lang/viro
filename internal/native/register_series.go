@@ -548,14 +548,23 @@ The --default refinement provides a fallback when the value/field is not found.`
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Copies a series",
+		Description: `Creates a copy of the series. With --part, copies only the specified number of elements
+from the current position. Negative counts raise an OutOfBounds error. Zero count returns an empty series.
+Oversized counts are clamped to the remaining elements from current position.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
-			{Name: "--part", Type: "integer!", Description: "Copy only first N elements", Optional: true},
+			{Name: "--part", Type: "integer!", Description: "Copy only first N elements from current position (must be >= 0)", Optional: true},
 		},
-		Returns:  "block! string! binary! A copy of the series",
-		Examples: []string{"copy [1 2 3]  ; => [1 2 3]", `copy "hello"  ; => "hello"`, "copy #{DEADBEEF}  ; => #{DEADBEEF}"},
-		SeeAlso:  []string{"append", "insert"},
-		Tags:     []string{"series"},
+		Returns: "block! string! binary! A copy of the series",
+		Examples: []string{
+			"copy [1 2 3]  ; => [1 2 3]",
+			`copy "hello"  ; => "hello"`,
+			"copy #{DEADBEEF}  ; => #{DEADBEEF}",
+			"copy --part 2 [1 2 3 4]  ; => [1 2]",
+			"copy --part 0 [1 2 3]  ; => []",
+		},
+		SeeAlso: []string{"append", "insert", "take"},
+		Tags:    []string{"series"},
 	}))
 
 	registerAndBind("find", CreateAction("find", []value.ParamSpec{
@@ -582,14 +591,23 @@ The --default refinement provides a fallback when the value/field is not found.`
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Removes elements from a series",
+		Description: `Removes elements from the series starting at the current position.
+With --part, removes the specified number of elements. Negative counts raise an OutOfBounds error.
+Zero count is a no-op. Oversized counts (where index+count exceeds length) raise an OutOfBounds error.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to remove from"},
-			{Name: "--part", Type: "integer!", Description: "Remove n elements", Optional: true},
+			{Name: "--part", Type: "integer!", Description: "Remove n elements from current position (must be >= 0, index+count <= length)", Optional: true},
 		},
-		Returns:  "block! string! binary! The modified series",
-		Examples: []string{"remove [1 2 3]  ; => [2 3]", "remove --part 2 [1 2 3]  ; => [3]", `remove "hello"  ; => "ello"`, "remove #{DEADBEEF}  ; => #{ADBE}"},
-		SeeAlso:  []string{"append", "insert"},
-		Tags:     []string{"series", "modification"},
+		Returns: "block! string! binary! The modified series",
+		Examples: []string{
+			"remove [1 2 3]  ; => [2 3]",
+			"remove --part 2 [1 2 3]  ; => [3]",
+			`remove "hello"  ; => "ello"`,
+			"remove #{DEADBEEF}  ; => #{ADBE}",
+			"remove --part 0 [1 2 3]  ; => [1 2 3] (no-op)",
+		},
+		SeeAlso: []string{"append", "insert", "clear"},
+		Tags:    []string{"series", "modification"},
 	}))
 
 	registerAndBind("skip", CreateAction("skip", []value.ParamSpec{
@@ -726,14 +744,23 @@ The --default refinement provides a fallback when the value/field is not found.`
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Takes n elements from a series",
+		Description: `Returns a new series containing the first n elements from the current position.
+Negative counts raise an OutOfBounds error. Zero count returns an empty series.
+Oversized counts are clamped to the remaining elements from current position.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to take from"},
-			{Name: "count", Type: "integer!", Description: "Number of elements to take"},
+			{Name: "count", Type: "integer!", Description: "Number of elements to take (must be >= 0)"},
 		},
-		Returns:  "block! string! binary! Series containing first count elements",
-		Examples: []string{"take [1 2 3 4] 2  ; => [1 2]", `take "hello" 2  ; => "he"`, "take #{DEADBEEF} 2  ; => #{DEAD}"},
-		SeeAlso:  []string{"skip", "first", "last"},
-		Tags:     []string{"series"},
+		Returns: "block! string! binary! Series containing first count elements",
+		Examples: []string{
+			"take [1 2 3 4] 2  ; => [1 2]",
+			`take "hello" 2  ; => "he"`,
+			"take #{DEADBEEF} 2  ; => #{DEAD}",
+			"take [1 2 3] 0  ; => []",
+			"take [1 2 3] 10  ; => [1 2 3] (clamped)",
+		},
+		SeeAlso: []string{"skip", "first", "last", "copy"},
+		Tags:    []string{"series"},
 	}))
 
 	registerAndBind("sort", CreateAction("sort", []value.ParamSpec{
