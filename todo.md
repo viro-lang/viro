@@ -1,40 +1,42 @@
-List of things to implement:
+# Viro TODO List
 
-- extend help system for user-defined functions
-  STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
+## High Priority
 
-- comprehensive cli interface
-  STATUS: NOT IMPLEMENTED - No main.go exists yet, so CLI flags (including trace-file and trace-max-size) are missing
+- [ ] **CLI Interface Improvements**
+  - STATUS: PARTIALLY COMPLETE - Basic CLI exists in cmd/viro/main.go with REPL, script execution, and multiple modes
+  - REMAINING: Consider adding trace-file and trace-max-size flags if needed for file-based tracing
+  - NOTE: Most CLI functionality is already implemented (see AGENTS.md for full CLI reference)
 
-- while should accept logic! or integer! (as it's documentation states)
-  STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
+- [ ] **Fix Examples**
+  - STATUS: NOT STARTED
+  - Fix incorrect Viro code in examples/ directory
+  - Implement missing native functions that examples rely on
 
-- implement all the series functions
+## Medium Priority
 
-- the 'read' native should support reading directories and return block with filenames
+- [ ] **Series Functions - Complete Implementation**
+  - STATUS: PARTIALLY COMPLETE - Many series functions exist (first, last, next, skip, take, copy, etc.)
+  - REMAINING: Implement pick, poke, select, clear, change, trim
+  - See: specs/001-implement-the-core/contracts/ for specifications
 
-- fix the examples (some are incorrect viro code and others simply are missing native function implementations )
+- [ ] **While Loop - Accept logic! and integer!**
+  - STATUS: NOT IMPLEMENTED
+  - Currently only accepts blocks for condition and body
+  - Should accept logic! or integer! values as documentation states
 
-- wherever a viro value is converted into string it should use either `mold` or `form` functions
-  STATUS: NOT IMPLEMENTED - Many places in codebase use .String() directly instead of mold/form functions
+- [ ] **Read Native - Directory Support**
+  - STATUS: NOT IMPLEMENTED
+  - Currently reads files, should also support reading directories
+  - Should return block with filenames when given a directory path
 
-- comprehensive cli interface
-  STATUS: NOT IMPLEMENTED - No main.go exists yet, so CLI flags (including trace-file and trace-max-size) are missing
+## Low Priority
 
-- extend help system for user-defined functions
-  STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
+- [ ] **Help System - User-Defined Functions**
+  - STATUS: NOT IMPLEMENTED
+  - Currently only shows native functions from root frame
+  - Should include user-defined functions stored in frames
 
-- while should accept logic! or integer! (as it's documentation states)
-  STATUS: NOT IMPLEMENTED - While only accepts blocks for both condition and body, not logic! or integer! values
-
-- implement all the series functions: pick, poke, select, clear, change, trim
-
-- the 'read' native should support reading directories and return block with filenames
-
-- fix the examples (some are incorrect viro code and others simply are missing native function implementations )
-
-- wherever a viro value is converted into string it should use either `mold` or `form` functions
-  STATUS: NOT IMPLEMENTED - Many places in codebase use .String() directly instead of mold/form functions
-
-- extend help system for user-defined functions
-  STATUS: NOT IMPLEMENTED - Help system only shows native functions from root frame, doesn't include user-defined functions stored in frames
+- [ ] **String Conversion - Use mold/form**
+  - STATUS: NOT IMPLEMENTED
+  - Many places use .String() directly instead of mold/form functions
+  - Need to audit codebase and replace with proper Viro string conversion
