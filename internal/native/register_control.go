@@ -42,8 +42,8 @@ func RegisterControlNatives(rootFrame core.Frame) {
 	registerAndBind("when", value.NewNativeFunction(
 		"when",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true), // evaluated
-			value.NewParamSpec("body", false),     // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("body", false),
 		},
 		When,
 		false,
@@ -65,9 +65,9 @@ the result of the body block. If the condition is false, returns none. This is a
 	registerAndBind("if", value.NewNativeFunction(
 		"if",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true),     // evaluated
-			value.NewParamSpec("true-branch", false),  // NOT evaluated (block)
-			value.NewParamSpec("false-branch", false), // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("true-branch", false),
+			value.NewParamSpec("false-branch", false),
 		},
 		If,
 		false,
@@ -91,8 +91,8 @@ This is a two-branch conditional (if-then-else).`,
 	registerAndBind("loop", value.NewNativeFunction(
 		"loop",
 		[]value.ParamSpec{
-			value.NewParamSpec("count", true), // evaluated
-			value.NewParamSpec("body", false), // NOT evaluated (block)
+			value.NewParamSpec("count", true),
+			value.NewParamSpec("body", false),
 		},
 		Loop,
 		false,
@@ -114,8 +114,8 @@ The count must be a non-negative integer. Returns the result of the last iterati
 	registerAndBind("while", value.NewNativeFunction(
 		"while",
 		[]value.ParamSpec{
-			value.NewParamSpec("condition", true), // evaluated
-			value.NewParamSpec("body", false),     // NOT evaluated (block)
+			value.NewParamSpec("condition", true),
+			value.NewParamSpec("body", false),
 		},
 		While,
 		false,
@@ -138,21 +138,22 @@ or none if the condition is initially false. Be careful to avoid infinite loops.
 	registerAndBind("foreach", value.NewNativeFunction(
 		"foreach",
 		[]value.ParamSpec{
-			value.NewParamSpec("series", true), // evaluated
-			value.NewParamSpec("vars", false),  // NOT evaluated (block of words)
-			value.NewParamSpec("body", false),  // NOT evaluated (block)
+			value.NewParamSpec("series", true),
+			value.NewParamSpec("vars", false),
+			value.NewParamSpec("body", false),
 		},
 		Foreach,
 		false,
 		&NativeDoc{
 			Category: "Control",
 			Summary:  "Iterates over a series, binding each element to a variable",
-			Description: `Evaluates the body block for each element in the series, binding the element
-to the specified variable name. Returns the result of the last iteration, or none if the series is empty.
-Creates a new scope for each iteration to bind the loop variable.`,
+			Description: `Evaluates the body block for each element in the series. The loop variable is bound
+in the current frame and rebound with each iteration. Currently supports only a single variable. Returns the
+result of the last iteration, or none if the series is empty. When the series is empty, the loop variable
+remains unbound (or retains its previous value if it existed).`,
 			Parameters: []ParamDoc{
 				{Name: "series", Type: "block!", Description: "The series to iterate over (evaluated)", Optional: false},
-				{Name: "vars", Type: "block!", Description: "Block containing variable name(s) for loop variable(s)", Optional: false},
+				{Name: "vars", Type: "block!", Description: "Block containing a single word for the loop variable", Optional: false},
 				{Name: "body", Type: "block!", Description: "The code to execute for each element", Optional: false},
 			},
 			Returns: "[any-type! none!] The result of the last iteration, or none if series is empty",
@@ -170,8 +171,8 @@ Creates a new scope for each iteration to bind the loop variable.`,
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
-			value.NewParamSpec("params", false), // NOT evaluated (block)
-			value.NewParamSpec("body", false),   // NOT evaluated (block)
+			value.NewParamSpec("params", false),
+			value.NewParamSpec("body", false),
 		},
 		Fn,
 		false,
@@ -195,7 +196,7 @@ Returns a function value that can be called. Functions capture their defining co
 	registerAndBind("compose", value.NewNativeFunction(
 		"compose",
 		[]value.ParamSpec{
-			value.NewParamSpec("block", false), // NOT evaluated (block)
+			value.NewParamSpec("block", false),
 		},
 		Compose,
 		false,

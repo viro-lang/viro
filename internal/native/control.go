@@ -225,19 +225,12 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	return value.NewBlockVal(reducedElements), nil
 }
 
-// Compose implements the `compose` native.
-//
-// Contract: compose block -> block!
-// - Takes a block (not evaluated initially)
-// - Evaluates parenthetical expressions within the block
-// - Returns new block with composition
 func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("compose", 1, len(args))
 	}
 
 	if args[0].GetType() == value.TypeParen {
-		// For paren input, evaluate the paren directly
 		parenBlock, _ := value.AsBlockValue(args[0])
 		return eval.DoBlock(parenBlock.Elements)
 	}
@@ -252,7 +245,6 @@ func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	for _, element := range vals {
 		if element.GetType() == value.TypeParen {
-			// Evaluate parenthetical expression
 			parenBlock, _ := value.AsBlockValue(element)
 			result, err := eval.DoBlock(parenBlock.Elements)
 			if err != nil {
@@ -260,7 +252,6 @@ func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			}
 			composedElements = append(composedElements, result)
 		} else {
-			// Keep element as-is
 			composedElements = append(composedElements, element)
 		}
 	}
@@ -489,14 +480,6 @@ func TraceQuery(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return value.NewLogicVal(enabled), nil
 }
 
-// Foreach implements the 'foreach' iteration native.
-//
-// Contract: foreach series [word] [body]
-// - Series must be a block (evaluated)
-// - Word block contains the loop variable name(s) (NOT evaluated)
-// - Body block is executed for each element (NOT evaluated)
-// - Binds loop variable in current frame (accessible to body block)
-// - Returns result of last iteration, or none if series is empty
 func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
 		return value.NewNoneVal(), arityError("foreach", 3, len(args))

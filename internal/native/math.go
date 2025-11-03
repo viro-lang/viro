@@ -68,8 +68,7 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 		return value.NewNoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
 
-	// Check for division by zero if the operation might divide
-	if name == "/" && bVal.Sign() == 0 {
+	if (name == "/" || name == "mod") && bVal.Sign() == 0 {
 		return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 	}
 
@@ -230,13 +229,6 @@ func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		})
 }
 
-// Mod implements the mod native function.
-//
-// Contract: mod value1 value2 → remainder
-// - Arguments can be integers or decimals
-// - Returns remainder after division (modulo operation)
-// - Division by zero is an error
-// - Supports infix notation
 func Mod(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
 		if b, ok := value.AsIntValue(args[1]); ok && b == 0 {

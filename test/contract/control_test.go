@@ -429,6 +429,46 @@ func TestControlFlow_Foreach(t *testing.T) {
 			expected: value.NewStrVal("abc"),
 			wantErr:  false,
 		},
+		{
+			name:    "foreach wrong arity zero args",
+			input:   "foreach",
+			wantErr: true,
+		},
+		{
+			name:    "foreach wrong arity one arg",
+			input:   "foreach [1 2 3]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach wrong arity two args",
+			input:   "foreach [1 2 3] [n]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach non-block series",
+			input:   "foreach 42 [n] [n]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach non-block variable block",
+			input:   "foreach [1 2 3] n [n]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach non-block body",
+			input:   "foreach [1 2 3] [n] n",
+			wantErr: true,
+		},
+		{
+			name:    "foreach multiple variables not supported",
+			input:   "foreach [1 2 3] [x y] [x]",
+			wantErr: true,
+		},
+		{
+			name:    "foreach non-word in variable block",
+			input:   "foreach [1 2 3] [42] [n]",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

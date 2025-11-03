@@ -291,6 +291,12 @@ func TestNativeMod(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "negative divisor",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(-3)},
+			expected: value.NewIntVal(1),
+			wantErr:  false,
+		},
+		{
 			name:     "modulo by 1",
 			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(1)},
 			expected: value.NewIntVal(0),
@@ -347,6 +353,105 @@ func TestNativeMod(t *testing.T) {
 
 			if !tt.wantErr && !result.Equals(tt.expected) {
 				t.Errorf("Mod(%v) = %v, want %v", tt.args, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestModDecimal(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{
+			name:    "decimal dividend",
+			input:   "mod 10.5 3",
+			wantErr: false,
+		},
+		{
+			name:    "decimal divisor",
+			input:   "mod 10 3.5",
+			wantErr: false,
+		},
+		{
+			name:    "both decimal",
+			input:   "mod 10.5 3.5",
+			wantErr: false,
+		},
+		{
+			name:    "decimal zero divisor error",
+			input:   "mod 10.5 0",
+			wantErr: true,
+		},
+		{
+			name:    "negative decimal dividend",
+			input:   "mod -10.5 3",
+			wantErr: false,
+		},
+		{
+			name:    "negative decimal divisor",
+			input:   "mod 10 -3.5",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if result.GetType() != value.TypeDecimal {
+				t.Errorf("Expected decimal result, got %v", result.GetType())
+			}
+		})
+	}
+}
+
+func TestModInfixParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+	}{
+		{
+			name:     "mod infix basic",
+			input:    "10 mod 3",
+			expected: value.NewIntVal(1),
+		},
+		{
+			name:     "mod infix with negative",
+			input:    "-10 mod 3",
+			expected: value.NewIntVal(-1),
+		},
+		{
+			name:     "mod infix zero remainder",
+			input:    "15 mod 5",
+			expected: value.NewIntVal(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
 			}
 		})
 	}
