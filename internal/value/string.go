@@ -134,9 +134,7 @@ func (s *StringValue) SetIndex(idx int) {
 }
 
 func (s *StringValue) Remove(count int) {
-	if s.index+count <= len(s.runes) {
-		s.runes = append(s.runes[:s.index], s.runes[s.index+count:]...)
-	}
+	s.runes = append(s.runes[:s.index], s.runes[s.index+count:]...)
 }
 
 func (s *StringValue) FirstValue() (core.Value, error) {

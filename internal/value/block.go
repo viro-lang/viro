@@ -145,9 +145,7 @@ func (b *BlockValue) Insert(val core.Value) {
 }
 
 func (b *BlockValue) Remove(count int) {
-	if b.Index+count <= len(b.Elements) {
-		b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+count:]...)
-	}
+	b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+count:]...)
 }
 
 func (b *BlockValue) GetIndex() int {

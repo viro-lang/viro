@@ -116,9 +116,7 @@ func (b *BinaryValue) Insert(val interface{}) {
 }
 
 func (b *BinaryValue) Remove(count int) {
-	if b.index+count <= len(b.data) {
-		b.data = append(b.data[:b.index], b.data[b.index+count:]...)
-	}
+	b.data = append(b.data[:b.index], b.data[b.index+count:]...)
 }
 
 func (b *BinaryValue) Clone() Series {
