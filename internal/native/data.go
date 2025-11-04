@@ -98,6 +98,34 @@ func Join(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	return value.NewStrVal(str1 + str2), nil
 }
 
+func Rejoin(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("rejoin", 1, len(args))
+	}
+
+	if args[0].GetType() != value.TypeBlock {
+		return value.NewNoneVal(), typeError("rejoin", "block", args[0])
+	}
+
+	block, _ := value.AsBlockValue(args[0])
+	vals := block.Elements
+
+	var builder strings.Builder
+	position := 0
+
+	for position < len(vals) {
+		newPos, result, err := eval.EvaluateExpression(vals, position)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+
+		builder.WriteString(result.Form())
+		position = newPos
+	}
+
+	return value.NewStrVal(builder.String()), nil
+}
+
 // Mold implements the `mold` native.
 //
 // Contract: mold value -> string! code-readable representation
