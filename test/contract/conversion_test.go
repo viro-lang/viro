@@ -287,6 +287,36 @@ func TestToString_FromVariousTypes(t *testing.T) {
 			input:    "to-string 'test",
 			expected: "test",
 		},
+		{
+			name:     "empty binary to string",
+			input:    "to-string #{}",
+			expected: "",
+		},
+		{
+			name:     "single byte binary to string",
+			input:    "to-string #{41}",
+			expected: "41",
+		},
+		{
+			name:     "multiple bytes binary to string",
+			input:    "to-string #{41 42 43}",
+			expected: "414243",
+		},
+		{
+			name:     "uppercase hex in binary to string",
+			input:    "to-string #{DE AD BE EF}",
+			expected: "DEADBEEF",
+		},
+		{
+			name:     "mixed case hex in binary to string",
+			input:    "to-string #{01 2A 3F}",
+			expected: "012A3F",
+		},
+		{
+			name:     "zero bytes in binary to string",
+			input:    "to-string #{00 00}",
+			expected: "0000",
+		},
 	}
 
 	for _, tt := range tests {

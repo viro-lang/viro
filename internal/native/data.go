@@ -1,6 +1,7 @@
 package native
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -609,11 +610,37 @@ func ToDecimal(args []core.Value, refValues map[string]core.Value, eval core.Eva
 //
 // Contract: to-string value -> string!
 // - Converts any value to string using its Form representation
+// - Special handling for binary! type: returns concatenated hex digits without #{} wrapper
 func ToString(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("to-string", 1, len(args))
 	}
 
 	val := args[0]
+
+	// Special case for binary! type: format as concatenated hex digits
+	if val.GetType() == value.TypeBinary {
+		binVal, ok := value.AsBinaryValue(val)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed binary value conversion", [3]string{})
+		}
+
+		bytes := binVal.Bytes()
+		if len(bytes) == 0 {
+			return value.NewStrVal(""), nil
+		}
+
+		// Use strings.Builder for efficient string concatenation
+		var builder strings.Builder
+		builder.Grow(len(bytes) * 2) // Pre-allocate space for hex digits
+
+		for _, b := range bytes {
+			builder.WriteString(fmt.Sprintf("%02X", b))
+		}
+
+		return value.NewStrVal(builder.String()), nil
+	}
+
+	// Fall back to Form() for all other types
 	return value.NewStrVal(val.Form()), nil
 }
