@@ -214,7 +214,7 @@ func TestControlFlow_LoopWithIndex(t *testing.T) {
 	}{
 		{
 			name:     "loop --with-index collects indices",
-			input:    `result: []\nloop 3 --with-index 'i [\n  result: (append result i)\n]\nresult`,
+			input:    "result: []\nloop 3 --with-index 'i [\n  result: (append result i)\n]\nresult",
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
 			wantErr:  false,
 		},
@@ -232,7 +232,7 @@ func TestControlFlow_LoopWithIndex(t *testing.T) {
 		},
 		{
 			name:     "loop --with-index accumulates sum of indices",
-			input:    `sum: 0\nloop 5 --with-index 'i [sum: (+ sum i)]\nsum`,
+			input:    "sum: 0\nloop 5 --with-index 'i [sum: (+ sum i)]\nsum",
 			expected: value.NewIntVal(10), // 0+1+2+3+4 = 10
 			wantErr:  false,
 		},

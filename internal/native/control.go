@@ -136,7 +136,6 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		return value.NewNoneVal(), nil
 	}
 
-	// Get current frame for index binding
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
@@ -144,7 +143,6 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	var result core.Value
 	var err error
 	for i := 0; i < int(count); i++ {
-		// Bind index word if --with-index refinement was provided
 		if hasIndexRef {
 			currentFrame.Bind(indexWord, value.NewIntVal(int64(i)))
 		}
@@ -522,7 +520,6 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), arityError("foreach", 3, len(args))
 	}
 
-	// Check for --with-index refinement
 	indexVal, hasIndexRef := refValues["with-index"]
 	var indexWord string
 	if hasIndexRef {
@@ -601,6 +598,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	numVars := len(varNames)
 	length := series.Length()
 
+	var iteration int
 	for i := 0; i < length; {
 		for j := 0; j < numVars; j++ {
 			if i < length {
@@ -612,13 +610,8 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			}
 		}
 
-		// Bind index word if --with-index refinement was provided
 		if hasIndexRef {
-			// Calculate the index - it should be the position in the original series
-			// For the first iteration, i is 0, second iteration it's 1, etc.
-			// Since we increment i after binding variables, we need to use i - 1
-			currentIndex := i - 1
-			currentFrame.Bind(indexWord, value.NewIntVal(int64(currentIndex)))
+			currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
 		}
 
 		result, err = eval.DoBlock(bodyBlock.Elements)
@@ -626,6 +619,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
+		iteration++
 	}
 
 	return result, nil

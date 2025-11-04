@@ -93,6 +93,7 @@ This is a two-branch conditional (if-then-else).`,
 		[]value.ParamSpec{
 			value.NewParamSpec("count", true),
 			value.NewParamSpec("body", false),
+			value.NewRefinementSpec("with-index", true),
 		},
 		Loop,
 		false,
@@ -100,13 +101,17 @@ This is a two-branch conditional (if-then-else).`,
 			Category: "Control",
 			Summary:  "Executes a block a specified number of times",
 			Description: `Evaluates the body block repeatedly for the specified number of iterations.
-The count must be a non-negative integer. Returns the result of the last iteration, or none if count is 0.`,
+The count must be a non-negative integer. Returns the result of the last iteration, or none if count is 0.
+Index starts at 0 and increments by 1 per iteration (0-based).
+
+Refinements:
+  --with-index 'word: Binds the current iteration index (0, 1, 2, ...) to the specified word.`,
 			Parameters: []ParamDoc{
 				{Name: "count", Type: "integer!", Description: "The number of times to execute the body (evaluated)", Optional: false},
 				{Name: "body", Type: "block!", Description: "The code to execute repeatedly", Optional: false},
 			},
 			Returns:  "[any-type! none!] The result of the last iteration",
-			Examples: []string{"loop 3 [print \"hello\"]  ; prints 'hello' 3 times", "x: 0\nloop 5 [x: x + 1]  ; x becomes 5", "loop 0 [print \"never\"]  ; => none"},
+			Examples: []string{"loop 3 [print \"hello\"]  ; prints 'hello' 3 times", "x: 0\nloop 5 [x: x + 1]  ; x becomes 5", "loop 0 [print \"never\"]  ; => none", "loop 3 --with-index 'i [print i]  ; prints: 0 1 2"},
 			SeeAlso:  []string{"while", "if", "when"}, Tags: []string{"control", "loop", "iteration", "repeat"},
 		},
 	))
@@ -143,13 +148,14 @@ Be careful to avoid infinite loops.`,
 			value.NewParamSpec("series", true),
 			value.NewParamSpec("vars", false),
 			value.NewParamSpec("body", false),
+			value.NewRefinementSpec("with-index", true),
 		},
 		Foreach,
 		false,
 		&NativeDoc{
 			Category:    "Control",
 			Summary:     "Iterates over a series, binding each element to a variable",
-			Description: "Iterates over any series type (block!, string!, binary!), binding each element to one or more variables and executing a body block. The loop variable(s) are bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series is empty. Supports multiple variables for multi-value assignment.",
+			Description: "Iterates over any series type (block!, string!, binary!), binding each element to one or more variables and executing a body block. The loop variable(s) are bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series is empty. Supports multiple variables for multi-value assignment. Index represents the iteration number (0-based) regardless of how many elements are consumed per iteration.\n\nRefinements:\n  --with-index 'word: Binds the current iteration index (0, 1, 2, ...) to the specified word.",
 			Parameters: []ParamDoc{
 				{Name: "series", Type: "block! string! binary!", Description: "The series to iterate over (evaluated)", Optional: false},
 				{Name: "vars", Type: "word! block!", Description: "A single word or block of words for the loop variable(s) (quoted)", Optional: false},
@@ -162,6 +168,8 @@ Be careful to avoid infinite loops.`,
 				"sum: 0\nforeach [10 20 30] [n] [sum: (+ sum n)]  ; sum becomes 60",
 				"foreach \"hello\" [c] [print c]  ; prints each character",
 				"foreach [1 2 3 4 5 6] [a b] [print [a b]]  ; multi-value assignment",
+				"foreach [a b c] --with-index 'pos [print pos]  ; prints: 0 1 2",
+				"foreach [10 20 30] --with-index 'i [v] [print [i v]]  ; prints: [0 10] [1 20] [2 30]",
 			},
 			SeeAlso: []string{"loop", "while", "map", "filter"},
 			Tags:    []string{"control", "iteration", "loop", "foreach"},
@@ -235,7 +243,7 @@ Refinements:
 			Parameters: []ParamDoc{
 				{Name: "value", Type: "any-type!", Description: "The value to evaluate", Optional: false},
 			},
-			Returns:  "[any-type!] The result of the evaluation",
+			Returns: "[any-type!] The result of the evaluation",
 			Examples: []string{
 				"a: [print \"Foo\" 10]\ndo a  ; prints \"Foo\" and returns 10",
 				"do a --next b  ; prints \"Foo\" and binds remaining block to b",
