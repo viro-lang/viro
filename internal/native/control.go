@@ -119,7 +119,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	// Check for --with-index refinement
 	indexVal, hasIndexRef := refValues["with-index"]
 	var indexWord string
-	if hasIndexRef {
+	if hasIndexRef && indexVal.GetType() != value.TypeNone {
 		if !value.IsWord(indexVal.GetType()) {
 			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
@@ -143,7 +143,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	var result core.Value
 	var err error
 	for i := 0; i < int(count); i++ {
-		if hasIndexRef {
+		if hasIndexRef && indexVal.GetType() != value.TypeNone {
 			currentFrame.Bind(indexWord, value.NewIntVal(int64(i)))
 		}
 
@@ -522,7 +522,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	indexVal, hasIndexRef := refValues["with-index"]
 	var indexWord string
-	if hasIndexRef {
+	if hasIndexRef && indexVal.GetType() != value.TypeNone {
 		if !value.IsWord(indexVal.GetType()) {
 			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDTypeMismatch,
@@ -610,7 +610,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			}
 		}
 
-		if hasIndexRef {
+		if hasIndexRef && indexVal.GetType() != value.TypeNone {
 			currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
 		}
 
