@@ -553,7 +553,11 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		)
 	}
 
-	if series.Length() == 0 {
+	numVars := len(varNames)
+	startIndex := series.GetIndex()
+	length := series.Length()
+
+	if length == 0 || startIndex >= length {
 		return value.NewNoneVal(), nil
 	}
 
@@ -563,10 +567,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
-	numVars := len(varNames)
-	length := series.Length()
-
-	for i := 0; i < length; {
+	for i := startIndex; i < length; {
 		for j := 0; j < numVars; j++ {
 			if i < length {
 				element := series.ElementAt(i)
