@@ -204,6 +204,85 @@ func TestControlFlow_Loop(t *testing.T) {
 	}
 }
 
+// TestControlFlow_LoopWithIndex validates the 'loop --with-index' refinement.
+func TestControlFlow_LoopWithIndex(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "loop --with-index collects indices",
+			input:    `result: []\nloop 3 --with-index 'i [\n  result: (append result i)\n]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
+			wantErr:  false,
+		},
+		{
+			name:     "loop --with-index single iteration",
+			input:    `loop 1 --with-index 'idx [idx]`,
+			expected: value.NewIntVal(0),
+			wantErr:  false,
+		},
+		{
+			name:     "loop --with-index zero iterations",
+			input:    `loop 0 --with-index 'i [i]`,
+			expected: value.NewNoneVal(),
+			wantErr:  false,
+		},
+		{
+			name:     "loop --with-index accumulates sum of indices",
+			input:    `sum: 0\nloop 5 --with-index 'i [sum: (+ sum i)]\nsum`,
+			expected: value.NewIntVal(10), // 0+1+2+3+4 = 10
+			wantErr:  false,
+		},
+		{
+			name:     "loop --with-index overwrites existing binding",
+			input:    `i: 99\nloop 3 --with-index 'i [i]\n`,
+			expected: value.NewIntVal(2), // Last value of i in loop iterations: 0, 1, 2
+			wantErr:  false,
+		},
+		{
+			name:     "loop --with-index with complex expression",
+			input:    `result: []\nloop 3 --with-index 'pos [\n  result: (append result (* pos 10))\n]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(10), value.NewIntVal(20)}),
+			wantErr:  false,
+		},
+		{
+			name:    "loop --with-index non-word value fails",
+			input:   `loop 3 --with-index 42 [42]`,
+			wantErr: true,
+		},
+		{
+			name:    "loop --with-index with string value fails",
+			input:   `loop 3 --with-index "i" [42]`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 // TestControlFlow_LoopWithCounter validates loop increments counter correctly
 func TestControlFlow_LoopWithCounter(t *testing.T) {
 	input := `count: 0
@@ -388,6 +467,108 @@ func TestControlFlow_ComparisonOperators(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestControlFlow_ForeachWithIndex validates the 'foreach --with-index' refinement.
+func TestControlFlow_ForeachWithIndex(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "foreach --with-index single variable collects indices",
+			input:    `result: []\nforeach [10 20 30] --with-index 'pos [n] [result: (append result pos)]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index with single element",
+			input:    `foreach [42] --with-index 'idx [n] [idx]`,
+			expected: value.NewIntVal(0),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index empty series returns none",
+			input:    `foreach [] --with-index 'i [n] [i]`,
+			expected: value.NewNoneVal(),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index accumulates sum of indices",
+			input:    `sum: 0\nforeach [100 200 300 400] --with-index 'pos [n] [sum: (+ sum pos)]\nsum`,
+			expected: value.NewIntVal(6), // 0+1+2+3 = 6
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index overwrites existing binding",
+			input:    `pos: 99\nforeach [1 2 3] --with-index 'pos [n] [pos]\n`,
+			expected: value.NewIntVal(2), // Last value of pos in loop iterations: 0, 1, 2
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index with multiple variables",
+			input:    `result: []\nforeach [1 2 3 4] --with-index 'idx [a b] [result: (append result idx)]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index with string series",
+			input:    `result: []\nforeach "abc" --with-index 'pos [c] [result: (append result pos)]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index combines index with value",
+			input:    `result: []\nforeach [10 20 30] --with-index 'pos [n] [result: (append result (+ pos n))]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(10), value.NewIntVal(21), value.NewIntVal(32)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach --with-index with odd-length series and multiple vars",
+			input:    `result: []\nforeach [1 2 3 4 5] --with-index 'idx [a b] [\n  result: (append result idx)\n]\nresult`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
+			wantErr:  false,
+		},
+		{
+			name:    "foreach --with-index non-word value fails",
+			input:   `foreach [1 2 3] --with-index 42 [n] [n]`,
+			wantErr: true,
+		},
+		{
+			name:    "foreach --with-index with string value fails",
+			input:   `foreach [1 2 3] --with-index "pos" [n] [n]`,
+			wantErr: true,
+		},
+		{
+			name:    "foreach --with-index with integer value fails",
+			input:   `foreach [1 2 3] --with-index 123 [n] [n]`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
