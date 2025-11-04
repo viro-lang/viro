@@ -38,100 +38,63 @@ func seriesLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return val, nil
 }
 
-func seriesSecond(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
+func seriesOrdinalAccess(series core.Value, ordinal int) (core.Value, error) {
+	s, err := assertSeries(series)
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 
-	if seriesVal.Length() < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"1", fmt.Sprintf("%d", seriesVal.Length()), "0"})
+	if ordinal < 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", ordinal), fmt.Sprintf("%d", s.Length()), fmt.Sprintf("%d", s.GetIndex())})
 	}
-	return seriesVal.ElementAt(1), nil
+
+	current := s.GetIndex()
+	length := s.Length()
+
+	if current == 0 {
+		if length <= ordinal {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", ordinal+1), fmt.Sprintf("%d", length), fmt.Sprintf("%d", current)})
+		}
+		return s.ElementAt(ordinal), nil
+	}
+
+	target := current + ordinal
+	if target >= length {
+		return value.NewNoneVal(), nil
+	}
+	return s.ElementAt(target), nil
+}
+
+func seriesSecond(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return seriesOrdinalAccess(args[0], 1)
 }
 
 func seriesThird(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 3 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"2", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(2), nil
+	return seriesOrdinalAccess(args[0], 2)
 }
 
 func seriesFourth(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 4 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"3", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(3), nil
+	return seriesOrdinalAccess(args[0], 3)
 }
 
 func seriesSixth(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 6 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"5", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(5), nil
+	return seriesOrdinalAccess(args[0], 5)
 }
 
 func seriesSeventh(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 7 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"6", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(6), nil
+	return seriesOrdinalAccess(args[0], 6)
 }
 
 func seriesEighth(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 8 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"7", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(7), nil
+	return seriesOrdinalAccess(args[0], 7)
 }
 
 func seriesNinth(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 9 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"8", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(8), nil
+	return seriesOrdinalAccess(args[0], 8)
 }
 
 func seriesTenth(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	seriesVal, err := assertSeries(args[0])
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-
-	if seriesVal.Length() < 10 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{"9", fmt.Sprintf("%d", seriesVal.Length()), "0"})
-	}
-	return seriesVal.ElementAt(9), nil
+	return seriesOrdinalAccess(args[0], 9)
 }
 
 func seriesAppend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

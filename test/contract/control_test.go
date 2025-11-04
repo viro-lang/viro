@@ -728,6 +728,42 @@ func TestControlFlow_Foreach(t *testing.T) {
 			input:   "foreach [1 2 3] 42 [n]",
 			wantErr: true,
 		},
+		{
+			name:     "foreach with next skips first element",
+			input:    "result: []\nforeach next [1 2 3] [n] [result: append result n]\nresult",
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(3)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with next next skips two elements",
+			input:    "result: []\nforeach next next [1 2 3 4] [n] [result: append result n]\nresult",
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(3), value.NewIntVal(4)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach at tail returns none",
+			input:    "foreach tail [1 2 3] [n] [n]",
+			expected: value.NewNoneVal(),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with next on string",
+			input:    "result: \"\"\nforeach next \"hello\" [c] [result: join result c]\nresult",
+			expected: value.NewStrVal("ello"),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach at head iterates all",
+			input:    "result: []\nforeach head [1 2 3] [n] [result: append result n]\nresult",
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach with multiple vars and next",
+			input:    "result: []\nforeach next next [1 2 3 4 5 6] [a b] [result: append result a result: append result b]\nresult",
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(3), value.NewIntVal(4), value.NewIntVal(5), value.NewIntVal(6)}),
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {

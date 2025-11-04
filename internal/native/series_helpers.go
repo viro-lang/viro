@@ -71,12 +71,27 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 		return value.NewNoneVal(), err
 	}
 
+	currentIndex := seriesVal.GetIndex()
 	length := seriesVal.Length()
-	if index < 0 || index >= length {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), ""})
+
+	if index < 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
 	}
 
-	return seriesVal.ElementAt(index), nil
+	if length == 0 && currentIndex == 0 {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
+	}
+
+	absoluteIndex := currentIndex + index
+
+	if absoluteIndex >= length {
+		if currentIndex == 0 {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
+		}
+		return value.NewNoneVal(), nil
+	}
+
+	return seriesVal.ElementAt(absoluteIndex), nil
 }
 
 func seriesTail(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

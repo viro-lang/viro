@@ -129,3 +129,29 @@ Use enhanced trace system for LLM-friendly debugging:
 - **Performance**: Use `--step-level 0` and analyze duration field
 - **Parse JSON output**: Write Python/JS scripts to analyze trace events
 - **Pipeline debugging**: Use `-c` to wrap code: `./viro -c "do [trace --on --verbose  your-code  trace --off]"`
+
+## Documentation
+
+### Quick Reference for Viro Development
+
+For rapid understanding of Viro's architecture and core concepts:
+
+- **[Viro Architecture Knowledge Base](/docs/viro_architecture_knowledge.md)** - Comprehensive guide covering:
+  - Language design principles and core concepts
+  - Interpreter architecture and key components
+  - Value system and type-based dispatch
+  - Native functions implementation patterns
+  - Error handling and extension guidelines
+  - Performance characteristics and testing strategies
+
+- **[Viro Core Knowledge RAG](/docs/viro_core_knowledge_rag.md)** - Searchable knowledge base with:
+  - FAQ-style explanations of common concepts
+  - Code examples and usage patterns
+  - Integration with other tools and systems
+  - Troubleshooting guides and best practices
+
+**When to use these documents**:
+- Understanding the codebase before making changes
+- Implementing new native functions or language features
+- Debugging complex issues requiring architectural knowledge
+- Learning Viro's unique design patterns and conventions

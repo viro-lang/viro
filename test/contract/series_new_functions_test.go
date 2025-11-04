@@ -56,6 +56,28 @@ func TestSeries_Second(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+		// Test skip functionality
+		{
+			name:  "second skip one position",
+			input: "second skip [1 2 3] 1",
+			want:  value.NewIntVal(3),
+		},
+		{
+			name:  "second skip at start",
+			input: "second skip [1 2 3] 0",
+			want:  value.NewIntVal(2),
+		},
+		{
+			name:    "second skip out of bounds",
+			input:   "second skip [1 2 3] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "second skip with longer series",
+			input: "second skip [1 2 3 4 5] 2",
+			want:  value.NewIntVal(4),
+		},
 	}
 
 	for _, tt := range tests {
@@ -134,6 +156,29 @@ func TestSeries_Third(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+		// Test skip functionality
+		{
+			name:    "third skip one position",
+			input:   "third skip [1 2 3] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "third skip at start",
+			input: "third skip [1 2 3] 0",
+			want:  value.NewIntVal(3),
+		},
+		{
+			name:  "third skip with longer series",
+			input: "third skip [1 2 3 4 5] 1",
+			want:  value.NewIntVal(4),
+		},
+		{
+			name:    "third skip out of bounds",
+			input:   "third skip [1 2 3] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -199,6 +244,33 @@ func TestSeries_Fourth(t *testing.T) {
 			input:   "fourth 42",
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name:  "fourth skip one position",
+			input: "fourth skip [1 2 3 4 5 6] 1",
+			want:  value.NewIntVal(5),
+		},
+		{
+			name:  "fourth skip at start",
+			input: "fourth skip [1 2 3 4 5] 0",
+			want:  value.NewIntVal(4),
+		},
+		{
+			name:    "fourth skip out of bounds returns none",
+			input:   "fourth skip [1 2 3] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "fourth skip with longer series",
+			input: "fourth skip [1 2 3 4 5 6 7 8] 2",
+			want:  value.NewIntVal(6),
+		},
+		{
+			name:    "fourth skip near tail boundary",
+			input:   "fourth skip [1 2 3 4 5 6] 3",
+			wantErr: false,
+			want:    value.NewNoneVal(),
 		},
 	}
 
@@ -266,6 +338,33 @@ func TestSeries_Sixth(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+		{
+			name:  "sixth skip one position",
+			input: "sixth skip [1 2 3 4 5 6 7 8] 1",
+			want:  value.NewIntVal(7),
+		},
+		{
+			name:  "sixth skip at start",
+			input: "sixth skip [1 2 3 4 5 6 7] 0",
+			want:  value.NewIntVal(6),
+		},
+		{
+			name:    "sixth skip out of bounds returns none",
+			input:   "sixth skip [1 2 3 4 5] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "sixth skip with longer series",
+			input: "sixth skip [1 2 3 4 5 6 7 8 9 10] 2",
+			want:  value.NewIntVal(8),
+		},
+		{
+			name:    "sixth skip near tail boundary",
+			input:   "sixth skip [1 2 3 4 5 6 7] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -331,6 +430,33 @@ func TestSeries_Seventh(t *testing.T) {
 			input:   "seventh 42",
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name:  "seventh skip one position",
+			input: "seventh skip [1 2 3 4 5 6 7 8 9] 1",
+			want:  value.NewIntVal(8),
+		},
+		{
+			name:  "seventh skip at start",
+			input: "seventh skip [1 2 3 4 5 6 7 8] 0",
+			want:  value.NewIntVal(7),
+		},
+		{
+			name:    "seventh skip out of bounds returns none",
+			input:   "seventh skip [1 2 3 4 5 6] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "seventh skip with longer series",
+			input: "seventh skip [1 2 3 4 5 6 7 8 9 10 11] 2",
+			want:  value.NewIntVal(9),
+		},
+		{
+			name:    "seventh skip near tail boundary",
+			input:   "seventh skip [1 2 3 4 5 6 7 8] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
 		},
 	}
 
@@ -398,6 +524,33 @@ func TestSeries_Eighth(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+		{
+			name:  "eighth skip one position",
+			input: "eighth skip [1 2 3 4 5 6 7 8 9 10] 1",
+			want:  value.NewIntVal(9),
+		},
+		{
+			name:  "eighth skip at start",
+			input: "eighth skip [1 2 3 4 5 6 7 8 9] 0",
+			want:  value.NewIntVal(8),
+		},
+		{
+			name:    "eighth skip out of bounds returns none",
+			input:   "eighth skip [1 2 3 4 5 6 7] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "eighth skip with longer series",
+			input: "eighth skip [1 2 3 4 5 6 7 8 9 10 11 12] 2",
+			want:  value.NewIntVal(10),
+		},
+		{
+			name:    "eighth skip near tail boundary",
+			input:   "eighth skip [1 2 3 4 5 6 7 8 9] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -464,6 +617,33 @@ func TestSeries_Ninth(t *testing.T) {
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
 		},
+		{
+			name:  "ninth skip one position",
+			input: "ninth skip [1 2 3 4 5 6 7 8 9 10 11] 1",
+			want:  value.NewIntVal(10),
+		},
+		{
+			name:  "ninth skip at start",
+			input: "ninth skip [1 2 3 4 5 6 7 8 9 10] 0",
+			want:  value.NewIntVal(9),
+		},
+		{
+			name:    "ninth skip out of bounds returns none",
+			input:   "ninth skip [1 2 3 4 5 6 7 8] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "ninth skip with longer series",
+			input: "ninth skip [1 2 3 4 5 6 7 8 9 10 11 12 13] 2",
+			want:  value.NewIntVal(11),
+		},
+		{
+			name:    "ninth skip near tail boundary",
+			input:   "ninth skip [1 2 3 4 5 6 7 8 9 10] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
 	}
 
 	for _, tt := range tests {
@@ -529,6 +709,33 @@ func TestSeries_Tenth(t *testing.T) {
 			input:   "tenth 42",
 			wantErr: true,
 			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name:  "tenth skip one position",
+			input: "tenth skip [1 2 3 4 5 6 7 8 9 10 11 12] 1",
+			want:  value.NewIntVal(11),
+		},
+		{
+			name:  "tenth skip at start",
+			input: "tenth skip [1 2 3 4 5 6 7 8 9 10 11] 0",
+			want:  value.NewIntVal(10),
+		},
+		{
+			name:    "tenth skip out of bounds returns none",
+			input:   "tenth skip [1 2 3 4 5 6 7 8 9] 1",
+			wantErr: false,
+			want:    value.NewNoneVal(),
+		},
+		{
+			name:  "tenth skip with longer series",
+			input: "tenth skip [1 2 3 4 5 6 7 8 9 10 11 12 13 14] 2",
+			want:  value.NewIntVal(12),
+		},
+		{
+			name:    "tenth skip near tail boundary",
+			input:   "tenth skip [1 2 3 4 5 6 7 8 9 10 11] 2",
+			wantErr: false,
+			want:    value.NewNoneVal(),
 		},
 	}
 
