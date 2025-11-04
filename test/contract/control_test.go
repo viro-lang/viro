@@ -237,14 +237,20 @@ func TestControlFlow_LoopWithIndex(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "loop --with-index overwrites existing binding",
-			input:    `i: 99\nloop 3 --with-index 'i [i]\n`,
+			name: "loop --with-index overwrites existing binding",
+			input: `i: 99
+loop 3 --with-index 'i [i]
+`,
 			expected: value.NewIntVal(2), // Last value of i in loop iterations: 0, 1, 2
 			wantErr:  false,
 		},
 		{
-			name:     "loop --with-index with complex expression",
-			input:    `result: []\nloop 3 --with-index 'pos [\n  result: (append result (* pos 10))\n]\nresult`,
+			name: "loop --with-index with complex expression",
+			input: `result: []
+loop 3 --with-index 'pos [
+  result: (append result (* pos 10))
+]
+result`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(10), value.NewIntVal(20)}),
 			wantErr:  false,
 		},
@@ -488,8 +494,10 @@ func TestControlFlow_ForeachWithIndex(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "foreach --with-index single variable collects indices",
-			input:    `result: []\nforeach [10 20 30] --with-index 'pos [n] [result: (append result pos)]\nresult`,
+			name: "foreach --with-index single variable collects indices",
+			input: `result: []
+foreach [10 20 30] --with-index 'pos [n] [result: (append result pos)]
+result`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
 			wantErr:  false,
 		},
@@ -506,38 +514,52 @@ func TestControlFlow_ForeachWithIndex(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "foreach --with-index accumulates sum of indices",
-			input:    `sum: 0\nforeach [100 200 300 400] --with-index 'pos [n] [sum: (+ sum pos)]\nsum`,
+			name: "foreach --with-index accumulates sum of indices",
+			input: `sum: 0
+foreach [100 200 300 400] --with-index 'pos [n] [sum: (+ sum pos)]
+sum`,
 			expected: value.NewIntVal(6), // 0+1+2+3 = 6
 			wantErr:  false,
 		},
 		{
-			name:     "foreach --with-index overwrites existing binding",
-			input:    `pos: 99\nforeach [1 2 3] --with-index 'pos [n] [pos]\n`,
+			name: "foreach --with-index overwrites existing binding",
+			input: `pos: 99
+foreach [1 2 3] --with-index 'pos [n] [pos]
+`,
 			expected: value.NewIntVal(2), // Last value of pos in loop iterations: 0, 1, 2
 			wantErr:  false,
 		},
 		{
-			name:     "foreach --with-index with multiple variables",
-			input:    `result: []\nforeach [1 2 3 4] --with-index 'idx [a b] [result: (append result idx)]\nresult`,
+			name: "foreach --with-index with multiple variables",
+			input: `result: []
+foreach [1 2 3 4] --with-index 'idx [a b] [result: (append result idx)]
+result`,
+			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1)}),
+			wantErr:  false,
+		},
+		{
+			name: "foreach --with-index with string series",
+			input: `result: []
+foreach "abc" --with-index 'pos [c] [result: (append result pos)]
+result`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
 			wantErr:  false,
 		},
 		{
-			name:     "foreach --with-index with string series",
-			input:    `result: []\nforeach "abc" --with-index 'pos [c] [result: (append result pos)]\nresult`,
-			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
-			wantErr:  false,
-		},
-		{
-			name:     "foreach --with-index combines index with value",
-			input:    `result: []\nforeach [10 20 30] --with-index 'pos [n] [result: (append result (+ pos n))]\nresult`,
+			name: "foreach --with-index combines index with value",
+			input: `result: []
+foreach [10 20 30] --with-index 'pos [n] [result: (append result (+ pos n))]
+result`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(10), value.NewIntVal(21), value.NewIntVal(32)}),
 			wantErr:  false,
 		},
 		{
-			name:     "foreach --with-index with odd-length series and multiple vars",
-			input:    `result: []\nforeach [1 2 3 4 5] --with-index 'idx [a b] [\n  result: (append result idx)\n]\nresult`,
+			name: "foreach --with-index with odd-length series and multiple vars",
+			input: `result: []
+foreach [1 2 3 4 5] --with-index 'idx [a b] [
+  result: (append result idx)
+]
+result`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1), value.NewIntVal(2)}),
 			wantErr:  false,
 		},
