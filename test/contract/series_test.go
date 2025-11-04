@@ -1766,15 +1766,6 @@ first tailData`,
 			errArgs: []string{"3", "3", "3"},
 		},
 		{
-			name: "first at tail position error args",
-			input: `data: [1 2 3]
-tailData: tail data
-first tailData`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
-			errArgs: []string{"3", "3", "3"},
-		},
-		{
 			name: "tail preserves original position",
 			input: `data: [1 2 3]
 movedData: next next data
@@ -2078,6 +2069,60 @@ func TestSeries_At(t *testing.T) {
 			input:   `at [1 2 3] "a"`,
 			wantErr: true,
 			errID:   verror.ErrIDTypeMismatch,
+		},
+		{
+			name: "at next with index 1 returns current element",
+			input: `data: [1 2]
+			at next data 1`,
+			want: value.NewIntVal(2),
+		},
+		{
+			name: "at next with index 2 moves to next element",
+			input: `data: [1 2 3]
+			at next data 2`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "at next with index 2 returns none when beyond bounds",
+			input: `data: [1 2]
+			at next data 2`,
+			want: value.NewNoneVal(),
+		},
+		{
+			name: "at skip from position 1 with index 2 returns element 3",
+			input: `data: [1 2 3]
+			at skip data 1 2`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "at skip from position 1 with index 2 returns none when beyond position",
+			input: `data: [1 2]
+			at skip data 1 2`,
+			want: value.NewNoneVal(),
+		},
+		{
+			name: "at next next with index 1 returns element at position 2",
+			input: `data: [1 2 3 4]
+			at next next data 1`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "at skip from position 1 with index 1 returns element 2",
+			input: `data: [1 2 3]
+			at skip data 1 1`,
+			want: value.NewIntVal(2),
+		},
+		{
+			name: "at skip from position 1 with index 2 returns element 3",
+			input: `data: [1 2 3]
+			at skip data 1 2`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "at skip from position 1 with index 2 returns none when beyond position",
+			input: `data: [1 2]
+			at skip data 1 2`,
+			want: value.NewNoneVal(),
 		},
 		{
 			name:    "too few arguments error",
