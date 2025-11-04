@@ -288,6 +288,16 @@ func TestToString_FromVariousTypes(t *testing.T) {
 			expected: "test",
 		},
 		{
+			name:     "none to string",
+			input:    "to-string none",
+			expected: "none",
+		},
+		{
+			name:     "object to string",
+			input:    "to-string make object! [name: \"test\"]",
+			expected: "name: test",
+		},
+		{
 			name:     "empty binary to string",
 			input:    "to-string #{}",
 			expected: "",
@@ -316,6 +326,11 @@ func TestToString_FromVariousTypes(t *testing.T) {
 			name:     "zero bytes in binary to string",
 			input:    "to-string #{00 00}",
 			expected: "0000",
+		},
+		{
+			name:     "large binary to string",
+			input:    "to-string #{41 42 43 44 45 46 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54 55 56 57 58 59 5A}",
+			expected: "4142434445464748494A4B4C4D4E4F505152535455565758595A",
 		},
 	}
 
