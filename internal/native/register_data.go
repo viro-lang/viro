@@ -146,7 +146,7 @@ Automatically converts numbers, blocks, and other types to their string represen
 			Category: "Data",
 			Summary:  "Evaluates a block and joins all results into a string",
 			Description: `Evaluates each element in the block and concatenates all results into a single string without any separator.
-This is equivalent to calling reduce on a block and then joining all results with no spaces.`,
+This is equivalent to calling reduce on a block and then joining all results with no separator.`,
 			Parameters: []ParamDoc{
 				{Name: "block", Type: "block!", Description: "The block containing values to evaluate and join", Optional: false},
 			},
