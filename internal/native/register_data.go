@@ -135,6 +135,33 @@ Automatically converts numbers, blocks, and other types to their string represen
 		},
 	))
 
+	registerAndBind("rejoin", value.NewNativeFunction(
+		"rejoin",
+		[]value.ParamSpec{
+			value.NewParamSpec("block", true),
+		},
+		Rejoin,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Evaluates a block and joins all results into a string",
+			Description: `Evaluates each element in the block and concatenates all results into a single string without any separator.
+This is equivalent to calling reduce on a block and then joining all results with no spaces.`,
+			Parameters: []ParamDoc{
+				{Name: "block", Type: "block!", Description: "The block containing values to evaluate and join", Optional: false},
+			},
+			Returns: "[string!] Concatenated string of all evaluated values",
+			Examples: []string{
+				`rejoin ["Hello" " " "World"]  ; => "Hello World"`,
+				`rejoin ["Number: " 42]  ; => "Number: 42"`,
+				`rejoin ["Result: " 10 + 5]  ; => "Result: 15"`,
+				`rejoin []  ; => ""`,
+			},
+			SeeAlso: []string{"join", "reduce", "form"},
+			Tags:    []string{"data", "string", "concatenation", "evaluation"},
+		},
+	))
+
 	registerAndBind("mold", value.NewNativeFunction(
 		"mold",
 		[]value.ParamSpec{
