@@ -116,6 +116,19 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		return value.NewNoneVal(), typeError("loop", "block for body", args[1])
 	}
 
+	// Check for --with-index refinement
+	indexVal, hasIndexRef := refValues["with-index"]
+	var indexWord string
+	if hasIndexRef {
+		if !value.IsWord(indexVal.GetType()) {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--with-index requires a word", "", ""},
+			)
+		}
+		indexWord, _ = value.AsWordValue(indexVal)
+	}
+
 	block, _ := value.AsBlockValue(args[1])
 
 	// If count is 0, return none without executing
@@ -123,10 +136,19 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		return value.NewNoneVal(), nil
 	}
 
+	// Get current frame for index binding
+	currentFrameIdx := eval.CurrentFrameIndex()
+	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
 	// Execute block count times
 	var result core.Value
 	var err error
-	for range count {
+	for i := 0; i < int(count); i++ {
+		// Bind index word if --with-index refinement was provided
+		if hasIndexRef {
+			currentFrame.Bind(indexWord, value.NewIntVal(int64(i)))
+		}
+
 		result, err = eval.DoBlock(block.Elements)
 		if err != nil {
 			return value.NewNoneVal(), err
@@ -500,6 +522,19 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), arityError("foreach", 3, len(args))
 	}
 
+	// Check for --with-index refinement
+	indexVal, hasIndexRef := refValues["with-index"]
+	var indexWord string
+	if hasIndexRef {
+		if !value.IsWord(indexVal.GetType()) {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--with-index requires a word", "", ""},
+			)
+		}
+		indexWord, _ = value.AsWordValue(indexVal)
+	}
+
 	seriesVal := args[0]
 
 	if !value.IsSeries(seriesVal.GetType()) {
@@ -575,6 +610,15 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			} else {
 				currentFrame.Bind(varNames[j], value.NewNoneVal())
 			}
+		}
+
+		// Bind index word if --with-index refinement was provided
+		if hasIndexRef {
+			// Calculate the index - it should be the position in the original series
+			// For the first iteration, i is 0, second iteration it's 1, etc.
+			// Since we increment i after binding variables, we need to use i - 1
+			currentIndex := i - 1
+			currentFrame.Bind(indexWord, value.NewIntVal(int64(currentIndex)))
 		}
 
 		result, err = eval.DoBlock(bodyBlock.Elements)
