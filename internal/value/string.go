@@ -185,15 +185,9 @@ func (s *StringValue) InsertValue(val core.Value) error {
 }
 
 func (s *StringValue) CopyPart(count int) (Series, error) {
-	if count < 0 {
-		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
-	}
-	remaining := len(s.runes) - s.index
-	if count > remaining {
-		count = remaining
-	}
-	runesCopy := make([]rune, count)
-	copy(runesCopy, s.runes[s.index:s.index+count])
+	clampedCount := ClampToRemaining(s.index, len(s.runes), count)
+	runesCopy := make([]rune, clampedCount)
+	copy(runesCopy, s.runes[s.index:s.index+clampedCount])
 	return NewStringValue(string(runesCopy)), nil
 }
 

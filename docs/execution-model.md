@@ -656,6 +656,68 @@ When implementing the evaluator:
 - [ ] No AST or pre-scanning - pure sequential evaluation
 - [ ] Position tracking is consistent across all evaluation paths
 
+## Series Position and Copy Behavior
+
+Series (blocks, strings, binary) maintain an internal index position that affects operations:
+
+**Position-Aware Operations**:
+- `copy` - Copies from current index to end, result always at head
+- `first` - Returns element at current index
+- `next` - Advances index by 1
+- `tail` - Sets index to end of series
+
+**Example:**
+```viro
+a: [1 2 3 4]
+a: next next a      ; index now at position 2 (element 3)
+b: copy a           ; copies [3 4], result at head
+first a             ; returns 3 (element at current position)
+```
+
+**Important**: The `copy` function only copies remaining elements from the current index position forward. To copy an entire series regardless of position, use `copy head series`.
+
+### Series Operations Comparison
+
+Different series operations handle bounds checking and position awareness differently:
+
+| Operation | Behavior with --part | Validation | Position Awareness |
+|-----------|---------------------|------------|-------------------|
+| `copy` | Copies N elements from current position | Strict: 0 ≤ N ≤ remaining, error if exceeded | Yes - copies from index onward |
+| `take` | Takes N elements from current position | Strict for negative: N < 0 errors<br/>Clamped for overflow: N > remaining returns remaining | Yes - takes from index onward |
+| `remove` | Removes N elements from current position | Strict: 0 ≤ N ≤ remaining, error if exceeded | Yes - removes from index onward |
+| `first` | Returns element at current position | Error if at tail (no elements remaining) | Yes - operates at current index |
+| `length?` | Returns total series length | N/A | No - always returns full length |
+
+**Key Differences**:
+
+1. **copy vs take**: Both work from current position, but `copy` errors on overflow while `take` clamps
+2. **Validation timing**: `copy` and `remove` validate at native layer, `take` validates negative only
+3. **Result positioning**: `copy` always returns result at head (index 0), `take` also returns at head
+
+**Practical Examples**:
+```viro
+a: next next [1 2 3 4 5]    ; index at position 2 (element 3)
+
+copy a                       ; returns [3 4 5]
+copy --part 2 a             ; returns [3 4] - strict count
+copy --part 10 a            ; ERROR: out of bounds (asked for 10, only 3 remaining)
+
+take 2 a                    ; returns [3 4]  
+take 10 a                   ; returns [3 4 5] - clamped to remaining
+
+remove --part 2 a           ; removes [3 4], a now [1 2 5] at index 2
+remove --part 10 a          ; ERROR: out of bounds
+
+first a                     ; returns 3 (element at current index)
+length? a                   ; returns 5 (total length, ignores position)
+```
+
+**Design Rationale**:
+
+- **copy strict**: Ensures you get exactly what you asked for or an error (no silent truncation)
+- **take clamped**: Convenient for "give me up to N" scenarios where partial results are acceptable  
+- **remove strict**: Safety-critical - removing wrong count could corrupt data structures
+
 ## Core Principle
 
 **The execution model is fundamentally sequential value consumption with position tracking.**

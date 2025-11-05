@@ -207,15 +207,9 @@ func (b *BlockValue) InsertValue(val core.Value) error {
 }
 
 func (b *BlockValue) CopyPart(count int) (Series, error) {
-	if count < 0 {
-		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
-	}
-	remaining := len(b.Elements) - b.Index
-	if count > remaining {
-		count = remaining
-	}
-	elemsCopy := make([]core.Value, count)
-	copy(elemsCopy, b.Elements[b.Index:b.Index+count])
+	clampedCount := ClampToRemaining(b.Index, len(b.Elements), count)
+	elemsCopy := make([]core.Value, clampedCount)
+	copy(elemsCopy, b.Elements[b.Index:b.Index+clampedCount])
 	return NewBlockValue(elemsCopy), nil
 }
 

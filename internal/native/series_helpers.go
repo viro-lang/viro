@@ -162,8 +162,9 @@ func readPartCount(refValues map[string]core.Value) (int, bool, error) {
 }
 
 func validatePartCount(series value.Series, count int) error {
-	if count < 0 || count > series.Length() {
-		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", series.Length()), fmt.Sprintf("%d", series.GetIndex())})
+	remaining := series.Length() - series.GetIndex()
+	if count < 0 || count > remaining {
+		return verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", count), fmt.Sprintf("%d", remaining), fmt.Sprintf("%d", series.GetIndex())})
 	}
 	return nil
 }
