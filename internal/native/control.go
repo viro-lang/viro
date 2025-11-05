@@ -116,6 +116,19 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		return value.NewNoneVal(), typeError("loop", "block for body", args[1])
 	}
 
+	// Check for --with-index refinement
+	indexVal, hasIndexRef := refValues["with-index"]
+	var indexWord string
+	if hasIndexRef && indexVal.GetType() != value.TypeNone {
+		if !value.IsWord(indexVal.GetType()) {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--with-index requires a word", "", ""},
+			)
+		}
+		indexWord, _ = value.AsWordValue(indexVal)
+	}
+
 	block, _ := value.AsBlockValue(args[1])
 
 	// If count is 0, return none without executing
@@ -123,10 +136,17 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		return value.NewNoneVal(), nil
 	}
 
+	currentFrameIdx := eval.CurrentFrameIndex()
+	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
+
 	// Execute block count times
 	var result core.Value
 	var err error
-	for range count {
+	for i := 0; i < int(count); i++ {
+		if hasIndexRef && indexVal.GetType() != value.TypeNone {
+			currentFrame.Bind(indexWord, value.NewIntVal(int64(i)))
+		}
+
 		result, err = eval.DoBlock(block.Elements)
 		if err != nil {
 			return value.NewNoneVal(), err
@@ -500,6 +520,18 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), arityError("foreach", 3, len(args))
 	}
 
+	indexVal, hasIndexRef := refValues["with-index"]
+	var indexWord string
+	if hasIndexRef && indexVal.GetType() != value.TypeNone {
+		if !value.IsWord(indexVal.GetType()) {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--with-index requires a word", "", ""},
+			)
+		}
+		indexWord, _ = value.AsWordValue(indexVal)
+	}
+
 	seriesVal := args[0]
 
 	if !value.IsSeries(seriesVal.GetType()) {
@@ -567,6 +599,10 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
+	numVars = len(varNames)
+	length = series.Length()
+
+	var iteration int
 	for i := startIndex; i < length; {
 		for j := 0; j < numVars; j++ {
 			if i < length {
@@ -578,11 +614,16 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			}
 		}
 
+		if hasIndexRef && indexVal.GetType() != value.TypeNone {
+			currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
+		}
+
 		result, err = eval.DoBlock(bodyBlock.Elements)
 
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
+		iteration++
 	}
 
 	return result, nil
