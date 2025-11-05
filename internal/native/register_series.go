@@ -779,12 +779,17 @@ Note: --auto and --lines refinements are only supported for strings.`,
 	}, &NativeDoc{
 		Category: "Series",
 		Summary:  "Copies a series",
-		Description: `Creates a copy of the series. With --part, copies only the specified number of elements
-from the current position. Negative counts raise an OutOfBounds error. Zero count returns an empty series.
-Oversized counts are clamped to the remaining elements from current position.`,
+		Description: `Creates a copy of the series.
+
+Without --part: copies all remaining elements from the current index position to the end (implicit remainder).
+With --part: copies exactly N elements from the current position. Negative counts raise an OutOfBounds error. Zero count returns an empty series. Counts greater than remaining elements raise an OutOfBounds error (no clamping).
+
+Result index of the copied series is always reset to head. To copy the entire series regardless of current position, use: copy head series.
+
+Difference from take: take clamps oversized counts; copy errors instead.`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
-			{Name: "--part", Type: "integer!", Description: "Copy only first N elements from current position (must be >= 0)", Optional: true},
+			{Name: "--part", Type: "integer!", Description: "Copy exactly N remaining elements (0 <= N <= remaining)", Optional: true},
 		},
 		Returns: "block! string! binary! A copy of the series",
 		Examples: []string{
@@ -793,6 +798,7 @@ Oversized counts are clamped to the remaining elements from current position.`,
 			"copy #{DEADBEEF}  ; => #{DEADBEEF}",
 			"copy --part 2 [1 2 3 4]  ; => [1 2]",
 			"copy --part 0 [1 2 3]  ; => []",
+			"a: next next [1 2 3 4] copy a  ; => [3 4]",
 		},
 		SeeAlso: []string{"append", "insert", "take"},
 		Tags:    []string{"series"},

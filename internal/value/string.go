@@ -185,10 +185,7 @@ func (s *StringValue) InsertValue(val core.Value) error {
 }
 
 func (s *StringValue) CopyPart(count int) (Series, error) {
-	clampedCount, err := ClampToRemaining(s.index, len(s.runes), count)
-	if err != nil {
-		return nil, err
-	}
+	clampedCount := ClampToRemaining(s.index, len(s.runes), count)
 	runesCopy := make([]rune, clampedCount)
 	copy(runesCopy, s.runes[s.index:s.index+clampedCount])
 	return NewStringValue(string(runesCopy)), nil

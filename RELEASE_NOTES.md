@@ -379,6 +379,44 @@ For bug reports, feature requests, or questions:
 
 ## Changelog
 
+### v1.0.1 (Unreleased) - Copy Function Behavioral Change
+
+**Breaking Changes**:
+- **`copy` function behavior**: The `copy` function now only copies from the current index position forward, not the entire series
+  - **Old behavior**: `copy` always copied the entire series regardless of the current index position
+  - **New behavior**: `copy` only copies remaining elements from the current position onward
+  - **Result index**: Copied series always has index reset to head (position 0)
+  - **Examples**:
+    ```viro
+    a: next next [1 2 3 4]  ; index at position 2
+    b: copy a                ; returns [3 4] at head (not [1 2 3 4])
+    
+    s: next "hello"         ; index at position 1
+    c: copy s                ; returns "ello" at head (not "hello")
+    ```
+- **`copy --part` validation**: The `--part` count is now validated against remaining elements from current index, not total series length
+  - **Old validation**: `copy --part 5 [1 2]` validated against length 2
+  - **New validation**: After `next [1 2 3]`, `copy --part 5` validates against remaining 2 elements
+
+**Rationale**:
+This change aligns `copy` behavior with other position-aware series operations like `remove` and `take`. 
+Previously, `copy` ignored the current position, making it inconsistent with the rest of the series API.
+The new behavior provides more intuitive and predictable semantics when working with series at advanced positions, 
+enabling powerful pattern-matching and stream-processing workflows where you can advance through a series and 
+copy remaining portions without needing to track indices manually.
+
+**Internal Improvements**:
+- Refactored `ClampToRemaining` helper to remove error handling (validation moved to native layer)
+- Separated concerns: validation at native layer (verror), clamping at value layer (no errors)
+- Reduced code duplication in `seriesCopy` native function implementation
+- Refactored copy tests to table-driven format with comprehensive edge case coverage
+- Added 11 new test cases for edge scenarios (zero counts, tail positions, UTF-8, binary operations)
+
+**Migration Guide**:
+- If you need the old behavior (copy entire series), use `copy head series` to reset to head before copying
+- Review any code using `copy` with advanced series positions
+- Update `copy --part` counts to account for current position, not full length
+
 ### v1.0.0 (2025-01-08) - Initial Release
 
 **Added**:

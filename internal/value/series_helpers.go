@@ -1,14 +1,12 @@
 package value
 
-import "fmt"
-
-func ClampToRemaining(index, length, requested int) (int, error) {
-	if requested < 0 {
-		return 0, fmt.Errorf("out of bounds: count %d < 0", requested)
-	}
+func ClampToRemaining(index, length, requested int) int {
 	remaining := length - index
 	if requested > remaining {
-		return remaining, nil
+		return remaining
 	}
-	return requested, nil
+	if requested < 0 {
+		return 0
+	}
+	return requested
 }

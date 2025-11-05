@@ -362,336 +362,322 @@ length? data`,
 }
 
 func TestSeries_Copy(t *testing.T) {
-	t.Run("copy block", func(t *testing.T) {
-		input := "copy [1 2 3]"
-		want := value.NewBlockVal([]core.Value{
-			value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3),
-		})
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
+	tests := []struct {
+		name    string
+		input   string
+		want    core.Value
+		wantErr bool
+		errID   string
+	}{
+		{
+			name:  "copy block at head",
+			input: "copy [1 2 3]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3),
+			}),
+		},
+		{
+			name:  "copy string at head",
+			input: `copy "hello"`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name:  "copy binary at head",
+			input: "copy #{AABBCC}",
+			want:  value.NewBinaryVal([]byte{0xAA, 0xBB, 0xCC}),
+		},
+		{
+			name:    "copy non-series error",
+			input:   "copy 42",
+			wantErr: true,
+			errID:   verror.ErrIDActionNoImpl,
+		},
+		{
+			name:  "copy --part block at head",
+			input: "copy --part 2 [1 2 3 4]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1), value.NewIntVal(2),
+			}),
+		},
+		{
+			name:  "copy --part string at head",
+			input: `copy --part 3 "abcdef"`,
+			want:  value.NewStrVal("abc"),
+		},
+		{
+			name:  "copy --part binary at head",
+			input: "copy --part 2 #{AABBCCDD}",
+			want:  value.NewBinaryVal([]byte{0xAA, 0xBB}),
+		},
+		{
+			name:  "copy --part zero count",
+			input: "copy --part 0 [1 2 3]",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "copy --part count equals remaining at head",
+			input: "copy --part 3 [1 2 3]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3),
+			}),
+		},
+		{
+			name:    "copy --part count exceeds remaining at head",
+			input:   "copy --part 5 [1 2]",
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name:    "copy --part negative count",
+			input:   "copy --part -1 [1 2]",
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name:    "copy --part string out of range",
+			input:   `copy --part 10 "hello"`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "copy block from advanced index",
+			input: `
+				a: next next [1 2 3 4]
+				copy a
+			`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3), value.NewIntVal(4),
+			}),
+		},
+		{
+			name: "copy string from advanced index",
+			input: `
+				a: next next "hello"
+				copy a
+			`,
+			want: value.NewStrVal("llo"),
+		},
+		{
+			name: "copy binary from advanced index",
+			input: `
+				a: next next #{AABBCCDD}
+				copy a
+			`,
+			want: value.NewBinaryVal([]byte{0xCC, 0xDD}),
+		},
+		{
+			name: "copy --part from advanced index with count in range",
+			input: `
+				b: next next [1 2 3 4 5]
+				copy --part 3 b
+			`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(3), value.NewIntVal(4), value.NewIntVal(5),
+			}),
+		},
+		{
+			name: "copy --part string from advanced index",
+			input: `
+				s: next next "hello"
+				copy --part 3 s
+			`,
+			want: value.NewStrVal("llo"),
+		},
+		{
+			name: "copy --part count equals remaining from advanced index",
+			input: `
+				b: next [1 2 3]
+				copy --part 2 b
+			`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(2), value.NewIntVal(3),
+			}),
+		},
+		{
+			name: "copy --part count exceeds remaining from advanced index",
+			input: `
+				b: next next [1 2 3]
+				copy --part 5 b
+			`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "copy from tail returns empty block",
+			input: `
+				a: tail [1 2 3]
+				copy a
+			`,
+			want: value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name: "copy from tail returns empty string",
+			input: `
+				a: tail "hello"
+				copy a
+			`,
+			want: value.NewStrVal(""),
+		},
+		{
+			name: "copy from tail returns empty binary",
+			input: `
+				a: tail #{AABBCC}
+				copy a
+			`,
+			want: value.NewBinaryVal([]byte{}),
+		},
+		{
+			name: "copy --part from tail yields empty",
+			input: `
+				b: tail [1 2 3]
+				copy --part 2 b
+			`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "copy --part zero from advanced index",
+			input: `
+				b: next [1 2 3]
+				copy --part 0 b
+			`,
+			want: value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name: "copy --part zero from advanced index string",
+			input: `
+				s: next next "hello"
+				copy --part 0 s
+			`,
+			want: value.NewStrVal(""),
+		},
+		{
+			name: "copy --part zero from advanced index binary",
+			input: `
+				b: next #{AABBCCDD}
+				copy --part 0 b
+			`,
+			want: value.NewBinaryVal([]byte{}),
+		},
+		{
+			name: "copy --part zero from tail block",
+			input: `
+				b: tail [1 2 3]
+				copy --part 0 b
+			`,
+			want: value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name: "copy --part zero from tail string",
+			input: `
+				s: tail "hello"
+				copy --part 0 s
+			`,
+			want: value.NewStrVal(""),
+		},
+		{
+			name: "copy --part zero from tail binary",
+			input: `
+				b: tail #{AABBCC}
+				copy --part 0 b
+			`,
+			want: value.NewBinaryVal([]byte{}),
+		},
+		{
+			name:    "copy --part negative count binary",
+			input:   "copy --part -1 #{AABBCC}",
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "copy --part binary from advanced index",
+			input: `
+				b: next #{AABBCCDDEE}
+				copy --part 2 b
+			`,
+			want: value.NewBinaryVal([]byte{0xBB, 0xCC}),
+		},
+		{
+			name: "copy --part count equals remaining from advanced index binary",
+			input: `
+				b: next next #{AABBCCDD}
+				copy --part 2 b
+			`,
+			want: value.NewBinaryVal([]byte{0xCC, 0xDD}),
+		},
+		{
+			name: "copy --part count exceeds remaining from advanced index binary",
+			input: `
+				b: next next #{AABBCC}
+				copy --part 5 b
+			`,
+			wantErr: true,
+			errID:   verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "copy string with UTF-8 multibyte from advanced position",
+			input: `
+				s: next next "żółć"
+				copy s
+			`,
+			want: value.NewStrVal("łć"),
+		},
+		{
+			name: "copy result resets to head block",
+			input: `
+				a: next next [1 2 3 4]
+				b: copy a
+				head? b
+			`,
+			want: value.NewLogicVal(true),
+		},
+		{
+			name: "copy result resets to head string",
+			input: `
+				a: next next "hello"
+				b: copy a
+				head? b
+			`,
+			want: value.NewLogicVal(true),
+		},
+		{
+			name: "copy result resets to head binary",
+			input: `
+				a: next next #{AABBCCDD}
+				b: copy a
+				head? b
+			`,
+			want: value.NewLogicVal(true),
+		},
+	}
 
-	t.Run("copy string", func(t *testing.T) {
-		input := "copy \"hello\""
-		want := value.NewStrVal("hello")
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy --part block", func(t *testing.T) {
-		input := "copy --part 2 [1 2 3 4]"
-		want := value.NewBlockVal([]core.Value{
-			value.NewIntVal(1), value.NewIntVal(2),
-		})
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			if !evalResult.Equals(want) {
-				t.Fatalf("expected %v, got %v", want, evalResult)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evalResult, err := Evaluate(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error but got nil result %v", evalResult)
+				}
+				if tt.errID != "" {
+					var scriptErr *verror.Error
+					if errors.As(err, &scriptErr) {
+						if scriptErr.ID != tt.errID {
+							t.Fatalf("expected error ID %v, got %v", tt.errID, scriptErr.ID)
+						}
+					} else {
+						t.Fatalf("expected ScriptError, got %T", err)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !evalResult.Equals(tt.want) {
+					t.Fatalf("expected %v, got %v", tt.want, evalResult)
+				}
 			}
-		} else {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("copy --part string", func(t *testing.T) {
-		input := "copy --part 3 \"abcdef\""
-		want := value.NewStrVal("abc")
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			if !evalResult.Equals(want) {
-				t.Fatalf("expected %v, got %v", want, evalResult)
-			}
-		} else {
-			t.Fatalf("unexpected error: %v", err)
-		}
-	})
-
-	t.Run("copy non-series error", func(t *testing.T) {
-		input := "copy 42"
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-	})
-
-	t.Run("copy --part out of range", func(t *testing.T) {
-		input := "copy --part 5 [1 2]"
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-		var scriptErr *verror.Error
-		if !errors.As(err, &scriptErr) {
-			t.Fatalf("expected script error, got %v", err)
-		}
-	})
-
-	t.Run("copy --part negative count", func(t *testing.T) {
-		input := "copy --part -1 [1 2]"
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-		var scriptErr *verror.Error
-		if errors.As(err, &scriptErr) {
-			if scriptErr.ID != verror.ErrIDOutOfBounds {
-				t.Fatalf("expected error ID %v, got %v", verror.ErrIDOutOfBounds, scriptErr.ID)
-			}
-			if len(scriptErr.Args) < 3 || scriptErr.Args[0] != "-1" || scriptErr.Args[1] != "2" || scriptErr.Args[2] != "0" {
-				t.Fatalf("expected error args ['-1', '2', '0'], got %v", scriptErr.Args)
-			}
-		} else {
-			t.Fatalf("expected ScriptError, got %T", err)
-		}
-	})
-
-	t.Run("copy --part zero count", func(t *testing.T) {
-		input := "copy --part 0 [1 2 3]"
-		want := value.NewBlockVal([]core.Value{})
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy --part string out of range", func(t *testing.T) {
-		input := "copy --part 10 \"hello\""
-		evalResult, err := Evaluate(input)
-		if err == nil {
-			t.Fatalf("expected error but got result %v", evalResult)
-		}
-		var scriptErr *verror.Error
-		if !errors.As(err, &scriptErr) {
-			t.Fatalf("expected script error, got %v", err)
-		}
-	})
-
-	t.Run("copy --part from advanced index", func(t *testing.T) {
-		input := `
-			b: [1 2 3 4 5]
-			b: next next b
-			copy --part 5 b
-		`
-		want := value.NewBlockVal([]core.Value{
-			value.NewIntVal(3), value.NewIntVal(4), value.NewIntVal(5),
 		})
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy --part string from advanced index", func(t *testing.T) {
-		input := `
-			s: "hello"
-			s: next next s
-			copy --part 5 s
-		`
-		want := value.NewStrVal("llo")
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy part from tail position yields empty", func(t *testing.T) {
-		input := `
-			b: [1 2 3]
-			b: skip b 3
-			c: copy --part 2 b
-			length? c
-		`
-		want := value.NewIntVal(0)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("string copy part from tail position", func(t *testing.T) {
-		input := `
-			s: "abc"
-			s: skip s 3
-			c: copy --part 2 s
-			length? c
-		`
-		want := value.NewIntVal(0)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy block from advanced index without --part", func(t *testing.T) {
-		input := `
-			a: next next [1 2 3 4]
-			b: copy a
-			b
-		`
-		want := value.NewBlockVal([]core.Value{
-			value.NewIntVal(3), value.NewIntVal(4),
-		})
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy string from advanced index without --part", func(t *testing.T) {
-		input := `
-			a: next next "hello"
-			b: copy a
-			b
-		`
-		want := value.NewStrVal("llo")
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy binary from advanced index without --part", func(t *testing.T) {
-		input := `
-			a: next next #{AABBCCDD}
-			b: copy a
-			b
-		`
-		want := value.NewBinaryVal([]byte{0xCC, 0xDD})
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from advanced index should reset to head - block", func(t *testing.T) {
-		input := `
-			a: next next [1 2 3 4]
-			b: copy a
-			head? b
-		`
-		want := value.NewLogicVal(true)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from advanced index should reset to head - string", func(t *testing.T) {
-		input := `
-			a: next next "hello"
-			b: copy a
-			head? b
-		`
-		want := value.NewLogicVal(true)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from advanced index should reset to head - binary", func(t *testing.T) {
-		input := `
-			a: next next #{AABBCCDD}
-			b: copy a
-			head? b
-		`
-		want := value.NewLogicVal(true)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from tail without --part returns empty - block", func(t *testing.T) {
-		input := `
-			a: tail [1 2 3]
-			b: copy a
-			length? b
-		`
-		want := value.NewIntVal(0)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from tail without --part returns empty - string", func(t *testing.T) {
-		input := `
-			a: tail "hello"
-			b: copy a
-			length? b
-		`
-		want := value.NewIntVal(0)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
-
-	t.Run("copy from tail without --part returns empty - binary", func(t *testing.T) {
-		input := `
-			a: tail #{AABBCC}
-			b: copy a
-			length? b
-		`
-		want := value.NewIntVal(0)
-		evalResult, err := Evaluate(input)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !evalResult.Equals(want) {
-			t.Fatalf("expected %v, got %v", want, evalResult)
-		}
-	})
+	}
 }
 
 func TestSeries_Pick(t *testing.T) {
