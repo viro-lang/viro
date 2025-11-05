@@ -581,7 +581,23 @@ func TestSeries_Copy(t *testing.T) {
 		}
 	})
 
-	t.Run("copy from advanced index should reset to head", func(t *testing.T) {
+	t.Run("copy binary from advanced index without --part", func(t *testing.T) {
+		input := `
+			a: next next #{AABBCCDD}
+			b: copy a
+			b
+		`
+		want := value.NewBinaryVal([]byte{0xCC, 0xDD})
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from advanced index should reset to head - block", func(t *testing.T) {
 		input := `
 			a: next next [1 2 3 4]
 			b: copy a
@@ -597,9 +613,73 @@ func TestSeries_Copy(t *testing.T) {
 		}
 	})
 
-	t.Run("copy from tail without --part returns empty", func(t *testing.T) {
+	t.Run("copy from advanced index should reset to head - string", func(t *testing.T) {
+		input := `
+			a: next next "hello"
+			b: copy a
+			head? b
+		`
+		want := value.NewLogicVal(true)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from advanced index should reset to head - binary", func(t *testing.T) {
+		input := `
+			a: next next #{AABBCCDD}
+			b: copy a
+			head? b
+		`
+		want := value.NewLogicVal(true)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from tail without --part returns empty - block", func(t *testing.T) {
 		input := `
 			a: tail [1 2 3]
+			b: copy a
+			length? b
+		`
+		want := value.NewIntVal(0)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from tail without --part returns empty - string", func(t *testing.T) {
+		input := `
+			a: tail "hello"
+			b: copy a
+			length? b
+		`
+		want := value.NewIntVal(0)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from tail without --part returns empty - binary", func(t *testing.T) {
+		input := `
+			a: tail #{AABBCC}
 			b: copy a
 			length? b
 		`
