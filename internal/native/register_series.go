@@ -786,7 +786,11 @@ With --part: copies exactly N elements from the current position. Negative count
 
 Result index of the copied series is always reset to head. To copy the entire series regardless of current position, use: copy head series.
 
-Difference from take: take clamps oversized counts; copy errors instead.`,
+Difference from take: take clamps oversized counts; copy errors instead.
+
+Error example:
+    a: next [1 2 3]           ; moves to position 1
+    copy --part 5 a           ; ERROR: only 2 elements remaining`,
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
 			{Name: "--part", Type: "integer!", Description: "Copy exactly N remaining elements (0 <= N <= remaining)", Optional: true},

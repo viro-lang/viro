@@ -649,6 +649,35 @@ func TestSeries_Copy(t *testing.T) {
 			`,
 			want: value.NewLogicVal(true),
 		},
+		{
+			name:  "copy empty block",
+			input: "copy []",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name:  "copy --part 0 from empty series",
+			input: "copy --part 0 []",
+			want:  value.NewBlockVal([]core.Value{}),
+		},
+		{
+			name: "copy full series after head advancement (migration pattern)",
+			input: `
+				a: next next [1 2 3 4]
+				copy head a
+			`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3), value.NewIntVal(4),
+			}),
+		},
+		{
+			name: "copy does not modify source series index",
+			input: `
+				a: next next [1 2 3 4]
+				b: copy a
+				index? a
+			`,
+			want: value.NewIntVal(3),
+		},
 	}
 
 	for _, tt := range tests {
