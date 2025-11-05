@@ -553,6 +553,29 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 		return value.NewNoneVal(), fmt.Errorf("encoding support not yet implemented (only utf-8 supported)")
 	}
 
+	// Check if the spec is a directory (for file:// scheme only)
+	if !strings.HasPrefix(spec, "http://") && !strings.HasPrefix(spec, "https://") && !strings.HasPrefix(spec, "tcp://") {
+		resolved, err := resolveSandboxPath(spec)
+		if err != nil {
+			return value.NewNoneVal(), fmt.Errorf("sandbox violation: %w", err)
+		}
+
+		info, err := os.Stat(resolved)
+		if err == nil && info.IsDir() {
+			entries, err := os.ReadDir(resolved)
+			if err != nil {
+				return value.NewNoneVal(), fmt.Errorf("failed to read directory: %w", err)
+			}
+
+			elements := make([]core.Value, len(entries))
+			for i, entry := range entries {
+				elements[i] = value.NewStrVal(entry.Name())
+			}
+
+			return value.NewBlockVal(elements), nil
+		}
+	}
+
 	// Open temporary port
 	portVal, err := OpenPort(spec, opts)
 	if err != nil {
