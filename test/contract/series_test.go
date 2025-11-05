@@ -546,6 +546,72 @@ func TestSeries_Copy(t *testing.T) {
 			t.Fatalf("expected %v, got %v", want, evalResult)
 		}
 	})
+
+	t.Run("copy block from advanced index without --part", func(t *testing.T) {
+		input := `
+			a: next next [1 2 3 4]
+			b: copy a
+			b
+		`
+		want := value.NewBlockVal([]core.Value{
+			value.NewIntVal(3), value.NewIntVal(4),
+		})
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy string from advanced index without --part", func(t *testing.T) {
+		input := `
+			a: next next "hello"
+			b: copy a
+			b
+		`
+		want := value.NewStrVal("llo")
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from advanced index should reset to head", func(t *testing.T) {
+		input := `
+			a: next next [1 2 3 4]
+			b: copy a
+			head? b
+		`
+		want := value.NewLogicVal(true)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
+
+	t.Run("copy from tail without --part returns empty", func(t *testing.T) {
+		input := `
+			a: tail [1 2 3]
+			b: copy a
+			length? b
+		`
+		want := value.NewIntVal(0)
+		evalResult, err := Evaluate(input)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !evalResult.Equals(want) {
+			t.Fatalf("expected %v, got %v", want, evalResult)
+		}
+	})
 }
 
 func TestSeries_Pick(t *testing.T) {

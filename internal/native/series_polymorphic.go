@@ -144,7 +144,12 @@ func seriesCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	}
 
 	if !hasPart {
-		return seriesVal.Clone().(core.Value), nil
+		remaining := seriesVal.Length() - seriesVal.GetIndex()
+		copied, err := seriesVal.CopyPart(remaining)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		return copied.(core.Value), nil
 	}
 
 	if err := validatePartCount(seriesVal, count); err != nil {
