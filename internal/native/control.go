@@ -599,8 +599,8 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
-	numVars := len(varNames)
-	length := series.Length()
+	numVars = len(varNames)
+	length = series.Length()
 
 	var iteration int
 	for i := startIndex; i < length; {
