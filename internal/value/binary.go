@@ -224,15 +224,12 @@ func (b *BinaryValue) InsertValue(val core.Value) error {
 }
 
 func (b *BinaryValue) CopyPart(count int) (Series, error) {
-	if count < 0 {
-		return nil, fmt.Errorf("out of bounds: count %d < 0", count)
+	clampedCount, err := ClampToRemaining(b.index, len(b.data), count)
+	if err != nil {
+		return nil, err
 	}
-	remaining := len(b.data) - b.index
-	if count > remaining {
-		count = remaining
-	}
-	dataCopy := make([]byte, count)
-	copy(dataCopy, b.data[b.index:b.index+count])
+	dataCopy := make([]byte, clampedCount)
+	copy(dataCopy, b.data[b.index:b.index+clampedCount])
 	return NewBinaryValue(dataCopy), nil
 }
 
