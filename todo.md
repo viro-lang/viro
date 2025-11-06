@@ -29,11 +29,12 @@
   - Blocks are re-evaluated on each iteration, other values used directly
   - See: internal/native/control.go:159-222 for implementation
 
-- [ ] **Read Native - Directory Support**
-  - STATUS: NOT IMPLEMENTED
-  - Currently reads files only (see internal/native/io.go:500-640)
-  - Should also support reading directories
-  - Should return block with filenames when given a directory path
+- [x] **Read Native - Directory Support**
+  - STATUS: ✅ COMPLETE
+  - Implemented directory reading in internal/native/io.go:556-577
+  - Returns block with filenames when given a directory path
+  - Respects sandbox rules for security
+  - Tests added in test/contract/ports_test.go:500-610
 
 ## Low Priority
 

@@ -496,3 +496,115 @@ func TestTLSInsecureFlag(t *testing.T) {
 		}
 	})
 }
+
+func TestReadDirectory(t *testing.T) {
+	tmpDir := t.TempDir()
+	if err := eval.InitSandbox(tmpDir); err != nil {
+		t.Fatalf("Failed to init sandbox: %v", err)
+	}
+	native.SandboxRoot = tmpDir
+
+	testDir := filepath.Join(tmpDir, "testdir")
+	if err := os.Mkdir(testDir, 0755); err != nil {
+		t.Fatalf("Failed to create test directory: %v", err)
+	}
+
+	testFiles := []string{"file1.txt", "file2.txt", "file3.txt"}
+	for _, filename := range testFiles {
+		filePath := filepath.Join(testDir, filename)
+		if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+			t.Fatalf("Failed to create test file %s: %v", filename, err)
+		}
+	}
+
+	t.Run("ReadDirectoryReturnsBlock", func(t *testing.T) {
+		result, err := native.ReadPort("testdir", nil)
+		if err != nil {
+			t.Fatalf("Failed to read directory: %v", err)
+		}
+
+		if result.GetType() != value.TypeBlock {
+			t.Errorf("Expected block result, got %v", result.GetType())
+		}
+
+		block, ok := value.AsBlockValue(result)
+		if !ok {
+			t.Fatal("Failed to extract block from result")
+		}
+
+		if len(block.Elements) != 3 {
+			t.Errorf("Expected 3 files in directory, got %d", len(block.Elements))
+		}
+
+		fileNames := make([]string, 0, len(block.Elements))
+		for _, val := range block.Elements {
+			if val.GetType() != value.TypeString {
+				t.Errorf("Expected string value in block, got %v", val.GetType())
+				continue
+			}
+			str, _ := value.AsStringValue(val)
+			fileNames = append(fileNames, str.String())
+		}
+
+		for _, expectedFile := range testFiles {
+			found := false
+			for _, actualFile := range fileNames {
+				if actualFile == expectedFile {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file %s not found in result, got: %v", expectedFile, fileNames)
+			}
+		}
+	})
+
+	t.Run("ReadDirectoryWithSubdirectories", func(t *testing.T) {
+		subDir := filepath.Join(testDir, "subdir")
+		if err := os.Mkdir(subDir, 0755); err != nil {
+			t.Fatalf("Failed to create subdirectory: %v", err)
+		}
+
+		result, err := native.ReadPort("testdir", nil)
+		if err != nil {
+			t.Fatalf("Failed to read directory: %v", err)
+		}
+
+		block, _ := value.AsBlockValue(result)
+
+		hasSubdir := false
+		for _, val := range block.Elements {
+			str, _ := value.AsStringValue(val)
+			if str.String() == "subdir" {
+				hasSubdir = true
+				break
+			}
+		}
+
+		if !hasSubdir {
+			t.Error("Expected subdirectory 'subdir' to be included in listing")
+		}
+	})
+
+	t.Run("ReadEmptyDirectory", func(t *testing.T) {
+		emptyDir := filepath.Join(tmpDir, "emptydir")
+		if err := os.Mkdir(emptyDir, 0755); err != nil {
+			t.Fatalf("Failed to create empty directory: %v", err)
+		}
+
+		result, err := native.ReadPort("emptydir", nil)
+		if err != nil {
+			t.Fatalf("Failed to read empty directory: %v", err)
+		}
+
+		if result.GetType() != value.TypeBlock {
+			t.Errorf("Expected block result for empty directory, got %v", result.GetType())
+		}
+
+		block, _ := value.AsBlockValue(result)
+		if len(block.Elements) != 0 {
+			t.Errorf("Expected empty block for empty directory, got %d entries", len(block.Elements))
+		}
+	})
+}
