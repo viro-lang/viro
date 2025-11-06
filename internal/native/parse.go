@@ -21,6 +21,7 @@ func NativeTokenize(args []core.Value, refValues map[string]core.Value, eval cor
 	input := inputVal.String()
 
 	tokenizer := tokenize.NewTokenizer(input)
+	tokenizer.SetSource("(native)")
 	tokens, err := tokenizer.Tokenize()
 	if err != nil {
 		return value.NewNoneVal(), err
@@ -40,7 +41,7 @@ func NativeTokenize(args []core.Value, refValues map[string]core.Value, eval cor
 
 func createTokenObject(tok tokenize.Token) core.Value {
 	objFrame := frame.NewFrame(frame.FrameObject, -1)
-	
+
 	tokenType := getTokenTypeName(tok.Type)
 	objFrame.Bind("type", value.NewWordVal(tokenType))
 	objFrame.Bind("value", value.NewStrVal(tok.Value))
@@ -88,7 +89,7 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), err
 	}
 
-	parser := parse.NewParser(tokens)
+	parser := parse.NewParser(tokens, "")
 	values, err := parser.Parse()
 	if err != nil {
 		if vErr, ok := err.(*verror.Error); ok {
@@ -189,7 +190,7 @@ func NativeLoadString(args []core.Value, refValues map[string]core.Value, eval c
 	}
 	input := inputVal.String()
 
-	values, err := parse.Parse(input)
+	values, err := parse.ParseWithSource(input, "(native)")
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -208,8 +209,9 @@ func NativeClassify(args []core.Value, refValues map[string]core.Value, eval cor
 	}
 	input := inputVal.String()
 
-	parser := parse.NewParser([]tokenize.Token{})
-	val, err := parser.ClassifyLiteral(input)
+	parser := parse.NewParser([]tokenize.Token{}, "(native)")
+	token := tokenize.Token{Type: tokenize.TokenLiteral, Value: input, Line: 1, Column: 1, Source: "(native)"}
+	val, err := parser.ClassifyLiteral(token)
 	if err != nil {
 		if vErr, ok := err.(*verror.Error); ok {
 			return value.NewNoneVal(), vErr

@@ -87,7 +87,7 @@ func BenchmarkParseSimple(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		p := NewParser(tokens)
+		p := NewParser(tokens, "")
 		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
@@ -107,7 +107,7 @@ func BenchmarkParseMedium(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		p := NewParser(tokens)
+		p := NewParser(tokens, "")
 		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
@@ -136,7 +136,7 @@ result: fib 10
 	b.ResetTimer()
 
 	for b.Loop() {
-		p := NewParser(tokens)
+		p := NewParser(tokens, "")
 		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
@@ -156,7 +156,7 @@ func BenchmarkParseBlock(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		p := NewParser(tokens)
+		p := NewParser(tokens, "")
 		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
@@ -176,7 +176,7 @@ func BenchmarkParsePath(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		p := NewParser(tokens)
+		p := NewParser(tokens, "")
 		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)

@@ -23,6 +23,7 @@ type Token struct {
 	Value  string
 	Line   int
 	Column int
+	Source string
 }
 
 type Tokenizer struct {
@@ -30,6 +31,7 @@ type Tokenizer struct {
 	pos    int
 	line   int
 	column int
+	source string
 }
 
 func NewTokenizer(input string) *Tokenizer {
@@ -41,11 +43,19 @@ func NewTokenizer(input string) *Tokenizer {
 	}
 }
 
+func (t *Tokenizer) SetSource(source string) {
+	t.source = source
+}
+
+func (t *Tokenizer) syntaxError(id string, args [3]string, line, column int) *verror.Error {
+	return verror.NewSyntaxError(id, args).SetLocation(t.source, line, column)
+}
+
 func (t *Tokenizer) NextToken() (Token, error) {
 	t.skipWhitespaceAndComments()
 
 	if t.pos >= len(t.input) {
-		return Token{Type: TokenEOF, Line: t.line, Column: t.column}, nil
+		return Token{Type: TokenEOF, Line: t.line, Column: t.column, Source: t.source}, nil
 	}
 
 	ch := t.input[t.pos]
@@ -53,31 +63,31 @@ func (t *Tokenizer) NextToken() (Token, error) {
 	tokenColumn := t.column
 
 	if ch == '@' || ch == '`' || ch == '~' {
-		return Token{}, verror.NewSyntaxError(verror.ErrIDInvalidCharacter, [3]string{string(ch), "", ""})
+		return Token{}, t.syntaxError(verror.ErrIDInvalidCharacter, [3]string{string(ch), "", ""}, tokenLine, tokenColumn)
 	}
 
 	switch ch {
 	case '[':
 		t.advance()
-		return Token{Type: TokenLBracket, Value: "[", Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenLBracket, Value: "[", Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	case ']':
 		t.advance()
-		return Token{Type: TokenRBracket, Value: "]", Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenRBracket, Value: "]", Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	case '(':
 		t.advance()
-		return Token{Type: TokenLParen, Value: "(", Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenLParen, Value: "(", Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	case ')':
 		t.advance()
-		return Token{Type: TokenRParen, Value: ")", Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenRParen, Value: ")", Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	case '"':
 		str, err := t.readString()
 		if err != nil {
 			return Token{}, err
 		}
-		return Token{Type: TokenString, Value: str, Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenString, Value: str, Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	default:
 		literal := t.readLiteral()
-		return Token{Type: TokenLiteral, Value: literal, Line: tokenLine, Column: tokenColumn}, nil
+		return Token{Type: TokenLiteral, Value: literal, Line: tokenLine, Column: tokenColumn, Source: t.source}, nil
 	}
 }
 
@@ -129,6 +139,8 @@ func (t *Tokenizer) skipComment() {
 }
 
 func (t *Tokenizer) readString() (string, error) {
+	startLine := t.line
+	startColumn := t.column
 	t.advance()
 
 	var result strings.Builder
@@ -144,7 +156,7 @@ func (t *Tokenizer) readString() (string, error) {
 		if ch == '\\' {
 			t.pos++
 			if t.pos >= len(t.input) {
-				return "", verror.NewSyntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""})
+				return "", t.syntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""}, startLine, startColumn)
 			}
 
 			escapedChar := t.input[t.pos]
@@ -160,7 +172,7 @@ func (t *Tokenizer) readString() (string, error) {
 			case '"':
 				result.WriteByte('"')
 			default:
-				return "", verror.NewSyntaxError(verror.ErrIDInvalidEscape, [3]string{string(escapedChar), "", ""})
+				return "", t.syntaxError(verror.ErrIDInvalidEscape, [3]string{string(escapedChar), "", ""}, t.line, t.column)
 			}
 			t.advance()
 			continue
@@ -170,7 +182,7 @@ func (t *Tokenizer) readString() (string, error) {
 		t.advance()
 	}
 
-	return "", verror.NewSyntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""})
+	return "", t.syntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""}, startLine, startColumn)
 }
 
 func (t *Tokenizer) readLiteral() string {
@@ -188,9 +200,9 @@ func (t *Tokenizer) readLiteral() string {
 			break
 		}
 
-	if t.shouldBreakOnInvalidExponent(ch, start) {
-		break
-	}
+		if t.shouldBreakOnInvalidExponent(ch, start) {
+			break
+		}
 
 		t.pos++
 		t.column++

@@ -13,7 +13,7 @@ func BenchmarkActionDispatch(b *testing.B) {
 	e := NewTestEvaluator()
 
 	// Parse once, evaluate many times
-	tokens, err := parse.Parse("first [1 2 3 4 5]")
+	tokens, err := parse.ParseWithSource("first [1 2 3 4 5]", "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
@@ -31,7 +31,7 @@ func BenchmarkActionDispatch(b *testing.B) {
 func BenchmarkActionDispatchString(b *testing.B) {
 	e := NewTestEvaluator()
 
-	tokens, err := parse.Parse(`first "hello world"`)
+	tokens, err := parse.ParseWithSource(`first "hello world"`, "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
@@ -50,7 +50,7 @@ func BenchmarkActionAppend(b *testing.B) {
 	e := NewTestEvaluator()
 
 	// Setup: Create a block variable
-	setupTokens, err := parse.Parse("b: [1 2 3]")
+	setupTokens, err := parse.ParseWithSource("b: [1 2 3]", "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
@@ -60,7 +60,7 @@ func BenchmarkActionAppend(b *testing.B) {
 	}
 
 	// Parse append operation
-	tokens, err := parse.Parse("append b 4")
+	tokens, err := parse.ParseWithSource("append b 4", "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
@@ -78,7 +78,7 @@ func BenchmarkActionAppend(b *testing.B) {
 func BenchmarkActionLength(b *testing.B) {
 	e := NewTestEvaluator()
 
-	tokens, err := parse.Parse("length? [1 2 3 4 5 6 7 8 9 10]")
+	tokens, err := parse.ParseWithSource("length? [1 2 3 4 5 6 7 8 9 10]", "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}
@@ -97,13 +97,13 @@ func BenchmarkTypeFrameLookup(b *testing.B) {
 	e := NewTestEvaluator()
 
 	// Parse multiple action calls to test dispatch overhead
-	tokens, err := parse.Parse(`
+	tokens, err := parse.ParseWithSource(`
 		first [1 2 3]
 		last [1 2 3]
 		first "hello"
 		last "world"
 		length? [1 2 3]
-	`)
+	`, "(test)")
 	if err != nil {
 		b.Fatalf("Parse error: %v", err)
 	}

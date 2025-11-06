@@ -47,7 +47,7 @@ func TestActionDispatchBasics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.input)
+			tokens, parseErr := parse.ParseWithSource(tt.input, "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
@@ -90,7 +90,7 @@ func TestActionShadowing(t *testing.T) {
 		first 5
 	`
 
-	tokens, parseErr := parse.Parse(input)
+	tokens, parseErr := parse.ParseWithSource(input, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
@@ -117,7 +117,7 @@ func TestActionMultipleArguments(t *testing.T) {
 		b
 	`
 
-	tokens, parseErr := parse.Parse(input)
+	tokens, parseErr := parse.ParseWithSource(input, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse error: %v", parseErr)
 	}

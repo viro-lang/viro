@@ -8,6 +8,10 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
+func literalToken(value string) tokenize.Token {
+	return tokenize.Token{Type: tokenize.TokenLiteral, Value: value, Line: 1, Column: 1, Source: "(test)"}
+}
+
 func TestParser_ClassifyLiteral_Integers(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -23,8 +27,8 @@ func TestParser_ClassifyLiteral_Integers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -52,8 +56,8 @@ func TestParser_ClassifyLiteral_Decimals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -78,8 +82,8 @@ func TestParser_ClassifyLiteral_SetWords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -108,8 +112,8 @@ func TestParser_ClassifyLiteral_GetWords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -138,8 +142,8 @@ func TestParser_ClassifyLiteral_LitWords(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -170,8 +174,8 @@ func TestParser_ClassifyLiteral_Words(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -200,8 +204,8 @@ func TestParser_ClassifyLiteral_Datatypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -231,8 +235,8 @@ func TestParser_ClassifyLiteral_Paths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -246,7 +250,7 @@ func TestParser_ClassifyLiteral_Paths(t *testing.T) {
 
 func TestParser_ClassifyLiteral_SetPaths(t *testing.T) {
 	tests := []struct {
-		name string
+		name     string
 		input    string
 		wantType core.ValueType
 	}{
@@ -256,8 +260,8 @@ func TestParser_ClassifyLiteral_SetPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -281,8 +285,8 @@ func TestParser_ClassifyLiteral_GetPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewParser([]tokenize.Token{})
-			result, err := p.ClassifyLiteral(tt.input)
+			p := NewParser([]tokenize.Token{}, "(test)")
+			result, err := p.ClassifyLiteral(literalToken(tt.input))
 			if err != nil {
 				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
@@ -301,7 +305,7 @@ func TestParser_Parse_EmptyBlock(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 3},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	result, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
@@ -338,7 +342,7 @@ func TestParser_Parse_SimpleBlock(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 8},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	result, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
@@ -383,7 +387,7 @@ func TestParser_Parse_NestedBlocks(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 10},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	result, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
@@ -435,7 +439,7 @@ func TestParser_Parse_Parens(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 8},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	result, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
@@ -472,7 +476,7 @@ func TestParser_Parse_Mixed(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 11},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	result, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
@@ -501,7 +505,7 @@ func TestParser_Parse_UnclosedBlock(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 5},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	_, err := p.Parse()
 	if err == nil {
 		t.Errorf("Parse() expected error for unclosed block, got nil")
@@ -514,7 +518,7 @@ func TestParser_Parse_UnexpectedClosingBracket(t *testing.T) {
 		{Type: tokenize.TokenEOF, Line: 1, Column: 2},
 	}
 
-	p := NewParser(tokens)
+	p := NewParser(tokens, "(test)")
 	_, err := p.Parse()
 	if err == nil {
 		t.Errorf("Parse() expected error for unexpected closing bracket, got nil")
@@ -522,8 +526,9 @@ func TestParser_Parse_UnexpectedClosingBracket(t *testing.T) {
 }
 
 func TestParser_ParsePath_SimpleWord(t *testing.T) {
-	p := NewParser([]tokenize.Token{})
-	segments, err := p.parsePath("obj.field")
+	p := NewParser([]tokenize.Token{}, "(test)")
+	token := literalToken("obj.field")
+	segments, err := p.parsePath(token, token.Value)
 	if err != nil {
 		t.Errorf("parsePath() error = %v", err)
 		return
@@ -544,8 +549,9 @@ func TestParser_ParsePath_SimpleWord(t *testing.T) {
 }
 
 func TestParser_ParsePath_IndexPath(t *testing.T) {
-	p := NewParser([]tokenize.Token{})
-	segments, err := p.parsePath("data.1")
+	p := NewParser([]tokenize.Token{}, "(test)")
+	token := literalToken("data.1")
+	segments, err := p.parsePath(token, token.Value)
 	if err != nil {
 		t.Errorf("parsePath() error = %v", err)
 		return
@@ -566,16 +572,18 @@ func TestParser_ParsePath_IndexPath(t *testing.T) {
 }
 
 func TestParser_ParsePath_EmptySegment(t *testing.T) {
-	p := NewParser([]tokenize.Token{})
-	_, err := p.parsePath("obj.")
+	p := NewParser([]tokenize.Token{}, "(test)")
+	token := literalToken("obj.")
+	_, err := p.parsePath(token, token.Value)
 	if err == nil {
 		t.Errorf("parsePath() expected error for empty segment, got nil")
 	}
 }
 
 func TestParser_ParsePath_EmptyPath(t *testing.T) {
-	p := NewParser([]tokenize.Token{})
-	_, err := p.parsePath("")
+	p := NewParser([]tokenize.Token{}, "(test)")
+	token := literalToken("")
+	_, err := p.parsePath(token, token.Value)
 	if err == nil {
 		t.Errorf("parsePath() expected error for empty path, got nil")
 	}

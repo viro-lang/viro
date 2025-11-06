@@ -21,13 +21,30 @@ var (
 type Parser struct {
 	tokens []tokenize.Token
 	pos    int
+	source string
 }
 
-func NewParser(tokens []tokenize.Token) *Parser {
+func NewParser(tokens []tokenize.Token, source string) *Parser {
 	return &Parser{
 		tokens: tokens,
 		pos:    0,
+		source: source,
 	}
+}
+
+func (p *Parser) syntaxError(id string, args [3]string, line, column int) *verror.Error {
+	return verror.NewSyntaxError(id, args).SetLocation(p.source, line, column)
+}
+
+func (p *Parser) eofLocation() (int, int) {
+	if len(p.tokens) == 0 {
+		return 1, 1
+	}
+	last := p.tokens[len(p.tokens)-1]
+	if last.Line == 0 && last.Column == 0 {
+		return 1, 1
+	}
+	return last.Line, last.Column
 }
 
 func (p *Parser) Parse() ([]core.Value, error) {
@@ -52,7 +69,8 @@ func (p *Parser) Parse() ([]core.Value, error) {
 
 func (p *Parser) parseValue() (core.Value, error) {
 	if p.pos >= len(p.tokens) {
-		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
+		line, column := p.eofLocation()
+		return nil, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, line, column)
 	}
 
 	token := p.tokens[p.pos]
@@ -60,37 +78,37 @@ func (p *Parser) parseValue() (core.Value, error) {
 
 	switch token.Type {
 	case tokenize.TokenLiteral:
-		return p.ClassifyLiteral(token.Value)
+		return p.ClassifyLiteral(token)
 
 	case tokenize.TokenString:
 		return value.NewStrVal(token.Value), nil
 
 	case tokenize.TokenLBracket:
-		values, err := p.parseUntil(tokenize.TokenRBracket, "block")
+		values, err := p.parseUntil(tokenize.TokenRBracket, "block", token)
 		if err != nil {
 			return nil, err
 		}
 		return value.NewBlockVal(values), nil
 
 	case tokenize.TokenLParen:
-		values, err := p.parseUntil(tokenize.TokenRParen, "paren")
+		values, err := p.parseUntil(tokenize.TokenRParen, "paren", token)
 		if err != nil {
 			return nil, err
 		}
 		return value.NewParenVal(values), nil
 
 	case tokenize.TokenRBracket, tokenize.TokenRParen:
-		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedClosing, [3]string{token.Value, "", ""})
+		return nil, p.syntaxError(verror.ErrIDUnexpectedClosing, [3]string{token.Value, "", ""}, token.Line, token.Column)
 
 	case tokenize.TokenEOF:
-		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
+		return nil, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, token.Line, token.Column)
 
 	default:
-		return nil, verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{"unknown token type", "", ""})
+		return nil, p.syntaxError(verror.ErrIDInvalidSyntax, [3]string{"unknown token type", "", ""}, token.Line, token.Column)
 	}
 }
 
-func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) ([]core.Value, error) {
+func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string, start tokenize.Token) ([]core.Value, error) {
 	values := []core.Value{}
 
 	for p.pos < len(p.tokens) {
@@ -106,7 +124,7 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 			if structName == "paren" {
 				errID = verror.ErrIDUnclosedParen
 			}
-			return nil, verror.NewSyntaxError(errID, [3]string{"", "", ""})
+			return nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
 		}
 
 		val, err := p.parseValue()
@@ -120,17 +138,18 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 	if structName == "paren" {
 		errID = verror.ErrIDUnclosedParen
 	}
-	return nil, verror.NewSyntaxError(errID, [3]string{"", "", ""})
+	return nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
 }
 
-func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
+func (p *Parser) ClassifyLiteral(token tokenize.Token) (core.Value, error) {
+	text := token.Value
 	if strings.HasPrefix(text, "#{") && strings.HasSuffix(text, "}") {
 		hexStr := text[2 : len(text)-1]
-		return p.parseBinary(hexStr)
+		return p.parseBinary(token, hexStr)
 	}
 
 	if strings.ContainsAny(text, "{}") {
-		return nil, verror.NewSyntaxError(verror.ErrIDInvalidLiteral, [3]string{text, "contains braces", ""})
+		return nil, p.syntaxError(verror.ErrIDInvalidLiteral, [3]string{text, "contains braces", ""}, token.Line, token.Column)
 	}
 
 	if strings.HasPrefix(text, "'") {
@@ -140,10 +159,10 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	if strings.HasPrefix(text, ":") {
 		base := text[1:]
 		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
-			return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "get-word", ""})
+			return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "get-word", ""}, token.Line, token.Column)
 		}
 		if strings.Contains(base, ".") {
-			segments, err := p.parsePath(base)
+			segments, err := p.parsePath(token, base)
 			if err != nil {
 				return nil, err
 			}
@@ -155,10 +174,10 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	if strings.HasSuffix(text, ":") {
 		base := text[:len(text)-1]
 		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
-			return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "set-word", ""})
+			return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "set-word", ""}, token.Line, token.Column)
 		}
 		if strings.Contains(base, ".") {
-			segments, err := p.parsePath(base)
+			segments, err := p.parsePath(token, base)
 			if err != nil {
 				return nil, err
 			}
@@ -190,12 +209,12 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 			if len(parts) == 2 {
 				secondPart := parts[1]
 				if len(secondPart) > 0 && (secondPart[0] == 'e' || secondPart[0] == 'E') {
-					return nil, verror.NewSyntaxError(verror.ErrIDInvalidNumberFormat, [3]string{text, "", ""})
+					return nil, p.syntaxError(verror.ErrIDInvalidNumberFormat, [3]string{text, "", ""}, token.Line, token.Column)
 				}
 			}
 		}
 
-		segments, err := p.parsePath(text)
+		segments, err := p.parsePath(token, text)
 		if err != nil {
 			return nil, err
 		}
@@ -205,9 +224,9 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	return value.NewWordVal(text), nil
 }
 
-func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
+func (p *Parser) parsePath(token tokenize.Token, text string) ([]value.PathSegment, error) {
 	if text == "" || text == "." {
-		return nil, verror.NewSyntaxError(verror.ErrIDEmptyPath, [3]string{text, "", ""})
+		return nil, p.syntaxError(verror.ErrIDEmptyPath, [3]string{text, "", ""}, token.Line, token.Column)
 	}
 
 	parts := strings.Split(text, ".")
@@ -215,12 +234,12 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 
 	for i, part := range parts {
 		if part == "" {
-			return nil, verror.NewSyntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""})
+			return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""}, token.Line, token.Column)
 		}
 
 		if n, err := strconv.ParseInt(part, 10, 64); err == nil {
 			if i == 0 {
-				return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""})
+				return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""}, token.Line, token.Column)
 			}
 			segments = append(segments, value.PathSegment{
 				Type:  value.PathSegmentIndex,
@@ -237,13 +256,13 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 	return segments, nil
 }
 
-func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
+func (p *Parser) parseBinary(token tokenize.Token, hexStr string) (core.Value, error) {
 	if len(hexStr) == 0 {
 		return value.NewBinaryVal([]byte{}), nil
 	}
 
 	if len(hexStr)%2 != 0 {
-		return nil, verror.NewSyntaxError(verror.ErrIDInvalidBinaryLength, [3]string{hexStr, "", ""})
+		return nil, p.syntaxError(verror.ErrIDInvalidBinaryLength, [3]string{hexStr, "", ""}, token.Line, token.Column)
 	}
 
 	bytes := make([]byte, len(hexStr)/2)
@@ -251,7 +270,7 @@ func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
 		high := hexDigitToInt(hexStr[i])
 		low := hexDigitToInt(hexStr[i+1])
 		if high == -1 || low == -1 {
-			return nil, verror.NewSyntaxError(verror.ErrIDInvalidBinaryDigit, [3]string{hexStr, "", ""})
+			return nil, p.syntaxError(verror.ErrIDInvalidBinaryDigit, [3]string{hexStr, "", ""}, token.Line, token.Column)
 		}
 		bytes[i/2] = byte(high<<4 | low)
 	}

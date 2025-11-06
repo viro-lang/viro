@@ -15,7 +15,7 @@ var (
 
 func BenchmarkEvalSimpleExpression(b *testing.B) {
 	source := "1 + 2 * 3 - 4 + 5 / 2"
-	values, err := parse.Parse(source)
+	values, err := parse.ParseWithSource(source, "(test)")
 	if err != nil {
 		b.Fatalf("parse failed: %v", err)
 	}
@@ -62,7 +62,7 @@ loop 20 [
 ]
 total
 `
-	values, err := parse.Parse(source)
+	values, err := parse.ParseWithSource(source, "(test)")
 	if err != nil {
 		b.Fatalf("parse failed: %v", err)
 	}

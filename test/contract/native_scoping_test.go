@@ -65,7 +65,7 @@ func TestRefinementWithNativeName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.code)
+			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
@@ -167,7 +167,7 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.code)
+			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
@@ -295,7 +295,7 @@ func TestNestedScopeShadowing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.Parse(tt.code)
+			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
@@ -335,7 +335,7 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tokens, parseErr := parse.Parse(tt.code)
+			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
