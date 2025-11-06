@@ -5,6 +5,7 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func TestParser_Tokenize(t *testing.T) {
@@ -327,6 +328,93 @@ func TestParser_Integration(t *testing.T) {
 
 			if !result.Equals(tt.expected) {
 				t.Errorf("Expected %v, got %v", tt.expected.Mold(), result.Mold())
+			}
+		})
+	}
+}
+
+func TestParser_ErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		expectedErr string
+	}{
+		{
+			name:        "tokenize invalid character @",
+			input:       `tokenize "@"`,
+			expectedErr: "invalid-character",
+		},
+		{
+			name:        "tokenize invalid character ~",
+			input:       `tokenize "~"`,
+			expectedErr: "invalid-character",
+		},
+		{
+			name:        "tokenize invalid character backtick",
+			input:       "tokenize \"`\"",
+			expectedErr: "invalid-character",
+		},
+		{
+			name:        "tokenize unterminated string",
+			input:       `tokenize "\"abc"`,
+			expectedErr: "unterminated-string",
+		},
+		{
+			name:        "tokenize invalid escape",
+			input:       `tokenize "\"abc\\x\""`,
+			expectedErr: "invalid-escape",
+		},
+		{
+			name:        "load-string unexpected closing bracket",
+			input:       `load-string "]"`,
+			expectedErr: "unexpected-closing",
+		},
+		{
+			name:        "load-string unexpected closing paren",
+			input:       `load-string ")"`,
+			expectedErr: "unexpected-closing",
+		},
+		{
+			name:        "load-string unclosed block",
+			input:       `load-string "["`,
+			expectedErr: "unclosed-block",
+		},
+		{
+			name:        "load-string unclosed paren",
+			input:       `load-string "("`,
+			expectedErr: "unclosed-paren",
+		},
+		{
+			name:        "classify invalid number format",
+			input:       `classify "1.e"`,
+			expectedErr: "invalid-number-format",
+		},
+		{
+			name:        "classify path starting with number",
+			input:       `classify "1.x"`,
+			expectedErr: "path-leading-number",
+		},
+		{
+			name:        "classify empty path segment",
+			input:       `classify "a.."`,
+			expectedErr: "empty-path-segment",
+		},
+		{
+			name:        "classify empty path",
+			input:       `classify "."`,
+			expectedErr: "empty-path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Evaluate(tt.input)
+			if err == nil {
+				t.Fatalf("expected error but got none")
+			}
+
+			if vErr, ok := err.(*verror.Error); !ok || vErr.ID != tt.expectedErr {
+				t.Fatalf("expected error ID %s, got: %v (type %T)", tt.expectedErr, err, err)
 			}
 		})
 	}
