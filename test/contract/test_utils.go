@@ -45,13 +45,13 @@ func NewTestEvaluator() *eval.Evaluator {
 
 // Evaluate is a helper function to evaluate Viro code in tests.
 func Evaluate(src string) (core.Value, error) {
-	vals, err := parse.ParseWithSource(src, "(test)")
+	vals, locations, err := parse.ParseWithSource(src, "(test)")
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 
 	e := NewTestEvaluator()
-	return e.DoBlock(vals)
+	return e.DoBlock(vals, locations)
 }
 
 // RunSeriesTest is a unified test helper for series operations that handles
@@ -60,12 +60,12 @@ func RunSeriesTest(t *testing.T, input string, want string, wantErr bool, errID 
 	t.Helper()
 
 	e := NewTestEvaluator()
-	tokens, parseErr := parse.ParseWithSource(input, "(test)")
+	tokens, locations, parseErr := parse.ParseWithSource(input, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, err := e.DoBlock(tokens)
+	result, err := e.DoBlock(tokens, locations)
 
 	if wantErr {
 		if err == nil {

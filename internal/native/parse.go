@@ -90,7 +90,7 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	parser := parse.NewParser(tokens, "")
-	values, err := parser.Parse()
+	values, locations, err := parser.Parse()
 	if err != nil {
 		if vErr, ok := err.(*verror.Error); ok {
 			return value.NewNoneVal(), vErr
@@ -98,7 +98,11 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidToken, [3]string{"parse", err.Error(), ""})
 	}
 
-	return value.NewBlockVal(values), nil
+	block := value.NewBlockVal(values)
+	if blockVal, ok := value.AsBlockValue(block); ok {
+		blockVal.SetLocations(locations)
+	}
+	return block, nil
 }
 
 func convertToTokens(tokensBlock []core.Value) ([]tokenize.Token, error) {
@@ -190,12 +194,16 @@ func NativeLoadString(args []core.Value, refValues map[string]core.Value, eval c
 	}
 	input := inputVal.String()
 
-	values, err := parse.ParseWithSource(input, "(native)")
+	values, locations, err := parse.ParseWithSource(input, "(native)")
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 
-	return value.NewBlockVal(values), nil
+	block := value.NewBlockVal(values)
+	if blockVal, ok := value.AsBlockValue(block); ok {
+		blockVal.SetLocations(locations)
+	}
+	return block, nil
 }
 
 func NativeClassify(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

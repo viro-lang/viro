@@ -84,7 +84,7 @@ func TestIO_Print(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, perr := parse.ParseWithSource(tt.script, "(test)")
+			vals, locations, perr := parse.ParseWithSource(tt.script, "(test)")
 			if perr != nil {
 				t.Fatalf("Parse failed: %v", perr)
 			}
@@ -92,7 +92,7 @@ func TestIO_Print(t *testing.T) {
 			e := NewTestEvaluator()
 
 			captured, result, evalErr := captureOutput(t, e, func() (core.Value, error) {
-				val, derr := e.DoBlock(vals)
+				val, derr := e.DoBlock(vals, locations)
 				if derr != nil {
 					return value.NewNoneVal(), derr
 				}
@@ -139,7 +139,7 @@ func TestIO_Input(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, parseErr := parse.ParseWithSource("input", "(test)")
+			vals, locations, parseErr := parse.ParseWithSource("input", "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse failed: %v", parseErr)
 			}
@@ -158,7 +158,7 @@ func TestIO_Input(t *testing.T) {
 			os.Stdin = r
 
 			e := NewTestEvaluator()
-			result, evalErr := e.DoBlock(vals)
+			result, evalErr := e.DoBlock(vals, locations)
 
 			if err := r.Close(); err != nil {
 				t.Fatalf("closing stdin pipe reader failed: %v", err)

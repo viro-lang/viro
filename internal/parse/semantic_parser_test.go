@@ -306,7 +306,7 @@ func TestParser_Parse_EmptyBlock(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	result, err := p.Parse()
+	result, _, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
 		return
@@ -343,7 +343,7 @@ func TestParser_Parse_SimpleBlock(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	result, err := p.Parse()
+	result, _, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
 		return
@@ -388,7 +388,7 @@ func TestParser_Parse_NestedBlocks(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	result, err := p.Parse()
+	result, _, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
 		return
@@ -440,7 +440,7 @@ func TestParser_Parse_Parens(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	result, err := p.Parse()
+	result, _, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
 		return
@@ -477,7 +477,7 @@ func TestParser_Parse_Mixed(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	result, err := p.Parse()
+	result, _, err := p.Parse()
 	if err != nil {
 		t.Errorf("Parse() error = %v", err)
 		return
@@ -506,7 +506,7 @@ func TestParser_Parse_UnclosedBlock(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	_, err := p.Parse()
+	_, _, err := p.Parse()
 	if err == nil {
 		t.Errorf("Parse() expected error for unclosed block, got nil")
 	}
@@ -519,7 +519,7 @@ func TestParser_Parse_UnexpectedClosingBracket(t *testing.T) {
 	}
 
 	p := NewParser(tokens, "(test)")
-	_, err := p.Parse()
+	_, _, err := p.Parse()
 	if err == nil {
 		t.Errorf("Parse() expected error for unexpected closing bracket, got nil")
 	}

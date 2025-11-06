@@ -4,6 +4,12 @@ import "io"
 
 type ValueType uint8
 
+type SourceLocation struct {
+	File   string
+	Line   int
+	Column int
+}
+
 type NativeFunc func(args []Value, refValues map[string]Value, eval Evaluator) (Value, error)
 
 type Value interface {
@@ -47,8 +53,8 @@ type Evaluator interface {
 	PushFrameContext(frame Frame) int
 	PopFrameContext()
 	Lookup(symbol string) (Value, bool)
-	DoBlock(vals []Value) (Value, error)
-	EvaluateExpression(block []Value, position int) (int, Value, error)
+	DoBlock(vals []Value, locations []SourceLocation) (Value, error)
+	EvaluateExpression(block []Value, locations []SourceLocation, position int) (int, Value, error)
 	GetCallStack() []string
 	SetOutputWriter(writer io.Writer)
 	GetOutputWriter() io.Writer
