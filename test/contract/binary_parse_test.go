@@ -25,33 +25,23 @@ func TestBinaryLiteral_RoundTrip(t *testing.T) {
 		},
 		{
 			name:  "multiple bytes",
-			input: "#{DE AD BE EF}",
-			want:  "#{DE AD BE EF}",
+			input: "#{DEADBEEF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "lowercase hex",
 			input: "#{deadbeef}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "mixed case",
 			input: "#{DeAdBeEf}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "no spaces in input",
 			input: "#{DEADBEEF}",
-			want:  "#{DE AD BE EF}",
-		},
-		{
-			name:  "extra spaces",
-			input: "#{  DE   AD  }",
-			want:  "#{DE AD}",
-		},
-		{
-			name:  "tabs and newlines",
-			input: "#{DE\tAD\nBE\rEF}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 	}
 

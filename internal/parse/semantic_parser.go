@@ -59,9 +59,6 @@ func (p *Parser) parseValue() (core.Value, error) {
 	case tokenize.TokenString:
 		return value.NewStrVal(token.Value), nil
 
-	case tokenize.TokenBinary:
-		return p.parseBinary(token.Value)
-
 	case tokenize.TokenLBracket:
 		values, err := p.parseUntil(tokenize.TokenRBracket, "block")
 		if err != nil {
@@ -113,6 +110,16 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 }
 
 func (p *Parser) classifyLiteral(text string) (core.Value, error) {
+	binaryPattern := regexp.MustCompile(`^#\{[0-9A-Fa-f]*\}$`)
+	if binaryPattern.MatchString(text) {
+		hexStr := text[2 : len(text)-1]
+		return p.parseBinary(hexStr)
+	}
+
+	if strings.ContainsAny(text, "{}") {
+		return nil, fmt.Errorf("invalid literal containing braces: %s", text)
+	}
+
 	if strings.HasPrefix(text, "'") {
 		return value.NewLitWordVal(text[1:]), nil
 	}
@@ -222,10 +229,9 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 }
 
 func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
-	hexStr = strings.ReplaceAll(hexStr, " ", "")
-	hexStr = strings.ReplaceAll(hexStr, "\t", "")
-	hexStr = strings.ReplaceAll(hexStr, "\n", "")
-	hexStr = strings.ReplaceAll(hexStr, "\r", "")
+	if len(hexStr) == 0 {
+		return value.NewBinaryVal([]byte{}), nil
+	}
 
 	if len(hexStr)%2 != 0 {
 		return nil, fmt.Errorf("binary literal must have even number of hex digits")

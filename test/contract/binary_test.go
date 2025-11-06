@@ -35,32 +35,32 @@ func TestBinaryMold(t *testing.T) {
 		{
 			name: "two bytes",
 			data: []byte{0xDE, 0xAD},
-			want: "#{DE AD}",
+			want: "#{DEAD}",
 		},
 		{
 			name: "four bytes DEADBEEF",
 			data: []byte{0xDE, 0xAD, 0xBE, 0xEF},
-			want: "#{DE AD BE EF}",
+			want: "#{DEADBEEF}",
 		},
 		{
 			name: "eight bytes",
 			data: []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07},
-			want: "#{00 01 02 03 04 05 06 07}",
+			want: "#{0001020304050607}",
 		},
 		{
 			name: "all zeros",
 			data: []byte{0x00, 0x00, 0x00, 0x00},
-			want: "#{00 00 00 00}",
+			want: "#{00000000}",
 		},
 		{
 			name: "all FF",
 			data: []byte{0xFF, 0xFF, 0xFF, 0xFF},
-			want: "#{FF FF FF FF}",
+			want: "#{FFFFFFFF}",
 		},
 		{
 			name: "mixed case data",
 			data: []byte{0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89},
-			want: "#{AB CD EF 01 23 45 67 89}",
+			want: "#{ABCDEF0123456789}",
 		},
 	}
 
@@ -95,7 +95,7 @@ func TestBinaryForm(t *testing.T) {
 		{
 			name: "four bytes",
 			data: []byte{0xDE, 0xAD, 0xBE, 0xEF},
-			want: "#{DE AD BE EF}",
+			want: "#{DEADBEEF}",
 		},
 		{
 			name: "exactly 64 bytes",
@@ -106,7 +106,7 @@ func TestBinaryForm(t *testing.T) {
 				}
 				return b
 			}(),
-			want: "#{00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21 22 23 24 25 26 27 28 29 2A 2B 2C 2D 2E 2F 30 31 32 33 34 35 36 37 38 39 3A 3B 3C 3D 3E 3F}",
+			want: "#{000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F202122232425262728292A2B2C2D2E2F303132333435363738393A3B3C3D3E3F}",
 		},
 		{
 			name: "65 bytes - just over threshold",
@@ -117,7 +117,7 @@ func TestBinaryForm(t *testing.T) {
 				}
 				return b
 			}(),
-			want: "#{00 01 02 03 04 05 06 07 ... (65 bytes)}",
+			want: "#{0001020304050607...(65 bytes)}",
 		},
 		{
 			name: "128 bytes",
@@ -128,7 +128,7 @@ func TestBinaryForm(t *testing.T) {
 				}
 				return b
 			}(),
-			want: "#{00 01 02 03 04 05 06 07 ... (128 bytes)}",
+			want: "#{0001020304050607...(128 bytes)}",
 		},
 		{
 			name: "256 bytes",
@@ -139,7 +139,7 @@ func TestBinaryForm(t *testing.T) {
 				}
 				return b
 			}(),
-			want: "#{00 01 02 03 04 05 06 07 ... (256 bytes)}",
+			want: "#{0001020304050607...(256 bytes)}",
 		},
 		{
 			name: "1024 bytes",
@@ -150,7 +150,7 @@ func TestBinaryForm(t *testing.T) {
 				}
 				return b
 			}(),
-			want: "#{00 01 02 03 04 05 06 07 ... (1024 bytes)}",
+			want: "#{0001020304050607...(1024 bytes)}",
 		},
 	}
 
@@ -170,7 +170,7 @@ func TestBinaryString(t *testing.T) {
 	bin := value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF})
 	binValue := bin.(*value.BinaryValue)
 	got := binValue.String()
-	want := "#{DE AD BE EF}"
+	want := "#{DEADBEEF}"
 	if got != want {
 		t.Errorf("String() = %q, want %q", got, want)
 	}

@@ -822,13 +822,13 @@ func TestData_MoldFormWithSeriesIndex(t *testing.T) {
 		},
 		{
 			name:     "mold respects binary index with next",
-			input:    `mold next #{01 02 03}`,
-			expected: value.NewStrVal("#{02 03}"),
+			input:    `mold next #{010203}`,
+			expected: value.NewStrVal("#{0203}"),
 		},
 		{
 			name:     "form respects binary index with next",
-			input:    `form next #{01 02 03}`,
-			expected: value.NewStrVal("#{02 03}"),
+			input:    `form next #{010203}`,
+			expected: value.NewStrVal("#{0203}"),
 		},
 		{
 			name:     "mold with skip respects index",
