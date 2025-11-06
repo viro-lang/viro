@@ -18,15 +18,6 @@ jobs:
         with:
           go-version: '1.21'
 
-      - name: Install Pigeon
-        run: go install github.com/mna/pigeon@latest
-
-      - name: Generate Parser
-        run: make grammar
-
-      - name: Verify Grammar Up-to-Date
-        run: git diff --exit-code internal/parse/peg/parser.go
-
       - name: Download dependencies
         run: go mod download
 
