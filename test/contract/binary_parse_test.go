@@ -149,7 +149,7 @@ func TestBinaryLiteral_InvalidCases(t *testing.T) {
 			name:        "special characters",
 			input:       "#{@!}",
 			wantErr:     true,
-			expectedErr: "invalid-binary-digit",
+			expectedErr: "invalid-character",
 		},
 	}
 

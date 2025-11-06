@@ -91,7 +91,10 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 	parser := parse.NewParser(tokens)
 	values, err := parser.Parse()
 	if err != nil {
-		return value.NewNoneVal(), verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
+		if vErr, ok := err.(*verror.Error); ok {
+			return value.NewNoneVal(), vErr
+		}
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidToken, [3]string{"parse", err.Error(), ""})
 	}
 
 	return value.NewBlockVal(values), nil
@@ -208,7 +211,10 @@ func NativeClassify(args []core.Value, refValues map[string]core.Value, eval cor
 	parser := parse.NewParser([]tokenize.Token{})
 	val, err := parser.ClassifyLiteral(input)
 	if err != nil {
-		return value.NewNoneVal(), verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
+		if vErr, ok := err.(*verror.Error); ok {
+			return value.NewNoneVal(), vErr
+		}
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidToken, [3]string{"classify", err.Error(), ""})
 	}
 
 	return val, nil

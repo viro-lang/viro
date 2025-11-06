@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/tokenize"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 type Parser struct {
@@ -46,7 +46,7 @@ func (p *Parser) Parse() ([]core.Value, error) {
 
 func (p *Parser) parseValue() (core.Value, error) {
 	if p.pos >= len(p.tokens) {
-		return nil, fmt.Errorf("unexpected end of input")
+		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
 	}
 
 	token := p.tokens[p.pos]
@@ -74,13 +74,13 @@ func (p *Parser) parseValue() (core.Value, error) {
 		return value.NewParenVal(values), nil
 
 	case tokenize.TokenRBracket, tokenize.TokenRParen:
-		return nil, fmt.Errorf("unexpected closing bracket at line %d, column %d", token.Line, token.Column)
+		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedClosing, [3]string{token.Value, "", ""})
 
 	case tokenize.TokenEOF:
-		return nil, fmt.Errorf("unexpected EOF")
+		return nil, verror.NewSyntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""})
 
 	default:
-		return nil, fmt.Errorf("unknown token type")
+		return nil, verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{"unknown token type", "", ""})
 	}
 }
 
@@ -96,7 +96,11 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 		}
 
 		if token.Type == tokenize.TokenEOF {
-			return nil, fmt.Errorf("unclosed %s", structName)
+			errID := verror.ErrIDUnclosedBlock
+			if structName == "paren" {
+				errID = verror.ErrIDUnclosedParen
+			}
+			return nil, verror.NewSyntaxError(errID, [3]string{"", "", ""})
 		}
 
 		val, err := p.parseValue()
@@ -106,18 +110,21 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 		values = append(values, val)
 	}
 
-	return nil, fmt.Errorf("unclosed %s", structName)
+	errID := verror.ErrIDUnclosedBlock
+	if structName == "paren" {
+		errID = verror.ErrIDUnclosedParen
+	}
+	return nil, verror.NewSyntaxError(errID, [3]string{"", "", ""})
 }
 
 func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
-	binaryPattern := regexp.MustCompile(`^#\{[0-9A-Fa-f]*\}$`)
-	if binaryPattern.MatchString(text) {
+	if strings.HasPrefix(text, "#{") && strings.HasSuffix(text, "}") {
 		hexStr := text[2 : len(text)-1]
 		return p.parseBinary(hexStr)
 	}
 
 	if strings.ContainsAny(text, "{}") {
-		return nil, fmt.Errorf("invalid literal containing braces: %s", text)
+		return nil, verror.NewSyntaxError(verror.ErrIDInvalidLiteral, [3]string{text, "contains braces", ""})
 	}
 
 	if strings.HasPrefix(text, "'") {
@@ -127,7 +134,7 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	if strings.HasPrefix(text, ":") {
 		base := text[1:]
 		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
-			return nil, fmt.Errorf("get-words cannot start with numbers: %s", text)
+			return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "get-word", ""})
 		}
 		if strings.Contains(base, ".") {
 			segments, err := p.parsePath(base)
@@ -142,7 +149,7 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	if strings.HasSuffix(text, ":") {
 		base := text[:len(text)-1]
 		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
-			return nil, fmt.Errorf("set-words cannot start with numbers: %s", text)
+			return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "set-word", ""})
 		}
 		if strings.Contains(base, ".") {
 			segments, err := p.parsePath(base)
@@ -183,7 +190,13 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	if strings.Contains(text, ".") {
 		firstChar := text[0]
 		if firstChar >= '0' && firstChar <= '9' {
-			return nil, fmt.Errorf("invalid number format: %s", text)
+			parts := strings.Split(text, ".")
+			if len(parts) == 2 {
+				secondPart := parts[1]
+				if len(secondPart) > 0 && (secondPart[0] == 'e' || secondPart[0] == 'E') {
+					return nil, verror.NewSyntaxError(verror.ErrIDInvalidNumberFormat, [3]string{text, "", ""})
+				}
+			}
 		}
 
 		segments, err := p.parsePath(text)
@@ -197,8 +210,8 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 }
 
 func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
-	if text == "" {
-		return nil, fmt.Errorf("empty path")
+	if text == "" || text == "." {
+		return nil, verror.NewSyntaxError(verror.ErrIDEmptyPath, [3]string{text, "", ""})
 	}
 
 	parts := strings.Split(text, ".")
@@ -206,12 +219,12 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 
 	for i, part := range parts {
 		if part == "" {
-			return nil, fmt.Errorf("empty path segment")
+			return nil, verror.NewSyntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""})
 		}
 
 		if n, err := strconv.ParseInt(part, 10, 64); err == nil {
 			if i == 0 {
-				return nil, fmt.Errorf("paths cannot start with numbers")
+				return nil, verror.NewSyntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""})
 			}
 			segments = append(segments, value.PathSegment{
 				Type:  value.PathSegmentIndex,
@@ -234,7 +247,7 @@ func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
 	}
 
 	if len(hexStr)%2 != 0 {
-		return nil, fmt.Errorf("binary literal must have even number of hex digits")
+		return nil, verror.NewSyntaxError(verror.ErrIDInvalidBinaryLength, [3]string{hexStr, "", ""})
 	}
 
 	bytes := make([]byte, len(hexStr)/2)
@@ -242,7 +255,7 @@ func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
 		high := hexDigitToInt(hexStr[i])
 		low := hexDigitToInt(hexStr[i+1])
 		if high == -1 || low == -1 {
-			return nil, fmt.Errorf("invalid hex digit in binary literal")
+			return nil, verror.NewSyntaxError(verror.ErrIDInvalidBinaryDigit, [3]string{hexStr, "", ""})
 		}
 		bytes[i/2] = byte(high<<4 | low)
 	}
