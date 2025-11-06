@@ -1645,6 +1645,36 @@ skipped: skip bin 2
 index? bin`,
 			want: value.NewIntVal(1),
 		},
+		{
+			name: "skip zero returns new cloned view",
+			input: `data: [1 2 3]
+skipped: skip data 0
+index? skipped`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "skip zero does not mutate original",
+			input: `data: [1 2 3]
+skipped: skip data 0
+first data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "independent navigation after skip",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 2
+advanced: next skipped
+index? data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "advancing returned skip view does not affect original",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 2
+advanced: next next skipped
+first data`,
+			want: value.NewIntVal(1),
+		},
 	}
 
 	for _, tt := range tests {
