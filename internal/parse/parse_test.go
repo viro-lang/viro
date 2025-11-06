@@ -73,7 +73,7 @@ func TestDecimalLiteralParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := Parse(tt.input)
+			vals, _, err := Parse(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
@@ -140,7 +140,7 @@ func TestDecimalLiteralDisambiguation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Parse(tt.input)
+			_, _, err := Parse(tt.input)
 			if (err != nil) != tt.wantErr {
 				if tt.wantErr {
 					t.Errorf("Expected error but got none for: %s", tt.desc)
@@ -206,7 +206,7 @@ func TestCommentParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, err := Parse(tt.input)
+			vals, _, err := Parse(tt.input)
 			if err != nil {
 				t.Fatalf("Parse error for %s: %v", tt.desc, err)
 			}

@@ -40,7 +40,7 @@ func When(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 	if isTruthy {
 		// Evaluate the block
 		block, _ := value.AsBlockValue(args[1])
-		return eval.DoBlock(block.Elements)
+		return eval.DoBlock(block.Elements, block.Locations())
 	}
 
 	// Condition is falsy, return none
@@ -78,12 +78,12 @@ func If(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 	if isTruthy {
 		// Evaluate true-block
 		block, _ := value.AsBlockValue(args[1])
-		return eval.DoBlock(block.Elements)
+		return eval.DoBlock(block.Elements, block.Locations())
 	}
 
 	// Evaluate false-block
 	block, _ := value.AsBlockValue(args[2])
-	return eval.DoBlock(block.Elements)
+	return eval.DoBlock(block.Elements, block.Locations())
 }
 
 // Loop implements the 'loop' iteration native.
@@ -147,7 +147,7 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 			currentFrame.Bind(indexWord, value.NewIntVal(int64(i)))
 		}
 
-		result, err = eval.DoBlock(block.Elements)
+		result, err = eval.DoBlock(block.Elements, block.Locations())
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
@@ -189,7 +189,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		// Loop while condition block evaluates to truthy
 		for {
 			// Evaluate condition block
-			conditionResult, err := eval.DoBlock(conditionBlock.Elements)
+			conditionResult, err := eval.DoBlock(conditionBlock.Elements, conditionBlock.Locations())
 			if err != nil {
 				return value.NewNoneVal(), err
 			}
@@ -200,7 +200,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			}
 
 			// Evaluate body block
-			result, err = eval.DoBlock(bodyBlock.Elements)
+			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
 				return value.NewNoneVal(), err
 			}
@@ -211,7 +211,7 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		for ToTruthy(condition) {
 			// Evaluate body block
 			var err error
-			result, err = eval.DoBlock(bodyBlock.Elements)
+			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
 				return value.NewNoneVal(), err
 			}
@@ -243,12 +243,13 @@ func Reduce(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	block, _ := value.AsBlockValue(args[0])
 	vals := block.Elements
+	locations := block.Locations()
 	reducedElements := make([]core.Value, 0)
 
 	position := 0
 
 	for position < len(vals) {
-		newPos, result, err := eval.EvaluateExpression(vals, position)
+		newPos, result, err := eval.EvaluateExpression(vals, locations, position)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
@@ -267,7 +268,7 @@ func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	if args[0].GetType() == value.TypeParen {
 		parenBlock, _ := value.AsBlockValue(args[0])
-		return eval.DoBlock(parenBlock.Elements)
+		return eval.DoBlock(parenBlock.Elements, parenBlock.Locations())
 	}
 
 	if args[0].GetType() != value.TypeBlock {
@@ -281,7 +282,7 @@ func Compose(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	for _, element := range vals {
 		if element.GetType() == value.TypeParen {
 			parenBlock, _ := value.AsBlockValue(element)
-			result, err := eval.DoBlock(parenBlock.Elements)
+			result, err := eval.DoBlock(parenBlock.Elements, parenBlock.Locations())
 			if err != nil {
 				return value.NewNoneVal(), err
 			}
@@ -618,7 +619,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 			currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
 		}
 
-		result, err = eval.DoBlock(bodyBlock.Elements)
+		result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 
 		if err != nil {
 			return value.NewNoneVal(), err
@@ -650,7 +651,7 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		}
 
 		if val.GetType() != value.TypeBlock {
-			newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+			newPos, result, err := eval.EvaluateExpression([]core.Value{val}, nil, 0)
 			if err != nil {
 				return value.NewNoneVal(), err
 			}
@@ -662,6 +663,7 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 
 		block, _ := value.AsBlockValue(val)
 		vals := block.Elements
+		locations := block.Locations()
 		startIndex := block.Index
 
 		currentFrameIdx := eval.CurrentFrameIndex()
@@ -674,7 +676,7 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 			return value.NewNoneVal(), nil
 		}
 
-		newPos, result, err := eval.EvaluateExpression(vals, startIndex)
+		newPos, result, err := eval.EvaluateExpression(vals, locations, startIndex)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
@@ -692,10 +694,16 @@ func Do(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		if startIndex >= len(block.Elements) {
 			return value.NewNoneVal(), nil
 		}
-		return eval.DoBlock(block.Elements[startIndex:])
+		locations := block.Locations()
+		if len(locations) > startIndex {
+			locations = locations[startIndex:]
+		} else {
+			locations = nil
+		}
+		return eval.DoBlock(block.Elements[startIndex:], locations)
 	}
 
-	newPos, result, err := eval.EvaluateExpression([]core.Value{val}, 0)
+	newPos, result, err := eval.EvaluateExpression([]core.Value{val}, nil, 0)
 	if err != nil {
 		return value.NewNoneVal(), err
 	}

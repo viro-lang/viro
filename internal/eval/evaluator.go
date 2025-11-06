@@ -159,13 +159,20 @@ func (e *Evaluator) captureCallStack() []string {
 	return where
 }
 
-func (e *Evaluator) annotateError(err error, vals []core.Value, idx int) error {
+func (e *Evaluator) annotateError(err error, vals []core.Value, locations []core.SourceLocation, idx int) error {
 	if err == nil {
 		return nil
 	}
 	if verr, ok := err.(*verror.Error); ok {
 		if idx >= 0 && idx < len(vals) && verr.Near == "" {
 			verr.SetNear(verror.CaptureNear(vals, idx))
+		}
+		if idx >= 0 && idx < len(locations) && verr.File == "" {
+			loc := locations[idx]
+			if loc.Line != 0 || loc.Column != 0 || loc.File != "" {
+				file := loc.File
+				verr.SetLocation(file, loc.Line, loc.Column)
+			}
 		}
 		if len(verr.Where) == 0 {
 			where := e.captureCallStack()
@@ -250,11 +257,15 @@ func (e *Evaluator) GetCallStack() []string {
 	return stack
 }
 
-func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
+func (e *Evaluator) DoBlock(vals []core.Value, locations []core.SourceLocation) (core.Value, error) {
 	var traceStart time.Time
 	if e.traceEnabled {
 		traceStart = time.Now()
 		e.emitTraceResult("block-enter", "", fmt.Sprintf("[%d expressions]", len(vals)), value.NewNoneVal(), 0, traceStart, nil)
+	}
+
+	if len(locations) != len(vals) {
+		locations = nil
 	}
 
 	if len(vals) == 0 {
@@ -268,12 +279,12 @@ func (e *Evaluator) DoBlock(vals []core.Value) (core.Value, error) {
 	lastResult := value.NewNoneVal()
 
 	for position < len(vals) {
-		newPos, result, err := e.EvaluateExpression(vals, position)
+		newPos, result, err := e.EvaluateExpression(vals, locations, position)
 		if err != nil {
 			if e.traceEnabled {
 				e.emitTraceResult("block-exit", "", fmt.Sprintf("[error at position %d]", position), value.NewNoneVal(), position, time.Now(), err)
 			}
-			return value.NewNoneVal(), e.annotateError(err, vals, position)
+			return value.NewNoneVal(), e.annotateError(err, vals, locations, position)
 		}
 		position = newPos
 		lastResult = result
@@ -310,7 +321,7 @@ func (e *Evaluator) isNextInfixOperator(block []core.Value, position int) bool {
 	return ok && fn.Infix
 }
 
-func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftOperand core.Value) (int, core.Value, error) {
+func (e *Evaluator) consumeInfixOperator(block []core.Value, locations []core.SourceLocation, position int, leftOperand core.Value) (int, core.Value, error) {
 	wordElement := block[position]
 	word, _ := value.AsWordValue(wordElement)
 	resolved, _ := e.Lookup(word)
@@ -328,9 +339,9 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 		)
 	}
 
-	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 1, true)
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, locations, position+1, 1, true)
 	if err != nil {
-		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+		return position, value.NewNoneVal(), e.annotateError(err, block, locations, position)
 	}
 
 	posArgs[0] = leftOperand
@@ -338,7 +349,7 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	if fn.Type == value.FuncNative {
 		result, err := e.callNative(fn, posArgs, refValues)
 		if err != nil {
-			return position, value.NewNoneVal(), e.annotateError(err, block, position)
+			return position, value.NewNoneVal(), e.annotateError(err, block, locations, position)
 		}
 		return newPos, result, nil
 	}
@@ -350,7 +361,7 @@ func (e *Evaluator) consumeInfixOperator(block []core.Value, position int, leftO
 	return newPos, result, nil
 }
 
-func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+func (e *Evaluator) evaluateSetWord(block []core.Value, locations []core.SourceLocation, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	wordStr, _ := value.AsWordValue(element)
 
 	if position+1 >= len(block) {
@@ -364,12 +375,12 @@ func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, posi
 		return position, value.NewNoneVal(), err
 	}
 
-	newPos, result, err := e.EvaluateExpression(block, position+1)
+	newPos, result, err := e.EvaluateExpression(block, locations, position+1)
 	if err != nil {
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", wordStr, fmt.Sprintf("%s:", wordStr), value.NewNoneVal(), position, traceStart, err)
 		}
-		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+		return position, value.NewNoneVal(), e.annotateError(err, block, locations, position)
 	}
 
 	if result.GetType() == value.TypeFunction {
@@ -388,7 +399,7 @@ func (e *Evaluator) evaluateSetWord(block []core.Value, element core.Value, posi
 	return newPos, result, nil
 }
 
-func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+func (e *Evaluator) evaluateWord(block []core.Value, locations []core.SourceLocation, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	wordStr, _ := value.AsWordValue(element)
 
 	if debug.GlobalDebugger != nil {
@@ -406,7 +417,7 @@ func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, positio
 
 	if resolved.GetType() == value.TypeFunction {
 		fn, _ := value.AsFunctionValue(resolved)
-		newPos, result, err := e.invokeFunctionExpression(block, position, fn)
+		newPos, result, err := e.invokeFunctionExpression(block, locations, position, fn)
 		return newPos, result, err
 	}
 
@@ -417,7 +428,7 @@ func (e *Evaluator) evaluateWord(block []core.Value, element core.Value, positio
 	return position + 1, resolved, nil
 }
 
-func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
+func (e *Evaluator) evaluatePath(block []core.Value, locations []core.SourceLocation, element core.Value, position int, traceStart time.Time, shouldTraceExpr bool) (int, core.Value, error) {
 	path, _ := value.AsPath(element)
 	result, err := e.evalPathValue(path)
 	if err != nil {
@@ -429,7 +440,7 @@ func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, positio
 
 	if result.GetType() == value.TypeFunction {
 		fn, _ := value.AsFunctionValue(result)
-		newPos, result, err := e.invokeFunctionExpression(block, position, fn)
+		newPos, result, err := e.invokeFunctionExpression(block, locations, position, fn)
 		return newPos, result, err
 	}
 
@@ -440,7 +451,7 @@ func (e *Evaluator) evaluatePath(block []core.Value, element core.Value, positio
 	return position + 1, result, nil
 }
 
-func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core.Value, error) {
+func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceLocation, position int) (int, core.Value, error) {
 	if position >= len(block) {
 		return position, value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNoValue, [3]string{"missing expression", "", ""})
 	}
@@ -465,13 +476,17 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 		return position + 1, element, nil
 
 	case value.TypeParen:
-		block, _ := value.AsBlockValue(element)
+		parenBlock, _ := value.AsBlockValue(element)
 		if shouldTraceExpr {
-			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), value.NewNoneVal(), position, traceStart, nil)
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", parenBlock.Form()), value.NewNoneVal(), position, traceStart, nil)
 		}
-		result, err := e.DoBlock(block.Elements)
+		nestedLocations := []core.SourceLocation{}
+		if parenBlock != nil {
+			nestedLocations = parenBlock.Locations()
+		}
+		result, err := e.DoBlock(parenBlock.Elements, nestedLocations)
 		if shouldTraceExpr && err == nil {
-			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", block.Form()), result, position, traceStart, nil)
+			e.emitTraceResult("eval", "paren", fmt.Sprintf("(%s)", parenBlock.Form()), result, position, traceStart, nil)
 		}
 		return position + 1, result, err
 
@@ -508,28 +523,32 @@ func (e *Evaluator) evaluateElement(block []core.Value, position int) (int, core
 
 	case value.TypeSetPath:
 		setPath, _ := value.AsSetPath(element)
-		newPos, result, err := e.evalSetPathValue(block, position, setPath)
+		newPos, result, err := e.evalSetPathValue(block, locations, position, setPath)
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", setPath.Mold(), result, position, traceStart, err)
 		}
 		return newPos, result, err
 
 	case value.TypeSetWord:
-		return e.evaluateSetWord(block, element, position, traceStart, shouldTraceExpr)
+		return e.evaluateSetWord(block, locations, element, position, traceStart, shouldTraceExpr)
 
 	case value.TypeWord:
-		return e.evaluateWord(block, element, position, traceStart, shouldTraceExpr)
+		return e.evaluateWord(block, locations, element, position, traceStart, shouldTraceExpr)
 
 	case value.TypePath:
-		return e.evaluatePath(block, element, position, traceStart, shouldTraceExpr)
+		return e.evaluatePath(block, locations, element, position, traceStart, shouldTraceExpr)
 
 	default:
 		return position, value.NewNoneVal(), verror.NewInternalError("unknown value type in evaluateExpression", [3]string{})
 	}
 }
 
-func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, core.Value, error) {
-	newPos, result, err := e.evaluateElement(block, position)
+func (e *Evaluator) EvaluateExpression(block []core.Value, locations []core.SourceLocation, position int) (int, core.Value, error) {
+	if len(locations) != len(block) {
+		locations = nil
+	}
+
+	newPos, result, err := e.evaluateElement(block, locations, position)
 	if err != nil {
 		return position, value.NewNoneVal(), err
 	}
@@ -539,7 +558,7 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, c
 			break
 		}
 
-		nextPos, nextResult, err := e.consumeInfixOperator(block, newPos, result)
+		nextPos, nextResult, err := e.consumeInfixOperator(block, locations, newPos, result)
 		if err != nil {
 			return position, value.NewNoneVal(), err
 		}
@@ -551,10 +570,10 @@ func (e *Evaluator) EvaluateExpression(block []core.Value, position int) (int, c
 	return newPos, result, nil
 }
 
-func (e *Evaluator) evalSetPathValue(block []core.Value, position int, setPath *value.SetPathExpression) (int, core.Value, error) {
-	newPos, result, err := e.EvaluateExpression(block, position+1)
+func (e *Evaluator) evalSetPathValue(block []core.Value, locations []core.SourceLocation, position int, setPath *value.SetPathExpression) (int, core.Value, error) {
+	newPos, result, err := e.EvaluateExpression(block, locations, position+1)
 	if err != nil {
-		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+		return position, value.NewNoneVal(), e.annotateError(err, block, locations, position)
 	}
 
 	tr, err := traversePath(e, setPath.PathExpression, true)
@@ -599,7 +618,7 @@ func (e *Evaluator) callNativeFunction(fn *value.FunctionValue, posArgs []core.V
 		if e.traceEnabled {
 			e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
 		}
-		return value.NewNoneVal(), e.annotateError(err, nil, position)
+		return value.NewNoneVal(), e.annotateError(err, nil, nil, position)
 	}
 	return result, nil
 }
@@ -615,14 +634,14 @@ func (e *Evaluator) callUserDefinedFunction(fn *value.FunctionValue, posArgs []c
 	return result, nil
 }
 
-func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, fn *value.FunctionValue) (int, core.Value, error) {
+func (e *Evaluator) invokeFunctionExpression(block []core.Value, locations []core.SourceLocation, position int, fn *value.FunctionValue) (int, core.Value, error) {
 	name := functionDisplayName(fn)
 	e.pushCall(name)
 	defer e.popCall()
 
-	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, position+1, 0, false)
+	posArgs, refValues, newPos, err := e.collectFunctionArgs(fn, block, locations, position+1, 0, false)
 	if err != nil {
-		return position, value.NewNoneVal(), e.annotateError(err, block, position)
+		return position, value.NewNoneVal(), e.annotateError(err, block, locations, position)
 	}
 
 	traceStart, _ := e.setupFunctionCallTracing(name, position, posArgs, refValues)
@@ -645,7 +664,7 @@ func (e *Evaluator) invokeFunctionExpression(block []core.Value, position int, f
 	return newPos, result, nil
 }
 
-func (e *Evaluator) collectParameter(block []core.Value, position int, paramSpec value.ParamSpec, useElementEval bool) (int, core.Value, error) {
+func (e *Evaluator) collectParameter(block []core.Value, locations []core.SourceLocation, position int, paramSpec value.ParamSpec, useElementEval bool) (int, core.Value, error) {
 	if position >= len(block) {
 		return position, value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDNoValue,
@@ -655,9 +674,9 @@ func (e *Evaluator) collectParameter(block []core.Value, position int, paramSpec
 
 	if paramSpec.Eval {
 		if useElementEval {
-			return e.evaluateElement(block, position)
+			return e.evaluateElement(block, locations, position)
 		}
-		return e.EvaluateExpression(block, position)
+		return e.EvaluateExpression(block, locations, position)
 	}
 
 	return position + 1, block[position], nil
@@ -690,7 +709,7 @@ func (e *Evaluator) initializeRefinements(refSpecs map[string]value.ParamSpec) m
 	return refValues
 }
 
-func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, startPosition int, startParamIndex int, useElementEval bool) ([]core.Value, map[string]core.Value, int, error) {
+func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Value, locations []core.SourceLocation, startPosition int, startParamIndex int, useElementEval bool) ([]core.Value, map[string]core.Value, int, error) {
 	positional, refSpecs := e.separateParameters(fn)
 	refValues := e.initializeRefinements(refSpecs)
 	refProvided := make(map[string]bool)
@@ -699,12 +718,12 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	position := startPosition
 	paramIndex := startParamIndex
 
-	position, err := e.collectPositionalArgs(fn, block, positional, posArgs, refSpecs, refValues, refProvided, position, paramIndex, useElementEval)
+	position, err := e.collectPositionalArgs(fn, block, locations, positional, posArgs, refSpecs, refValues, refProvided, position, paramIndex, useElementEval)
 	if err != nil {
 		return nil, nil, position, err
 	}
 
-	position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+	position, err = e.readRefinements(block, locations, position, refSpecs, refValues, refProvided)
 	if err != nil {
 		return nil, nil, position, err
 	}
@@ -712,13 +731,13 @@ func (e *Evaluator) collectFunctionArgs(fn *value.FunctionValue, block []core.Va
 	return posArgs, refValues, position, nil
 }
 
-func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.Value, positional []value.ParamSpec, posArgs []core.Value, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool, startPosition, startParamIndex int, useElementEval bool) (int, error) {
+func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.Value, locations []core.SourceLocation, positional []value.ParamSpec, posArgs []core.Value, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool, startPosition, startParamIndex int, useElementEval bool) (int, error) {
 	position := startPosition
 	paramIndex := startParamIndex
 
 	for paramIndex < len(positional) {
 		var err error
-		position, err = e.readRefinements(block, position, refSpecs, refValues, refProvided)
+		position, err = e.readRefinements(block, locations, position, refSpecs, refValues, refProvided)
 		if err != nil {
 			return position, err
 		}
@@ -731,7 +750,7 @@ func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.
 		}
 
 		paramSpec := positional[paramIndex]
-		position, posArgs[paramIndex], err = e.collectParameter(block, position, paramSpec, useElementEval)
+		position, posArgs[paramIndex], err = e.collectParameter(block, locations, position, paramSpec, useElementEval)
 		if err != nil {
 			return position, err
 		}
@@ -804,7 +823,7 @@ func refinementError(kind, refName string) error {
 	return verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{msg, "", ""})
 }
 
-func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool) (int, error) {
+func (e *Evaluator) readRefinements(tokens []core.Value, locations []core.SourceLocation, pos int, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool) (int, error) {
 	for pos < len(tokens) && isRefinement(tokens[pos]) {
 		wordStr, _ := value.AsWordValue(tokens[pos])
 		refName := strings.TrimPrefix(wordStr, "--")
@@ -825,7 +844,7 @@ func (e *Evaluator) readRefinements(tokens []core.Value, pos int, refSpecs map[s
 			}
 			var arg core.Value
 			var err error
-			pos, arg, err = e.EvaluateExpression(tokens, pos+1)
+			pos, arg, err = e.EvaluateExpression(tokens, locations, pos+1)
 			if err != nil {
 				return pos, err
 			}
@@ -858,7 +877,7 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 		return value.NewNoneVal(), verror.NewInternalError("function body missing", [3]string{})
 	}
 
-	result, err := e.DoBlock(fn.Body.Elements)
+	result, err := e.DoBlock(fn.Body.Elements, fn.Body.Locations())
 	if err != nil {
 		return value.NewNoneVal(), err
 	}

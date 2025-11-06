@@ -191,7 +191,7 @@ outer 5`
 
 func TestParse_UnclosedBlockError(t *testing.T) {
 	sourceName := "test-script.viro"
-	_, err := parse.ParseWithSource("[1 2 3", sourceName)
+	_, _, err := parse.ParseWithSource("[1 2 3", sourceName)
 
 	if err == nil {
 		t.Fatalf("expected parse error but got none")
@@ -225,6 +225,54 @@ func TestParse_UnclosedBlockError(t *testing.T) {
 
 	if vErr.Line == 0 || vErr.Column == 0 {
 		t.Fatalf("expected line and column to be set, got %d:%d", vErr.Line, vErr.Column)
+	}
+}
+
+func TestRuntimeErrorIncludesLocation(t *testing.T) {
+	script := "print 1\nmissing\n"
+
+	values, locations, err := parse.ParseWithSource(script, "(test)")
+	if err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+
+	evaluator := NewTestEvaluator()
+	_, runtimeErr := evaluator.DoBlock(values, locations)
+	if runtimeErr == nil {
+		t.Fatal("expected runtime error but got nil")
+	}
+
+	vErr, ok := runtimeErr.(*verror.Error)
+	if !ok {
+		t.Fatalf("expected *verror.Error, got %T", runtimeErr)
+	}
+
+	if vErr.Line != 2 || vErr.Column != 1 {
+		t.Fatalf("expected error location at line 2 column 1, got line %d column %d", vErr.Line, vErr.Column)
+	}
+}
+
+func TestRuntimeErrorNestedLocation(t *testing.T) {
+	script := "fn: fn [] [\n    missing\n]\nfn\n"
+
+	values, locations, err := parse.ParseWithSource(script, "(test)")
+	if err != nil {
+		t.Fatalf("parse failed: %v", err)
+	}
+
+	evaluator := NewTestEvaluator()
+	_, runtimeErr := evaluator.DoBlock(values, locations)
+	if runtimeErr == nil {
+		t.Fatal("expected runtime error but got nil")
+	}
+
+	vErr, ok := runtimeErr.(*verror.Error)
+	if !ok {
+		t.Fatalf("expected *verror.Error, got %T", runtimeErr)
+	}
+
+	if vErr.Line != 2 || vErr.Column != 5 {
+		t.Fatalf("expected error location at line 2 column 5, got line %d column %d", vErr.Line, vErr.Column)
 	}
 }
 

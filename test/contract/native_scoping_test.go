@@ -65,12 +65,12 @@ func TestRefinementWithNativeName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
+			tokens, locations, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.DoBlock(tokens)
+			result, evalErr := e.DoBlock(tokens, locations)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -167,12 +167,12 @@ func TestLocalVariableWithNativeName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
+			tokens, locations, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.DoBlock(tokens)
+			result, evalErr := e.DoBlock(tokens, locations)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -295,12 +295,12 @@ func TestNestedScopeShadowing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := contract.NewTestEvaluator()
-			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
+			tokens, locations, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.DoBlock(tokens)
+			result, evalErr := e.DoBlock(tokens, locations)
 
 			if tt.wantErr {
 				if evalErr == nil {
@@ -335,12 +335,12 @@ func TestNativeFunctionsAccessible(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tokens, parseErr := parse.ParseWithSource(tt.code, "(test)")
+			tokens, locations, parseErr := parse.ParseWithSource(tt.code, "(test)")
 			if parseErr != nil {
 				t.Fatalf("parse error: %v", parseErr)
 			}
 
-			result, evalErr := e.DoBlock(tokens)
+			result, evalErr := e.DoBlock(tokens, locations)
 			if evalErr != nil {
 				t.Fatalf("unexpected evaluation error: %v", evalErr)
 			}
