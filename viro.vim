@@ -19,8 +19,13 @@ syn match viroGetPath ":[a-zA-Z_][a-zA-Z0-9_?!-]*\(\.[a-zA-Z_][a-zA-Z0-9_?!-]*\)
 syn match viroBrackets "[\[\]]"
 syn match viroParens "[()]"
 
+syn match viroNumber "\<-\?\d\+\>"
+syn match viroNumber "\<-\?\d\+\.\d\+\>"
+syn match viroNumber "\<-\?\d\+\(\.\d\+\)\?[eE][+-]\?\d\+\>"
+
 hi viroComment ctermfg=Yellow guifg=#f9e2af gui=bold cterm=bold
 hi viroString ctermfg=Green guifg=#a6e3a1
+hi viroNumber ctermfg=Red guifg=#eba0ac
 hi viroSetWord ctermfg=Blue guifg=#89b4fa
 hi viroSetPath ctermfg=Blue guifg=#89b4fa
 hi viroGetWord ctermfg=Magenta guifg=#cba6f7

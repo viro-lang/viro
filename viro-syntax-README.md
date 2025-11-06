@@ -39,6 +39,7 @@ This syntax file focuses on **structural elements** rather than keywords:
 
 - **Comments** (`;...`) - Bright yellow (`#f9e2af`) - bold and highly visible
 - **Strings** (`"..."`) - Soft green (`#a6e3a1`) 
+- **Numbers** (`42`, `3.14`, `1.5e10`) - Maroon (`#eba0ac`) - integers, decimals, and scientific notation
 - **Set-word** (`name:`) - Blue (`#89b4fa`) - marks variable assignments
 - **Set-path** (`obj.field:`) - Blue (`#89b4fa`) - marks nested assignments
 - **Get-word** (`:name`) - Mauve (`#cba6f7`) - marks explicit value retrieval
@@ -56,6 +57,7 @@ The syntax file uses **Catppuccin Mocha** colors with explicit definitions:
 
 - **Comments**: Yellow (`#f9e2af`) - bold
 - **Strings**: Green (`#a6e3a1`)
+- **Numbers**: Maroon (`#eba0ac`)
 - **Set-word/Set-path**: Blue (`#89b4fa`)
 - **Get-word/Get-path**: Mauve (`#cba6f7`)
 - **Brackets**: Peach (`#fab387`)
@@ -68,6 +70,9 @@ If you want to customize the colors, add this to your Neovim config **after** th
 ```vim
 " Change comments to a different Catppuccin color
 hi viroComment ctermfg=Cyan guifg=#89dceb gui=bold
+
+" Change numbers to red for more prominence
+hi viroNumber ctermfg=Red guifg=#f38ba8
 
 " Use different Catppuccin colors for assignments
 hi viroSetWord ctermfg=Magenta guifg=#cba6f7
@@ -87,10 +92,11 @@ You can choose from any [Catppuccin Mocha colors](https://catppuccin.com/palette
 This highlighting strategy is optimized for **quick visual scanning**:
 
 1. **Comments** are bright → you notice documentation/notes immediately
-2. **Assignments** (set-word/set-path) → you see where values are being bound
-3. **Explicit gets** (get-word/get-path) → you see where values are explicitly fetched
-4. **Brackets/Parens** → you see code structure and evaluation boundaries
-5. **Strings** → you see literal data
+2. **Numbers** stand out → you spot numeric literals and constants quickly
+3. **Assignments** (set-word/set-path) → you see where values are being bound
+4. **Explicit gets** (get-word/get-path) → you see where values are explicitly fetched
+5. **Brackets/Parens** → you see code structure and evaluation boundaries
+6. **Strings** → you see literal data
 
 This avoids the "rainbow soup" problem where every function name gets colored, which doesn't help in a homoiconic language where everything is just a function.
 
@@ -100,9 +106,12 @@ Test your syntax highlighting with this sample:
 
 ```viro
 ; This is a comment - should be bright/visible
-x: 42                    ; set-word assignment
+x: 42                    ; set-word assignment with integer
 name: "Alice"            ; string value
 obj.field: 100           ; set-path assignment
+pi: 3.14159              ; decimal number
+temp: -273.15            ; negative decimal
+large: 1.5e10            ; scientific notation
 
 result: :x               ; get-word retrieval
 value: :obj.field        ; get-path retrieval
@@ -136,7 +145,6 @@ calc: (+ 2 3)            ; parens highlight immediate evaluation
 Possible additions (if needed):
 
 - Refinements (`--add`, `--multiply`)
-- Numbers (integers, decimals, scientific notation)
 - Special words (`true`, `false`, `none`)
 - Object literal syntax (`#[]`)
 - Path expressions without set/get prefixes
