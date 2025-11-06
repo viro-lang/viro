@@ -1,4 +1,4 @@
-.PHONY: build test clean all install test-summary
+.PHONY: build test clean all install test-summary install-syntax
 
 # Binary name
 BINARY_NAME=viro
@@ -34,3 +34,18 @@ pack: build
 deps:
 	$(GOMOD) download
 	$(GOMOD) verify
+
+install-syntax:
+	@echo "Installing Viro syntax highlighting for Neovim..."
+	@mkdir -p ~/.config/nvim/syntax
+	@cp viro.vim ~/.config/nvim/syntax/
+	@echo "✓ Syntax file installed to ~/.config/nvim/syntax/viro.vim"
+	@echo ""
+	@echo "Add this to your ~/.config/nvim/init.lua:"
+	@echo "  vim.api.nvim_create_autocmd({\"BufRead\", \"BufNewFile\"}, {"
+	@echo "    pattern = \"*.viro\","
+	@echo "    command = \"set filetype=viro\","
+	@echo "  })"
+	@echo ""
+	@echo "Or for init.vim:"
+	@echo "  au BufRead,BufNewFile *.viro set filetype=viro"
