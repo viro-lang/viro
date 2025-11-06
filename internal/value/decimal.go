@@ -17,7 +17,6 @@ import (
 //
 // Per FR-001: exactly 34 digits precision, overflow raises Math error (400)
 type DecimalValue struct {
-	baseValue
 	Magnitude *decimal.Big     // Core decimal number
 	Context   *decimal.Context // Precision, rounding mode, traps
 	Scale     int16            // Digits right of decimal point for formatting
@@ -71,7 +70,7 @@ func (d *DecimalValue) Equals(other core.Value) bool {
 	if other.GetType() != TypeDecimal {
 		return false
 	}
-	otherDec, ok := other.(*DecimalValue)
+	otherDec, ok := other.GetPayload().(*DecimalValue)
 	if !ok {
 		return false
 	}
@@ -94,6 +93,6 @@ func AsDecimal(v core.Value) (*DecimalValue, bool) {
 	if v.GetType() != TypeDecimal {
 		return nil, false
 	}
-	dec, ok := v.(*DecimalValue)
+	dec, ok := v.GetPayload().(*DecimalValue)
 	return dec, ok
 }

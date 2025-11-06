@@ -10,10 +10,10 @@ import (
 )
 
 type BlockValue struct {
-	baseValue
-	Elements []core.Value
-	Index    int
-	typ      core.ValueType
+	Elements  []core.Value
+	Index     int
+	typ       core.ValueType
+	locations []core.SourceLocation
 }
 
 func NewBlockValue(elements []core.Value) *BlockValue {
@@ -21,9 +21,10 @@ func NewBlockValue(elements []core.Value) *BlockValue {
 		elements = []core.Value{}
 	}
 	return &BlockValue{
-		Elements: elements,
-		Index:    0,
-		typ:      TypeBlock,
+		Elements:  elements,
+		Index:     0,
+		typ:       TypeBlock,
+		locations: make([]core.SourceLocation, len(elements)),
 	}
 }
 
@@ -32,10 +33,46 @@ func NewBlockValueWithType(elements []core.Value, typ core.ValueType) *BlockValu
 		elements = []core.Value{}
 	}
 	return &BlockValue{
-		Elements: elements,
-		Index:    0,
-		typ:      typ,
+		Elements:  elements,
+		Index:     0,
+		typ:       typ,
+		locations: make([]core.SourceLocation, len(elements)),
 	}
+}
+
+func (b *BlockValue) ensureLocationCapacity() {
+	if len(b.locations) != len(b.Elements) {
+		newLocations := make([]core.SourceLocation, len(b.Elements))
+		copy(newLocations, b.locations)
+		b.locations = newLocations
+	}
+}
+
+func (b *BlockValue) SetLocations(locations []core.SourceLocation) {
+	b.locations = make([]core.SourceLocation, len(b.Elements))
+	copy(b.locations, locations)
+}
+
+func (b *BlockValue) SetLocationAt(index int, location core.SourceLocation) {
+	if index < 0 || index >= len(b.Elements) {
+		return
+	}
+	b.ensureLocationCapacity()
+	b.locations[index] = location
+}
+
+func (b *BlockValue) LocationAt(index int) core.SourceLocation {
+	if index < 0 || index >= len(b.locations) {
+		return core.SourceLocation{}
+	}
+	return b.locations[index]
+}
+
+func (b *BlockValue) Locations() []core.SourceLocation {
+	if len(b.locations) == 0 {
+		return nil
+	}
+	return b.locations
 }
 
 func (b *BlockValue) String() string {
@@ -146,15 +183,25 @@ func (b *BlockValue) Length() int {
 }
 
 func (b *BlockValue) Append(val core.Value) {
+	b.ensureLocationCapacity()
 	b.Elements = append(b.Elements, val)
+	b.locations = append(b.locations, core.SourceLocation{})
 }
 
 func (b *BlockValue) Insert(val core.Value) {
+	b.ensureLocationCapacity()
 	b.Elements = append([]core.Value{val}, b.Elements...)
+	b.locations = append([]core.SourceLocation{{}}, b.locations...)
 }
 
 func (b *BlockValue) Remove(count int) {
+	b.ensureLocationCapacity()
 	b.Elements = append(b.Elements[:b.Index], b.Elements[b.Index+count:]...)
+	if len(b.locations) >= b.Index+count {
+		b.locations = append(b.locations[:b.Index], b.locations[b.Index+count:]...)
+	} else if len(b.locations) > b.Index {
+		b.locations = b.locations[:b.Index]
+	}
 }
 
 func (b *BlockValue) GetIndex() int {
@@ -168,10 +215,13 @@ func (b *BlockValue) SetIndex(idx int) {
 func (b *BlockValue) Clone() Series {
 	elemsCopy := make([]core.Value, len(b.Elements))
 	copy(elemsCopy, b.Elements)
+	locCopy := make([]core.SourceLocation, len(b.Elements))
+	copy(locCopy, b.locations)
 	return &BlockValue{
-		Elements: elemsCopy,
-		Index:    b.Index,
-		typ:      b.typ,
+		Elements:  elemsCopy,
+		Index:     b.Index,
+		typ:       b.typ,
+		locations: locCopy,
 	}
 }
 
@@ -208,10 +258,17 @@ func (b *BlockValue) InsertValue(val core.Value) error {
 }
 
 func (b *BlockValue) CopyPart(count int) (Series, error) {
+	b.ensureLocationCapacity()
 	clampedCount := ClampToRemaining(b.Index, len(b.Elements), count)
 	elemsCopy := make([]core.Value, clampedCount)
 	copy(elemsCopy, b.Elements[b.Index:b.Index+clampedCount])
-	return NewBlockValue(elemsCopy), nil
+	copyBlock := NewBlockValue(elemsCopy)
+	if clampedCount > 0 {
+		locCopy := make([]core.SourceLocation, clampedCount)
+		copy(locCopy, b.locations[b.Index:b.Index+clampedCount])
+		copyBlock.SetLocations(locCopy)
+	}
+	return copyBlock, nil
 }
 
 func (b *BlockValue) RemoveCount(count int) error {
@@ -237,6 +294,7 @@ func (b *BlockValue) SkipBy(count int) {
 }
 
 func (b *BlockValue) TakeCount(count int) Series {
+	b.ensureLocationCapacity()
 	if count > b.Length()-b.Index {
 		count = b.Length() - b.Index
 	}
@@ -246,7 +304,13 @@ func (b *BlockValue) TakeCount(count int) Series {
 	}
 	elemsCopy := make([]core.Value, count)
 	copy(elemsCopy, b.Elements[b.Index:end])
-	return NewBlockValue(elemsCopy)
+	taken := NewBlockValue(elemsCopy)
+	if count > 0 {
+		locCopy := make([]core.SourceLocation, count)
+		copy(locCopy, b.locations[b.Index:end])
+		taken.SetLocations(locCopy)
+	}
+	return taken
 }
 
 func (b *BlockValue) ChangeValue(val core.Value) error {
@@ -260,6 +324,7 @@ func (b *BlockValue) ChangeValue(val core.Value) error {
 func (b *BlockValue) ClearSeries() {
 	b.Elements = []core.Value{}
 	b.Index = 0
+	b.locations = []core.SourceLocation{}
 }
 
 func SortBlock(b *BlockValue) {

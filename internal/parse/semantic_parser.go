@@ -63,8 +63,9 @@ func (p *Parser) locationFromToken(token tokenize.Token) core.SourceLocation {
 	}
 }
 
-func (p *Parser) Parse() ([]core.Value, error) {
+func (p *Parser) Parse() ([]core.Value, []core.SourceLocation, error) {
 	values := []core.Value{}
+	locations := []core.SourceLocation{}
 
 	for p.pos < len(p.tokens) {
 		token := p.tokens[p.pos]
@@ -73,20 +74,21 @@ func (p *Parser) Parse() ([]core.Value, error) {
 			break
 		}
 
-		val, err := p.parseValue()
+		val, loc, err := p.parseValue()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		values = append(values, val)
+		locations = append(locations, loc)
 	}
 
-	return values, nil
+	return values, locations, nil
 }
 
-func (p *Parser) parseValue() (core.Value, error) {
+func (p *Parser) parseValue() (core.Value, core.SourceLocation, error) {
 	if p.pos >= len(p.tokens) {
 		line, column := p.eofLocation()
-		return nil, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, line, column)
+		return nil, core.SourceLocation{}, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, line, column)
 	}
 
 	token := p.tokens[p.pos]
@@ -97,55 +99,54 @@ func (p *Parser) parseValue() (core.Value, error) {
 	switch token.Type {
 	case tokenize.TokenLiteral:
 		val, err := p.ClassifyLiteral(token)
-		if err != nil {
-			return nil, err
-		}
-		val.SetLocation(loc)
-		return val, nil
+		return val, loc, err
 
 	case tokenize.TokenString:
-		val := value.NewStrVal(token.Value)
-		val.SetLocation(loc)
-		return val, nil
+		return value.NewStrVal(token.Value), loc, nil
 
 	case tokenize.TokenLBracket:
-		values, err := p.parseUntil(tokenize.TokenRBracket, "block", token)
+		values, locations, err := p.parseUntil(tokenize.TokenRBracket, "block", token)
 		if err != nil {
-			return nil, err
+			return nil, core.SourceLocation{}, err
 		}
 		block := value.NewBlockVal(values)
-		block.SetLocation(loc)
-		return block, nil
+		if blockValue, ok := value.AsBlockValue(block); ok {
+			blockValue.SetLocations(locations)
+		}
+		return block, loc, nil
 
 	case tokenize.TokenLParen:
-		values, err := p.parseUntil(tokenize.TokenRParen, "paren", token)
+		values, locations, err := p.parseUntil(tokenize.TokenRParen, "paren", token)
 		if err != nil {
-			return nil, err
+			return nil, core.SourceLocation{}, err
 		}
 		paren := value.NewParenVal(values)
-		paren.SetLocation(loc)
-		return paren, nil
+		if blockValue, ok := value.AsBlockValue(paren); ok {
+			blockValue.SetLocations(locations)
+		}
+		return paren, loc, nil
 
 	case tokenize.TokenRBracket, tokenize.TokenRParen:
-		return nil, p.syntaxError(verror.ErrIDUnexpectedClosing, [3]string{token.Value, "", ""}, token.Line, token.Column)
+		return nil, core.SourceLocation{}, p.syntaxError(verror.ErrIDUnexpectedClosing, [3]string{token.Value, "", ""}, token.Line, token.Column)
 
 	case tokenize.TokenEOF:
-		return nil, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, token.Line, token.Column)
+		return nil, core.SourceLocation{}, p.syntaxError(verror.ErrIDUnexpectedEOF, [3]string{"", "", ""}, token.Line, token.Column)
 
 	default:
-		return nil, p.syntaxError(verror.ErrIDInvalidSyntax, [3]string{"unknown token type", "", ""}, token.Line, token.Column)
+		return nil, core.SourceLocation{}, p.syntaxError(verror.ErrIDInvalidSyntax, [3]string{"unknown token type", "", ""}, token.Line, token.Column)
 	}
 }
 
-func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string, start tokenize.Token) ([]core.Value, error) {
+func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string, start tokenize.Token) ([]core.Value, []core.SourceLocation, error) {
 	values := []core.Value{}
+	locations := []core.SourceLocation{}
 
 	for p.pos < len(p.tokens) {
 		token := p.tokens[p.pos]
 
 		if token.Type == closingType {
 			p.pos++
-			return values, nil
+			return values, locations, nil
 		}
 
 		if token.Type == tokenize.TokenEOF {
@@ -153,21 +154,22 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string, s
 			if structName == "paren" {
 				errID = verror.ErrIDUnclosedParen
 			}
-			return nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
+			return nil, nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
 		}
 
-		val, err := p.parseValue()
+		val, loc, err := p.parseValue()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		values = append(values, val)
+		locations = append(locations, loc)
 	}
 
 	errID := verror.ErrIDUnclosedBlock
 	if structName == "paren" {
 		errID = verror.ErrIDUnclosedParen
 	}
-	return nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
+	return nil, nil, p.syntaxError(errID, [3]string{"", "", ""}, start.Line, start.Column)
 }
 
 func (p *Parser) ClassifyLiteral(token tokenize.Token) (core.Value, error) {

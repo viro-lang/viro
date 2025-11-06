@@ -19,7 +19,6 @@ import (
 //
 // Per FR-007: unified abstraction with open/close/read/write/query operations
 type Port struct {
-	baseValue
 	Scheme  string         // "file", "tcp", "http", "https"
 	Spec    string         // Original port specification (URL/path)
 	Driver  PortDriver     // Scheme-specific implementation
@@ -98,7 +97,7 @@ func AsPort(v core.Value) (*Port, bool) {
 	if v.GetType() != TypePort {
 		return nil, false
 	}
-	port, ok := v.(*Port)
+	port, ok := v.GetPayload().(*Port)
 	return port, ok
 }
 
@@ -140,9 +139,8 @@ func (p *Port) GetPayload() any {
 }
 
 func (p *Port) Equals(other core.Value) bool {
-	otherPort, ok := other.(*Port)
-	if !ok {
+	if other.GetType() != TypePort {
 		return false
 	}
-	return otherPort == p
+	return other.GetPayload() == p
 }

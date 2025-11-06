@@ -10,7 +10,6 @@ import (
 )
 
 type BinaryValue struct {
-	baseValue
 	data  []byte
 	index int
 }
@@ -289,12 +288,4 @@ func SortBinary(b *BinaryValue) {
 	sort.SliceStable(b.data, func(i, j int) bool {
 		return b.data[i] < b.data[j]
 	})
-}
-
-func AsBinaryValue(v core.Value) (*BinaryValue, bool) {
-	if v.GetType() != TypeBinary {
-		return nil, false
-	}
-	bin, ok := v.(*BinaryValue)
-	return bin, ok
 }

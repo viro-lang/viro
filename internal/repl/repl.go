@@ -289,7 +289,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 	}
 
 	joined := strings.Join(r.pendingLines, "\n")
-	values, err := parse.ParseWithSource(joined, "(repl)")
+	values, locations, err := parse.ParseWithSource(joined, "(repl)")
 	if err != nil {
 		if shouldAwaitContinuation(err.(*verror.Error)) {
 			r.awaitingCont = true
@@ -315,7 +315,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 	}
 	r.pendingLines = nil
 	r.recordHistory(joined)
-	r.evalParsedValues(values)
+	r.evalParsedValues(values, locations)
 }
 
 // getCurrentPrompt returns the appropriate prompt based on debugger state (T154)
@@ -338,8 +338,8 @@ func (r *REPL) getCurrentPrompt() string {
 }
 
 // evalParsedValues evaluates parsed values and handles debug pauses
-func (r *REPL) evalParsedValues(values []core.Value) {
-	result, err := r.evaluator.DoBlock(values)
+func (r *REPL) evalParsedValues(values []core.Value, locations []core.SourceLocation) {
+	result, err := r.evaluator.DoBlock(values, locations)
 	if err != nil {
 		r.printError(err)
 		return

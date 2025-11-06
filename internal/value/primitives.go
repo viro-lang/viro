@@ -6,332 +6,318 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-type IntValue struct {
-	baseValue
-	value int64
-}
+var (
+	noneValSingleton  = NoneValue{}
+	trueValSingleton  = LogicValue(true)
+	falseValSingleton = LogicValue(false)
+)
 
-func (i *IntValue) GetType() core.ValueType {
+type IntValue int64
+
+func (i IntValue) GetType() core.ValueType {
 	return TypeInteger
 }
 
-func (i *IntValue) GetPayload() any {
-	return i.value
+func (i IntValue) GetPayload() any {
+	return int64(i)
 }
 
-func (i *IntValue) String() string {
-	return strconv.FormatInt(i.value, 10)
+func (i IntValue) String() string {
+	return strconv.FormatInt(int64(i), 10)
 }
 
-func (i *IntValue) Mold() string {
+func (i IntValue) Mold() string {
 	return i.String()
 }
 
-func (i *IntValue) Form() string {
+func (i IntValue) Form() string {
 	return i.String()
 }
 
-func (i *IntValue) Equals(other core.Value) bool {
-	if oi, ok := other.(*IntValue); ok {
-		return i.value == oi.value
+func (i IntValue) Equals(other core.Value) bool {
+	if oi, ok := other.(IntValue); ok {
+		return i == oi
 	}
 	return false
 }
 
-type LogicValue struct {
-	baseValue
-	value bool
-}
+type LogicValue bool
 
-func (l *LogicValue) GetType() core.ValueType {
+func (l LogicValue) GetType() core.ValueType {
 	return TypeLogic
 }
 
-func (l *LogicValue) GetPayload() any {
-	return l.value
+func (l LogicValue) GetPayload() any {
+	return bool(l)
 }
 
-func (l *LogicValue) String() string {
-	if l.value {
+func (l LogicValue) String() string {
+	if l {
 		return "true"
 	}
 	return "false"
 }
 
-func (l *LogicValue) Mold() string {
+func (l LogicValue) Mold() string {
 	return l.String()
 }
 
-func (l *LogicValue) Form() string {
+func (l LogicValue) Form() string {
 	return l.String()
 }
 
-func (l *LogicValue) Equals(other core.Value) bool {
-	if ol, ok := other.(*LogicValue); ok {
-		return l.value == ol.value
+func (l LogicValue) Equals(other core.Value) bool {
+	if ol, ok := other.(LogicValue); ok {
+		return l == ol
 	}
 	return false
 }
 
-type NoneValue struct {
-	baseValue
-}
+type NoneValue struct{}
 
-func (n *NoneValue) GetType() core.ValueType {
+func (n NoneValue) GetType() core.ValueType {
 	return TypeNone
 }
 
-func (n *NoneValue) GetPayload() any {
+func (n NoneValue) GetPayload() any {
 	return nil
 }
 
-func (n *NoneValue) String() string {
+func (n NoneValue) String() string {
 	return "none"
 }
 
-func (n *NoneValue) Mold() string {
+func (n NoneValue) Mold() string {
 	return "none"
 }
 
-func (n *NoneValue) Form() string {
+func (n NoneValue) Form() string {
 	return "none"
 }
 
-func (n *NoneValue) Equals(other core.Value) bool {
-	_, ok := other.(*NoneValue)
+func (n NoneValue) Equals(other core.Value) bool {
+	_, ok := other.(NoneValue)
 	return ok
 }
 
-type WordValue struct {
-	baseValue
-	symbol string
-}
+type WordValue string
 
-func (w *WordValue) GetType() core.ValueType {
+func (w WordValue) GetType() core.ValueType {
 	return TypeWord
 }
 
-func (w *WordValue) GetPayload() any {
-	return w.symbol
+func (w WordValue) GetPayload() any {
+	return string(w)
 }
 
-func (w *WordValue) String() string {
-	return w.symbol
+func (w WordValue) String() string {
+	return string(w)
 }
 
-func (w *WordValue) Mold() string {
-	return w.symbol
+func (w WordValue) Mold() string {
+	return string(w)
 }
 
-func (w *WordValue) Form() string {
-	return w.symbol
+func (w WordValue) Form() string {
+	return string(w)
 }
 
-func (w *WordValue) Equals(other core.Value) bool {
-	if ow, ok := other.(*WordValue); ok {
-		return w.symbol == ow.symbol
+func (w WordValue) Equals(other core.Value) bool {
+	if ow, ok := other.(WordValue); ok {
+		return w == ow
 	}
 	return false
 }
 
-type SetWordValue struct {
-	baseValue
-	symbol string
-}
+type SetWordValue string
 
-func (s *SetWordValue) GetType() core.ValueType {
+func (s SetWordValue) GetType() core.ValueType {
 	return TypeSetWord
 }
 
-func (s *SetWordValue) GetPayload() any {
-	return s.symbol
+func (s SetWordValue) GetPayload() any {
+	return string(s)
 }
 
-func (s *SetWordValue) String() string {
-	return s.symbol + ":"
+func (s SetWordValue) String() string {
+	return string(s) + ":"
 }
 
-func (s *SetWordValue) Mold() string {
-	return s.String()
+func (s SetWordValue) Mold() string {
+	return string(s) + ":"
 }
 
-func (s *SetWordValue) Form() string {
-	return s.String()
+func (s SetWordValue) Form() string {
+	return string(s) + ":"
 }
 
-func (s *SetWordValue) Equals(other core.Value) bool {
-	if os, ok := other.(*SetWordValue); ok {
-		return s.symbol == os.symbol
+func (s SetWordValue) Equals(other core.Value) bool {
+	if os, ok := other.(SetWordValue); ok {
+		return s == os
 	}
 	return false
 }
 
-type GetWordValue struct {
-	baseValue
-	symbol string
-}
+type GetWordValue string
 
-func (g *GetWordValue) GetType() core.ValueType {
+func (g GetWordValue) GetType() core.ValueType {
 	return TypeGetWord
 }
 
-func (g *GetWordValue) GetPayload() any {
-	return g.symbol
+func (g GetWordValue) GetPayload() any {
+	return string(g)
 }
 
-func (g *GetWordValue) String() string {
-	return ":" + g.symbol
+func (g GetWordValue) String() string {
+	return ":" + string(g)
 }
 
-func (g *GetWordValue) Mold() string {
-	return g.String()
+func (g GetWordValue) Mold() string {
+	return ":" + string(g)
 }
 
-func (g *GetWordValue) Form() string {
-	return g.String()
+func (g GetWordValue) Form() string {
+	return ":" + string(g)
 }
 
-func (g *GetWordValue) Equals(other core.Value) bool {
-	if og, ok := other.(*GetWordValue); ok {
-		return g.symbol == og.symbol
+func (g GetWordValue) Equals(other core.Value) bool {
+	if og, ok := other.(GetWordValue); ok {
+		return g == og
 	}
 	return false
 }
 
-type LitWordValue struct {
-	baseValue
-	symbol string
-}
+type LitWordValue string
 
-func (l *LitWordValue) GetType() core.ValueType {
+func (l LitWordValue) GetType() core.ValueType {
 	return TypeLitWord
 }
 
-func (l *LitWordValue) GetPayload() any {
-	return l.symbol
+func (l LitWordValue) GetPayload() any {
+	return string(l)
 }
 
-func (l *LitWordValue) String() string {
-	return "'" + l.symbol
+func (l LitWordValue) String() string {
+	return "'" + string(l)
 }
 
-func (l *LitWordValue) Mold() string {
-	return l.String()
+func (l LitWordValue) Mold() string {
+	return "'" + string(l)
 }
 
-func (l *LitWordValue) Form() string {
-	return l.String()
+func (l LitWordValue) Form() string {
+	return "'" + string(l)
 }
 
-func (l *LitWordValue) Equals(other core.Value) bool {
-	if ol, ok := other.(*LitWordValue); ok {
-		return l.symbol == ol.symbol
+func (l LitWordValue) Equals(other core.Value) bool {
+	if ol, ok := other.(LitWordValue); ok {
+		return l == ol
 	}
 	return false
 }
 
-type DatatypeValue struct {
-	baseValue
-	name string
-}
+type DatatypeValue string
 
-func (d *DatatypeValue) GetType() core.ValueType {
+func (d DatatypeValue) GetType() core.ValueType {
 	return TypeDatatype
 }
 
-func (d *DatatypeValue) GetPayload() any {
-	return d.name
+func (d DatatypeValue) GetPayload() any {
+	return string(d)
 }
 
-func (d *DatatypeValue) String() string {
-	return d.name
+func (d DatatypeValue) String() string {
+	return string(d)
 }
 
-func (d *DatatypeValue) Mold() string {
-	return d.String()
+func (d DatatypeValue) Mold() string {
+	return string(d)
 }
 
-func (d *DatatypeValue) Form() string {
-	return d.String()
+func (d DatatypeValue) Form() string {
+	return string(d)
 }
 
-func (d *DatatypeValue) Equals(other core.Value) bool {
-	if od, ok := other.(*DatatypeValue); ok {
-		return d.name == od.name
+func (d DatatypeValue) Equals(other core.Value) bool {
+	if od, ok := other.(DatatypeValue); ok {
+		return d == od
 	}
 	return false
 }
 
 func NewIntVal(i int64) core.Value {
-	return &IntValue{value: i}
+	return IntValue(i)
 }
 
 func NewLogicVal(b bool) core.Value {
-	return &LogicValue{value: b}
+	if b {
+		return trueValSingleton
+	}
+	return falseValSingleton
 }
 
 func NewNoneVal() core.Value {
-	return &NoneValue{}
+	return noneValSingleton
 }
 
 func NewWordVal(symbol string) core.Value {
-	return &WordValue{symbol: symbol}
+	return WordValue(symbol)
 }
 
 func NewSetWordVal(symbol string) core.Value {
-	return &SetWordValue{symbol: symbol}
+	return SetWordValue(symbol)
 }
 
 func NewGetWordVal(symbol string) core.Value {
-	return &GetWordValue{symbol: symbol}
+	return GetWordValue(symbol)
 }
 
 func NewLitWordVal(symbol string) core.Value {
-	return &LitWordValue{symbol: symbol}
+	return LitWordValue(symbol)
 }
 
 func NewDatatypeVal(name string) core.Value {
-	return &DatatypeValue{name: name}
+	return DatatypeValue(name)
 }
 
 func AsIntValue(v core.Value) (int64, bool) {
-	if iv, ok := v.(*IntValue); ok {
-		return iv.value, true
+	if iv, ok := v.(IntValue); ok {
+		return int64(iv), true
 	}
 	return 0, false
 }
 
 func AsLogicValue(v core.Value) (bool, bool) {
-	if lv, ok := v.(*LogicValue); ok {
-		return lv.value, true
+	if lv, ok := v.(LogicValue); ok {
+		return bool(lv), true
 	}
 	return false, false
 }
 
 func AsWordValue(v core.Value) (string, bool) {
 	switch wv := v.(type) {
-	case *WordValue:
-		return wv.symbol, true
-	case *SetWordValue:
-		return wv.symbol, true
-	case *GetWordValue:
-		return wv.symbol, true
-	case *LitWordValue:
-		return wv.symbol, true
+	case WordValue:
+		return string(wv), true
+	case SetWordValue:
+		return string(wv), true
+	case GetWordValue:
+		return string(wv), true
+	case LitWordValue:
+		return string(wv), true
 	default:
 		return "", false
 	}
 }
 
 func AsDatatypeValue(v core.Value) (string, bool) {
-	if dv, ok := v.(*DatatypeValue); ok {
-		return dv.name, true
+	if dv, ok := v.(DatatypeValue); ok {
+		return string(dv), true
 	}
 	return "", false
 }
 
 func GetNoneVal() core.Value {
-	return NewNoneVal()
+	return noneValSingleton
 }
 
 func NewStrVal(s string) core.Value {
@@ -369,6 +355,26 @@ func AsBlockValue(v core.Value) (*BlockValue, bool) {
 		return nil, false
 	}
 	if bv, ok := v.(*BlockValue); ok {
+		return bv, true
+	}
+	return nil, false
+}
+
+func AsFunctionValue(v core.Value) (*FunctionValue, bool) {
+	if v.GetType() != TypeFunction {
+		return nil, false
+	}
+	if fv, ok := v.(*FunctionValue); ok {
+		return fv, true
+	}
+	return nil, false
+}
+
+func AsBinaryValue(v core.Value) (*BinaryValue, bool) {
+	if v.GetType() != TypeBinary {
+		return nil, false
+	}
+	if bv, ok := v.(*BinaryValue); ok {
 		return bv, true
 	}
 	return nil, false

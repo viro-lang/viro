@@ -27,18 +27,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-type baseValue struct {
-	location core.SourceLocation
-}
-
-func (b *baseValue) GetLocation() core.SourceLocation {
-	return b.location
-}
-
-func (b *baseValue) SetLocation(loc core.SourceLocation) {
-	b.location = loc
-}
-
 // IsTruthy returns true if value is considered "true" in conditional contexts.
 // Per contracts/control-flow.md: false and none are falsy, all others truthy.
 // Note: 0, "", [] are truthy (unlike some languages).

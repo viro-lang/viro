@@ -9,7 +9,6 @@ import (
 )
 
 type StringValue struct {
-	baseValue
 	runes []rune
 	index int
 }

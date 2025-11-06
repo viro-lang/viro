@@ -88,7 +88,6 @@ func NewRefinementSpec(name string, takesValue bool) ParamSpec {
 // - Local-by-default scoping: all words in body are local by default
 // - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	baseValue
 	Type   FunctionType      // Native or User
 	Name   string            // function name (for error messages and debugging)
 	Params []ParamSpec       // formal parameter specifications
@@ -177,11 +176,10 @@ func (f *FunctionValue) GetRefinement(name string) *ParamSpec {
 }
 
 func (f *FunctionValue) Equals(other core.Value) bool {
-	otherFn, ok := other.(*FunctionValue)
-	if !ok {
-		return false
+	if other.GetType() == TypeFunction {
+		return other.GetPayload() == f
 	}
-	return otherFn == f
+	return false
 }
 
 func (f *FunctionValue) GetType() core.ValueType {
@@ -190,12 +188,4 @@ func (f *FunctionValue) GetType() core.ValueType {
 
 func (f *FunctionValue) GetPayload() any {
 	return f
-}
-
-func AsFunctionValue(v core.Value) (*FunctionValue, bool) {
-	if v.GetType() != TypeFunction {
-		return nil, false
-	}
-	fn, ok := v.(*FunctionValue)
-	return fn, ok
 }

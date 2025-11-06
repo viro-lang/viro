@@ -19,8 +19,6 @@ type Value interface {
 	Mold() string
 	Form() string
 	Equals(other Value) bool
-	GetLocation() SourceLocation
-	SetLocation(loc SourceLocation)
 }
 
 type Binding struct {
@@ -55,8 +53,8 @@ type Evaluator interface {
 	PushFrameContext(frame Frame) int
 	PopFrameContext()
 	Lookup(symbol string) (Value, bool)
-	DoBlock(vals []Value) (Value, error)
-	EvaluateExpression(block []Value, position int) (int, Value, error)
+	DoBlock(vals []Value, locations []SourceLocation) (Value, error)
+	EvaluateExpression(block []Value, locations []SourceLocation, position int) (int, Value, error)
 	GetCallStack() []string
 	SetOutputWriter(writer io.Writer)
 	GetOutputWriter() io.Writer
