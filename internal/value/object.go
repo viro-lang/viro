@@ -16,6 +16,7 @@ import (
 //
 // Per FR-009: captures word/value pairs into dedicated frame with nested object support
 type ObjectInstance struct {
+	baseValue
 	Frame       core.Frame      // Owned frame for self-contained storage
 	ParentProto *ObjectInstance // Parent prototype object (nil = no parent)
 }
@@ -100,7 +101,7 @@ func AsObject(v core.Value) (*ObjectInstance, bool) {
 	if v.GetType() != TypeObject {
 		return nil, false
 	}
-	obj, ok := v.GetPayload().(*ObjectInstance)
+	obj, ok := v.(*ObjectInstance)
 	return obj, ok
 }
 
@@ -188,8 +189,9 @@ func (obj *ObjectInstance) GetPayload() any {
 }
 
 func (obj *ObjectInstance) Equals(other core.Value) bool {
-	if other.GetType() != TypeObject {
+	otherObj, ok := other.(*ObjectInstance)
+	if !ok {
 		return false
 	}
-	return other.GetPayload() == obj
+	return otherObj == obj
 }

@@ -22,12 +22,12 @@ func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, c
 	oldWriter := e.GetOutputWriter()
 	e.SetOutputWriter(w)
 
-	vals, locations, parseErr := parse.ParseWithSource(script, "(test)")
+	vals, parseErr := parse.ParseWithSource(script, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
 
-	result, evalErr := e.DoBlock(vals, locations)
+	result, evalErr := e.DoBlock(vals)
 
 	if err := w.Close(); err != nil {
 		t.Fatalf("closing output writer failed: %v", err)
@@ -48,11 +48,11 @@ func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, c
 
 func runScript(t *testing.T, e core.Evaluator, script string) (core.Value, error) {
 	t.Helper()
-	vals, locations, parseErr := parse.ParseWithSource(script, "(test)")
+	vals, parseErr := parse.ParseWithSource(script, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
-	return e.DoBlock(vals, locations)
+	return e.DoBlock(vals)
 }
 
 func TestUS2_ControlFlowScenarios(t *testing.T) {

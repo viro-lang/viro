@@ -24,13 +24,13 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 		}
 
 		for _, expr := range simpleTests {
-			values, locations, err := parse.ParseWithSource(expr, "(test)")
+			values, err := parse.ParseWithSource(expr, "(test)")
 			if err != nil {
 				t.Fatalf("parse failed for %q: %v", expr, err)
 			}
 
 			start := time.Now()
-			_, err = evaluator.DoBlock(values, locations)
+			_, err = evaluator.DoBlock(values)
 			elapsed := time.Since(start)
 
 			if err != nil {
@@ -84,13 +84,13 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 
 		for _, tt := range complexTests {
 			t.Run(tt.name, func(t *testing.T) {
-				values, locations, err := parse.ParseWithSource(tt.code, "(test)")
+				values, err := parse.ParseWithSource(tt.code, "(test)")
 				if err != nil {
 					t.Fatalf("parse failed: %v", err)
 				}
 
 				start := time.Now()
-				_, err = evaluator.DoBlock(values, locations)
+				_, err = evaluator.DoBlock(values)
 				elapsed := time.Since(start)
 
 				if err != nil {

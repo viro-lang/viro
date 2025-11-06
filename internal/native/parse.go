@@ -90,7 +90,7 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	parser := parse.NewParser(tokens, "")
-	values, locations, err := parser.Parse()
+	values, err := parser.Parse()
 	if err != nil {
 		if vErr, ok := err.(*verror.Error); ok {
 			return value.NewNoneVal(), vErr
@@ -99,9 +99,6 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	block := value.NewBlockVal(values)
-	if blockVal, ok := value.AsBlockValue(block); ok {
-		blockVal.SetLocations(locations)
-	}
 	return block, nil
 }
 
@@ -194,15 +191,12 @@ func NativeLoadString(args []core.Value, refValues map[string]core.Value, eval c
 	}
 	input := inputVal.String()
 
-	values, locations, err := parse.ParseWithSource(input, "(native)")
+	values, err := parse.ParseWithSource(input, "(native)")
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
 
 	block := value.NewBlockVal(values)
-	if blockVal, ok := value.AsBlockValue(block); ok {
-		blockVal.SetLocations(locations)
-	}
 	return block, nil
 }
 

@@ -230,7 +230,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	}
 
 	sourceName := input.SourceName()
-	values, locations, err := parse.ParseWithSource(content, sourceName)
+	values, err := parse.ParseWithSource(content, sourceName)
 	if err != nil {
 		printErrorToWriter(err, "Parse", ctx.Stderr)
 		return ExitSyntax
@@ -247,7 +247,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	evaluator := setupEvaluatorWithContext(cfg, ctx)
 	initializeSystemObjectInEvaluator(evaluator, args)
 
-	result, err := evaluator.DoBlock(values, locations)
+	result, err := evaluator.DoBlock(values)
 	if err != nil {
 		printErrorToWriter(err, "Runtime", ctx.Stderr)
 		return HandleErrorWithContext(err)

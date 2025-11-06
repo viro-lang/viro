@@ -191,7 +191,7 @@ outer 5`
 
 func TestParse_UnclosedBlockError(t *testing.T) {
 	sourceName := "test-script.viro"
-	_, _, err := parse.ParseWithSource("[1 2 3", sourceName)
+	_, err := parse.ParseWithSource("[1 2 3", sourceName)
 
 	if err == nil {
 		t.Fatalf("expected parse error but got none")
@@ -231,13 +231,13 @@ func TestParse_UnclosedBlockError(t *testing.T) {
 func TestRuntimeErrorIncludesLocation(t *testing.T) {
 	script := "print 1\nmissing\n"
 
-	values, locations, err := parse.ParseWithSource(script, "(test)")
+	values, err := parse.ParseWithSource(script, "(test)")
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
 
 	evaluator := NewTestEvaluator()
-	_, runtimeErr := evaluator.DoBlock(values, locations)
+	_, runtimeErr := evaluator.DoBlock(values)
 	if runtimeErr == nil {
 		t.Fatal("expected runtime error but got nil")
 	}
@@ -255,13 +255,13 @@ func TestRuntimeErrorIncludesLocation(t *testing.T) {
 func TestRuntimeErrorNestedLocation(t *testing.T) {
 	script := "fn: fn [] [\n    missing\n]\nfn\n"
 
-	values, locations, err := parse.ParseWithSource(script, "(test)")
+	values, err := parse.ParseWithSource(script, "(test)")
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
 
 	evaluator := NewTestEvaluator()
-	_, runtimeErr := evaluator.DoBlock(values, locations)
+	_, runtimeErr := evaluator.DoBlock(values)
 	if runtimeErr == nil {
 		t.Fatal("expected runtime error but got nil")
 	}

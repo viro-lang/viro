@@ -47,12 +47,12 @@ func TestActionDispatchBasics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := NewTestEvaluator()
-			tokens, locations, parseErr := parse.ParseWithSource(tt.input, "(test)")
+			tokens, parseErr := parse.ParseWithSource(tt.input, "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse error: %v", parseErr)
 			}
 
-			result, err := e.DoBlock(tokens, locations)
+			result, err := e.DoBlock(tokens)
 
 			if tt.wantErr {
 				if err == nil {
@@ -90,12 +90,12 @@ func TestActionShadowing(t *testing.T) {
 		first 5
 	`
 
-	tokens, locations, parseErr := parse.ParseWithSource(input, "(test)")
+	tokens, parseErr := parse.ParseWithSource(input, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.DoBlock(tokens, locations)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}
@@ -117,12 +117,12 @@ func TestActionMultipleArguments(t *testing.T) {
 		b
 	`
 
-	tokens, locations, parseErr := parse.ParseWithSource(input, "(test)")
+	tokens, parseErr := parse.ParseWithSource(input, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse error: %v", parseErr)
 	}
 
-	result, evalErr := e.DoBlock(tokens, locations)
+	result, evalErr := e.DoBlock(tokens)
 	if evalErr != nil {
 		t.Fatalf("Unexpected error: %v", evalErr)
 	}

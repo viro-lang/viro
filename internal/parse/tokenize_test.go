@@ -103,7 +103,7 @@ func TestComplexNumberParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {
@@ -266,7 +266,7 @@ func TestAdvancedPathTokenization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {
@@ -466,7 +466,7 @@ func TestWordVariants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {
@@ -610,7 +610,7 @@ func TestOperatorTokenization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {

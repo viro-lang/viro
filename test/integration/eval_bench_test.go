@@ -15,14 +15,14 @@ var (
 
 func BenchmarkEvalSimpleExpression(b *testing.B) {
 	source := "1 + 2 * 3 - 4 + 5 / 2"
-	values, locations, err := parse.ParseWithSource(source, "(test)")
+	values, err := parse.ParseWithSource(source, "(test)")
 	if err != nil {
 		b.Fatalf("parse failed: %v", err)
 	}
 
 	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.DoBlock(values, locations)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
@@ -34,7 +34,7 @@ func BenchmarkEvalSimpleExpression(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.DoBlock(values, locations)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}
@@ -62,14 +62,14 @@ loop 20 [
 ]
 total
 `
-	values, locations, err := parse.ParseWithSource(source, "(test)")
+	values, err := parse.ParseWithSource(source, "(test)")
 	if err != nil {
 		b.Fatalf("parse failed: %v", err)
 	}
 
 	evaluator := NewTestEvaluator()
 
-	warmResult, err := evaluator.DoBlock(values, locations)
+	warmResult, err := evaluator.DoBlock(values)
 	if err != nil {
 		b.Fatalf("warm-up evaluation failed: %v", err)
 	}
@@ -81,7 +81,7 @@ total
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		result, err := evaluator.DoBlock(values, locations)
+		result, err := evaluator.DoBlock(values)
 		if err != nil {
 			b.Fatalf("evaluation error: %v", err)
 		}

@@ -6,25 +6,25 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func Parse(input string) ([]core.Value, []core.SourceLocation, error) {
+func Parse(input string) ([]core.Value, error) {
 	return ParseWithSource(input, "")
 }
 
-func ParseWithSource(input, source string) ([]core.Value, []core.SourceLocation, error) {
+func ParseWithSource(input, source string) ([]core.Value, error) {
 	tokenizer := tokenize.NewTokenizer(input)
 	tokenizer.SetSource(source)
 	tokens, err := tokenizer.Tokenize()
 	if err != nil {
-		return nil, nil, enrichParseError(err, input, source)
+		return nil, enrichParseError(err, input, source)
 	}
 
 	parser := NewParser(tokens, source)
-	values, locations, err := parser.Parse()
+	values, err := parser.Parse()
 	if err != nil {
-		return nil, nil, enrichParseError(err, input, source)
+		return nil, enrichParseError(err, input, source)
 	}
 
-	return values, locations, nil
+	return values, nil
 }
 
 func enrichParseError(err error, input, source string) error {

@@ -15,6 +15,7 @@ import (
 // Per FR-010: evaluates across objects, blocks, and future maps using dot notation
 // Note: TypePath is transient and should not persist outside evaluation context
 type PathExpression struct {
+	baseValue
 	Segments []PathSegment // Path components (e.g., "user", "address", "city")
 	Base     core.Value    // Starting value for traversal
 }

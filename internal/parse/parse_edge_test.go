@@ -125,7 +125,7 @@ func TestExpressionParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {
@@ -363,7 +363,7 @@ func TestBlockParenParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {
@@ -499,7 +499,7 @@ func TestPrimaryExpressionEdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
+			vals, err := Parse(tt.input)
 
 			if tt.expectError {
 				if err == nil {

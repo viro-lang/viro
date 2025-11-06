@@ -30,7 +30,7 @@ func Set(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	symbol, _ := value.AsWordValue(args[0])
 	assignment := []core.Value{value.NewSetWordVal(symbol), args[1]}
 
-	result, err := eval.DoBlock(assignment, nil)
+	result, err := eval.DoBlock(assignment)
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -53,7 +53,7 @@ func Get(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	}
 
 	symbol, _ := value.AsWordValue(args[0])
-	_, result, err := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, nil, 0)
+	_, result, err := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, 0)
 	return result, err
 }
 
@@ -113,9 +113,8 @@ func Rejoin(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	var builder strings.Builder
 	position := 0
 
-	locations := block.Locations()
 	for position < len(vals) {
-		newPos, result, err := eval.EvaluateExpression(vals, locations, position)
+		newPos, result, err := eval.EvaluateExpression(vals, position)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
@@ -227,7 +226,7 @@ func instantiateObject(eval core.Evaluator, lexicalParent int, prototype *value.
 	for _, field := range fields {
 		initVals := initializers[field]
 
-		evaled, err := eval.DoBlock(initVals, nil)
+		evaled, err := eval.DoBlock(initVals)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
@@ -356,7 +355,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 		switch target.GetType() {
 		case value.TypeWord:
 			word, _ := value.AsWordValue(target)
-			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewWordVal(word)}, nil, 0)
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewWordVal(word)}, 0)
 			if evalErr != nil {
 				return value.NewNoneVal(), evalErr
 			}
@@ -365,7 +364,7 @@ func Make(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		case value.TypeGetWord:
 			symbol, _ := value.AsWordValue(target)
-			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, nil, 0)
+			_, evaluated, evalErr := eval.EvaluateExpression([]core.Value{value.NewGetWordVal(symbol)}, 0)
 			if evalErr != nil {
 				return value.NewNoneVal(), evalErr
 			}

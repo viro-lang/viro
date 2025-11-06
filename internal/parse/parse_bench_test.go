@@ -88,7 +88,7 @@ func BenchmarkParseSimple(b *testing.B) {
 
 	for b.Loop() {
 		p := NewParser(tokens, "")
-		_, _, err := p.Parse()
+		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -108,7 +108,7 @@ func BenchmarkParseMedium(b *testing.B) {
 
 	for b.Loop() {
 		p := NewParser(tokens, "")
-		_, _, err := p.Parse()
+		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -137,7 +137,7 @@ result: fib 10
 
 	for b.Loop() {
 		p := NewParser(tokens, "")
-		_, _, err := p.Parse()
+		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -157,7 +157,7 @@ func BenchmarkParseBlock(b *testing.B) {
 
 	for b.Loop() {
 		p := NewParser(tokens, "")
-		_, _, err := p.Parse()
+		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -177,7 +177,7 @@ func BenchmarkParsePath(b *testing.B) {
 
 	for b.Loop() {
 		p := NewParser(tokens, "")
-		_, _, err := p.Parse()
+		_, err := p.Parse()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -191,7 +191,7 @@ func BenchmarkParseFullSimple(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -205,7 +205,7 @@ func BenchmarkParseFullMedium(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -228,7 +228,7 @@ result: fib 10
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -242,7 +242,7 @@ func BenchmarkParseFullMathExpression(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -256,7 +256,7 @@ func BenchmarkParseFullDataTypes(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -270,7 +270,7 @@ func BenchmarkParseFullNestedBlocks(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -302,7 +302,7 @@ print ["Total:" sum]
 	b.ResetTimer()
 
 	for b.Loop() {
-		_, _, err := Parse(input)
+		_, err := Parse(input)
 		if err != nil {
 			b.Fatal(err)
 		}

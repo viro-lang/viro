@@ -10,14 +10,14 @@ import (
 func TestObjectFieldIsolation(t *testing.T) {
 	code := `o: object [a: 10]`
 
-	values, locations, err := parse.ParseWithSource(code, "(test)")
+	values, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatalf("parse error: %v", err)
 	}
 
 	e := NewTestEvaluator()
 
-	_, evalErr := e.DoBlock(values, locations)
+	_, evalErr := e.DoBlock(values)
 	if evalErr != nil {
 		t.Fatalf("eval error: %v", evalErr)
 	}
@@ -33,8 +33,8 @@ func TestObjectFieldIsolation(t *testing.T) {
 
 	// Now try to lookup 'a' - it should NOT be found
 	code2 := `a`
-	values2, locations2, _ := parse.ParseWithSource(code2, "(test)")
-	_, err2 := e.DoBlock(values2, locations2)
+	values2, _ := parse.ParseWithSource(code2, "(test)")
+	_, err2 := e.DoBlock(values2)
 
 	if err2 == nil {
 		t.Fatal("BUG: Variable 'a' from object scope leaked to outer scope! Should have gotten 'no-value' error.")
