@@ -237,6 +237,62 @@ Returns the port that became ready, or none if a timeout occurred.`,
 		SeeAlso:  []string{"open", "read", "write"}, Tags: []string{"ports", "io", "wait", "delay", "timeout"},
 	})
 
+	// ===== Group 10: Parser operations (4 functions) =====
+	registerSimpleIOFunc("tokenize", NativeTokenize, 1, &NativeDoc{
+		Category: "Parser",
+		Summary:  "Tokenizes a viro source string into token objects",
+		Description: `Tokenizes a viro source code string and returns a block of token objects.
+Each token object has fields: type (word), value (string), line (integer), column (integer).
+This is the first stage of the two-stage parser.`,
+		Parameters: []ParamDoc{
+			{Name: "source", Type: "string!", Description: "The viro source code to tokenize", Optional: false},
+		},
+		Returns:  "[block!] A block of token objects",
+		Examples: []string{`tokens: tokenize "x: 42"  ; => [object! object! object!]`, `tokens: tokenize "[1 2 3]"`},
+		SeeAlso:  []string{"parse", "load-string", "classify"}, Tags: []string{"parser", "tokenize", "lexer"},
+	})
+
+	registerSimpleIOFunc("parse", NativeParse, 1, &NativeDoc{
+		Category: "Parser",
+		Summary:  "Parses token objects into viro values",
+		Description: `Takes a block of token objects (from tokenize) and parses them into viro values.
+This is the second stage of the two-stage parser. Returns a block of parsed values.`,
+		Parameters: []ParamDoc{
+			{Name: "tokens", Type: "block!", Description: "A block of token objects from tokenize", Optional: false},
+		},
+		Returns:  "[block!] A block of parsed viro values",
+		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse tokens  ; => [x: 42]`, `values: parse tokenize "[1 2 3]"`},
+		SeeAlso:  []string{"tokenize", "load-string", "classify"}, Tags: []string{"parser", "parse", "semantic"},
+	})
+
+	registerSimpleIOFunc("load-string", NativeLoadString, 1, &NativeDoc{
+		Category: "Parser",
+		Summary:  "Parses a viro source string directly into values",
+		Description: `Combines tokenize and parse in one step. Takes a source code string,
+tokenizes it, parses it, and returns a block of viro values. This is equivalent to
+calling parse on the result of tokenize.`,
+		Parameters: []ParamDoc{
+			{Name: "source", Type: "string!", Description: "The viro source code to parse", Optional: false},
+		},
+		Returns:  "[block!] A block of parsed viro values",
+		Examples: []string{`values: load-string "x: 42"  ; => [x: 42]`, `values: load-string "[1 2 3]"  ; => [[1 2 3]]`},
+		SeeAlso:  []string{"tokenize", "parse", "classify", "load"}, Tags: []string{"parser", "load", "parse"},
+	})
+
+	registerSimpleIOFunc("classify", NativeClassify, 1, &NativeDoc{
+		Category: "Parser",
+		Summary:  "Classifies a literal string into its viro value type",
+		Description: `Takes a literal string and determines what viro type it represents,
+returning the corresponding typed value. For example, "42" becomes integer! 42,
+"true" becomes logic! true, etc. This is useful for dynamic type conversion.`,
+		Parameters: []ParamDoc{
+			{Name: "literal", Type: "string!", Description: "The literal string to classify", Optional: false},
+		},
+		Returns:  "[any-type!] The classified viro value",
+		Examples: []string{`classify "42"  ; => 42`, `classify "true"  ; => true`, `classify "hello"  ; => hello (word)`, `classify ":x"  ; => :x (get-word)`},
+		SeeAlso:  []string{"tokenize", "parse", "load-string"}, Tags: []string{"parser", "classify", "type", "conversion"},
+	})
+
 	// Create and bind standard I/O ports
 	stdoutPort := value.NewPort("stdio", "stdout", &stdioWriterDriver{writer: eval.GetOutputWriter()})
 	stderrPort := value.NewPort("stdio", "stderr", &stdioWriterDriver{writer: eval.GetErrorWriter()})

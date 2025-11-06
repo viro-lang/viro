@@ -24,13 +24,13 @@ func TestParser_ClassifyLiteral_Integers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if !result.Equals(tt.expected) {
-				t.Errorf("classifyLiteral() = %v, want %v", result, tt.expected)
+				t.Errorf("ClassifyLiteral() = %v, want %v", result, tt.expected)
 			}
 		})
 	}
@@ -53,13 +53,13 @@ func TestParser_ClassifyLiteral_Decimals(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != tt.wantType {
-				t.Errorf("classifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
+				t.Errorf("ClassifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
 			}
 		})
 	}
@@ -79,17 +79,17 @@ func TestParser_ClassifyLiteral_SetWords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != value.TypeSetWord {
-				t.Errorf("classifyLiteral() type = %v, want TypeSetWord", result.GetType())
+				t.Errorf("ClassifyLiteral() type = %v, want TypeSetWord", result.GetType())
 				return
 			}
 			if symbol, ok := value.AsWordValue(result); !ok || symbol != tt.expected {
-				t.Errorf("classifyLiteral() symbol = %v, want %v", symbol, tt.expected)
+				t.Errorf("ClassifyLiteral() symbol = %v, want %v", symbol, tt.expected)
 			}
 		})
 	}
@@ -109,17 +109,17 @@ func TestParser_ClassifyLiteral_GetWords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != value.TypeGetWord {
-				t.Errorf("classifyLiteral() type = %v, want TypeGetWord", result.GetType())
+				t.Errorf("ClassifyLiteral() type = %v, want TypeGetWord", result.GetType())
 				return
 			}
 			if symbol, ok := value.AsWordValue(result); !ok || symbol != tt.expected {
-				t.Errorf("classifyLiteral() symbol = %v, want %v", symbol, tt.expected)
+				t.Errorf("ClassifyLiteral() symbol = %v, want %v", symbol, tt.expected)
 			}
 		})
 	}
@@ -139,17 +139,17 @@ func TestParser_ClassifyLiteral_LitWords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != value.TypeLitWord {
-				t.Errorf("classifyLiteral() type = %v, want TypeLitWord", result.GetType())
+				t.Errorf("ClassifyLiteral() type = %v, want TypeLitWord", result.GetType())
 				return
 			}
 			if symbol, ok := value.AsWordValue(result); !ok || symbol != tt.expected {
-				t.Errorf("classifyLiteral() symbol = %v, want %v", symbol, tt.expected)
+				t.Errorf("ClassifyLiteral() symbol = %v, want %v", symbol, tt.expected)
 			}
 		})
 	}
@@ -171,17 +171,17 @@ func TestParser_ClassifyLiteral_Words(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != value.TypeWord {
-				t.Errorf("classifyLiteral() type = %v, want TypeWord", result.GetType())
+				t.Errorf("ClassifyLiteral() type = %v, want TypeWord", result.GetType())
 				return
 			}
 			if symbol, ok := value.AsWordValue(result); !ok || symbol != tt.expected {
-				t.Errorf("classifyLiteral() symbol = %v, want %v", symbol, tt.expected)
+				t.Errorf("ClassifyLiteral() symbol = %v, want %v", symbol, tt.expected)
 			}
 		})
 	}
@@ -201,17 +201,17 @@ func TestParser_ClassifyLiteral_Datatypes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != value.TypeDatatype {
-				t.Errorf("classifyLiteral() type = %v, want TypeDatatype", result.GetType())
+				t.Errorf("ClassifyLiteral() type = %v, want TypeDatatype", result.GetType())
 				return
 			}
 			if dt, ok := value.AsDatatypeValue(result); !ok || dt != tt.expected {
-				t.Errorf("classifyLiteral() datatype = %v, want %v", dt, tt.expected)
+				t.Errorf("ClassifyLiteral() datatype = %v, want %v", dt, tt.expected)
 			}
 		})
 	}
@@ -232,13 +232,13 @@ func TestParser_ClassifyLiteral_Paths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != tt.wantType {
-				t.Errorf("classifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
+				t.Errorf("ClassifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
 			}
 		})
 	}
@@ -257,13 +257,13 @@ func TestParser_ClassifyLiteral_SetPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != tt.wantType {
-				t.Errorf("classifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
+				t.Errorf("ClassifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
 			}
 		})
 	}
@@ -282,13 +282,13 @@ func TestParser_ClassifyLiteral_GetPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := NewParser([]tokenize.Token{})
-			result, err := p.classifyLiteral(tt.input)
+			result, err := p.ClassifyLiteral(tt.input)
 			if err != nil {
-				t.Errorf("classifyLiteral() error = %v", err)
+				t.Errorf("ClassifyLiteral() error = %v", err)
 				return
 			}
 			if result.GetType() != tt.wantType {
-				t.Errorf("classifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
+				t.Errorf("ClassifyLiteral() type = %v, want %v", result.GetType(), tt.wantType)
 			}
 		})
 	}

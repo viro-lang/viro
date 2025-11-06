@@ -707,15 +707,15 @@ Convert all errors to appropriate `verror` types:
 
 ## Acceptance Criteria
 
-- [ ] All tokenizer unit tests pass
-- [ ] All parser unit tests pass
-- [ ] Full contract test suite passes (no regressions)
+- [x] All tokenizer unit tests pass
+- [x] All parser unit tests pass
+- [x] Full contract test suite passes (no regressions)
 - [ ] PEG code and dependencies removed
 - [ ] Build works without grammar generation
-- [ ] Native functions (`tokenize`, `parse`, `load`, `classify`) implemented and tested
-- [ ] Documentation updated
+- [x] Native functions (`tokenize`, `parse`, `load-string`, `classify`) implemented and tested
+- [x] Documentation updated (contract: specs/002-implement-deferred-features/contracts/parser-natives.md)
 - [ ] Performance benchmarks show no regression
-- [ ] Error messages maintain or improve quality
+- [x] Error messages maintain or improve quality
 
 ## Effort Estimate
 

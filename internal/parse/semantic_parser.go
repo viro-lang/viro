@@ -54,7 +54,7 @@ func (p *Parser) parseValue() (core.Value, error) {
 
 	switch token.Type {
 	case tokenize.TokenLiteral:
-		return p.classifyLiteral(token.Value)
+		return p.ClassifyLiteral(token.Value)
 
 	case tokenize.TokenString:
 		return value.NewStrVal(token.Value), nil
@@ -109,7 +109,7 @@ func (p *Parser) parseUntil(closingType tokenize.TokenType, structName string) (
 	return nil, fmt.Errorf("unclosed %s", structName)
 }
 
-func (p *Parser) classifyLiteral(text string) (core.Value, error) {
+func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 	binaryPattern := regexp.MustCompile(`^#\{[0-9A-Fa-f]*\}$`)
 	if binaryPattern.MatchString(text) {
 		hexStr := text[2 : len(text)-1]
