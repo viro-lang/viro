@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	intPatternRegex        = regexp.MustCompile(`^-?[0-9]+$`)
-	decimalPatternRegex    = regexp.MustCompile(`^-?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?$`)
-	scientificPatternRegex = regexp.MustCompile(`^-?[0-9]+[eE][+-]?[0-9]+$`)
+	intPattern        = regexp.MustCompile(`^-?[0-9]+$`)
+	decimalPattern    = regexp.MustCompile(`^-?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?$`)
+	scientificPattern = regexp.MustCompile(`^-?[0-9]+[eE][+-]?[0-9]+$`)
 )
 
 type Parser struct {
@@ -167,19 +167,12 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 		return value.NewSetWordVal(base), nil
 	}
 
-	if intPatternRegex.MatchString(text) {
+	if intPattern.MatchString(text) {
 		n, _ := strconv.ParseInt(text, 10, 64)
 		return value.NewIntVal(n), nil
 	}
 
-	if decimalPatternRegex.MatchString(text) {
-		d := new(decimal.Big)
-		d.SetString(text)
-		scale := calculateScale(text)
-		return value.DecimalVal(d, scale), nil
-	}
-
-	if scientificPatternRegex.MatchString(text) {
+	if decimalPattern.MatchString(text) || scientificPattern.MatchString(text) {
 		d := new(decimal.Big)
 		d.SetString(text)
 		scale := calculateScale(text)
