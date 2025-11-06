@@ -23,7 +23,7 @@ func NativeTokenize(args []core.Value, refValues map[string]core.Value, eval cor
 	tokenizer := tokenize.NewTokenizer(input)
 	tokens, err := tokenizer.Tokenize()
 	if err != nil {
-		return value.NewNoneVal(), verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
+		return value.NewNoneVal(), err
 	}
 
 	result := make([]core.Value, 0, len(tokens))

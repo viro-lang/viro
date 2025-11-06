@@ -1,8 +1,9 @@
 package tokenize
 
 import (
-	"fmt"
 	"strings"
+
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 type TokenType int
@@ -52,7 +53,7 @@ func (t *Tokenizer) NextToken() (Token, error) {
 	tokenColumn := t.column
 
 	if ch == '@' || ch == '`' || ch == '~' {
-		return Token{}, fmt.Errorf("invalid character '%c' at line %d, column %d", ch, tokenLine, tokenColumn)
+		return Token{}, verror.NewSyntaxError(verror.ErrIDInvalidCharacter, [3]string{string(ch), "", ""})
 	}
 
 	switch ch {
@@ -128,9 +129,6 @@ func (t *Tokenizer) skipComment() {
 }
 
 func (t *Tokenizer) readString() (string, error) {
-	startLine := t.line
-	startColumn := t.column
-
 	t.advance()
 
 	var result strings.Builder
@@ -146,7 +144,7 @@ func (t *Tokenizer) readString() (string, error) {
 		if ch == '\\' {
 			t.pos++
 			if t.pos >= len(t.input) {
-				return "", fmt.Errorf("unclosed string at line %d, column %d", startLine, startColumn)
+				return "", verror.NewSyntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""})
 			}
 
 			escapedChar := t.input[t.pos]
@@ -162,7 +160,7 @@ func (t *Tokenizer) readString() (string, error) {
 			case '"':
 				result.WriteByte('"')
 			default:
-				return "", fmt.Errorf("invalid escape sequence '\\%c' at line %d, column %d", escapedChar, t.line, t.column)
+				return "", verror.NewSyntaxError(verror.ErrIDInvalidEscape, [3]string{string(escapedChar), "", ""})
 			}
 			t.advance()
 			continue
@@ -172,7 +170,7 @@ func (t *Tokenizer) readString() (string, error) {
 		t.advance()
 	}
 
-	return "", fmt.Errorf("unclosed string at line %d, column %d", startLine, startColumn)
+	return "", verror.NewSyntaxError(verror.ErrIDUnterminatedString, [3]string{"", "", ""})
 }
 
 func (t *Tokenizer) readLiteral() string {
