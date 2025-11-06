@@ -59,6 +59,9 @@ func (p *Parser) parseValue() (core.Value, error) {
 	case tokenize.TokenString:
 		return value.NewStrVal(token.Value), nil
 
+	case tokenize.TokenBinary:
+		return p.parseBinary(token.Value)
+
 	case tokenize.TokenLBracket:
 		values, err := p.parseUntil(tokenize.TokenRBracket, "block")
 		if err != nil {
@@ -116,6 +119,9 @@ func (p *Parser) classifyLiteral(text string) (core.Value, error) {
 
 	if strings.HasPrefix(text, ":") {
 		base := text[1:]
+		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
+			return nil, fmt.Errorf("get-words cannot start with numbers: %s", text)
+		}
 		if strings.Contains(base, ".") {
 			segments, err := p.parsePath(base)
 			if err != nil {
@@ -128,6 +134,9 @@ func (p *Parser) classifyLiteral(text string) (core.Value, error) {
 
 	if strings.HasSuffix(text, ":") {
 		base := text[:len(text)-1]
+		if len(base) > 0 && base[0] >= '0' && base[0] <= '9' {
+			return nil, fmt.Errorf("set-words cannot start with numbers: %s", text)
+		}
 		if strings.Contains(base, ".") {
 			segments, err := p.parsePath(base)
 			if err != nil {
@@ -165,6 +174,11 @@ func (p *Parser) classifyLiteral(text string) (core.Value, error) {
 	}
 
 	if strings.Contains(text, ".") {
+		firstChar := text[0]
+		if firstChar >= '0' && firstChar <= '9' {
+			return nil, fmt.Errorf("invalid number format: %s", text)
+		}
+
 		segments, err := p.parsePath(text)
 		if err != nil {
 			return nil, err
@@ -183,12 +197,15 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 	parts := strings.Split(text, ".")
 	segments := make([]value.PathSegment, 0, len(parts))
 
-	for _, part := range parts {
+	for i, part := range parts {
 		if part == "" {
 			return nil, fmt.Errorf("empty path segment")
 		}
 
 		if n, err := strconv.ParseInt(part, 10, 64); err == nil {
+			if i == 0 {
+				return nil, fmt.Errorf("paths cannot start with numbers")
+			}
 			segments = append(segments, value.PathSegment{
 				Type:  value.PathSegmentIndex,
 				Value: n,
@@ -202,6 +219,42 @@ func (p *Parser) parsePath(text string) ([]value.PathSegment, error) {
 	}
 
 	return segments, nil
+}
+
+func (p *Parser) parseBinary(hexStr string) (core.Value, error) {
+	hexStr = strings.ReplaceAll(hexStr, " ", "")
+	hexStr = strings.ReplaceAll(hexStr, "\t", "")
+	hexStr = strings.ReplaceAll(hexStr, "\n", "")
+	hexStr = strings.ReplaceAll(hexStr, "\r", "")
+
+	if len(hexStr)%2 != 0 {
+		return nil, fmt.Errorf("binary literal must have even number of hex digits")
+	}
+
+	bytes := make([]byte, len(hexStr)/2)
+	for i := 0; i < len(hexStr); i += 2 {
+		high := hexDigitToInt(hexStr[i])
+		low := hexDigitToInt(hexStr[i+1])
+		if high == -1 || low == -1 {
+			return nil, fmt.Errorf("invalid hex digit in binary literal")
+		}
+		bytes[i/2] = byte(high<<4 | low)
+	}
+
+	return value.NewBinaryVal(bytes), nil
+}
+
+func hexDigitToInt(ch byte) int {
+	if ch >= '0' && ch <= '9' {
+		return int(ch - '0')
+	}
+	if ch >= 'a' && ch <= 'f' {
+		return int(ch - 'a' + 10)
+	}
+	if ch >= 'A' && ch <= 'F' {
+		return int(ch - 'A' + 10)
+	}
+	return -1
 }
 
 func calculateScale(text string) int16 {

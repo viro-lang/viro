@@ -10,6 +10,7 @@ type TokenType int
 const (
 	TokenLiteral TokenType = iota
 	TokenString
+	TokenBinary
 	TokenLParen
 	TokenRParen
 	TokenLBracket
@@ -51,6 +52,26 @@ func (t *Tokenizer) NextToken() (Token, error) {
 	tokenLine := t.line
 	tokenColumn := t.column
 
+	if ch == '@' || ch == '`' || ch == '~' {
+		return Token{}, fmt.Errorf("invalid character '%c' at line %d, column %d", ch, tokenLine, tokenColumn)
+	}
+
+	if ch == '{' || ch == '}' {
+		if ch == '{' && t.pos > 0 && t.input[t.pos-1] != '#' {
+			return Token{}, fmt.Errorf("invalid character '%c' at line %d, column %d", ch, tokenLine, tokenColumn)
+		}
+		if ch == '}' {
+			nextPos := t.pos + 1
+			if nextPos < len(t.input) && t.input[nextPos] != ' ' && t.input[nextPos] != '\t' &&
+			   t.input[nextPos] != '\n' && t.input[nextPos] != '\r' &&
+			   t.input[nextPos] != '[' && t.input[nextPos] != ']' &&
+			   t.input[nextPos] != '(' && t.input[nextPos] != ')' &&
+			   t.input[nextPos] != ';' {
+				return Token{}, fmt.Errorf("invalid character '%c' at line %d, column %d", ch, tokenLine, tokenColumn)
+			}
+		}
+	}
+
 	switch ch {
 	case '[':
 		t.advance()
@@ -70,6 +91,16 @@ func (t *Tokenizer) NextToken() (Token, error) {
 			return Token{}, err
 		}
 		return Token{Type: TokenString, Value: str, Line: tokenLine, Column: tokenColumn}, nil
+	case '#':
+		if t.pos+1 < len(t.input) && t.input[t.pos+1] == '{' {
+			bin, err := t.readBinary()
+			if err != nil {
+				return Token{}, err
+			}
+			return Token{Type: TokenBinary, Value: bin, Line: tokenLine, Column: tokenColumn}, nil
+		}
+		literal := t.readLiteral()
+		return Token{Type: TokenLiteral, Value: literal, Line: tokenLine, Column: tokenColumn}, nil
 	default:
 		literal := t.readLiteral()
 		return Token{Type: TokenLiteral, Value: literal, Line: tokenLine, Column: tokenColumn}, nil
@@ -171,6 +202,40 @@ func (t *Tokenizer) readString() (string, error) {
 	return "", fmt.Errorf("unclosed string at line %d, column %d", startLine, startColumn)
 }
 
+func (t *Tokenizer) readBinary() (string, error) {
+	startLine := t.line
+	startColumn := t.column
+
+	t.advance()
+	t.advance()
+
+	var result strings.Builder
+
+	for t.pos < len(t.input) {
+		ch := t.input[t.pos]
+
+		if ch == '}' {
+			t.advance()
+			return result.String(), nil
+		}
+
+		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
+			t.advance()
+			continue
+		}
+
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') {
+			result.WriteByte(ch)
+			t.advance()
+			continue
+		}
+
+		return "", fmt.Errorf("invalid character in binary literal '%c' at line %d, column %d", ch, t.line, t.column)
+	}
+
+	return "", fmt.Errorf("unclosed binary literal at line %d, column %d", startLine, startColumn)
+}
+
 func (t *Tokenizer) readLiteral() string {
 	start := t.pos
 
@@ -178,8 +243,22 @@ func (t *Tokenizer) readLiteral() string {
 		ch := t.input[t.pos]
 
 		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' ||
-			ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == ';' {
+			ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == ';' ||
+			ch == '{' || ch == '}' {
 			break
+		}
+
+		if ch == '@' || ch == '`' || ch == '~' {
+			break
+		}
+
+		if (ch == 'e' || ch == 'E') && t.pos > start {
+			if t.pos+1 >= len(t.input) || (t.input[t.pos+1] != '+' && t.input[t.pos+1] != '-' && (t.input[t.pos+1] < '0' || t.input[t.pos+1] > '9')) {
+				literal := t.input[start:t.pos]
+				if strings.Contains(literal, ".") && strings.IndexAny(literal, "0123456789") == 0 {
+					break
+				}
+			}
 		}
 
 		t.pos++
