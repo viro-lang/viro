@@ -13,6 +13,9 @@ type Error struct {
 	Near     string   // String representation of near context (values formatted)
 	Where    []string // Call stack (most recent first)
 	Message  string   // Formatted message
+	File     string
+	Line     int
+	Column   int
 }
 
 // NewError creates an error with given category, ID, and arguments.
@@ -34,7 +37,12 @@ func (e *Error) Error() string {
 	var sb strings.Builder
 
 	// Main error line
-	sb.WriteString(fmt.Sprintf("%s error (%d): %s\n", e.Category, e.Code, e.Message))
+	header := fmt.Sprintf("%s error (%d): %s", e.Category, e.Code, e.Message)
+	if e.File != "" {
+		header = fmt.Sprintf("%s:%d:%d %s", e.File, e.Line, e.Column, header)
+	}
+	sb.WriteString(header)
+	sb.WriteString("\n")
 
 	// Near context (if available)
 	if e.Near != "" {
@@ -58,6 +66,13 @@ func (e *Error) SetNear(near string) *Error {
 // SetWhere adds call stack context.
 func (e *Error) SetWhere(where []string) *Error {
 	e.Where = where
+	return e
+}
+
+func (e *Error) SetLocation(file string, line, column int) *Error {
+	e.File = file
+	e.Line = line
+	e.Column = column
 	return e
 }
 
