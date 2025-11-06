@@ -22,7 +22,7 @@ func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, c
 	oldWriter := e.GetOutputWriter()
 	e.SetOutputWriter(w)
 
-	vals, parseErr := parse.Parse(script)
+	vals, parseErr := parse.ParseWithSource(script, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}
@@ -48,7 +48,7 @@ func captureEvalOutput(t *testing.T, e core.Evaluator, script string) (string, c
 
 func runScript(t *testing.T, e core.Evaluator, script string) (core.Value, error) {
 	t.Helper()
-	vals, parseErr := parse.Parse(script)
+	vals, parseErr := parse.ParseWithSource(script, "(test)")
 	if parseErr != nil {
 		t.Fatalf("Parse failed for %q: %v", script, parseErr)
 	}

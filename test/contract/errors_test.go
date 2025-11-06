@@ -190,7 +190,8 @@ outer 5`
 }
 
 func TestParse_UnclosedBlockError(t *testing.T) {
-	_, err := parse.Parse("[1 2 3")
+	sourceName := "test-script.viro"
+	_, err := parse.ParseWithSource("[1 2 3", sourceName)
 
 	if err == nil {
 		t.Fatalf("expected parse error but got none")
@@ -216,6 +217,14 @@ func TestParse_UnclosedBlockError(t *testing.T) {
 
 	if len(vErr.Where) != 0 {
 		t.Fatalf("parsing errors should not have call stack, got %v", vErr.Where)
+	}
+
+	if vErr.File != sourceName {
+		t.Fatalf("expected file %q, got %q", sourceName, vErr.File)
+	}
+
+	if vErr.Line == 0 || vErr.Column == 0 {
+		t.Fatalf("expected line and column to be set, got %d:%d", vErr.Line, vErr.Column)
 	}
 }
 

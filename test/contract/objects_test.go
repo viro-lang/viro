@@ -15,7 +15,7 @@ import (
 // These tests follow TDD: they MUST FAIL initially before implementation
 
 func evalObjectScriptWithEvaluator(src string) (core.Evaluator, core.Value, error) {
-	vals, err := parse.Parse(src)
+	vals, err := parse.ParseWithSource(src, "(test)")
 	if err != nil {
 		return nil, value.NewNoneVal(), err
 	}

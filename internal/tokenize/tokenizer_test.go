@@ -444,7 +444,8 @@ func tokensEqual(a, b []Token) bool {
 
 	for i := range a {
 		if a[i].Type != b[i].Type || a[i].Value != b[i].Value ||
-			a[i].Line != b[i].Line || a[i].Column != b[i].Column {
+			a[i].Line != b[i].Line || a[i].Column != b[i].Column ||
+			a[i].Source != b[i].Source {
 			return false
 		}
 	}

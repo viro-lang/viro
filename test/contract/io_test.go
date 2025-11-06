@@ -84,7 +84,7 @@ func TestIO_Print(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, perr := parse.Parse(tt.script)
+			vals, perr := parse.ParseWithSource(tt.script, "(test)")
 			if perr != nil {
 				t.Fatalf("Parse failed: %v", perr)
 			}
@@ -139,7 +139,7 @@ func TestIO_Input(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			vals, parseErr := parse.Parse("input")
+			vals, parseErr := parse.ParseWithSource("input", "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse failed: %v", parseErr)
 			}

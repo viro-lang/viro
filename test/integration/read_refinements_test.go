@@ -70,7 +70,7 @@ func TestReadRefinements(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewTestEvaluator()
-			vals, parseErr := parse.Parse(tt.script)
+			vals, parseErr := parse.ParseWithSource(tt.script, "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse failed for %q: %v", tt.script, parseErr)
 			}
@@ -120,12 +120,12 @@ func TestReadRefinementsErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewTestEvaluator()
-			vals, parseErr := parse.Parse(tt.script)
+			vals, parseErr := parse.ParseWithSource(tt.script, "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse failed for %q: %v", tt.script, parseErr)
 			}
 			_, err := evaluator.DoBlock(vals)
-			
+
 			if tt.shouldError && err == nil {
 				t.Errorf("Expected error but got none")
 			}
@@ -180,7 +180,7 @@ func TestReadRefinementsEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluator := NewTestEvaluator()
-			vals, parseErr := parse.Parse(tt.script)
+			vals, parseErr := parse.ParseWithSource(tt.script, "(test)")
 			if parseErr != nil {
 				t.Fatalf("Parse failed for %q: %v", tt.script, parseErr)
 			}

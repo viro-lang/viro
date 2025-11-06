@@ -18,7 +18,7 @@ func TestUserFunctionEvalFalse(t *testing.T) {
 		result: get-raw x
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestUserFunctionMixedEval(t *testing.T) {
 		result: type-check (2 + 2) (3 + 3)
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestNativeIfEvalArgs(t *testing.T) {
 		final: x
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestRefinementsAlwaysEvaluated(t *testing.T) {
 		result2: test-fn 1 2 --flag y
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestLitWordRefinementError(t *testing.T) {
 		quote-ref: fn ['--invalid] []
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		// If parser rejects it, that's also acceptable
 		return
@@ -168,7 +168,7 @@ func TestLitWordParameterReturnsValue(t *testing.T) {
 		type? result
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func TestUserFunctionNestedCalls(t *testing.T) {
 		result
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestTypeQueryLitWordArgument(t *testing.T) {
 		type? f word
 	`
 	e := contract.NewTestEvaluator()
-	vals, err := parse.Parse(code)
+	vals, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatal(err)
 	}

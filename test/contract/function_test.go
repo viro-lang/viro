@@ -242,7 +242,7 @@ fact 5`)
 }
 
 func evalScriptWithEvaluator(src string) (*eval.Evaluator, core.Value, error) {
-	vals, err := parse.Parse(src)
+	vals, err := parse.ParseWithSource(src, "(test)")
 	if err != nil {
 		return nil, value.NewNoneVal(), err
 	}

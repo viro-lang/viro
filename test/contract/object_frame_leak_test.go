@@ -10,7 +10,7 @@ import (
 func TestObjectFieldIsolation(t *testing.T) {
 	code := `o: object [a: 10]`
 
-	values, err := parse.Parse(code)
+	values, err := parse.ParseWithSource(code, "(test)")
 	if err != nil {
 		t.Fatalf("parse error: %v", err)
 	}
@@ -33,7 +33,7 @@ func TestObjectFieldIsolation(t *testing.T) {
 
 	// Now try to lookup 'a' - it should NOT be found
 	code2 := `a`
-	values2, _ := parse.Parse(code2)
+	values2, _ := parse.ParseWithSource(code2, "(test)")
 	_, err2 := e.DoBlock(values2)
 
 	if err2 == nil {

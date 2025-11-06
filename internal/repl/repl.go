@@ -289,7 +289,7 @@ func (r *REPL) processLine(input string, interactive bool) {
 	}
 
 	joined := strings.Join(r.pendingLines, "\n")
-	values, err := parse.Parse(joined)
+	values, err := parse.ParseWithSource(joined, "(repl)")
 	if err != nil {
 		if shouldAwaitContinuation(err.(*verror.Error)) {
 			r.awaitingCont = true

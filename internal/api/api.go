@@ -50,6 +50,7 @@ func ConfigFromArgs(args []string) (*Config, error) {
 
 type InputSource interface {
 	Load() (string, error)
+	SourceName() string
 }
 
 type ExprInputWithContext struct {
@@ -70,6 +71,10 @@ func (e *ExprInputWithContext) Load() (string, error) {
 	}
 
 	return expr, nil
+}
+
+func (e *ExprInputWithContext) SourceName() string {
+	return "(eval)"
 }
 
 type FileInput struct {
@@ -99,6 +104,16 @@ func (f *FileInput) Load() (string, error) {
 	}
 
 	return string(data), nil
+}
+
+func (f *FileInput) SourceName() string {
+	if f.Path == "-" {
+		return "-"
+	}
+	if f.Config != nil && !filepath.IsAbs(f.Path) {
+		return filepath.Join(f.Config.SandboxRoot, f.Path)
+	}
+	return f.Path
 }
 
 func NewFileInput(cfg *Config, path string, stdin io.Reader) InputSource {
@@ -214,7 +229,8 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 		return ExitError
 	}
 
-	values, err := parse.Parse(content)
+	sourceName := input.SourceName()
+	values, err := parse.ParseWithSource(content, sourceName)
 	if err != nil {
 		printErrorToWriter(err, "Parse", ctx.Stderr)
 		return ExitSyntax

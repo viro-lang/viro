@@ -24,7 +24,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 		}
 
 		for _, expr := range simpleTests {
-			values, err := parse.Parse(expr)
+			values, err := parse.ParseWithSource(expr, "(test)")
 			if err != nil {
 				t.Fatalf("parse failed for %q: %v", expr, err)
 			}
@@ -84,7 +84,7 @@ func TestSC005_PerformanceBaselines(t *testing.T) {
 
 		for _, tt := range complexTests {
 			t.Run(tt.name, func(t *testing.T) {
-				values, err := parse.Parse(tt.code)
+				values, err := parse.ParseWithSource(tt.code, "(test)")
 				if err != nil {
 					t.Fatalf("parse failed: %v", err)
 				}
