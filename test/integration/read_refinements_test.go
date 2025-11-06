@@ -63,7 +63,7 @@ func TestReadRefinements(t *testing.T) {
 		{
 			name:     "Read binary partial",
 			script:   `form read --binary --part 5 "binary.dat"`,
-			expected: "#{00 01 02 03 04}",
+			expected: "#{0001020304}",
 		},
 	}
 

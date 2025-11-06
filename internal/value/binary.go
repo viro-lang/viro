@@ -44,14 +44,11 @@ func (b *BinaryValue) formatHex(maxBytes int, showEllipsis bool) string {
 	builder.WriteString("#{")
 
 	for i := 0; i < bytesToFormat; i++ {
-		if i > 0 {
-			builder.WriteString(" ")
-		}
 		builder.WriteString(fmt.Sprintf("%02X", visibleData[i]))
 	}
 
 	if showEllipsis && bytesToFormat < len(visibleData) {
-		builder.WriteString(fmt.Sprintf(" ... (%d bytes)", len(visibleData)))
+		builder.WriteString(fmt.Sprintf("...(%d bytes)", len(visibleData)))
 	}
 
 	builder.WriteString("}")

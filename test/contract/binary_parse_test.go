@@ -5,6 +5,7 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func TestBinaryLiteral_RoundTrip(t *testing.T) {
@@ -25,33 +26,23 @@ func TestBinaryLiteral_RoundTrip(t *testing.T) {
 		},
 		{
 			name:  "multiple bytes",
-			input: "#{DE AD BE EF}",
-			want:  "#{DE AD BE EF}",
+			input: "#{DEADBEEF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "lowercase hex",
 			input: "#{deadbeef}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "mixed case",
 			input: "#{DeAdBeEf}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 		{
 			name:  "no spaces in input",
 			input: "#{DEADBEEF}",
-			want:  "#{DE AD BE EF}",
-		},
-		{
-			name:  "extra spaces",
-			input: "#{  DE   AD  }",
-			want:  "#{DE AD}",
-		},
-		{
-			name:  "tabs and newlines",
-			input: "#{DE\tAD\nBE\rEF}",
-			want:  "#{DE AD BE EF}",
+			want:  "#{DEADBEEF}",
 		},
 	}
 
@@ -113,44 +104,52 @@ func TestBinaryLiteral_TypeChecking(t *testing.T) {
 
 func TestBinaryLiteral_InvalidCases(t *testing.T) {
 	tests := []struct {
-		name    string
-		input   string
-		wantErr bool
+		name        string
+		input       string
+		wantErr     bool
+		expectedErr string
 	}{
 		{
-			name:    "odd hex digit count",
-			input:   "#{A}",
-			wantErr: true,
+			name:        "odd hex digit count",
+			input:       "#{A}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-length",
 		},
 		{
-			name:    "odd hex digit count - three digits",
-			input:   "#{ABC}",
-			wantErr: true,
+			name:        "odd hex digit count - three digits",
+			input:       "#{ABC}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-length",
 		},
 		{
-			name:    "invalid hex character G",
-			input:   "#{GG}",
-			wantErr: true,
+			name:        "invalid hex character G",
+			input:       "#{GG}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-digit",
 		},
 		{
-			name:    "invalid hex character X",
-			input:   "#{XY}",
-			wantErr: true,
+			name:        "invalid hex character X",
+			input:       "#{XY}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-digit",
 		},
 		{
-			name:    "invalid hex character Z",
-			input:   "#{ZZ}",
-			wantErr: true,
+			name:        "invalid hex character Z",
+			input:       "#{ZZ}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-digit",
 		},
 		{
-			name:    "mixed valid and invalid",
-			input:   "#{FFGG}",
-			wantErr: true,
+			name:        "mixed valid and invalid",
+			input:       "#{FFGG}",
+			wantErr:     true,
+			expectedErr: "invalid-binary-digit",
 		},
 		{
-			name:    "special characters",
-			input:   "#{@!}",
-			wantErr: true,
+			name:        "special characters",
+			input:       "#{@!}",
+			wantErr:     true,
+			expectedErr: "invalid-character",
 		},
 	}
 
@@ -159,6 +158,12 @@ func TestBinaryLiteral_InvalidCases(t *testing.T) {
 			_, err := Evaluate(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Evaluate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr && tt.expectedErr != "" {
+				if vErr, ok := err.(*verror.Error); !ok || vErr.ID != tt.expectedErr {
+					t.Errorf("expected error ID %s, got: %v (type %T)", tt.expectedErr, err, err)
+				}
 			}
 		})
 	}

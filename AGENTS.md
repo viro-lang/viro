@@ -2,8 +2,7 @@
 
 ## Build & Test Commands
 
-- Generate grammar: `make grammar` or `pigeon -o internal/parse/peg/parser.go grammar/viro.peg`
-- Build: `make build` (includes grammar generation) or `go build -o viro ./cmd/viro`
+- Build: `make build` or `go build -o viro ./cmd/viro`
 - Test all: `go test ./...` or `make test`
 - Test summary: `make test-summary` (shows total, passed, and failed test counts)
 - Test package: `go test -v ./test/contract/...` or `go test -v ./internal/native/...`

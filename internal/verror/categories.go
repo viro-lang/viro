@@ -56,11 +56,21 @@ func (c ErrorCategory) String() string {
 // Common error IDs (kebab-case identifiers for programmatic handling)
 const (
 	// Syntax errors (200)
-	ErrIDUnexpectedEOF  = "unexpected-eof"
-	ErrIDUnclosedBlock  = "unclosed-block"
-	ErrIDUnclosedParen  = "unclosed-paren"
-	ErrIDInvalidLiteral = "invalid-literal"
-	ErrIDInvalidSyntax  = "invalid-syntax"
+	ErrIDUnexpectedEOF      = "unexpected-eof"
+	ErrIDUnclosedBlock      = "unclosed-block"
+	ErrIDUnclosedParen      = "unclosed-paren"
+	ErrIDInvalidLiteral     = "invalid-literal"
+	ErrIDInvalidSyntax      = "invalid-syntax"
+	ErrIDUnterminatedString = "unterminated-string"
+	ErrIDInvalidEscape      = "invalid-escape"
+	ErrIDInvalidCharacter   = "invalid-character"
+	ErrIDUnexpectedClosing  = "unexpected-closing"
+	ErrIDInvalidNumberFormat = "invalid-number-format"
+	ErrIDInvalidBinaryLength = "invalid-binary-length"
+	ErrIDInvalidBinaryDigit  = "invalid-binary-digit"
+	ErrIDEmptyPath           = "empty-path"
+	ErrIDEmptyPathSegment    = "empty-path-segment"
+	ErrIDPathLeadingNumber   = "path-leading-number"
 
 	// Script errors (300)
 	ErrIDNoValue          = "no-value"
@@ -72,6 +82,7 @@ const (
 	ErrIDNotImplemented   = "not-implemented" // Feature 002: feature not yet implemented
 	ErrIDNotComparable    = "not-comparable"  // sort on mixed types, etc.
 	ErrIDActionNoImpl     = "action-no-impl"  // Feature 004: action not defined for type
+	ErrIDInvalidToken     = "invalid-token"   // Runtime constructed token is malformed
 
 	// Feature 002: Reflection errors (T162)
 	ErrIDSpecUnsupported   = "spec-unsupported-type" // spec-of not supported for this type

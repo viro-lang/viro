@@ -309,27 +309,27 @@ func TestToString_FromVariousTypes(t *testing.T) {
 		},
 		{
 			name:     "multiple bytes binary to string",
-			input:    "to-string #{41 42 43}",
+			input:    "to-string #{414243}",
 			expected: "414243",
 		},
 		{
 			name:     "uppercase hex in binary to string",
-			input:    "to-string #{DE AD BE EF}",
+			input:    "to-string #{DEADBEEF}",
 			expected: "DEADBEEF",
 		},
 		{
 			name:     "mixed case hex in binary to string",
-			input:    "to-string #{01 2A 3F}",
+			input:    "to-string #{012A3F}",
 			expected: "012A3F",
 		},
 		{
 			name:     "zero bytes in binary to string",
-			input:    "to-string #{00 00}",
+			input:    "to-string #{0000}",
 			expected: "0000",
 		},
 		{
 			name:     "large binary to string",
-			input:    "to-string #{41 42 43 44 45 46 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54 55 56 57 58 59 5A}",
+			input:    "to-string #{4142434445464748494A4B4C4D4E4F505152535455565758595A}",
 			expected: "4142434445464748494A4B4C4D4E4F505152535455565758595A",
 		},
 	}

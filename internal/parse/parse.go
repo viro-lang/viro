@@ -1,30 +1,43 @@
 package parse
 
 import (
-	"strings"
-
 	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/parse/peg"
+	"github.com/marcin-radoszewski/viro/internal/tokenize"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 func Parse(input string) ([]core.Value, error) {
-	result, err := peg.ParseReader("", strings.NewReader(input))
+	tokenizer := tokenize.NewTokenizer(input)
+	tokens, err := tokenizer.Tokenize()
 	if err != nil {
-		errMsg := err.Error()
-		errID := verror.ErrIDInvalidSyntax
-
-		if strings.Contains(errMsg, "expected:") && strings.Contains(errMsg, "\"]\"") {
-			errID = verror.ErrIDUnclosedBlock
-		} else if strings.Contains(errMsg, "expected:") && strings.Contains(errMsg, "\")\"") {
-			errID = verror.ErrIDUnclosedParen
+		if vErr, ok := err.(*verror.Error); ok {
+			if input != "" {
+				vErr.SetNear(input)
+			}
+			return nil, vErr
 		}
-
-		vErr := verror.NewSyntaxError(errID, [3]string{errMsg, "", ""})
+		vErr := verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
 		if input != "" {
 			vErr.SetNear(input)
 		}
 		return nil, vErr
 	}
-	return result.([]core.Value), nil
+
+	parser := NewParser(tokens)
+	values, err := parser.Parse()
+	if err != nil {
+		if vErr, ok := err.(*verror.Error); ok {
+			if input != "" {
+				vErr.SetNear(input)
+			}
+			return nil, vErr
+		}
+		vErr := verror.NewSyntaxError(verror.ErrIDInvalidSyntax, [3]string{err.Error(), "", ""})
+		if input != "" {
+			vErr.SetNear(input)
+		}
+		return nil, vErr
+	}
+
+	return values, nil
 }

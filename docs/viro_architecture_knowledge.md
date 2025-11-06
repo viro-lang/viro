@@ -103,8 +103,9 @@ const (
   - `FrameClosure`: Captured lexical environment (persists)
   - `FrameObject`: Object field storage (future)
 
-#### 4. Parser (`grammar/viro.peg`)
-- **PEG grammar**: Parsing Expression Grammar defines syntax
+#### 4. Parser (Two-Stage Architecture)
+- **Tokenizer** (`internal/tokenize/`): Lexical analysis producing token stream
+- **Parser** (`internal/parse/`): Semantic analysis transforming tokens to values
 - **Left-to-right parsing**: Supports immediate evaluation semantics
 - **Path expressions**: Dot notation for object/block navigation
 
