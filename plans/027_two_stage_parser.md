@@ -613,7 +613,34 @@ Document:
 - `load` signature, behavior, examples
 - `classify` signature, behavior, examples
 
-### Phase 5: Documentation and Cleanup
+### Phase 5: Documentation and Cleanup (COMPLETED ✅)
+
+**Status**: Phase 5 has been completed. PEG parser fully removed and documentation updated.
+
+**Completed tasks:**
+
+1. **PEG removal verified:**
+   - `grammar/viro.peg` - Already removed in earlier phases
+   - `internal/parse/peg/` - Already removed
+   - Pigeon dependency - Was never in go.mod (already clean)
+   - Makefile grammar target - Already removed
+
+2. **Documentation updates:**
+   - ✅ `grammar/README.md` - Replaced with two-stage parser architecture doc
+   - ✅ `AGENTS.md` - Removed "Generate grammar" command references
+   - ✅ `plans/027_two_stage_parser.md` - Marked Phase 5 complete in acceptance criteria
+
+3. **Verification:**
+   - ✅ All 2053 tests pass
+   - ✅ Build works without grammar generation: `make build`
+   - ✅ No `internal/parse/peg` imports found in codebase
+   - ✅ Documentation accurately reflects two-stage architecture
+
+**Phase 6 (Performance) remains for future work.**
+
+---
+
+### Phase 6: Performance Validation (TODO)
 
 **Step 5.1: Update CLAUDE.md**
 
@@ -710,11 +737,11 @@ Convert all errors to appropriate `verror` types:
 - [x] All tokenizer unit tests pass
 - [x] All parser unit tests pass
 - [x] Full contract test suite passes (no regressions)
-- [ ] PEG code and dependencies removed
-- [ ] Build works without grammar generation
+- [x] PEG code and dependencies removed (Phase 5 complete)
+- [x] Build works without grammar generation
 - [x] Native functions (`tokenize`, `parse`, `load-string`, `classify`) implemented and tested
 - [x] Documentation updated (contract: specs/002-implement-deferred-features/contracts/parser-natives.md)
-- [ ] Performance benchmarks show no regression
+- [ ] Performance benchmarks show no regression (Phase 6)
 - [x] Error messages maintain or improve quality
 
 ## Effort Estimate
