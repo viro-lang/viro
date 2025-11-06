@@ -31,7 +31,8 @@ Viro is a homoiconic programming language with unique features that make it dist
 2. **Stack** (`internal/stack/stack.go`): Unified data/frame storage
 3. **Frame** (`internal/frame/frame.go`): Variable scoping and binding
 4. **Value System** (`internal/value/`): Tagged union types
-5. **Parser** (`grammar/viro.peg`): PEG grammar for syntax
+5. **Tokenizer** (`internal/tokenize/`): Lexical analysis producing tokens
+6. **Parser** (`internal/parse/`): Semantic analysis producing values
 
 ### Type-Based Dispatch
 The evaluator uses type tags to determine evaluation behavior:

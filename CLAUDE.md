@@ -14,13 +14,9 @@ Viro is a homoiconic programming language interpreter implemented in Go. Key fea
 
 ### Building and Running
 ```bash
-# Generate parser from PEG grammar
-make grammar
-pigeon -o internal/parse/peg/parser.go grammar/viro.peg  # Alternative
-
-# Build the interpreter (includes grammar generation)
+# Build the interpreter
 make build
-go build -o viro ./cmd/viro  # Alternative (without grammar generation)
+go build -o viro ./cmd/viro  # Alternative
 
 # Run REPL
 ./viro
@@ -65,9 +61,8 @@ internal/
 ├── frame/       - Frame and context system (local-by-default scoping)
 ├── native/      - Native function implementations and Registry
 ├── verror/      - Structured error system with categories (Syntax, Script, Math, etc.)
-├── parse/       - Parser (PEG-based, single-stage)
-│   ├── peg/     - Generated parser from Pigeon
-│   ├── parse.go - Parser wrapper and API
+├── tokenize/    - Tokenizer (lexical analysis, produces token stream)
+├── parse/       - Parser (semantic analysis, token stream → values)
 └── repl/        - REPL implementation
 ```
 

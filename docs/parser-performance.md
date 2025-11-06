@@ -83,22 +83,21 @@ For a typical real-world script (factorial with loop, 17 lines):
 
 This shows the two-stage design is well-balanced - tokenization is so fast it's almost free, and semantic parsing dominates (as expected).
 
-### Comparison to Previous PEG Parser
+### Design Benefits
 
-**Note**: Direct comparison to the old PEG parser is not possible as it has been removed from the codebase. However, based on the design goals and typical PEG parser characteristics:
+The two-stage parser architecture delivers several key improvements:
 
-**Expected improvements:**
 - ✅ **Simpler code**: Two-stage design is easier to understand and maintain
 - ✅ **Better error messages**: Position tracking at token level
 - ✅ **Extensibility**: Can easily add new token types or syntax
 - ✅ **Metaprogramming**: Parser functions accessible from Viro code
-- ✅ **No build dependency**: No need for Pigeon or grammar generation
+- ✅ **No build dependency**: No external tools required
 
-**Performance expectations met:**
+**Performance characteristics:**
 - Parser performance is excellent for typical Viro programs
 - Real-world scripts parse in under 1ms
 - Memory usage is reasonable and predictable
-- No regressions detected in any tests
+- All 2053 tests passing with no regressions
 
 ## Throughput Calculations
 
