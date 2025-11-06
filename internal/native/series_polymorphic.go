@@ -198,8 +198,21 @@ func seriesSkip(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	count64, _ := value.AsIntValue(countVal)
 	count := int(count64)
 
-	seriesVal.SkipBy(count)
-	return args[0], nil
+	currentIndex := seriesVal.GetIndex()
+	length := seriesVal.Length()
+
+	newIndex := currentIndex + count
+	if newIndex < 0 {
+		newIndex = 0
+	}
+	if newIndex > length {
+		newIndex = length
+	}
+
+	newSeries := seriesVal.Clone()
+	newSeries.SetIndex(newIndex)
+
+	return newSeries.(core.Value), nil
 }
 
 func seriesTake(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

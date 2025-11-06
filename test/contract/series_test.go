@@ -1470,8 +1470,8 @@ func TestSeries_SkipTake(t *testing.T) {
 		{
 			name: "skip and take block",
 			input: `data: [1 2 3 4 5]
-skip data 2
-take data 2`,
+skipped: skip data 2
+take skipped 2`,
 			want: value.NewBlockVal([]core.Value{
 				value.NewIntVal(3),
 				value.NewIntVal(4),
@@ -1480,8 +1480,8 @@ take data 2`,
 		{
 			name: "skip and take string",
 			input: `str: "hello"
-skip str 1
-take str 3`,
+skipped: skip str 1
+take skipped 3`,
 			want: value.NewStrVal("ell"),
 		},
 		{
@@ -1580,6 +1580,70 @@ take data 2`,
 str: skip str 3
 take str 2`,
 			want: value.NewStrVal(""),
+		},
+		{
+			name: "skip does not mutate original series",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 2
+index? data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "skip returns new view at correct position",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 2
+index? skipped`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "skip preserves original and allows independent navigation",
+			input: `data: [1 2 3 4 5]
+skipped: skip data 2
+first data`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "skip string does not mutate original",
+			input: `str: "hello"
+skipped: skip str 2
+index? str`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "skip string returns new view at correct position",
+			input: `str: "hello"
+skipped: skip str 2
+first skipped`,
+			want: value.NewStrVal("l"),
+		},
+		{
+			name: "skip with negative count clamps to zero",
+			input: `data: next next [1 2 3 4 5]
+skipped: skip data -5
+index? skipped`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "skip with oversized count clamps to tail",
+			input: `data: [1 2 3]
+skipped: skip data 10
+tail? skipped`,
+			want: value.NewLogicVal(true),
+		},
+		{
+			name: "skip from advanced position does not mutate original",
+			input: `data: [1 2 3 4 5]
+advanced: next next data
+skipped: skip advanced 2
+index? advanced`,
+			want: value.NewIntVal(3),
+		},
+		{
+			name: "skip binary does not mutate original",
+			input: `bin: #{AABBCCDD}
+skipped: skip bin 2
+index? bin`,
+			want: value.NewIntVal(1),
 		},
 	}
 
