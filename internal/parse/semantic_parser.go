@@ -12,6 +12,12 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+var (
+	intPatternRegex        = regexp.MustCompile(`^-?[0-9]+$`)
+	decimalPatternRegex    = regexp.MustCompile(`^-?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?$`)
+	scientificPatternRegex = regexp.MustCompile(`^-?[0-9]+[eE][+-]?[0-9]+$`)
+)
+
 type Parser struct {
 	tokens []tokenize.Token
 	pos    int
@@ -161,22 +167,19 @@ func (p *Parser) ClassifyLiteral(text string) (core.Value, error) {
 		return value.NewSetWordVal(base), nil
 	}
 
-	intPattern := regexp.MustCompile(`^-?[0-9]+$`)
-	if intPattern.MatchString(text) {
+	if intPatternRegex.MatchString(text) {
 		n, _ := strconv.ParseInt(text, 10, 64)
 		return value.NewIntVal(n), nil
 	}
 
-	decimalPattern := regexp.MustCompile(`^-?[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?$`)
-	if decimalPattern.MatchString(text) {
+	if decimalPatternRegex.MatchString(text) {
 		d := new(decimal.Big)
 		d.SetString(text)
 		scale := calculateScale(text)
 		return value.DecimalVal(d, scale), nil
 	}
 
-	scientificPattern := regexp.MustCompile(`^-?[0-9]+[eE][+-]?[0-9]+$`)
-	if scientificPattern.MatchString(text) {
+	if scientificPatternRegex.MatchString(text) {
 		d := new(decimal.Big)
 		d.SetString(text)
 		scale := calculateScale(text)
