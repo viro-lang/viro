@@ -143,7 +143,11 @@ func FormatErrorWithContext(err *Error) string {
 	case 900:
 		category = "Internal"
 	}
-	parts = append(parts, fmt.Sprintf("** %s Error (%s)", category, err.ID))
+	header := fmt.Sprintf("** %s Error (%s)", category, err.ID)
+	if err.File != "" {
+		header = fmt.Sprintf("%s:%d:%d %s", err.File, err.Line, err.Column, header)
+	}
+	parts = append(parts, header)
 
 	// Error message
 	parts = append(parts, err.Message)
