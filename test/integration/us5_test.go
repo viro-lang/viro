@@ -55,9 +55,10 @@ func TestUS5_ErrorScenarios(t *testing.T) {
 	if !strings.Contains(errorOutput, "** Syntax Error") {
 		t.Fatalf("expected syntax error header for malformed input, got %q", errorOutput)
 	}
-	if !strings.Contains(strings.ToLower(errorOutput), "invalid syntax") && 
-		!strings.Contains(strings.ToLower(errorOutput), "unexpected") && 
-		!strings.Contains(strings.ToLower(errorOutput), "invalid character") {
+	errorOutputLower := strings.ToLower(errorOutput)
+	if !strings.Contains(errorOutputLower, "invalid syntax") && 
+		!strings.Contains(errorOutputLower, "unexpected") && 
+		!strings.Contains(errorOutputLower, "invalid character") {
 		t.Fatalf("expected syntax error details, got %q", errorOutput)
 	}
 
