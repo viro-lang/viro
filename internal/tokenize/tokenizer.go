@@ -188,9 +188,9 @@ func (t *Tokenizer) readLiteral() string {
 			break
 		}
 
-		if t.shouldBreakOnScientificNotation(ch, start) {
-			break
-		}
+	if t.shouldBreakOnInvalidExponent(ch, start) {
+		break
+	}
 
 		t.pos++
 		t.column++
@@ -199,18 +199,18 @@ func (t *Tokenizer) readLiteral() string {
 	return t.input[start:t.pos]
 }
 
-func (t *Tokenizer) shouldBreakOnScientificNotation(ch byte, start int) bool {
+func (t *Tokenizer) shouldBreakOnInvalidExponent(ch byte, start int) bool {
 	if (ch != 'e' && ch != 'E') || t.pos <= start {
 		return false
 	}
-	
+
 	if t.pos+1 >= len(t.input) || (t.input[t.pos+1] != '+' && t.input[t.pos+1] != '-' && (t.input[t.pos+1] < '0' || t.input[t.pos+1] > '9')) {
 		literal := t.input[start:t.pos]
 		if strings.Contains(literal, ".") && strings.IndexAny(literal, "0123456789") == 0 {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
