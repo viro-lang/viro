@@ -285,10 +285,47 @@ func TestPathReadTraversal(t *testing.T) {
 			wantErr:    false,
 		},
 		{
+			name: "eval segment resolves to field word",
+			code: `obj: object [profile: object [name: "Alice"]]
+                               field: 'profile
+                               obj.(field).name`,
+			expectType: value.TypeString,
+			expectStr:  "Alice",
+			wantErr:    false,
+		},
+		{
+			name: "eval segment resolves to string field",
+			code: `obj: object [profile: object [city: "Portland"]]
+                               field: "profile"
+                               obj.(field).city`,
+			expectType: value.TypeString,
+			expectStr:  "Portland",
+			wantErr:    false,
+		},
+		{
+			name: "eval segment resolves to index",
+			code: `data: [10 20 30]
+                               idx: 2
+                               data.(idx)`,
+			expectType: value.TypeInteger,
+			expectStr:  "20",
+			wantErr:    false,
+		},
+		{
+			name: "nested eval segments",
+			code: `outer: 'inner
+                               inner: 'leaf
+                               obj: object [inner: object [leaf: 42]]
+                               obj.(outer).(inner)`,
+			expectType: value.TypeInteger,
+			expectStr:  "42",
+			wantErr:    false,
+		},
+		{
 			name: "three-level path",
 			code: `org: object [
-				dept: object [
-					team: object [name: "Engineering"]
+                                dept: object [
+                                        team: object [name: "Engineering"]
 				]
 			]
 			org.dept.team.name`,
@@ -305,6 +342,13 @@ func TestPathReadTraversal(t *testing.T) {
 			name:    "none-path error",
 			code:    "obj: object [data: none] obj.data.field",
 			wantErr: true, // Should raise Script error (none-path)
+		},
+		{
+			name: "eval segment invalid result",
+			code: `obj: object [profile: object [name: "Alice"]]
+                               field: 1.5
+                               obj.(field).name`,
+			wantErr: true,
 		},
 	}
 
@@ -381,8 +425,8 @@ func TestPathWriteMutation(t *testing.T) {
 		{
 			name: "update nested field via path",
 			code: `user: object [address: object [city: "Portland"]]
-			       user.address.city: "Seattle"
-			       user`,
+                               user.address.city: "Seattle"
+                               user`,
 			checkFunc: func(t *testing.T, e core.Evaluator) {
 				rootFrame := e.GetFrameByIndex(0)
 				userVal, found := rootFrame.Get("user")
@@ -418,9 +462,75 @@ func TestPathWriteMutation(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "update field via eval segment",
+			code: `field: 'profile
+                               obj: object [profile: object [name: "Alice"]]
+                               obj.(field).name: "Bob"
+                               obj`,
+			checkFunc: func(t *testing.T, e core.Evaluator) {
+				rootFrame := e.GetFrameByIndex(0)
+				objVal, found := rootFrame.Get("obj")
+				if !found {
+					t.Fatal("obj not found")
+				}
+				obj, ok := value.AsObject(objVal)
+				if !ok {
+					t.Fatal("obj is not an object")
+				}
+				profileVal, found := obj.GetField("profile")
+				if !found {
+					t.Fatal("profile not found")
+				}
+				profile, ok := value.AsObject(profileVal)
+				if !ok {
+					t.Fatal("profile is not an object")
+				}
+				nameVal, found := profile.GetField("name")
+				if !found {
+					t.Fatal("name not found")
+				}
+				if nameVal.Form() != "Bob" {
+					t.Errorf("expected name Bob, got %s", nameVal.Form())
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "update index via eval segment",
+			code: `idx: 2
+                               data: [10 20 30]
+                               data.(idx): 99
+                               data`,
+			checkFunc: func(t *testing.T, e core.Evaluator) {
+				rootFrame := e.GetFrameByIndex(0)
+				dataVal, found := rootFrame.Get("data")
+				if !found {
+					t.Fatal("data not found")
+				}
+				block, ok := value.AsBlockValue(dataVal)
+				if !ok {
+					t.Fatal("data is not a block")
+				}
+				if len(block.Elements) < 2 {
+					t.Fatalf("expected block with at least 2 elements")
+				}
+				if block.Elements[1].Form() != "99" {
+					t.Errorf("expected second element 99, got %s", block.Elements[1].Form())
+				}
+			},
+			wantErr: false,
+		},
+		{
 			name:    "assign to immutable literal",
 			code:    "42: 100",
 			wantErr: true, // Should raise Script error (immutable-target)
+		},
+		{
+			name: "eval assignment invalid result",
+			code: `field: 1.5
+                               obj: object [profile: object [name: "Alice"]]
+                               obj.(field).name: "Bob"`,
+			wantErr: true,
 		},
 	}
 
@@ -689,6 +799,14 @@ func TestPathErrorHandling(t *testing.T) {
 			code:        "1.field: 100",
 			expectCat:   verror.ErrScript,
 			expectToken: "immutable",
+		},
+		{
+			name: "eval segment invalid type",
+			code: `obj: object [profile: object [name: "Alice"]]
+                               key: true
+                               obj.(key).name`,
+			expectCat:   verror.ErrScript,
+			expectToken: "eval",
 		},
 	}
 

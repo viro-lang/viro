@@ -911,7 +911,46 @@ type pathTraversal struct {
 	values   []core.Value
 }
 
+func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment, error) {
+	if seg.Type != value.PathSegmentEval {
+		return seg, nil
+	}
+
+	block, ok := seg.Value.(*value.BlockValue)
+	if !ok {
+		return value.PathSegment{}, verror.NewInternalError("eval segment missing block", [3]string{})
+	}
+
+	result, err := e.DoBlock(block.Elements, block.Locations())
+	if err != nil {
+		return value.PathSegment{}, err
+	}
+
+	if name, ok := value.AsWordValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentWord, Value: name}, nil
+	}
+
+	if strVal, ok := value.AsStringValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentWord, Value: strVal.String()}, nil
+	}
+
+	if num, ok := value.AsIntValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentIndex, Value: num}, nil
+	}
+
+	return value.PathSegment{}, verror.NewScriptError(verror.ErrIDInvalidPath,
+		[3]string{fmt.Sprintf("eval segment type %s", value.TypeToString(result.GetType())), "eval", ""})
+}
+
 func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, error) {
+	if firstSeg.Type == value.PathSegmentEval {
+		resolved, err := e.materializeSegment(firstSeg)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		firstSeg = resolved
+	}
+
 	switch firstSeg.Type {
 	case value.PathSegmentWord:
 		wordStr, ok := firstSeg.Value.(string)
@@ -998,14 +1037,23 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
 	}
 
+	resolved := make([]value.PathSegment, len(path.Segments))
+	copy(resolved, path.Segments)
+
 	tr := &pathTraversal{
-		segments: path.Segments,
+		segments: resolved,
 		values:   make([]core.Value, 0, len(path.Segments)),
 	}
 
 	// Resolve the base value (first segment)
-	firstSeg := path.Segments[0]
-	base, err := e.(*Evaluator).resolvePathBase(firstSeg)
+	eval := e.(*Evaluator)
+	firstSeg, err := eval.materializeSegment(resolved[0])
+	if err != nil {
+		return nil, err
+	}
+	resolved[0] = firstSeg
+
+	base, err := eval.resolvePathBase(firstSeg)
 	if err != nil {
 		return nil, err
 	}
@@ -1019,7 +1067,11 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 	}
 
 	for i := 1; i < endIdx; i++ {
-		seg := path.Segments[i]
+		seg, err := eval.materializeSegment(resolved[i])
+		if err != nil {
+			return nil, err
+		}
+		resolved[i] = seg
 		current := tr.values[len(tr.values)-1]
 
 		if current.GetType() == value.TypeNone {
@@ -1028,12 +1080,12 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 		switch seg.Type {
 		case value.PathSegmentWord:
-			if err := e.(*Evaluator).traverseWordSegment(tr, seg, current); err != nil {
+			if err := eval.traverseWordSegment(tr, seg, current); err != nil {
 				return nil, err
 			}
 
 		case value.PathSegmentIndex:
-			if err := e.(*Evaluator).traverseIndexSegment(tr, seg, current); err != nil {
+			if err := eval.traverseIndexSegment(tr, seg, current); err != nil {
 				return nil, err
 			}
 
@@ -1060,6 +1112,15 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 
 	container := tr.values[len(tr.values)-1]
 	finalSeg := tr.segments[len(tr.segments)-1]
+
+	if finalSeg.Type == value.PathSegmentEval {
+		resolved, err := e.materializeSegment(finalSeg)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		tr.segments[len(tr.segments)-1] = resolved
+		finalSeg = resolved
+	}
 
 	// Cannot assign to paths starting with numeric literals
 	if tr.segments[0].Type == value.PathSegmentIndex {

@@ -187,25 +187,52 @@ func (t *Tokenizer) readString() (string, error) {
 
 func (t *Tokenizer) readLiteral() string {
 	start := t.pos
+	depth := 0
 
 	for t.pos < len(t.input) {
 		ch := t.input[t.pos]
 
-		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' ||
-			ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == ';' {
-			break
+		if depth == 0 {
+			if ch == '.' && t.pos+1 < len(t.input) && t.input[t.pos+1] == '(' {
+				t.advance()
+				depth = 1
+				t.advance()
+				continue
+			}
+
+			if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' ||
+				ch == '[' || ch == ']' || ch == '(' || ch == ')' || ch == ';' {
+				break
+			}
+
+			if ch == '@' || ch == '`' || ch == '~' {
+				break
+			}
+
+			if t.shouldBreakOnInvalidExponent(ch, start) {
+				break
+			}
+
+			t.advance()
+			continue
 		}
 
-		if ch == '@' || ch == '`' || ch == '~' {
-			break
+		if ch == '(' {
+			depth++
+			t.advance()
+			continue
 		}
 
-		if t.shouldBreakOnInvalidExponent(ch, start) {
-			break
+		if ch == ')' {
+			depth--
+			t.advance()
+			if depth == 0 {
+				continue
+			}
+			continue
 		}
 
-		t.pos++
-		t.column++
+		t.advance()
 	}
 
 	return t.input[start:t.pos]

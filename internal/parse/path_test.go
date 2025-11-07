@@ -87,6 +87,82 @@ func TestPathTokenization(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "path with eval segment",
+			input:    "foo.(field).bar",
+			wantType: value.TypePath,
+			wantSegs: 3,
+			checkPath: func(t *testing.T, path *value.PathExpression) {
+				if len(path.Segments) != 3 {
+					t.Fatalf("Expected 3 segments, got %d", len(path.Segments))
+				}
+				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "foo" {
+					t.Errorf("Expected first segment to be word 'foo'")
+				}
+				seg := path.Segments[1]
+				if seg.Type != value.PathSegmentEval {
+					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
+				}
+				block, ok := seg.Value.(*value.BlockValue)
+				if !ok {
+					t.Fatalf("Expected eval segment to store block")
+				}
+				if len(block.Elements) != 1 {
+					t.Fatalf("Expected eval block to have 1 element, got %d", len(block.Elements))
+				}
+				if block.Elements[0].GetType() != value.TypeWord {
+					t.Errorf("Expected eval element to be word, got %s", value.TypeToString(block.Elements[0].GetType()))
+				}
+				if path.Segments[2].Type != value.PathSegmentWord || path.Segments[2].Value != "bar" {
+					t.Errorf("Expected third segment to be word 'bar'")
+				}
+			},
+		},
+		{
+			name:     "path with nested eval segment",
+			input:    "foo.(bar.(baz)).qux",
+			wantType: value.TypePath,
+			wantSegs: 3,
+			checkPath: func(t *testing.T, path *value.PathExpression) {
+				if len(path.Segments) != 3 {
+					t.Fatalf("Expected 3 segments, got %d", len(path.Segments))
+				}
+				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "foo" {
+					t.Errorf("Expected first segment to be word 'foo'")
+				}
+				seg := path.Segments[1]
+				if seg.Type != value.PathSegmentEval {
+					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
+				}
+				block, ok := seg.Value.(*value.BlockValue)
+				if !ok {
+					t.Fatalf("Expected eval segment to store block")
+				}
+				if len(block.Elements) != 1 {
+					t.Fatalf("Expected eval block to have 1 element, got %d", len(block.Elements))
+				}
+				nested := block.Elements[0]
+				if nested.GetType() != value.TypePath {
+					t.Fatalf("Expected nested value to be path, got %s", value.TypeToString(nested.GetType()))
+				}
+				nestedPath, ok := value.AsPath(nested)
+				if !ok {
+					t.Fatalf("Failed to extract nested path")
+				}
+				if len(nestedPath.Segments) != 2 {
+					t.Fatalf("Expected nested path to have 2 segments, got %d", len(nestedPath.Segments))
+				}
+				if nestedPath.Segments[0].Type != value.PathSegmentWord || nestedPath.Segments[0].Value != "bar" {
+					t.Errorf("Expected nested first segment to be 'bar'")
+				}
+				if nestedPath.Segments[1].Type != value.PathSegmentEval {
+					t.Fatalf("Expected nested second segment to be eval, got %v", nestedPath.Segments[1].Type)
+				}
+				if path.Segments[2].Type != value.PathSegmentWord || path.Segments[2].Value != "qux" {
+					t.Errorf("Expected third segment to be word 'qux'")
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
