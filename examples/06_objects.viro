@@ -18,10 +18,10 @@ print "--- Object with methods ---"
 counter: make object! [
     value: 0
     increment: fn [] [
-        value: (+ value 1)
+        value: value + 1
     ]
     decrement: fn [] [
-        value: (- value 1)
+        value: value - 1
     ]
     get-value: fn [] [
         value
@@ -42,7 +42,7 @@ point: make object! [
     x: 0
     y: 0
     distance-from-origin: fn [] [
-        sqrt (* x x) + (* y y)
+        sqrt (x * x) + (y * y)
     ]
 ]
 

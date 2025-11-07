@@ -20,7 +20,7 @@ print "--- Filter function ---"
 filter: fn [series predicate] [
     result: []
     foreach series [item] [
-        when (predicate item) [
+        when predicate item [
             append result item
         ]
     ]
@@ -28,7 +28,7 @@ filter: fn [series predicate] [
 ]
 
 is-even?: fn [n] [
-    (mod n 2) = 0
+    0 = (n mod 2)
 ]
 
 evens: filter [1 2 3 4 5 6 7 8 9 10] :is-even?
@@ -72,7 +72,7 @@ bubble-sort: fn [arr] [
     i: 1
     loop n - 1 [
         j: 1
-        loop (- n i) [
+        loop n - i [
             val1: at sorted j
             val2: at sorted j + 1
             when val1 > val2 [

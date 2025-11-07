@@ -4,19 +4,19 @@ print ""
 print "--- when (conditional execution) ---"
 when true [print "This will print"]
 when false [print "This will NOT print"]
-when (< 5 10) [print "5 is less than 10"]
+when 5 < 10 [print "5 is less than 10"]
 
 print ""
 print "--- if/else ---"
 age: 25
-if (>= age 18) [
+if age >= 18 [
     print "Adult"
 ] [
     print "Minor"
 ]
 
 temperature: 30
-if (> temperature 25) [
+if temperature > 25 [
     print "Hot day!"
 ] [
     print "Nice weather"
@@ -27,7 +27,7 @@ print "--- loop (fixed iteration) ---"
 print "Counting with loop:"
 count: 0
 loop 5 [
-    count: (+ count 1)
+    count: count + 1
     print count
 ]
 
@@ -35,8 +35,8 @@ print ""
 print "--- while (conditional iteration) ---"
 print "Countdown:"
 n: 5
-while [(> n 0)] [
+while [n > 0] [
     print n
-    n: (- n 1)
+    n: n - 1
 ]
 print "Liftoff!"

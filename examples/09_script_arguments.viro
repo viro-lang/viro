@@ -12,21 +12,21 @@ print ["Arguments:" system.args]
 print ""
 
 ; Check if arguments were provided
-if ((length? system.args) = 0) [
+if (length? system.args) = 0 [
     print "No arguments provided."
     print "Usage: viro examples/09_script_arguments.viro <arg1> <arg2> ..."
 ] [
     print "Processing arguments:"
     
     ; Access first argument
-    if ((length? system.args) > 0) [
+    when (length? system.args) > 0 [
         print ["  First argument:" first system.args]
-    ] []
+    ] 
     
     ; Access last argument
-    if ((length? system.args) > 1) [
+    when (length? system.args) > 1 [
         print ["  Last argument:" last system.args]
-    ] []
+    ] 
 ]
 
 print ""

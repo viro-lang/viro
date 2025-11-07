@@ -7,14 +7,14 @@ print numbers
 
 print ""
 print "--- first / last ---"
-print (first numbers)
-print (last numbers)
+print first numbers
+print last numbers
 
 print ""
 print "--- length? ---"
-print (length? numbers)
-print (length? "Hello")
-print (length? [])
+print length? numbers
+print length? "Hello"
+print length? []
 
 print ""
 print "--- append ---"
@@ -33,27 +33,27 @@ print items
 print ""
 print "--- at (access by position) ---"
 letters: ["a" "b" "c" "d" "e"]
-print (at letters 1)
-print (at letters 3)
-print (at letters 5)
+print at letters 1
+print at letters 3
+print at letters 5
 
 print ""
 print "--- head / tail ---"
 series: [10 20 30 40]
-print (head series)
-print (tail series)
+print head series
+print tail series
 
 print ""
 print "--- next / back ---"
 nums: [1 2 3 4 5]
 pos: next nums
-print (first pos)
+print first pos
 pos: next pos
-print (first pos)
+print first pos
 
 print ""
 print "--- Working with strings ---"
 text: "Hello"
-print (length? text)
-print (first text)
-print (last text)
+print length? text
+print first text
+print last text

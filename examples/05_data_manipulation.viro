@@ -35,7 +35,7 @@ print ""
 print "--- reduce (evaluate block elements) ---"
 x: 5
 y: 10
-print reduce [x y (+ x y) (* x y)]
+print reduce [x y (x + y) (x * y)]
 
 print ""
 print "--- compose (selective evaluation) ---"
