@@ -278,6 +278,9 @@ func (p *Parser) parsePath(token tokenize.Token, text string) ([]value.PathSegme
 		if ch == '.' && depth == 0 {
 			part := text[start:i]
 			if part == "" {
+				if len(segments) == 0 && i+1 < len(text) && text[i+1] == '(' {
+					return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
+				}
 				return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""}, token.Line, token.Column)
 			}
 			seg, err := p.parsePathSegment(token, text, part)
@@ -286,6 +289,9 @@ func (p *Parser) parsePath(token tokenize.Token, text string) ([]value.PathSegme
 			}
 			if len(segments) == 0 && seg.Type == value.PathSegmentIndex {
 				return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""}, token.Line, token.Column)
+			}
+			if len(segments) == 0 && seg.Type == value.PathSegmentEval {
+				return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
 			}
 			segments = append(segments, seg)
 			start = i + 1
@@ -307,6 +313,9 @@ func (p *Parser) parsePath(token tokenize.Token, text string) ([]value.PathSegme
 	}
 	if len(segments) == 0 && seg.Type == value.PathSegmentIndex {
 		return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""}, token.Line, token.Column)
+	}
+	if len(segments) == 0 && seg.Type == value.PathSegmentEval {
+		return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
 	}
 	segments = append(segments, seg)
 

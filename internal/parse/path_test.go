@@ -1,11 +1,13 @@
 package parse
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/marcin-radoszewski/viro/internal/core"
-	"github.com/marcin-radoszewski/viro/internal/value"
+    "github.com/marcin-radoszewski/viro/internal/core"
+    "github.com/marcin-radoszewski/viro/internal/value"
+    "github.com/marcin-radoszewski/viro/internal/verror"
 )
+
 
 // TestPathTokenization validates T090: path segment tokenizer
 func TestPathTokenization(t *testing.T) {
@@ -195,96 +197,122 @@ func TestPathTokenization(t *testing.T) {
 
 // Test that paths don't break other parsing
 func TestPathsWithOtherSyntax(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		check func(*testing.T, []core.Value)
-	}{
-		{
-			name:  "set-word followed by word",
-			input: "name: \"Alice\"",
-			check: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 2 {
-					t.Fatalf("Expected 2 values, got %d", len(vals))
-				}
-				if vals[0].GetType() != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
-				}
-				if vals[1].GetType() != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
-				}
-			},
-		},
-		{
-			name:  "path followed by set-word",
-			input: "obj.name user: \"Bob\"",
-			check: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 3 {
-					t.Fatalf("Expected 3 values, got %d", len(vals))
-				}
-				if vals[0].GetType() != value.TypePath {
-					t.Errorf("Expected TypePath, got %s", value.TypeToString(vals[0].GetType()))
-				}
-				if vals[1].GetType() != value.TypeSetWord {
-					t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[1].GetType()))
-				}
-				if vals[2].GetType() != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[2].GetType()))
-				}
-			},
-		},
-		{
-			name:  "set-path (path used for assignment)",
-			input: "obj.name: \"Alice\"",
-			check: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 2 {
-					t.Fatalf("Expected 2 values, got %d: %v", len(vals), vals)
-				}
-				if vals[0].GetType() != value.TypeSetPath {
-					t.Errorf("Expected TypeSetPath for set-path, got %s", value.TypeToString(vals[0].GetType()))
-				}
-				// The set-path should be a proper path expression
-				setPath, ok := value.AsSetPath(vals[0])
-				if !ok {
-					t.Errorf("Expected set-path value")
-				} else if len(setPath.Segments) != 2 {
-					t.Errorf("Expected 2 segments, got %d", len(setPath.Segments))
-				}
-				if vals[1].GetType() != value.TypeString {
-					t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
-				}
-			},
-		},
-		{
-			name:  "nested set-path",
-			input: "user.address.city: \"Portland\"",
-			check: func(t *testing.T, vals []core.Value) {
-				if len(vals) != 2 {
-					t.Fatalf("Expected 2 values, got %d", len(vals))
-				}
-				if vals[0].GetType() != value.TypeSetPath {
-					t.Errorf("Expected TypeSetPath, got %s", value.TypeToString(vals[0].GetType()))
-				}
-				setPath, ok := value.AsSetPath(vals[0])
-				if !ok {
-					t.Errorf("Expected set-path value")
-				} else if len(setPath.Segments) != 3 {
-					t.Errorf("Expected 3 segments, got %d", len(setPath.Segments))
-				}
-			},
-		},
-	}
+    tests := []struct {
+        name  string
+        input string
+        check func(*testing.T, []core.Value)
+    }{
+        {
+            name:  "set-word followed by word",
+            input: "name: \"Alice\"",
+            check: func(t *testing.T, vals []core.Value) {
+                if len(vals) != 2 {
+                    t.Fatalf("Expected 2 values, got %d", len(vals))
+                }
+                if vals[0].GetType() != value.TypeSetWord {
+                    t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[0].GetType()))
+                }
+                if vals[1].GetType() != value.TypeString {
+                    t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
+                }
+            },
+        },
+        {
+            name:  "path followed by set-word",
+            input: "obj.name user: \"Bob\"",
+            check: func(t *testing.T, vals []core.Value) {
+                if len(vals) != 3 {
+                    t.Fatalf("Expected 3 values, got %d", len(vals))
+                }
+                if vals[0].GetType() != value.TypePath {
+                    t.Errorf("Expected TypePath, got %s", value.TypeToString(vals[0].GetType()))
+                }
+                if vals[1].GetType() != value.TypeSetWord {
+                    t.Errorf("Expected TypeSetWord, got %s", value.TypeToString(vals[1].GetType()))
+                }
+                if vals[2].GetType() != value.TypeString {
+                    t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[2].GetType()))
+                }
+            },
+        },
+        {
+            name:  "set-path (path used for assignment)",
+            input: "obj.name: \"Alice\"",
+            check: func(t *testing.T, vals []core.Value) {
+                if len(vals) != 2 {
+                    t.Fatalf("Expected 2 values, got %d", len(vals))
+                }
+                if vals[0].GetType() != value.TypeSetPath {
+                    t.Errorf("Expected TypeSetPath for set-path, got %s", value.TypeToString(vals[0].GetType()))
+                }
+                setPath, ok := value.AsSetPath(vals[0])
+                if !ok {
+                    t.Errorf("Expected set-path value")
+                } else if len(setPath.Segments) != 2 {
+                    t.Errorf("Expected 2 segments, got %d", len(setPath.Segments))
+                }
+                if vals[1].GetType() != value.TypeString {
+                    t.Errorf("Expected TypeString, got %s", value.TypeToString(vals[1].GetType()))
+                }
+            },
+        },
+        {
+            name:  "nested set-path",
+            input: "user.address.city: \"Portland\"",
+            check: func(t *testing.T, vals []core.Value) {
+                if len(vals) != 2 {
+                    t.Fatalf("Expected 2 values, got %d", len(vals))
+                }
+                if vals[0].GetType() != value.TypeSetPath {
+                    t.Errorf("Expected TypeSetPath, got %s", value.TypeToString(vals[0].GetType()))
+                }
+                setPath, ok := value.AsSetPath(vals[0])
+                if !ok {
+                    t.Errorf("Expected set-path value")
+                } else if len(setPath.Segments) != 3 {
+                    t.Errorf("Expected 3 segments, got %d", len(setPath.Segments))
+                }
+            },
+        },
+    }
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vals, _, err := Parse(tt.input)
-			if err != nil {
-				t.Fatalf("Parse error: %v", err)
-			}
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            vals, _, err := Parse(tt.input)
+            if err != nil {
+                t.Fatalf("Parse error: %v", err)
+            }
 
-			if tt.check != nil {
-				tt.check(t, vals)
-			}
-		})
-	}
+            if tt.check != nil {
+                tt.check(t, vals)
+            }
+        })
+    }
+}
+
+func TestParseRejectsLeadingEvalSegments(t *testing.T) {
+    tests := []struct {
+        name  string
+        input string
+    }{
+        {name: "path", input: ".(field).name"},
+        {name: "get-path", input: ":.(field).name"},
+        {name: "set-path", input: ".(field).name:"},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            _, _, err := Parse(tt.input)
+            if err == nil {
+                t.Fatalf("expected error for %s", tt.input)
+            }
+            verr, ok := err.(*verror.Error)
+            if !ok {
+                t.Fatalf("expected verror.Error, got %T", err)
+            }
+            if verr.ID != verror.ErrIDPathEvalBase {
+                t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDPathEvalBase)
+            }
+        })
+    }
 }
