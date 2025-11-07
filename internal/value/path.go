@@ -69,14 +69,10 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 		case PathSegmentRefinement:
 			result += seg.Value.(string)
 		case PathSegmentEval:
-			evalPrefix := ""
-			if i > 0 {
-				evalPrefix = "."
-			}
 			if block, ok := seg.Value.(*BlockValue); ok {
-				result += evalPrefix + "(" + block.MoldElements() + ")"
+				result += "(" + block.MoldElements() + ")"
 			} else {
-				result += evalPrefix + "(eval)"
+				result += "(eval)"
 			}
 		}
 	}
@@ -90,7 +86,7 @@ func (p *PathExpression) String() string {
 	}
 	result := "path["
 	for i, seg := range p.Segments {
-		if i > 0 {
+		if i > 0 && seg.Type != PathSegmentRefinement && seg.Type != PathSegmentEval {
 			result += "."
 		}
 		switch seg.Type {
@@ -174,7 +170,7 @@ func (g *GetPathExpression) String() string {
 	}
 	result := "get-path["
 	for i, seg := range g.Segments {
-		if i > 0 {
+		if i > 0 && seg.Type != PathSegmentRefinement && seg.Type != PathSegmentEval {
 			result += "."
 		}
 		switch seg.Type {
@@ -258,7 +254,7 @@ func (s *SetPathExpression) String() string {
 	}
 	result := "set-path["
 	for i, seg := range s.Segments {
-		if i > 0 {
+		if i > 0 && seg.Type != PathSegmentRefinement && seg.Type != PathSegmentEval {
 			result += "."
 		}
 		switch seg.Type {
