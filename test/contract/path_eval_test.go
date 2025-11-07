@@ -84,14 +84,14 @@ obj.(outer).(inner)`,
 }
 
 func TestSetPathEvalSegmentEvaluatesOnce(t *testing.T) {
-    code := `counter: 0
+    code := `state: object [counter: 0]
 next-index: fn [] [
-    counter: counter + 1
-    counter
+    state.counter: state.counter + 1
+    state.counter
 ]
 data: [10 20]
 data.(next-index): 99
-counter`
+state.counter`
 
     result, err := Evaluate(code)
     if err != nil {
