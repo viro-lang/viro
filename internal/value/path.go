@@ -6,33 +6,25 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// PathExpression represents a path during evaluation (Feature 002).
-//
-// Design per data-model.md:
-// - Segments: sequence of steps (word, index, refinement) for traversal
-// - Base: starting value for path evaluation
-//
-// Per FR-010: evaluates across objects, blocks, and future maps using dot notation
-// Note: TypePath is transient and should not persist outside evaluation context
 type PathExpression struct {
-	Segments []PathSegment // Path components (e.g., "user", "address", "city")
-	Base     core.Value    // Starting value for traversal
+	Segments []PathSegment
+	Base     core.Value
 }
 
 // PathSegment represents a single step in a path traversal.
 type PathSegment struct {
-	Type  PathSegmentType // word, index, refinement, or eval
-	Value any             // string/int64 for static, *BlockValue for eval
+	Type  PathSegmentType
+	Value any
 }
 
 // PathSegmentType identifies the kind of path segment.
 type PathSegmentType int
 
 const (
-	PathSegmentWord       PathSegmentType = iota // Field access (object.field)
-	PathSegmentIndex                             // Series indexing (block.3)
-	PathSegmentRefinement                        // Function refinement (func/ref)
-	PathSegmentEval                              // Evaluated segment (.(expr))
+	PathSegmentWord       PathSegmentType = iota
+	PathSegmentIndex
+	PathSegmentRefinement
+	PathSegmentEval
 )
 
 func (t PathSegmentType) String() string {
@@ -58,7 +50,40 @@ func NewPath(segments []PathSegment, base core.Value) *PathExpression {
 	}
 }
 
-// String returns a path-like representation for debugging.
+func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
+	result := prefix
+	for i, seg := range segments {
+		if i > 0 {
+			switch seg.Type {
+			case PathSegmentRefinement:
+				result += "/"
+			default:
+				result += "."
+			}
+		}
+		switch seg.Type {
+		case PathSegmentWord:
+			result += seg.Value.(string)
+		case PathSegmentIndex:
+			result += fmt.Sprintf("%d", seg.Value.(int64))
+		case PathSegmentRefinement:
+			result += seg.Value.(string)
+		case PathSegmentEval:
+			evalPrefix := ""
+			if i > 0 {
+				evalPrefix = "."
+			}
+			if block, ok := seg.Value.(*BlockValue); ok {
+				result += evalPrefix + "(" + block.MoldElements() + ")"
+			} else {
+				result += evalPrefix + "(eval)"
+			}
+		}
+	}
+	result += suffix
+	return result
+}
+
 func (p *PathExpression) String() string {
 	if p == nil || len(p.Segments) == 0 {
 		return "path[]"
@@ -76,14 +101,14 @@ func (p *PathExpression) String() string {
 		case PathSegmentRefinement:
 			result += "/" + seg.Value.(string)
 		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
+			evalPrefix := ""
+			if i > 0 {
+				evalPrefix = "."
 			}
 			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.Form() + ")"
+				result += evalPrefix + "(" + block.Form() + ")"
 			} else {
-				result += prefix + "(eval)"
+				result += evalPrefix + "(eval)"
 			}
 		}
 	}
@@ -91,50 +116,17 @@ func (p *PathExpression) String() string {
 	return result
 }
 
-// Mold returns the mold-formatted path representation.
 func (p *PathExpression) Mold() string {
 	if p == nil || len(p.Segments) == 0 {
 		return ""
 	}
-	result := ""
-	for i, seg := range p.Segments {
-		if i > 0 {
-			// Use appropriate separator based on segment type
-			switch seg.Type {
-			case PathSegmentRefinement:
-				result += "/"
-			default:
-				result += "."
-			}
-		}
-		switch seg.Type {
-		case PathSegmentWord:
-			result += seg.Value.(string)
-		case PathSegmentIndex:
-			result += fmt.Sprintf("%d", seg.Value.(int64))
-		case PathSegmentRefinement:
-			result += seg.Value.(string)
-		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
-			}
-			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.MoldElements() + ")"
-			} else {
-				result += prefix + "(eval)"
-			}
-		}
-	}
-	return result
+	return renderPathSegments(p.Segments, "", "")
 }
 
-// Form returns the form-formatted path representation (same as mold for paths).
 func (p *PathExpression) Form() string {
 	return p.Mold()
 }
 
-// PathVal creates a Value wrapping a PathExpression.
 func PathVal(path *PathExpression) core.Value {
 	return path
 }
@@ -193,14 +185,14 @@ func (g *GetPathExpression) String() string {
 		case PathSegmentRefinement:
 			result += "/" + seg.Value.(string)
 		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
+			evalPrefix := ""
+			if i > 0 {
+				evalPrefix = "."
 			}
 			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.Form() + ")"
+				result += evalPrefix + "(" + block.Form() + ")"
 			} else {
-				result += prefix + "(eval)"
+				result += evalPrefix + "(eval)"
 			}
 		}
 	}
@@ -208,50 +200,17 @@ func (g *GetPathExpression) String() string {
 	return result
 }
 
-// Mold returns the mold-formatted get-path representation.
 func (g *GetPathExpression) Mold() string {
 	if g == nil || len(g.Segments) == 0 {
 		return ""
 	}
-	result := ":"
-	for i, seg := range g.Segments {
-		if i > 0 {
-			// Use appropriate separator based on segment type
-			switch seg.Type {
-			case PathSegmentRefinement:
-				result += "/"
-			default:
-				result += "."
-			}
-		}
-		switch seg.Type {
-		case PathSegmentWord:
-			result += seg.Value.(string)
-		case PathSegmentIndex:
-			result += fmt.Sprintf("%d", seg.Value.(int64))
-		case PathSegmentRefinement:
-			result += seg.Value.(string)
-		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
-			}
-			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.MoldElements() + ")"
-			} else {
-				result += prefix + "(eval)"
-			}
-		}
-	}
-	return result
+	return renderPathSegments(g.Segments, ":", "")
 }
 
-// Form returns the form-formatted get-path representation (same as mold for get-paths).
 func (g *GetPathExpression) Form() string {
 	return g.Mold()
 }
 
-// GetPathVal creates a Value wrapping a GetPathExpression.
 func GetPathVal(path *GetPathExpression) core.Value {
 	return path
 }
@@ -310,14 +269,14 @@ func (s *SetPathExpression) String() string {
 		case PathSegmentRefinement:
 			result += "/" + seg.Value.(string)
 		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
+			evalPrefix := ""
+			if i > 0 {
+				evalPrefix = "."
 			}
 			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.Form() + ")"
+				result += evalPrefix + "(" + block.Form() + ")"
 			} else {
-				result += prefix + "(eval)"
+				result += evalPrefix + "(eval)"
 			}
 		}
 	}
@@ -325,45 +284,17 @@ func (s *SetPathExpression) String() string {
 	return result
 }
 
-// Mold returns a set-path representation suitable for parsing.
 func (s *SetPathExpression) Mold() string {
 	if s == nil || len(s.Segments) == 0 {
 		return ""
 	}
-	result := ""
-	for i, seg := range s.Segments {
-		if i > 0 {
-			result += "."
-		}
-		switch seg.Type {
-		case PathSegmentWord:
-			result += seg.Value.(string)
-		case PathSegmentIndex:
-			result += fmt.Sprintf("%d", seg.Value.(int64))
-		case PathSegmentRefinement:
-			result += "/" + seg.Value.(string)
-		case PathSegmentEval:
-			prefix := ""
-			if i == 0 {
-				prefix = "."
-			}
-			if block, ok := seg.Value.(*BlockValue); ok {
-				result += prefix + "(" + block.MoldElements() + ")"
-			} else {
-				result += prefix + "(eval)"
-			}
-		}
-	}
-	result += ":"
-	return result
+	return renderPathSegments(s.Segments, "", ":")
 }
 
-// Form returns a user-friendly representation.
 func (s *SetPathExpression) Form() string {
 	return s.Mold()
 }
 
-// SetPathVal creates a Value wrapping a SetPathExpression.
 func SetPathVal(path *SetPathExpression) core.Value {
 	return path
 }
