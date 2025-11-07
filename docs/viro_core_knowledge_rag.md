@@ -140,6 +140,30 @@ select person "name"     ; Returns "Alice"
 put person "age" 31      ; Updates age to 31
 ```
 
+### Path Expressions with Eval Segments
+```viro
+; Static path access
+obj.field              ; Direct field access
+block.3                ; Direct index access
+
+; Dynamic path access using eval segments
+fields: ["name" "age" "email"]
+obj.(fields.1)         ; Evaluates to obj.age
+data: [10 20 30]
+data.(1 + 1)           ; Evaluates to data.2
+
+; Assignment with eval segments
+key: "status"
+obj.(key): "active"    ; Sets obj.status to "active"
+
+; Why not .(expr).field?
+; Leading eval segments are invalid syntax because:
+; 1. Ambiguous: could be decimal or path
+; 2. Unnecessary: use variables instead
+;    Instead of:  .(get-obj).field
+;    Write:       obj: get-obj  obj.field
+```
+
 ## Performance Characteristics
 - **O(1)** function calls via frame allocation
 - **O(1)** variable access via index-based frames  
