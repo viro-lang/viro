@@ -5,6 +5,9 @@
 package native
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/trace"
@@ -149,14 +152,16 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		result, err = eval.DoBlock(block.Elements, block.Locations())
 		if err != nil {
-			isControl, signalType := isLoopControlSignal(err)
-			if isControl {
-				if signalType == "break" {
-					return value.NewNoneVal(), nil
-				}
+			shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+			if propagateErr != nil {
+				return value.NewNoneVal(), propagateErr
+			}
+			if shouldExit {
+				return value.NewNoneVal(), nil
+			}
+			if shouldContinue {
 				continue
 			}
-			return value.NewNoneVal(), err
 		}
 	}
 
@@ -209,14 +214,16 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			// Evaluate body block
 			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
-				isControl, signalType := isLoopControlSignal(err)
-				if isControl {
-					if signalType == "break" {
-						return value.NewNoneVal(), nil
-					}
+				shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+				if propagateErr != nil {
+					return value.NewNoneVal(), propagateErr
+				}
+				if shouldExit {
+					return value.NewNoneVal(), nil
+				}
+				if shouldContinue {
 					continue
 				}
-				return value.NewNoneVal(), err
 			}
 		}
 	} else {
@@ -227,14 +234,16 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			var err error
 			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
-				isControl, signalType := isLoopControlSignal(err)
-				if isControl {
-					if signalType == "break" {
-						return value.NewNoneVal(), nil
-					}
+				shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+				if propagateErr != nil {
+					return value.NewNoneVal(), propagateErr
+				}
+				if shouldExit {
+					return value.NewNoneVal(), nil
+				}
+				if shouldContinue {
 					continue
 				}
-				return value.NewNoneVal(), err
 			}
 		}
 	}
@@ -353,6 +362,68 @@ func isLoopControlSignal(err error) (isControl bool, signalType string) {
 		return true, "continue"
 	}
 	return false, ""
+}
+
+func extractLevels(err error) int64 {
+	verr, ok := err.(*verror.Error)
+	if !ok || verr.Args[0] == "" {
+		return 1
+	}
+
+	levels, parseErr := strconv.ParseInt(verr.Args[0], 10, 64)
+	if parseErr != nil {
+		return 1
+	}
+
+	if levels < 1 {
+		return 1
+	}
+
+	return levels
+}
+
+func handleLoopControlSignal(err error) (shouldExit bool, shouldContinue bool, propagateErr error) {
+	isControl, signalType := isLoopControlSignal(err)
+	if !isControl {
+		return false, false, err
+	}
+
+	levels := extractLevels(err)
+
+	if levels > 1 {
+		verr, _ := err.(*verror.Error)
+		newErr := verror.NewError(
+			verror.ErrThrow,
+			verr.ID,
+			[3]string{fmt.Sprintf("%d", levels-1), "", ""},
+		)
+		return false, false, newErr
+	}
+
+	if signalType == "break" {
+		return true, false, nil
+	}
+	return false, true, nil
+}
+
+func parseLevelsRefinement(refValues map[string]core.Value, nativeName string) (int64, error) {
+	levels := int64(1)
+	if levelsVal, ok := refValues["levels"]; ok && levelsVal.GetType() != value.TypeNone {
+		if levelsVal.GetType() != value.TypeInteger {
+			return 0, verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"--levels requires integer", "", ""},
+			)
+		}
+		levels, _ = value.AsIntValue(levelsVal)
+		if levels < 1 {
+			return 0, verror.NewScriptError(
+				verror.ErrIDInvalidOperation,
+				[3]string{"--levels must be >= 1", "", ""},
+			)
+		}
+	}
+	return levels, nil
 }
 
 // Trace implements the 'trace' native for tracing control (Feature 002, FR-020).
@@ -663,15 +734,17 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 
 		if err != nil {
-			isControl, signalType := isLoopControlSignal(err)
-			if isControl {
-				if signalType == "break" {
-					return value.NewNoneVal(), nil
-				}
+			shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+			if propagateErr != nil {
+				return value.NewNoneVal(), propagateErr
+			}
+			if shouldExit {
+				return value.NewNoneVal(), nil
+			}
+			if shouldContinue {
 				iteration++
 				continue
 			}
-			return value.NewNoneVal(), err
 		}
 		iteration++
 	}
@@ -851,12 +924,32 @@ func Break(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	if len(args) != 0 {
 		return value.NewNoneVal(), arityError("break", 0, len(args))
 	}
-	return value.NewNoneVal(), verror.NewError(verror.ErrThrow, verror.ErrIDBreak, [3]string{})
+
+	levels, err := parseLevelsRefinement(refValues, "break")
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	return value.NewNoneVal(), verror.NewError(
+		verror.ErrThrow,
+		verror.ErrIDBreak,
+		[3]string{fmt.Sprintf("%d", levels), "", ""},
+	)
 }
 
 func Continue(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
 		return value.NewNoneVal(), arityError("continue", 0, len(args))
 	}
-	return value.NewNoneVal(), verror.NewError(verror.ErrThrow, verror.ErrIDContinue, [3]string{})
+
+	levels, err := parseLevelsRefinement(refValues, "continue")
+	if err != nil {
+		return value.NewNoneVal(), err
+	}
+
+	return value.NewNoneVal(), verror.NewError(
+		verror.ErrThrow,
+		verror.ErrIDContinue,
+		[3]string{fmt.Sprintf("%d", levels), "", ""},
+	)
 }
