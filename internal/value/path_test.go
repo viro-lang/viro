@@ -54,6 +54,24 @@ func TestPathExpressionMold(t *testing.T) {
 			want: "data.(field).(idx)",
 		},
 		{
+			name: "path with eval refinement",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
+				{Type: PathSegmentRefinement, Value: "ref"},
+			},
+			want: "data.(field)/ref",
+		},
+		{
+			name: "path with eval index ordering",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+				{Type: PathSegmentIndex, Value: int64(3)},
+			},
+			want: "data.(idx).3",
+		},
+		{
 			name: "mixed path segments",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "obj"},
@@ -62,6 +80,14 @@ func TestPathExpressionMold(t *testing.T) {
 				{Type: PathSegmentWord, Value: "name"},
 			},
 			want: "obj.2.(key).name",
+		},
+		{
+			name: "path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: "data.(eval)",
 		},
 		{
 			name:     "empty path",
@@ -96,6 +122,14 @@ func TestGetPathExpressionMold(t *testing.T) {
 			want: ":data.field",
 		},
 		{
+			name: "get-path with refinement",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "func"},
+				{Type: PathSegmentRefinement, Value: "ref"},
+			},
+			want: ":func/ref",
+		},
+		{
 			name: "get-path with eval segment",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "data"},
@@ -104,12 +138,39 @@ func TestGetPathExpressionMold(t *testing.T) {
 			want: ":data.(idx)",
 		},
 		{
-			name: "get-path with refinement",
+			name: "get-path with nested eval segments",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "func"},
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+			},
+			want: ":data.(field).(idx)",
+		},
+		{
+			name: "get-path with eval refinement",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
 				{Type: PathSegmentRefinement, Value: "ref"},
 			},
-			want: ":func/ref",
+			want: ":data.(field)/ref",
+		},
+		{
+			name: "get-path with eval index ordering",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+				{Type: PathSegmentIndex, Value: int64(3)},
+			},
+			want: ":data.(idx).3",
+		},
+		{
+			name: "get-path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: ":data.(eval)",
 		},
 		{
 			name:     "empty get-path",
@@ -144,6 +205,14 @@ func TestSetPathExpressionMold(t *testing.T) {
 			want: "data.field:",
 		},
 		{
+			name: "set-path with index",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentIndex, Value: int64(3)},
+			},
+			want: "data.3:",
+		},
+		{
 			name: "set-path with eval segment",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "data"},
@@ -152,12 +221,39 @@ func TestSetPathExpressionMold(t *testing.T) {
 			want: "data.(idx):",
 		},
 		{
-			name: "set-path with index",
+			name: "set-path with nested eval segments",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+			},
+			want: "data.(field).(idx):",
+		},
+		{
+			name: "set-path with eval refinement",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
+				{Type: PathSegmentRefinement, Value: "ref"},
+			},
+			want: "data.(field)/ref:",
+		},
+		{
+			name: "set-path with eval index ordering",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
 				{Type: PathSegmentIndex, Value: int64(3)},
 			},
-			want: "data.3:",
+			want: "data.(idx).3:",
+		},
+		{
+			name: "set-path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: "data.(eval):",
 		},
 		{
 			name:     "empty set-path",
@@ -221,6 +317,22 @@ func TestPathExpressionString(t *testing.T) {
 			},
 			want: "path[data.(idx)]",
 		},
+		{
+			name: "path with eval block containing string literal",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewStrVal("idx")})},
+			},
+			want: "path[data.(\"idx\")]",
+		},
+		{
+			name: "path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: "path[data.(eval)]",
+		},
 	}
 
 	for _, tt := range tests {
@@ -235,28 +347,108 @@ func TestPathExpressionString(t *testing.T) {
 }
 
 func TestGetPathExpressionString(t *testing.T) {
-	segments := []PathSegment{
-		{Type: PathSegmentWord, Value: "data"},
+	tests := []struct {
+		name     string
+		segments []PathSegment
+		want     string
+	}{
+		{
+			name:     "nil get-path",
+			segments: nil,
+			want:     "get-path[]",
+		},
+		{
+			name:     "empty get-path",
+			segments: []PathSegment{},
+			want:     "get-path[]",
+		},
+		{
+			name: "simple get-path",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentWord, Value: "field"},
+			},
+			want: "get-path[data.field]",
+		},
+		{
+			name: "get-path with eval block containing string literal",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewStrVal("idx")})},
+			},
+			want: "get-path[data.(\"idx\")]",
+		},
+		{
+			name: "get-path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: "get-path[data.(eval)]",
+		},
 	}
-	path := NewGetPath(segments, nil)
-	got := path.String()
-	want := "get-path[data]"
 
-	if got != want {
-		t.Errorf("GetPathExpression.String() = %q, want %q", got, want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := NewGetPath(tt.segments, nil)
+			got := path.String()
+			if got != tt.want {
+				t.Errorf("GetPathExpression.String() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
 func TestSetPathExpressionString(t *testing.T) {
-	segments := []PathSegment{
-		{Type: PathSegmentWord, Value: "data"},
+	tests := []struct {
+		name     string
+		segments []PathSegment
+		want     string
+	}{
+		{
+			name:     "nil set-path",
+			segments: nil,
+			want:     "set-path[]",
+		},
+		{
+			name:     "empty set-path",
+			segments: []PathSegment{},
+			want:     "set-path[]",
+		},
+		{
+			name: "simple set-path",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentWord, Value: "field"},
+			},
+			want: "set-path[data.field]",
+		},
+		{
+			name: "set-path with eval block containing string literal",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewStrVal("idx")})},
+			},
+			want: "set-path[data.(\"idx\")]",
+		},
+		{
+			name: "set-path with non-block eval segment",
+			segments: []PathSegment{
+				{Type: PathSegmentWord, Value: "data"},
+				{Type: PathSegmentEval, Value: "not-a-block"},
+			},
+			want: "set-path[data.(eval)]",
+		},
 	}
-	path := NewSetPath(segments, nil)
-	got := path.String()
-	want := "set-path[data]"
 
-	if got != want {
-		t.Errorf("SetPathExpression.String() = %q, want %q", got, want)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := NewSetPath(tt.segments, nil)
+			got := path.String()
+			if got != tt.want {
+				t.Errorf("SetPathExpression.String() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
