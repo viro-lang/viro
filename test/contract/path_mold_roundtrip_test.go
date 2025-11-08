@@ -61,7 +61,48 @@ func comparePathSegments(t *testing.T, expected, actual []value.PathSegment) {
 	}
 }
 
+type pathKind struct {
+	name         string
+	constructor  func([]value.PathSegment, core.Value) core.Value
+	expectedType core.ValueType
+	extractor    func(core.Value) (core.Value, bool)
+}
+
 func TestPathMoldRoundtrip(t *testing.T) {
+	pathKinds := []pathKind{
+		{
+			name:         "path",
+			constructor:  func(segments []value.PathSegment, base core.Value) core.Value { return value.NewPath(segments, base) },
+			expectedType: value.TypePath,
+			extractor: func(v core.Value) (core.Value, bool) {
+				p, ok := value.AsPath(v)
+				return p, ok
+			},
+		},
+		{
+			name: "get-path",
+			constructor: func(segments []value.PathSegment, base core.Value) core.Value {
+				return value.NewGetPath(segments, base)
+			},
+			expectedType: value.TypeGetPath,
+			extractor: func(v core.Value) (core.Value, bool) {
+				p, ok := value.AsGetPath(v)
+				return p, ok
+			},
+		},
+		{
+			name: "set-path",
+			constructor: func(segments []value.PathSegment, base core.Value) core.Value {
+				return value.NewSetPath(segments, base)
+			},
+			expectedType: value.TypeSetPath,
+			extractor: func(v core.Value) (core.Value, bool) {
+				p, ok := value.AsSetPath(v)
+				return p, ok
+			},
+		},
+	}
+
 	tests := []struct {
 		name     string
 		segments []value.PathSegment
@@ -147,279 +188,101 @@ func TestPathMoldRoundtrip(t *testing.T) {
 				{Type: value.PathSegmentIndex, Value: int64(3)},
 			},
 		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			original := value.NewPath(tt.segments, nil)
-
-			molded := original.Mold()
-
-			vals, _, err := parse.Parse(molded)
-			if err != nil {
-				t.Fatalf("parse error: %v", err)
-			}
-
-			if len(vals) != 1 {
-				t.Fatalf("expected 1 value, got %d", len(vals))
-			}
-
-			if vals[0].GetType() != value.TypePath {
-				t.Fatalf("expected path type, got %s", value.TypeToString(vals[0].GetType()))
-			}
-
-			parsed, ok := value.AsPath(vals[0])
-			if !ok {
-				t.Fatalf("failed to extract path")
-			}
-
-			if parsed.Mold() != molded {
-				t.Errorf("mold mismatch: got %q, want %q", parsed.Mold(), molded)
-			}
-
-			comparePathSegments(t, tt.segments, parsed.Segments)
-		})
-	}
-}
-
-func TestGetPathMoldRoundtrip(t *testing.T) {
-	tests := []struct {
-		name     string
-		segments []value.PathSegment
-	}{
 		{
-			name: "two-word get-path",
+			name: "word eval index eval",
 			segments: []value.PathSegment{
 				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentWord, Value: "field"},
-			},
-		},
-		{
-			name: "three-word get-path",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentWord, Value: "field"},
-				{Type: value.PathSegmentWord, Value: "name"},
-			},
-		},
-		{
-			name: "get-path with index",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
+				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+					value.NewWordVal("field"),
+				})},
 				{Type: value.PathSegmentIndex, Value: int64(1)},
-			},
-		},
-		{
-			name: "get-path with multiple indices",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "matrix"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
-			},
-		},
-		{
-			name: "get-path with eval segment word",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("field"),
-				})},
-			},
-		},
-		{
-			name: "get-path with eval segment string",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewStrVal("idx"),
-				})},
-			},
-		},
-		{
-			name: "nested eval segments",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("field"),
-				})},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("idx"),
-				})},
-			},
-		},
-		{
-			name: "mixed segments",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
 				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
 					value.NewWordVal("key"),
 				})},
-				{Type: value.PathSegmentWord, Value: "name"},
 			},
 		},
 		{
-			name: "eval then index",
+			name: "multiple consecutive evals",
 			segments: []value.PathSegment{
 				{Type: value.PathSegmentWord, Value: "data"},
 				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("idx"),
+					value.NewWordVal("a"),
 				})},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
+				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+					value.NewWordVal("b"),
+				})},
+				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+					value.NewWordVal("c"),
+				})},
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			original := value.NewGetPath(tt.segments, nil)
+	for _, kind := range pathKinds {
+		for _, tt := range tests {
+			t.Run(kind.name+"/"+tt.name, func(t *testing.T) {
+				original := kind.constructor(tt.segments, nil)
 
-			molded := original.Mold()
+				molded := original.Mold()
 
-			vals, _, err := parse.Parse(molded)
-			if err != nil {
-				t.Fatalf("parse error: %v", err)
-			}
+				vals, _, err := parse.Parse(molded)
+				if err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
 
-			if len(vals) != 1 {
-				t.Fatalf("expected 1 value, got %d", len(vals))
-			}
+				if len(vals) != 1 {
+					t.Fatalf("expected 1 value, got %d", len(vals))
+				}
 
-			if vals[0].GetType() != value.TypeGetPath {
-				t.Fatalf("expected get-path type, got %s", value.TypeToString(vals[0].GetType()))
-			}
+				if vals[0].GetType() != kind.expectedType {
+					t.Fatalf("expected %s type, got %s", value.TypeToString(kind.expectedType), value.TypeToString(vals[0].GetType()))
+				}
 
-			parsed, ok := value.AsGetPath(vals[0])
-			if !ok {
-				t.Fatalf("failed to extract get-path")
-			}
+				parsed, ok := kind.extractor(vals[0])
+				if !ok {
+					t.Fatalf("failed to extract %s", kind.name)
+				}
 
-			if parsed.Mold() != molded {
-				t.Errorf("mold mismatch: got %q, want %q", parsed.Mold(), molded)
-			}
+				if parsed.Mold() != molded {
+					t.Errorf("mold mismatch: got %q, want %q", parsed.Mold(), molded)
+				}
 
-			comparePathSegments(t, tt.segments, parsed.Segments)
-		})
+				var segments []value.PathSegment
+				switch p := parsed.(type) {
+				case *value.PathExpression:
+					segments = p.Segments
+				case *value.GetPathExpression:
+					segments = p.Segments
+				case *value.SetPathExpression:
+					segments = p.Segments
+				default:
+					t.Fatalf("unexpected path type: %T", parsed)
+				}
+
+				comparePathSegments(t, tt.segments, segments)
+			})
+		}
 	}
 }
 
-func TestSetPathMoldRoundtrip(t *testing.T) {
-	tests := []struct {
-		name     string
-		segments []value.PathSegment
-	}{
-		{
-			name: "two-word set-path",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentWord, Value: "field"},
-			},
-		},
-		{
-			name: "three-word set-path",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentWord, Value: "field"},
-				{Type: value.PathSegmentWord, Value: "name"},
-			},
-		},
-		{
-			name: "set-path with index",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentIndex, Value: int64(1)},
-			},
-		},
-		{
-			name: "set-path with multiple indices",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "matrix"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
-			},
-		},
-		{
-			name: "set-path with eval segment word",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("field"),
-				})},
-			},
-		},
-		{
-			name: "set-path with eval segment string",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewStrVal("idx"),
-				})},
-			},
-		},
-		{
-			name: "nested eval segments",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("field"),
-				})},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("idx"),
-				})},
-			},
-		},
-		{
-			name: "mixed segments",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("key"),
-				})},
-				{Type: value.PathSegmentWord, Value: "name"},
-			},
-		},
-		{
-			name: "eval then index",
-			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
-					value.NewWordVal("idx"),
-				})},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
-			},
-		},
+func TestPathMoldRoundtripErrors(t *testing.T) {
+	invalidMolds := []string{
+		"data.(",
+		":data.",
+		"data..field",
+		"data.(field",
+		"data.field)",
+		"data.(field).",
+		"data.()",
+		"data.(field).()",
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			original := value.NewSetPath(tt.segments, nil)
-
-			molded := original.Mold()
-
-			vals, _, err := parse.Parse(molded)
-			if err != nil {
-				t.Fatalf("parse error: %v", err)
+	for _, mold := range invalidMolds {
+		t.Run("invalid_"+mold, func(t *testing.T) {
+			_, _, err := parse.Parse(mold)
+			if err == nil {
+				t.Errorf("expected parse error for invalid mold %q, but parsing succeeded", mold)
 			}
-
-			if len(vals) != 1 {
-				t.Fatalf("expected 1 value, got %d", len(vals))
-			}
-
-			if vals[0].GetType() != value.TypeSetPath {
-				t.Fatalf("expected set-path type, got %s", value.TypeToString(vals[0].GetType()))
-			}
-
-			parsed, ok := value.AsSetPath(vals[0])
-			if !ok {
-				t.Fatalf("failed to extract set-path")
-			}
-
-			if parsed.Mold() != molded {
-				t.Errorf("mold mismatch: got %q, want %q", parsed.Mold(), molded)
-			}
-
-			comparePathSegments(t, tt.segments, parsed.Segments)
 		})
 	}
 }
