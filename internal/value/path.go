@@ -57,6 +57,8 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 			default:
 				result += "."
 			}
+		} else if seg.Type == PathSegmentEval {
+			result += "."
 		}
 		switch seg.Type {
 		case PathSegmentWord:

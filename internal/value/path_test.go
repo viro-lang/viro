@@ -1,10 +1,24 @@
-package value
+package value_test
 
 import (
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/parse"
+	. "github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
+
+func newLeadingEvalSegments(evalElements []core.Value, tail ...PathSegment) []PathSegment {
+	block := NewBlockValue(evalElements)
+	segments := []PathSegment{{Type: PathSegmentEval, Value: block}}
+	segments = append(segments, tail...)
+	return segments
+}
+
+func buildPathWithLeadingEval(evalElements []core.Value, tail ...PathSegment) *PathExpression {
+	return NewPath(newLeadingEvalSegments(evalElements, tail...), nil)
+}
 
 func TestPathExpressionMold(t *testing.T) {
 	tests := []struct {
@@ -503,5 +517,41 @@ func TestEvalSegmentWithoutBlock(t *testing.T) {
 
 	if got != want {
 		t.Errorf("Eval segment without BlockValue Mold() = %q, want %q", got, want)
+	}
+}
+
+func TestMoldHighlightsLeadingEvalSegments(t *testing.T) {
+	segments := newLeadingEvalSegments([]core.Value{NewWordVal("field")}, PathSegment{Type: PathSegmentWord, Value: "name"})
+	path := NewPath(segments, nil)
+	if got := path.Mold(); got != ".(field).name" {
+		t.Fatalf("Path mold = %q, want %q", got, ".(field).name")
+	}
+
+	getSegments := newLeadingEvalSegments([]core.Value{NewWordVal("field")}, PathSegment{Type: PathSegmentWord, Value: "name"})
+	getPath := NewGetPath(getSegments, nil)
+	if got := getPath.Mold(); got != ":.(field).name" {
+		t.Fatalf("Get-path mold = %q, want %q", got, ":.(field).name")
+	}
+
+	setSegments := newLeadingEvalSegments([]core.Value{NewWordVal("field")}, PathSegment{Type: PathSegmentWord, Value: "name"})
+	setPath := NewSetPath(setSegments, nil)
+	if got := setPath.Mold(); got != ".(field).name:" {
+		t.Fatalf("Set-path mold = %q, want %q", got, ".(field).name:")
+	}
+}
+
+func TestLeadingEvalMoldRejectedByParser(t *testing.T) {
+	path := buildPathWithLeadingEval([]core.Value{NewWordVal("field")}, PathSegment{Type: PathSegmentWord, Value: "name"})
+	molded := path.Mold()
+	_, _, err := parse.Parse(molded)
+	if err == nil {
+		t.Fatalf("expected parser error for %s", molded)
+	}
+	verr, ok := err.(*verror.Error)
+	if !ok {
+		t.Fatalf("expected verror.Error, got %T", err)
+	}
+	if verr.ID != verror.ErrIDPathEvalBase {
+		t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDPathEvalBase)
 	}
 }
