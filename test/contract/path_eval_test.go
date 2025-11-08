@@ -256,6 +256,24 @@ data: 42
 data.(field): "Bob"`,
 			errID: verror.ErrIDImmutableTarget,
 		},
+		{
+			name: "word segment on non-object",
+			code: `data: 42
+data.field`,
+			errID: verror.ErrIDPathTypeMismatch,
+		},
+		{
+			name: "index segment on non-indexable type",
+			code: `data: 42
+data.1`,
+			errID: verror.ErrIDPathTypeMismatch,
+		},
+		{
+			name: "index assignment to non-block",
+			code: `data: "hello"
+data.1: "x"`,
+			errID: verror.ErrIDPathTypeMismatch,
+		},
 	}
 
 	for _, tt := range tests {
