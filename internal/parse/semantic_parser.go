@@ -260,31 +260,104 @@ func (p *Parser) parsePath(token tokenize.Token, text string) ([]value.PathSegme
 		return nil, p.syntaxError(verror.ErrIDEmptyPath, [3]string{text, "", ""}, token.Line, token.Column)
 	}
 
-	parts := strings.Split(text, ".")
-	segments := make([]value.PathSegment, 0, len(parts))
+	segments := []value.PathSegment{}
+	start := 0
+	depth := 0
 
-	for i, part := range parts {
-		if part == "" {
-			return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""}, token.Line, token.Column)
+	for i := 0; i < len(text); i++ {
+		ch := text[i]
+
+		if ch == '(' {
+			depth++
+		} else if ch == ')' {
+			if depth > 0 {
+				depth--
+			}
 		}
 
-		if n, err := strconv.ParseInt(part, 10, 64); err == nil {
-			if i == 0 {
+		if ch == '.' && depth == 0 {
+			part := text[start:i]
+			if part == "" {
+				if len(segments) == 0 && i+1 < len(text) && text[i+1] == '(' {
+					return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
+				}
+				return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""}, token.Line, token.Column)
+			}
+			seg, err := p.parsePathSegment(token, text, part)
+			if err != nil {
+				return nil, err
+			}
+			if len(segments) == 0 && seg.Type == value.PathSegmentIndex {
 				return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""}, token.Line, token.Column)
 			}
-			segments = append(segments, value.PathSegment{
-				Type:  value.PathSegmentIndex,
-				Value: n,
-			})
-		} else {
-			segments = append(segments, value.PathSegment{
-				Type:  value.PathSegmentWord,
-				Value: part,
-			})
+			if len(segments) == 0 && seg.Type == value.PathSegmentEval {
+				return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
+			}
+			segments = append(segments, seg)
+			start = i + 1
 		}
 	}
 
+	if depth != 0 {
+		return nil, p.syntaxError(verror.ErrIDInvalidPath, [3]string{text, "unbalanced parentheses", ""}, token.Line, token.Column)
+	}
+
+	last := text[start:]
+	if last == "" {
+		return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{text, "", ""}, token.Line, token.Column)
+	}
+
+	seg, err := p.parsePathSegment(token, text, last)
+	if err != nil {
+		return nil, err
+	}
+	if len(segments) == 0 && seg.Type == value.PathSegmentIndex {
+		return nil, p.syntaxError(verror.ErrIDPathLeadingNumber, [3]string{text, "path", ""}, token.Line, token.Column)
+	}
+	if len(segments) == 0 && seg.Type == value.PathSegmentEval {
+		return nil, p.syntaxError(verror.ErrIDPathEvalBase, [3]string{text, "", ""}, token.Line, token.Column)
+	}
+	segments = append(segments, seg)
+
 	return segments, nil
+}
+
+func (p *Parser) parsePathSegment(token tokenize.Token, fullText, part string) (value.PathSegment, error) {
+	if len(part) >= 2 && part[0] == '(' && part[len(part)-1] == ')' {
+		block, err := p.parseEvalPathSegment(token, part[1:len(part)-1])
+		if err != nil {
+			return value.PathSegment{}, err
+		}
+		return value.PathSegment{Type: value.PathSegmentEval, Value: block}, nil
+	}
+
+	if n, err := strconv.ParseInt(part, 10, 64); err == nil {
+		return value.PathSegment{Type: value.PathSegmentIndex, Value: n}, nil
+	}
+
+	return value.PathSegment{Type: value.PathSegmentWord, Value: part}, nil
+}
+
+func (p *Parser) parseEvalPathSegment(token tokenize.Token, inner string) (*value.BlockValue, error) {
+	tokenizer := tokenize.NewTokenizer(inner)
+	tokenizer.SetSource(token.Source)
+	tokens, err := tokenizer.Tokenize()
+	if err != nil {
+		return nil, err
+	}
+
+	parser := NewParser(tokens, token.Source)
+	values, locations, err := parser.Parse()
+	if err != nil {
+		return nil, err
+	}
+	if len(values) == 0 {
+		return nil, p.syntaxError(verror.ErrIDEmptyPathSegment, [3]string{token.Value, "eval", ""}, token.Line, token.Column)
+	}
+
+	block := value.NewBlockValue(values)
+	block.SetLocations(locations)
+	return block, nil
 }
 
 func (p *Parser) parseBinary(token tokenize.Token, hexStr string) (core.Value, error) {

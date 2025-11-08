@@ -766,12 +766,10 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
-	result := tr.values[len(tr.values)-1]
-
-	// Path expressions return functions without invoking them
-	// (they can be invoked later with arguments like: obj.method arg1 arg2)
-
-	return result, nil
+	if len(tr.values) == 0 {
+		return value.NewNoneVal(), verror.NewInternalError("path traversal returned no values", [3]string{})
+	}
+	return tr.values[len(tr.values)-1], nil
 }
 
 func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Value, error) {
@@ -779,7 +777,9 @@ func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Val
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
-	// Get-paths NEVER invoke functions - just return the result
+	if len(tr.values) == 0 {
+		return value.NewNoneVal(), verror.NewInternalError("path traversal returned no values", [3]string{})
+	}
 	return tr.values[len(tr.values)-1], nil
 }
 
@@ -911,6 +911,43 @@ type pathTraversal struct {
 	values   []core.Value
 }
 
+func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment, error) {
+	if seg.Type != value.PathSegmentEval {
+		return seg, nil
+	}
+
+	block, ok := seg.Value.(*value.BlockValue)
+	if !ok {
+		return value.PathSegment{}, verror.NewInternalError("eval segment missing block", [3]string{})
+	}
+
+	result, err := e.DoBlock(block.Elements, block.Locations())
+	if err != nil {
+		return value.PathSegment{}, err
+	}
+
+	if name, ok := value.AsWordValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentWord, Value: name}, nil
+	}
+
+	if strVal, ok := value.AsStringValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentWord, Value: strVal.String()}, nil
+	}
+
+	if num, ok := value.AsIntValue(result); ok {
+		return value.PathSegment{Type: value.PathSegmentIndex, Value: num}, nil
+	}
+
+	return value.PathSegment{}, verror.NewScriptError(
+		verror.ErrIDInvalidPath,
+		[3]string{
+			fmt.Sprintf("eval segment must evaluate to word, string, or integer (got %s)", value.TypeToString(result.GetType())),
+			"eval-segment-type",
+			"",
+		},
+	)
+}
+
 func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, error) {
 	switch firstSeg.Type {
 	case value.PathSegmentWord:
@@ -925,7 +962,6 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 		}
 		return base, nil
 	case value.PathSegmentIndex:
-		// Numeric literals as base (e.g., 1.2.3)
 		num, ok := firstSeg.Value.(int64)
 		if !ok {
 			return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
@@ -938,16 +974,26 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 
 func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
 	if current.GetType() != value.TypeObject {
-		return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{value.TypeToString(current.GetType()), "", ""})
+		return verror.NewScriptError(
+			verror.ErrIDPathTypeMismatch,
+			[3]string{
+				fmt.Sprintf("word segment requires object (got %s)", value.TypeToString(current.GetType())),
+				"",
+				"",
+			},
+		)
 	}
 
-	obj, _ := value.AsObject(current)
+	obj, ok := value.AsObject(current)
+	if !ok {
+		return verror.NewInternalError("failed to cast object value", [3]string{})
+	}
+
 	fieldName, ok := seg.Value.(string)
 	if !ok {
 		return verror.NewInternalError("word segment does not contain string", [3]string{})
 	}
 
-	// Search field in object and prototype chain using owned frames
 	fieldVal, found := obj.GetFieldWithProto(fieldName)
 	if !found {
 		return verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
@@ -965,14 +1011,20 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 
 	switch current.GetType() {
 	case value.TypeBlock:
-		block, _ := value.AsBlockValue(current)
+		block, ok := value.AsBlockValue(current)
+		if !ok {
+			return verror.NewInternalError("failed to cast block value", [3]string{})
+		}
 		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
 			return err
 		}
 		tr.values = append(tr.values, block.Elements[index-1])
 
 	case value.TypeString:
-		str, _ := value.AsStringValue(current)
+		str, ok := value.AsStringValue(current)
+		if !ok {
+			return verror.NewInternalError("failed to cast string value", [3]string{})
+		}
 		runes := []rune(str.String())
 		if err := checkIndexBounds(index, int64(len(runes)), "string"); err != nil {
 			return err
@@ -980,14 +1032,24 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 		tr.values = append(tr.values, value.NewStrVal(string(runes[index-1])))
 
 	case value.TypeBinary:
-		bin, _ := value.AsBinaryValue(current)
+		bin, ok := value.AsBinaryValue(current)
+		if !ok {
+			return verror.NewInternalError("failed to cast binary value", [3]string{})
+		}
 		if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
 			return err
 		}
 		tr.values = append(tr.values, value.NewIntVal(int64(bin.At(int(index-1)))))
 
 	default:
-		return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index requires block, string, or binary type", "", ""})
+		return verror.NewScriptError(
+			verror.ErrIDPathTypeMismatch,
+			[3]string{
+				fmt.Sprintf("index requires block, string, or binary (got %s)", value.TypeToString(current.GetType())),
+				"",
+				"",
+			},
+		)
 	}
 
 	return nil
@@ -995,50 +1057,72 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 
 func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast bool) (*pathTraversal, error) {
 	if len(path.Segments) == 0 {
-		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "", ""})
+		return nil, verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"empty path", "empty", ""})
 	}
 
+	eval, ok := e.(*Evaluator)
+	if !ok {
+		return nil, verror.NewInternalError("evaluator type mismatch", [3]string{})
+	}
+
+	resolved := make([]value.PathSegment, len(path.Segments))
+	copy(resolved, path.Segments)
+
 	tr := &pathTraversal{
-		segments: path.Segments,
+		segments: resolved,
 		values:   make([]core.Value, 0, len(path.Segments)),
 	}
 
-	// Resolve the base value (first segment)
-	firstSeg := path.Segments[0]
-	base, err := e.(*Evaluator).resolvePathBase(firstSeg)
+	firstSeg, err := eval.materializeSegment(resolved[0])
+	if err != nil {
+		return nil, err
+	}
+	resolved[0] = firstSeg
+
+	base, err := eval.resolvePathBase(firstSeg)
 	if err != nil {
 		return nil, err
 	}
 
 	tr.values = append(tr.values, base)
 
-	// Traverse remaining segments
 	endIdx := len(path.Segments)
 	if stopBeforeLast && len(path.Segments) > 1 {
 		endIdx = len(path.Segments) - 1
 	}
 
 	for i := 1; i < endIdx; i++ {
-		seg := path.Segments[i]
+		seg, err := eval.materializeSegment(resolved[i])
+		if err != nil {
+			return nil, err
+		}
+		resolved[i] = seg
 		current := tr.values[len(tr.values)-1]
 
 		if current.GetType() == value.TypeNone {
-			return nil, verror.NewScriptError(verror.ErrIDNonePath, [3]string{})
+			return nil, verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot traverse through none", "", ""})
 		}
 
 		switch seg.Type {
 		case value.PathSegmentWord:
-			if err := e.(*Evaluator).traverseWordSegment(tr, seg, current); err != nil {
+			if err := eval.traverseWordSegment(tr, seg, current); err != nil {
 				return nil, err
 			}
 
 		case value.PathSegmentIndex:
-			if err := e.(*Evaluator).traverseIndexSegment(tr, seg, current); err != nil {
+			if err := eval.traverseIndexSegment(tr, seg, current); err != nil {
 				return nil, err
 			}
 
 		default:
-			return nil, verror.NewInternalError("unsupported path segment type", [3]string{})
+			return nil, verror.NewScriptError(
+				verror.ErrIDInvalidPath,
+				[3]string{
+					fmt.Sprintf("unsupported path segment type: %v", seg.Type),
+					"invalid-segment",
+					"",
+				},
+			)
 		}
 	}
 
@@ -1055,19 +1139,39 @@ func checkIndexBounds(index, length int64, typeName string) error {
 
 func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pathStr string) (core.Value, error) {
 	if len(tr.segments) < 2 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidPath, [3]string{"set-path requires at least 2 segments", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidPath,
+			[3]string{"set-path requires at least 2 segments", "set-path-too-short", ""},
+		)
+	}
+
+	if len(tr.values) == 0 {
+		return value.NewNoneVal(), verror.NewInternalError("path traversal returned no values", [3]string{})
+	}
+
+	if tr.segments[0].Type == value.PathSegmentIndex {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDImmutableTarget,
+			[3]string{pathStr, "numeric-literal-base", ""},
+		)
 	}
 
 	container := tr.values[len(tr.values)-1]
-	finalSeg := tr.segments[len(tr.segments)-1]
-
-	// Cannot assign to paths starting with numeric literals
-	if tr.segments[0].Type == value.PathSegmentIndex {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{pathStr, "", ""})
+	if container.GetType() == value.TypeNone {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDNonePath,
+			[3]string{"cannot assign to none value", pathStr, ""},
+		)
 	}
 
-	if container.GetType() == value.TypeNone {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNonePath, [3]string{"cannot assign to none value", "", ""})
+	finalSeg := tr.segments[len(tr.segments)-1]
+	if finalSeg.Type == value.PathSegmentEval {
+		resolved, err := e.materializeSegment(finalSeg)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		tr.segments[len(tr.segments)-1] = resolved
+		finalSeg = resolved
 	}
 
 	switch finalSeg.Type {
@@ -1076,7 +1180,14 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	case value.PathSegmentWord:
 		return e.assignToWordTarget(container, finalSeg, newVal, pathStr)
 	default:
-		return value.NewNoneVal(), verror.NewInternalError("unsupported path segment type for assignment", [3]string{})
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidPath,
+			[3]string{
+				fmt.Sprintf("unsupported segment type for assignment: %v", finalSeg.Type),
+				"invalid-assignment-target",
+				"",
+			},
+		)
 	}
 }
 
@@ -1087,10 +1198,21 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 	}
 
 	if container.GetType() != value.TypeBlock {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{"index assignment requires block type", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDPathTypeMismatch,
+			[3]string{
+				fmt.Sprintf("index assignment requires block type (got %s)", value.TypeToString(container.GetType())),
+				pathStr,
+				"",
+			},
+		)
 	}
 
-	block, _ := value.AsBlockValue(container)
+	block, ok := value.AsBlockValue(container)
+	if !ok {
+		return value.NewNoneVal(), verror.NewInternalError("failed to cast block value", [3]string{})
+	}
+
 	if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -1106,14 +1228,22 @@ func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.Path
 	}
 
 	if container.GetType() != value.TypeObject {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDImmutableTarget, [3]string{"cannot assign field to non-object", "", ""})
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDImmutableTarget,
+			[3]string{
+				fmt.Sprintf("cannot assign field to %s (must be object)", value.TypeToString(container.GetType())),
+				pathStr,
+				"",
+			},
+		)
 	}
 
-	obj, _ := value.AsObject(container)
+	obj, ok := value.AsObject(container)
+	if !ok {
+		return value.NewNoneVal(), verror.NewInternalError("failed to cast object value", [3]string{})
+	}
 
-	// Set field using owned frame (creates field if it doesn't exist)
 	obj.SetField(fieldName, newVal)
-
 	return newVal, nil
 }
 

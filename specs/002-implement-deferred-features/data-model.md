@@ -139,14 +139,25 @@ type PathExpression struct {
 
 **Parser Disambiguation**: The tokenizer distinguishes decimal literals, refinements, and paths by examining the first character(s). Numbers start with a digit or `-` followed immediately by a digit (e.g., `19.99`, `-3.14`), refinements start with `--` followed by a letter (e.g., `--option`, `--places`), and words/paths start with a letter (e.g., `config.timeout`, `items.5`). This allows unambiguous parsing of decimal fractions, refinements, and path expressions using the dot separator.
 
+**Eval Segment Restrictions**:
+- Leading eval segments (e.g., `.(expr).field`) are syntactically invalid and rejected by the parser.
+- Eval segments are only permitted after a valid base (word or index segment).
+- Valid result types from eval segment expressions: `word!`, `string!`, `integer!`.
+- Other types (block, object, decimal, etc.) raise Script error (300) with clear diagnostic message.
+- Eval segments are evaluated once per path traversal and results cached to prevent re-evaluation.
+
 **Evaluation Flow**:
 1. Resolve first segment (word) via current frame.
 2. Iteratively apply segments: for objects use Frame lookup; for blocks/strings adjust index; for functions apply refinement metadata.
-3. For assignment, keep track of penultimate target and final segment info to update underlying storage.
+3. Eval segments are materialized on-demand during traversal, and results are cached.
+4. For assignment, keep track of penultimate target and final segment info to update underlying storage.
+5. Set-path operations never re-evaluate eval segments; cached materialized values are reused.
 
 **Validation Rules**:
 - All intermediate values must support requested segment type; mismatches raise Script error (300).
 - Assignment disallowed on immutable targets (e.g., decimal literal) raising Script error.
+- Eval segments in assignment paths must resolve to valid field/index identifiers.
+- Attempting to assign through eval segments that yield unsupported types produces clear error context.
 
 **Relationships**:
 - Uses ObjectInstance, BlockValue, StringValue to traverse structures.

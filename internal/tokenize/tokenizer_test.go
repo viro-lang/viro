@@ -437,6 +437,47 @@ func TestTokenizer_SpecialCharactersInLiterals(t *testing.T) {
 	}
 }
 
+func TestTokenizer_PathWithEvalSegment(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		expected     string
+		expectTokens int
+	}{
+		{"eval segment", "data.(idx)", "data.(idx)", 2},
+		{"eval segment set-path", "data.(idx):", "data.(idx):", 2},
+		{"eval segment get-path", ":data.(idx)", ":data.(idx)", 2},
+		{"nested parens", "data.(foo.(bar))", "data.(foo.(bar))", 2},
+		{"simple path", "data.field", "data.field", 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tokenizer := NewTokenizer(tt.input)
+			tokens, err := tokenizer.Tokenize()
+
+			if err != nil {
+				t.Errorf("Tokenize() error = %v", err)
+				return
+			}
+
+			if len(tokens) != tt.expectTokens {
+				t.Errorf("Expected %d tokens, got %d: %v", tt.expectTokens, len(tokens), tokens)
+				return
+			}
+
+			if tokens[0].Type != TokenLiteral {
+				t.Errorf("Expected TokenLiteral, got %v", tokens[0].Type)
+				return
+			}
+
+			if tokens[0].Value != tt.expected {
+				t.Errorf("Expected %q, got %q", tt.expected, tokens[0].Value)
+			}
+		})
+	}
+}
+
 func tokensEqual(a, b []Token) bool {
 	if len(a) != len(b) {
 		return false

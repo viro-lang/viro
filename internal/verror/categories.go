@@ -71,6 +71,7 @@ const (
 	ErrIDEmptyPath           = "empty-path"
 	ErrIDEmptyPathSegment    = "empty-path-segment"
 	ErrIDPathLeadingNumber   = "path-leading-number"
+	ErrIDPathEvalBase        = "path-eval-base"
 
 	// Script errors (300)
 	ErrIDNoValue          = "no-value"
