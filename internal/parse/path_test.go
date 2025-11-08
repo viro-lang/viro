@@ -165,6 +165,64 @@ func TestPathTokenization(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:     "set-path with eval segment",
+			input:    "data.(idx):",
+			wantType: value.TypeSetPath,
+			wantSegs: 2,
+			checkPath: func(t *testing.T, path *value.PathExpression) {
+				// This will receive a SetPathExpression via AsPath conversion
+				if len(path.Segments) != 2 {
+					t.Fatalf("Expected 2 segments, got %d", len(path.Segments))
+				}
+				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "data" {
+					t.Errorf("Expected first segment to be word 'data', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
+				}
+				seg := path.Segments[1]
+				if seg.Type != value.PathSegmentEval {
+					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
+				}
+				block, ok := seg.Value.(*value.BlockValue)
+				if !ok {
+					t.Fatalf("Expected eval segment to store block")
+				}
+				if len(block.Elements) != 1 {
+					t.Fatalf("Expected eval block to have 1 element, got %d", len(block.Elements))
+				}
+				if word, ok := value.AsWordValue(block.Elements[0]); !ok || word != "idx" {
+					t.Errorf("Expected eval element to be word 'idx', got %v", block.Elements[0])
+				}
+			},
+		},
+		{
+			name:     "get-path with eval segment",
+			input:    ":data.(idx)",
+			wantType: value.TypeGetPath,
+			wantSegs: 2,
+			checkPath: func(t *testing.T, path *value.PathExpression) {
+				// This will receive a GetPathExpression via AsPath conversion
+				if len(path.Segments) != 2 {
+					t.Fatalf("Expected 2 segments, got %d", len(path.Segments))
+				}
+				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "data" {
+					t.Errorf("Expected first segment to be word 'data', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
+				}
+				seg := path.Segments[1]
+				if seg.Type != value.PathSegmentEval {
+					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
+				}
+				block, ok := seg.Value.(*value.BlockValue)
+				if !ok {
+					t.Fatalf("Expected eval segment to store block")
+				}
+				if len(block.Elements) != 1 {
+					t.Fatalf("Expected eval block to have 1 element, got %d", len(block.Elements))
+				}
+				if word, ok := value.AsWordValue(block.Elements[0]); !ok || word != "idx" {
+					t.Errorf("Expected eval element to be word 'idx', got %v", block.Elements[0])
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -183,8 +241,28 @@ func TestPathTokenization(t *testing.T) {
 				t.Fatalf("Expected type %s, got %s", value.TypeToString(tt.wantType), value.TypeToString(val.GetType()))
 			}
 
-			path, ok := value.AsPath(val)
-			if !ok {
+			var path *value.PathExpression
+			var ok bool
+			switch val.GetType() {
+			case value.TypePath:
+				path, ok = value.AsPath(val)
+			case value.TypeSetPath:
+				var setPath *value.SetPathExpression
+				setPath, ok = value.AsSetPath(val)
+				if ok && setPath != nil {
+					path = setPath.PathExpression
+				}
+			case value.TypeGetPath:
+				var getPath *value.GetPathExpression
+				getPath, ok = value.AsGetPath(val)
+				if ok && getPath != nil {
+					path = getPath.PathExpression
+				}
+			default:
+				t.Fatalf("Unexpected path type: %s", value.TypeToString(val.GetType()))
+				return
+			}
+			if !ok || path == nil {
 				t.Fatalf("Failed to extract path from value")
 			}
 
