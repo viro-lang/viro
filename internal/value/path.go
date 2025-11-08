@@ -112,7 +112,7 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 			if index, ok := seg.AsIndex(); ok {
 				result += fmt.Sprintf("%d", index)
 			} else {
-				result += "0"
+				result += "<invalid-index>"
 			}
 		case PathSegmentEval:
 			if block, ok := seg.AsEvalBlock(); ok {
