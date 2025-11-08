@@ -1,4 +1,0 @@
-get_three: fn [] [3]
-result: get_three
-print ["result:" result]
-quit

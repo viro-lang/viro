@@ -1,8 +1,0 @@
-get_three: fn [] [3]
-get_five: fn [] [5]
-
-print ["Direct call: (get_three) =" (get_three)]
-print ["As infix operand: 2 * (get_three) =" 2 * (get_three)]
-print ["Chain: (get_three) + (get_five) =" (get_three) + (get_five)]
-
-quit
