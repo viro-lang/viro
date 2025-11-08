@@ -1088,16 +1088,14 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 	lastIndex := len(path.Segments) - 1
 
 	for i := 1; i < len(path.Segments); i++ {
+		if stopBeforeLast && i == lastIndex {
+			break
+		}
 		seg, err := eval.materializeSegment(resolved[i])
 		if err != nil {
 			return nil, err
 		}
 		resolved[i] = seg
-
-		if stopBeforeLast && i == lastIndex {
-			break
-		}
-
 		current := tr.values[len(tr.values)-1]
 
 		if current.GetType() == value.TypeNone {
