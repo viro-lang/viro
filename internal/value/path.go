@@ -73,6 +73,18 @@ func (seg PathSegment) AsEvalBlock() (*BlockValue, bool) {
 	return block, ok
 }
 
+func NewWordSegment(word string) PathSegment {
+	return PathSegment{Type: PathSegmentWord, Value: word}
+}
+
+func NewIndexSegment(index int64) PathSegment {
+	return PathSegment{Type: PathSegmentIndex, Value: index}
+}
+
+func NewEvalSegment(block *BlockValue) PathSegment {
+	return PathSegment{Type: PathSegmentEval, Value: block}
+}
+
 func NewPath(segments []PathSegment, base core.Value) *PathExpression {
 	return &PathExpression{
 		Segments: segments,
@@ -91,13 +103,13 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 			if word, ok := seg.AsWord(); ok {
 				result += word
 			} else {
-				result += "<invalid-word>"
+				result += ""
 			}
 		case PathSegmentIndex:
 			if index, ok := seg.AsIndex(); ok {
 				result += fmt.Sprintf("%d", index)
 			} else {
-				result += "<invalid-index>"
+				result += "0"
 			}
 		case PathSegmentEval:
 			if block, ok := seg.AsEvalBlock(); ok {

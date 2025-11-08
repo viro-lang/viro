@@ -24,22 +24,30 @@ func comparePathSegments(t *testing.T, expected, actual []value.PathSegment) {
 
 		switch expected[i].Type {
 		case value.PathSegmentWord:
-			expVal, _ := expected[i].Value.(string)
-			actVal, _ := actual[i].Value.(string)
+			expVal, expOk := expected[i].AsWord()
+			actVal, actOk := actual[i].AsWord()
+			if !expOk || !actOk {
+				t.Errorf("segment[%d] word value extraction failed: expOk=%v, actOk=%v", i, expOk, actOk)
+				continue
+			}
 			if expVal != actVal {
 				t.Errorf("segment[%d] word value mismatch: expected %q, got %q", i, expVal, actVal)
 			}
 
 		case value.PathSegmentIndex:
-			expVal, _ := expected[i].Value.(int64)
-			actVal, _ := actual[i].Value.(int64)
+			expVal, expOk := expected[i].AsIndex()
+			actVal, actOk := actual[i].AsIndex()
+			if !expOk || !actOk {
+				t.Errorf("segment[%d] index value extraction failed: expOk=%v, actOk=%v", i, expOk, actOk)
+				continue
+			}
 			if expVal != actVal {
 				t.Errorf("segment[%d] index value mismatch: expected %d, got %d", i, expVal, actVal)
 			}
 
 		case value.PathSegmentEval:
-			expBlock, expOk := expected[i].Value.(*value.BlockValue)
-			actBlock, actOk := actual[i].Value.(*value.BlockValue)
+			expBlock, expOk := expected[i].AsEvalBlock()
+			actBlock, actOk := actual[i].AsEvalBlock()
 			if !expOk || !actOk {
 				t.Errorf("segment[%d] eval value is not BlockValue", i)
 				continue
@@ -126,110 +134,110 @@ func TestPathMoldRoundtrip(t *testing.T) {
 		{
 			name: "two-word path",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentWord, Value: "field"},
+				value.NewWordSegment("data"),
+				value.NewWordSegment("field"),
 			},
 		},
 		{
 			name: "three-word path",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentWord, Value: "field"},
-				{Type: value.PathSegmentWord, Value: "name"},
+				value.NewWordSegment("obj"),
+				value.NewWordSegment("field"),
+				value.NewWordSegment("name"),
 			},
 		},
 		{
 			name: "path with index",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentIndex, Value: int64(1)},
+				value.NewWordSegment("data"),
+				value.NewIndexSegment(1),
 			},
 		},
 		{
 			name: "path with multiple indices",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "matrix"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
+				value.NewWordSegment("matrix"),
+				value.NewIndexSegment(2),
+				value.NewIndexSegment(3),
 			},
 		},
 		{
 			name: "path with eval segment word",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("field"),
-				})},
+				})),
 			},
 		},
 		{
 			name: "path with eval segment string",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewStrVal("idx"),
-				})},
+				})),
 			},
 		},
 		{
 			name: "nested eval segments",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("field"),
-				})},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				})),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("idx"),
-				})},
+				})),
 			},
 		},
 		{
 			name: "mixed segments",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "obj"},
-				{Type: value.PathSegmentIndex, Value: int64(2)},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("obj"),
+				value.NewIndexSegment(2),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("key"),
-				})},
-				{Type: value.PathSegmentWord, Value: "name"},
+				})),
+				value.NewWordSegment("name"),
 			},
 		},
 		{
 			name: "eval then index",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("idx"),
-				})},
-				{Type: value.PathSegmentIndex, Value: int64(3)},
+				})),
+				value.NewIndexSegment(3),
 			},
 		},
 		{
 			name: "word eval index eval",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("field"),
-				})},
-				{Type: value.PathSegmentIndex, Value: int64(1)},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				})),
+				value.NewIndexSegment(1),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("key"),
-				})},
+				})),
 			},
 		},
 		{
 			name: "multiple consecutive evals",
 			segments: []value.PathSegment{
-				{Type: value.PathSegmentWord, Value: "data"},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				value.NewWordSegment("data"),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("a"),
-				})},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				})),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("b"),
-				})},
-				{Type: value.PathSegmentEval, Value: value.NewBlockValue([]core.Value{
+				})),
+				value.NewEvalSegment(value.NewBlockValue([]core.Value{
 					value.NewWordVal("c"),
-				})},
+				})),
 			},
 		},
 	}
