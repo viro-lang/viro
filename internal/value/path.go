@@ -37,6 +37,57 @@ func (t PathSegmentType) String() string {
 	}
 }
 
+func (seg PathSegment) IsWord() bool {
+	return seg.Type == PathSegmentWord
+}
+
+func (seg PathSegment) AsWord() (string, bool) {
+	if !seg.IsWord() {
+		return "", false
+	}
+	str, ok := seg.Value.(string)
+	return str, ok
+}
+
+func (seg PathSegment) IsIndex() bool {
+	return seg.Type == PathSegmentIndex
+}
+
+func (seg PathSegment) AsIndex() (int64, bool) {
+	if !seg.IsIndex() {
+		return 0, false
+	}
+	num, ok := seg.Value.(int64)
+	return num, ok
+}
+
+func (seg PathSegment) IsEval() bool {
+	return seg.Type == PathSegmentEval
+}
+
+func (seg PathSegment) AsEvalBlock() (*BlockValue, bool) {
+	if !seg.IsEval() {
+		return nil, false
+	}
+	block, ok := seg.Value.(*BlockValue)
+	if !ok || block == nil {
+		return nil, false
+	}
+	return block, true
+}
+
+func NewWordSegment(word string) PathSegment {
+	return PathSegment{Type: PathSegmentWord, Value: word}
+}
+
+func NewIndexSegment(index int64) PathSegment {
+	return PathSegment{Type: PathSegmentIndex, Value: index}
+}
+
+func NewEvalSegment(block *BlockValue) PathSegment {
+	return PathSegment{Type: PathSegmentEval, Value: block}
+}
+
 func NewPath(segments []PathSegment, base core.Value) *PathExpression {
 	return &PathExpression{
 		Segments: segments,
@@ -52,11 +103,19 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 		}
 		switch seg.Type {
 		case PathSegmentWord:
-			result += seg.Value.(string)
+			if word, ok := seg.AsWord(); ok {
+				result += word
+			} else {
+				result += "<invalid-word>"
+			}
 		case PathSegmentIndex:
-			result += fmt.Sprintf("%d", seg.Value.(int64))
+			if index, ok := seg.AsIndex(); ok {
+				result += fmt.Sprintf("%d", index)
+			} else {
+				result += "<invalid-index>"
+			}
 		case PathSegmentEval:
-			if block, ok := seg.Value.(*BlockValue); ok {
+			if block, ok := seg.AsEvalBlock(); ok {
 				result += "(" + block.MoldElements() + ")"
 			} else {
 				result += "(eval)"
