@@ -252,17 +252,36 @@ This is the first stage of the two-stage parser.`,
 		SeeAlso:  []string{"parse", "load-string", "classify"}, Tags: []string{"parser", "tokenize", "lexer"},
 	})
 
+	// Register parse-values as the primary name for the second-stage parser
+	registerSimpleIOFunc("parse-values", NativeParseValues, 1, &NativeDoc{
+		Category: "Parser",
+		Summary:  "Parses token objects into viro values (second-stage parser)",
+		Description: `Takes a block of token objects (from tokenize) and parses them into viro values.
+This is the second stage of the two-stage parser. Returns a block of parsed values.
+This native was previously named 'parse' but has been renamed to 'parse-values' to avoid
+conflict with the new parse dialect feature.`,
+		Parameters: []ParamDoc{
+			{Name: "tokens", Type: "block!", Description: "A block of token objects from tokenize", Optional: false},
+		},
+		Returns:  "[block!] A block of parsed viro values",
+		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse-values tokens  ; => [x: 42]`, `values: parse-values tokenize "[1 2 3]"`},
+		SeeAlso:  []string{"tokenize", "load-string", "classify", "parse"}, Tags: []string{"parser", "parse", "semantic"},
+	})
+
+	// Keep 'parse' as a temporary alias for backward compatibility
+	// This will be replaced with the parse dialect implementation in the future
 	registerSimpleIOFunc("parse", NativeParse, 1, &NativeDoc{
 		Category: "Parser",
-		Summary:  "Parses token objects into viro values",
-		Description: `Takes a block of token objects (from tokenize) and parses them into viro values.
-This is the second stage of the two-stage parser. Returns a block of parsed values.`,
+		Summary:  "Parses token objects into viro values (alias for parse-values)",
+		Description: `DEPRECATED: Use 'parse-values' instead. This is a temporary alias for backward compatibility.
+Takes a block of token objects (from tokenize) and parses them into viro values.
+This native will be replaced with the new parse dialect feature in a future update.`,
 		Parameters: []ParamDoc{
 			{Name: "tokens", Type: "block!", Description: "A block of token objects from tokenize", Optional: false},
 		},
 		Returns:  "[block!] A block of parsed viro values",
 		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse tokens  ; => [x: 42]`, `values: parse tokenize "[1 2 3]"`},
-		SeeAlso:  []string{"tokenize", "load-string", "classify"}, Tags: []string{"parser", "parse", "semantic"},
+		SeeAlso:  []string{"tokenize", "load-string", "classify", "parse-values"}, Tags: []string{"parser", "parse", "semantic", "deprecated"},
 	})
 
 	registerSimpleIOFunc("load-string", NativeLoadString, 1, &NativeDoc{
