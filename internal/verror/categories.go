@@ -56,15 +56,15 @@ func (c ErrorCategory) String() string {
 // Common error IDs (kebab-case identifiers for programmatic handling)
 const (
 	// Syntax errors (200)
-	ErrIDUnexpectedEOF      = "unexpected-eof"
-	ErrIDUnclosedBlock      = "unclosed-block"
-	ErrIDUnclosedParen      = "unclosed-paren"
-	ErrIDInvalidLiteral     = "invalid-literal"
-	ErrIDInvalidSyntax      = "invalid-syntax"
-	ErrIDUnterminatedString = "unterminated-string"
-	ErrIDInvalidEscape      = "invalid-escape"
-	ErrIDInvalidCharacter   = "invalid-character"
-	ErrIDUnexpectedClosing  = "unexpected-closing"
+	ErrIDUnexpectedEOF       = "unexpected-eof"
+	ErrIDUnclosedBlock       = "unclosed-block"
+	ErrIDUnclosedParen       = "unclosed-paren"
+	ErrIDInvalidLiteral      = "invalid-literal"
+	ErrIDInvalidSyntax       = "invalid-syntax"
+	ErrIDUnterminatedString  = "unterminated-string"
+	ErrIDInvalidEscape       = "invalid-escape"
+	ErrIDInvalidCharacter    = "invalid-character"
+	ErrIDUnexpectedClosing   = "unexpected-closing"
 	ErrIDInvalidNumberFormat = "invalid-number-format"
 	ErrIDInvalidBinaryLength = "invalid-binary-length"
 	ErrIDInvalidBinaryDigit  = "invalid-binary-digit"
@@ -128,4 +128,12 @@ const (
 	ErrIDStackOverflow   = "stack-overflow"
 	ErrIDOutOfMemory     = "out-of-memory"
 	ErrIDAssertionFailed = "assertion-failed"
+
+	// Loop control error IDs (ErrThrow category)
+	ErrIDBreak    = "break"
+	ErrIDContinue = "continue"
+
+	// Loop control error cases (ErrScript category)
+	ErrIDBreakOutsideLoop    = "break-outside-loop"
+	ErrIDContinueOutsideLoop = "continue-outside-loop"
 )

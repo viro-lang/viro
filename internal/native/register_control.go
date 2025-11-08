@@ -254,4 +254,38 @@ Refinements:
 			Tags:    []string{"control", "evaluation", "do"},
 		},
 	))
+
+	registerAndBind("break", value.NewNativeFunction(
+		"break",
+		[]value.ParamSpec{},
+		Break,
+		false,
+		&NativeDoc{
+			Category:    "Control",
+			Summary:     "Exits the innermost loop immediately",
+			Description: "Causes immediate exit from the innermost loop (loop, while, or foreach). Returns none. Can only be used inside a loop; using break outside a loop causes an error. Break does not cross function boundaries.",
+			Parameters:  []ParamDoc{},
+			Returns:     "[none!] Always returns none",
+			Examples:    []string{"loop 10 [when (= x 5) [break]]  ; exits when x is 5", "foreach [1 2 3 4 5] 'n [when (= n 3) [break]]  ; stops at 3"},
+			SeeAlso:     []string{"continue", "loop", "while", "foreach"},
+			Tags:        []string{"control", "loop", "break"},
+		},
+	))
+
+	registerAndBind("continue", value.NewNativeFunction(
+		"continue",
+		[]value.ParamSpec{},
+		Continue,
+		false,
+		&NativeDoc{
+			Category:    "Control",
+			Summary:     "Skips to the next iteration of the innermost loop",
+			Description: "Skips the rest of the current iteration and proceeds to the next iteration of the innermost loop (loop, while, or foreach). Can only be used inside a loop; using continue outside a loop causes an error. Continue does not cross function boundaries.",
+			Parameters:  []ParamDoc{},
+			Returns:     "[none!] Always returns none",
+			Examples:    []string{"loop 5 [when (= (mod i 2) 0) [continue] print i]  ; prints odd numbers", "foreach [1 2 3 4 5] 'n [when (= n 3) [continue] print n]  ; skips 3"},
+			SeeAlso:     []string{"break", "loop", "while", "foreach"},
+			Tags:        []string{"control", "loop", "continue"},
+		},
+	))
 }

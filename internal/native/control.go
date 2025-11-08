@@ -149,6 +149,13 @@ func Loop(args []core.Value, refValues map[string]core.Value, eval core.Evaluato
 
 		result, err = eval.DoBlock(block.Elements, block.Locations())
 		if err != nil {
+			isControl, signalType := isLoopControlSignal(err)
+			if isControl {
+				if signalType == "break" {
+					return value.NewNoneVal(), nil
+				}
+				continue
+			}
 			return value.NewNoneVal(), err
 		}
 	}
@@ -202,6 +209,13 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			// Evaluate body block
 			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
+				isControl, signalType := isLoopControlSignal(err)
+				if isControl {
+					if signalType == "break" {
+						return value.NewNoneVal(), nil
+					}
+					continue
+				}
 				return value.NewNoneVal(), err
 			}
 		}
@@ -213,6 +227,13 @@ func While(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 			var err error
 			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 			if err != nil {
+				isControl, signalType := isLoopControlSignal(err)
+				if isControl {
+					if signalType == "break" {
+						return value.NewNoneVal(), nil
+					}
+					continue
+				}
 				return value.NewNoneVal(), err
 			}
 		}
@@ -312,6 +333,26 @@ func ToTruthy(val core.Value) bool {
 		// All other values are truthy (including 0, "", [])
 		return true
 	}
+}
+
+func isLoopControlSignal(err error) (isControl bool, signalType string) {
+	if err == nil {
+		return false, ""
+	}
+	verr, ok := err.(*verror.Error)
+	if !ok {
+		return false, ""
+	}
+	if verr.Category != verror.ErrThrow {
+		return false, ""
+	}
+	if verr.ID == verror.ErrIDBreak {
+		return true, "break"
+	}
+	if verr.ID == verror.ErrIDContinue {
+		return true, "continue"
+	}
+	return false, ""
 }
 
 // Trace implements the 'trace' native for tracing control (Feature 002, FR-020).
@@ -622,6 +663,14 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
 
 		if err != nil {
+			isControl, signalType := isLoopControlSignal(err)
+			if isControl {
+				if signalType == "break" {
+					return value.NewNoneVal(), nil
+				}
+				iteration++
+				continue
+			}
 			return value.NewNoneVal(), err
 		}
 		iteration++
@@ -796,4 +845,18 @@ func Debug(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		verror.ErrIDInvalidOperation,
 		[3]string{"debug requires a valid refinement", "", ""},
 	)
+}
+
+func Break(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 0 {
+		return value.NewNoneVal(), arityError("break", 0, len(args))
+	}
+	return value.NewNoneVal(), verror.NewError(verror.ErrThrow, verror.ErrIDBreak, [3]string{})
+}
+
+func Continue(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 0 {
+		return value.NewNoneVal(), arityError("continue", 0, len(args))
+	}
+	return value.NewNoneVal(), verror.NewError(verror.ErrThrow, verror.ErrIDContinue, [3]string{})
 }

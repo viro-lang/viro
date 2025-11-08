@@ -182,6 +182,11 @@ var messageTemplates = map[string]string{
 	ErrIDStackOverflow:   "Stack overflow (maximum depth exceeded)",
 	ErrIDOutOfMemory:     "Out of memory",
 	ErrIDAssertionFailed: "Internal assertion failed: %1",
+
+	ErrIDBreak:               "break",
+	ErrIDContinue:            "continue",
+	ErrIDBreakOutsideLoop:    "break called outside of loop",
+	ErrIDContinueOutsideLoop: "continue called outside of loop",
 }
 
 func ToExitCode(category ErrorCategory) int {

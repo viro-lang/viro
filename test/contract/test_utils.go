@@ -51,7 +51,26 @@ func Evaluate(src string) (core.Value, error) {
 	}
 
 	e := NewTestEvaluator()
-	return e.DoBlock(vals, locations)
+	result, err := e.DoBlock(vals, locations)
+	if err != nil {
+		if verr, ok := err.(*verror.Error); ok {
+			if verr.Category == verror.ErrThrow {
+				if verr.ID == verror.ErrIDBreak {
+					return value.NewNoneVal(), verror.NewScriptError(
+						verror.ErrIDBreakOutsideLoop,
+						[3]string{},
+					)
+				}
+				if verr.ID == verror.ErrIDContinue {
+					return value.NewNoneVal(), verror.NewScriptError(
+						verror.ErrIDContinueOutsideLoop,
+						[3]string{},
+					)
+				}
+			}
+		}
+	}
+	return result, err
 }
 
 // RunSeriesTest is a unified test helper for series operations that handles
