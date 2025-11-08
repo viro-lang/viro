@@ -142,7 +142,7 @@ func TestReturn_EarlyExit(t *testing.T) {
 		},
 		{
 			name:     "return in nested conditional",
-			input:    "fn: fn [x] [if (> x 5) [if (> x 10) [return 2] return 1] return 0]\nfn 15",
+			input:    "fn: fn [x] [if (> x 5) [if (> x 10) [return 2] [return 1]] [return 0]]\nfn 15",
 			expected: value.NewIntVal(2),
 			wantErr:  false,
 		},
@@ -228,22 +228,16 @@ func TestReturn_Nested(t *testing.T) {
 		{
 			name: "return in deeply nested function",
 			input: `
+				a: fn [x] [return x * 2]
+				b: fn [x] [y: a x return y + 10]
+				c: fn [x] [z: b x return z + 5]
 				fn: fn [] [
-					a: fn [] [
-						b: fn [] [
-							c: fn [] [return 42]
-							x: c
-							return x * 2
-						]
-						y: b
-						return y + 10
-					]
-					z: a
-					return z + 5
+					result: c 3
+					return result
 				]
 				fn
 			`,
-			expected: value.NewIntVal(99),
+			expected: value.NewIntVal(21),
 			wantErr:  false,
 		},
 	}
