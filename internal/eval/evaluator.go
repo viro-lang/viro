@@ -816,6 +816,11 @@ func refinementError(kind, refName string) error {
 	return verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{msg, "", ""})
 }
 
+func makePathTypeError(expected, got string, context string) error {
+	msg := fmt.Sprintf("%s (got %s)", expected, got)
+	return verror.NewScriptError(verror.ErrIDPathTypeMismatch, [3]string{msg, context, ""})
+}
+
 func (e *Evaluator) readRefinements(tokens []core.Value, locations []core.SourceLocation, pos int, refSpecs map[string]value.ParamSpec, refValues map[string]core.Value, refProvided map[string]bool) (int, error) {
 	for pos < len(tokens) && isRefinement(tokens[pos]) {
 		wordStr, _ := value.AsWordValue(tokens[pos])
@@ -973,14 +978,7 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 
 func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
 	if current.GetType() != value.TypeObject {
-		return verror.NewScriptError(
-			verror.ErrIDPathTypeMismatch,
-			[3]string{
-				fmt.Sprintf("word segment requires object (got %s)", value.TypeToString(current.GetType())),
-				"",
-				"",
-			},
-		)
+		return makePathTypeError("word segment requires object", value.TypeToString(current.GetType()), "")
 	}
 
 	obj, ok := value.AsObject(current)
@@ -1041,14 +1039,7 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 		tr.values = append(tr.values, value.NewIntVal(int64(bin.At(int(index-1)))))
 
 	default:
-		return verror.NewScriptError(
-			verror.ErrIDPathTypeMismatch,
-			[3]string{
-				fmt.Sprintf("index requires block, string, or binary (got %s)", value.TypeToString(current.GetType())),
-				"",
-				"",
-			},
-		)
+		return makePathTypeError("index requires block, string, or binary", value.TypeToString(current.GetType()), "")
 	}
 
 	return nil
@@ -1197,14 +1188,7 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 	}
 
 	if container.GetType() != value.TypeBlock {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDPathTypeMismatch,
-			[3]string{
-				fmt.Sprintf("index assignment requires block type (got %s)", value.TypeToString(container.GetType())),
-				pathStr,
-				"",
-			},
-		)
+		return value.NewNoneVal(), makePathTypeError("index assignment requires block type", value.TypeToString(container.GetType()), pathStr)
 	}
 
 	block, ok := value.AsBlockValue(container)
@@ -1227,14 +1211,7 @@ func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.Path
 	}
 
 	if container.GetType() != value.TypeObject {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDImmutableTarget,
-			[3]string{
-				fmt.Sprintf("cannot assign field to %s (must be object)", value.TypeToString(container.GetType())),
-				pathStr,
-				"",
-			},
-		)
+		return value.NewNoneVal(), makePathTypeError("cannot assign field to", value.TypeToString(container.GetType())+" (must be object)", pathStr)
 	}
 
 	obj, ok := value.AsObject(container)
