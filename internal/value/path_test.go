@@ -29,14 +29,6 @@ func TestPathExpressionMold(t *testing.T) {
 			want: "data.1",
 		},
 		{
-			name: "path with refinement",
-			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "func"},
-				{Type: PathSegmentRefinement, Value: "ref"},
-			},
-			want: "func/ref",
-		},
-		{
 			name: "path with eval segment",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "data"},
@@ -52,15 +44,6 @@ func TestPathExpressionMold(t *testing.T) {
 				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
 			},
 			want: "data.(field).(idx)",
-		},
-		{
-			name: "path with eval refinement",
-			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
-				{Type: PathSegmentRefinement, Value: "ref"},
-			},
-			want: "data.(field)/ref",
 		},
 		{
 			name: "path with eval index ordering",
@@ -122,14 +105,6 @@ func TestGetPathExpressionMold(t *testing.T) {
 			want: ":data.field",
 		},
 		{
-			name: "get-path with refinement",
-			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "func"},
-				{Type: PathSegmentRefinement, Value: "ref"},
-			},
-			want: ":func/ref",
-		},
-		{
 			name: "get-path with eval segment",
 			segments: []PathSegment{
 				{Type: PathSegmentWord, Value: "data"},
@@ -145,15 +120,6 @@ func TestGetPathExpressionMold(t *testing.T) {
 				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
 			},
 			want: ":data.(field).(idx)",
-		},
-		{
-			name: "get-path with eval refinement",
-			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
-				{Type: PathSegmentRefinement, Value: "ref"},
-			},
-			want: ":data.(field)/ref",
 		},
 		{
 			name: "get-path with eval index ordering",
@@ -228,15 +194,6 @@ func TestSetPathExpressionMold(t *testing.T) {
 				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
 			},
 			want: "data.(field).(idx):",
-		},
-		{
-			name: "set-path with eval refinement",
-			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
-				{Type: PathSegmentRefinement, Value: "ref"},
-			},
-			want: "data.(field)/ref:",
 		},
 		{
 			name: "set-path with eval index ordering",
@@ -459,7 +416,6 @@ func TestPathSegmentTypeString(t *testing.T) {
 	}{
 		{PathSegmentWord, "word"},
 		{PathSegmentIndex, "index"},
-		{PathSegmentRefinement, "refinement"},
 		{PathSegmentEval, "eval"},
 		{PathSegmentType(99), "unknown"},
 	}
@@ -471,23 +427,6 @@ func TestPathSegmentTypeString(t *testing.T) {
 				t.Errorf("PathSegmentType.String() = %q, want %q", got, tt.want)
 			}
 		})
-	}
-}
-
-func TestRenderPathSegmentsWithRefinements(t *testing.T) {
-	segments := []PathSegment{
-		{Type: PathSegmentWord, Value: "obj"},
-		{Type: PathSegmentWord, Value: "func"},
-		{Type: PathSegmentRefinement, Value: "with"},
-		{Type: PathSegmentRefinement, Value: "args"},
-	}
-
-	path := NewPath(segments, nil)
-	got := path.Mold()
-	want := "obj.func/with/args"
-
-	if got != want {
-		t.Errorf("Path with refinements Mold() = %q, want %q", got, want)
 	}
 }
 
