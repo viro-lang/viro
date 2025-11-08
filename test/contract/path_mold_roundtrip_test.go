@@ -57,6 +57,9 @@ func comparePathSegments(t *testing.T, expected, actual []value.PathSegment) {
 						i, j, expMold, actMold)
 				}
 			}
+
+		default:
+			t.Fatalf("unknown segment type: %s", expected[i].Type.String())
 		}
 	}
 }
@@ -66,6 +69,7 @@ type pathKind struct {
 	constructor  func([]value.PathSegment, core.Value) core.Value
 	expectedType core.ValueType
 	extractor    func(core.Value) (core.Value, bool)
+	segments     func(core.Value) []value.PathSegment
 }
 
 func TestPathMoldRoundtrip(t *testing.T) {
@@ -78,6 +82,10 @@ func TestPathMoldRoundtrip(t *testing.T) {
 				p, ok := value.AsPath(v)
 				return p, ok
 			},
+			segments: func(v core.Value) []value.PathSegment {
+				p := v.(*value.PathExpression)
+				return p.Segments
+			},
 		},
 		{
 			name: "get-path",
@@ -89,6 +97,10 @@ func TestPathMoldRoundtrip(t *testing.T) {
 				p, ok := value.AsGetPath(v)
 				return p, ok
 			},
+			segments: func(v core.Value) []value.PathSegment {
+				p := v.(*value.GetPathExpression)
+				return p.Segments
+			},
 		},
 		{
 			name: "set-path",
@@ -99,6 +111,10 @@ func TestPathMoldRoundtrip(t *testing.T) {
 			extractor: func(v core.Value) (core.Value, bool) {
 				p, ok := value.AsSetPath(v)
 				return p, ok
+			},
+			segments: func(v core.Value) []value.PathSegment {
+				p := v.(*value.SetPathExpression)
+				return p.Segments
 			},
 		},
 	}
@@ -247,17 +263,7 @@ func TestPathMoldRoundtrip(t *testing.T) {
 					t.Errorf("mold mismatch: got %q, want %q", parsed.Mold(), molded)
 				}
 
-				var segments []value.PathSegment
-				switch p := parsed.(type) {
-				case *value.PathExpression:
-					segments = p.Segments
-				case *value.GetPathExpression:
-					segments = p.Segments
-				case *value.SetPathExpression:
-					segments = p.Segments
-				default:
-					t.Fatalf("unexpected path type: %T", parsed)
-				}
+				segments := kind.segments(parsed)
 
 				comparePathSegments(t, tt.segments, segments)
 			})
