@@ -226,9 +226,6 @@ func (t *Tokenizer) readLiteral() string {
 		if ch == ')' {
 			depth--
 			t.advance()
-			if depth == 0 {
-				continue
-			}
 			continue
 		}
 
