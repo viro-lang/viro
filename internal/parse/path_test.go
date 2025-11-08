@@ -105,7 +105,7 @@ func TestPathTokenization(t *testing.T) {
 				if seg.Type != value.PathSegmentEval {
 					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
 				}
-				block, ok := seg.Value.(*value.BlockValue)
+				block, ok := seg.AsEvalBlock()
 				if !ok {
 					t.Fatalf("Expected eval segment to store block")
 				}
@@ -136,7 +136,7 @@ func TestPathTokenization(t *testing.T) {
 				if seg.Type != value.PathSegmentEval {
 					t.Fatalf("Expected second segment to be eval, got %v", seg.Type)
 				}
-				block, ok := seg.Value.(*value.BlockValue)
+				block, ok := seg.AsEvalBlock()
 				if !ok {
 					t.Fatalf("Expected eval segment to store block")
 				}

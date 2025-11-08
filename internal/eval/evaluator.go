@@ -909,7 +909,7 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 		return seg, nil
 	}
 
-	block, ok := seg.Value.(*value.BlockValue)
+	block, ok := seg.AsEvalBlock()
 	if !ok {
 		return value.PathSegment{}, verror.NewInternalError("eval segment missing block", [3]string{})
 	}
@@ -950,7 +950,7 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, error) {
 	switch firstSeg.Type {
 	case value.PathSegmentWord:
-		wordStr, ok := firstSeg.Value.(string)
+		wordStr, ok := firstSeg.AsWord()
 		if !ok {
 			return value.NewNoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
 		}
@@ -961,7 +961,7 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 		}
 		return base, nil
 	case value.PathSegmentIndex:
-		num, ok := firstSeg.Value.(int64)
+		num, ok := firstSeg.AsIndex()
 		if !ok {
 			return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
 		}
@@ -988,7 +988,7 @@ func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment
 		return verror.NewInternalError("failed to cast object value", [3]string{})
 	}
 
-	fieldName, ok := seg.Value.(string)
+	fieldName, ok := seg.AsWord()
 	if !ok {
 		return verror.NewInternalError("word segment does not contain string", [3]string{})
 	}
@@ -1003,7 +1003,7 @@ func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment
 }
 
 func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
-	index, ok := seg.Value.(int64)
+	index, ok := seg.AsIndex()
 	if !ok {
 		return verror.NewInternalError("index segment does not contain int64", [3]string{})
 	}
@@ -1191,7 +1191,7 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 }
 
 func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
-	index, ok := finalSeg.Value.(int64)
+	index, ok := finalSeg.AsIndex()
 	if !ok {
 		return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
 	}
@@ -1221,7 +1221,7 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 }
 
 func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
-	fieldName, ok := finalSeg.Value.(string)
+	fieldName, ok := finalSeg.AsWord()
 	if !ok {
 		return value.NewNoneVal(), verror.NewInternalError("word segment does not contain string", [3]string{})
 	}
