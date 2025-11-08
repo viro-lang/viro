@@ -21,7 +21,6 @@ type PathSegmentType int
 const (
 	PathSegmentWord PathSegmentType = iota
 	PathSegmentIndex
-	PathSegmentRefinement
 	PathSegmentEval
 )
 
@@ -31,8 +30,6 @@ func (t PathSegmentType) String() string {
 		return "word"
 	case PathSegmentIndex:
 		return "index"
-	case PathSegmentRefinement:
-		return "refinement"
 	case PathSegmentEval:
 		return "eval"
 	default:
@@ -51,13 +48,6 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 	result := prefix
 	for i, seg := range segments {
 		if i > 0 {
-			switch seg.Type {
-			case PathSegmentRefinement:
-				result += "/"
-			default:
-				result += "."
-			}
-		} else if seg.Type == PathSegmentEval {
 			result += "."
 		}
 		switch seg.Type {
@@ -65,8 +55,6 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 			result += seg.Value.(string)
 		case PathSegmentIndex:
 			result += fmt.Sprintf("%d", seg.Value.(int64))
-		case PathSegmentRefinement:
-			result += seg.Value.(string)
 		case PathSegmentEval:
 			if block, ok := seg.Value.(*BlockValue); ok {
 				result += "(" + block.MoldElements() + ")"
