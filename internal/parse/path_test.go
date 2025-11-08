@@ -89,7 +89,7 @@ func TestPathTokenization(t *testing.T) {
 				expected := []string{"user", "address", "city"}
 				for i, exp := range expected {
 					if path.Segments[i].Type != value.PathSegmentWord || path.Segments[i].Value != exp {
-						t.Errorf("Segment %d: expected word %q, got %v %v", i, exp, path.Segments[i].Type, path.Segments[i].Value)
+						t.Errorf("Expected segment %d to be word %q, got %v %v", i, exp, path.Segments[i].Type, path.Segments[i].Value)
 					}
 				}
 			},
@@ -115,13 +115,13 @@ func TestPathTokenization(t *testing.T) {
 			wantSegs: 3,
 			checkPath: func(t *testing.T, path *value.PathExpression) {
 				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "matrix" {
-					t.Errorf("Expected first segment to be word 'matrix'")
+					t.Errorf("Expected first segment to be word 'matrix', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
 				}
 				if path.Segments[1].Type != value.PathSegmentIndex || path.Segments[1].Value != int64(2) {
-					t.Errorf("Expected second segment to be index 2")
+					t.Errorf("Expected second segment to be index 2, got %v %v", path.Segments[1].Type, path.Segments[1].Value)
 				}
 				if path.Segments[2].Type != value.PathSegmentIndex || path.Segments[2].Value != int64(3) {
-					t.Errorf("Expected third segment to be index 3")
+					t.Errorf("Expected third segment to be index 3, got %v %v", path.Segments[2].Type, path.Segments[2].Value)
 				}
 			},
 		},
@@ -132,11 +132,11 @@ func TestPathTokenization(t *testing.T) {
 			wantSegs: 3,
 			checkPath: func(t *testing.T, path *value.PathExpression) {
 				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "foo" {
-					t.Errorf("Expected first segment to be word 'foo'")
+					t.Errorf("Expected first segment to be word 'foo', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
 				}
 				validateEvalSegmentSingleWord(t, path.Segments[1], "field")
 				if path.Segments[2].Type != value.PathSegmentWord || path.Segments[2].Value != "bar" {
-					t.Errorf("Expected third segment to be word 'bar'")
+					t.Errorf("Expected third segment to be word 'bar', got %v %v", path.Segments[2].Type, path.Segments[2].Value)
 				}
 			},
 		},
@@ -147,7 +147,7 @@ func TestPathTokenization(t *testing.T) {
 			wantSegs: 3,
 			checkPath: func(t *testing.T, path *value.PathExpression) {
 				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "foo" {
-					t.Errorf("Expected first segment to be word 'foo'")
+					t.Errorf("Expected first segment to be word 'foo', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
 				}
 				seg := path.Segments[1]
 				if seg.Type != value.PathSegmentEval {
@@ -172,13 +172,13 @@ func TestPathTokenization(t *testing.T) {
 					t.Fatalf("Expected nested path to have 2 segments, got %d", len(nestedPath.Segments))
 				}
 				if nestedPath.Segments[0].Type != value.PathSegmentWord || nestedPath.Segments[0].Value != "bar" {
-					t.Errorf("Expected nested first segment to be 'bar'")
+					t.Errorf("Expected nested first segment to be 'bar', got %v %v", nestedPath.Segments[0].Type, nestedPath.Segments[0].Value)
 				}
 				if nestedPath.Segments[1].Type != value.PathSegmentEval {
 					t.Fatalf("Expected nested second segment to be eval, got %v", nestedPath.Segments[1].Type)
 				}
 				if path.Segments[2].Type != value.PathSegmentWord || path.Segments[2].Value != "qux" {
-					t.Errorf("Expected third segment to be word 'qux'")
+					t.Errorf("Expected third segment to be word 'qux', got %v %v", path.Segments[2].Type, path.Segments[2].Value)
 				}
 			},
 		},
@@ -188,7 +188,6 @@ func TestPathTokenization(t *testing.T) {
 			wantType: value.TypeSetPath,
 			wantSegs: 2,
 			checkPath: func(t *testing.T, path *value.PathExpression) {
-				// This will receive a SetPathExpression via AsPath conversion
 				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "data" {
 					t.Errorf("Expected first segment to be word 'data', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
 				}
@@ -201,7 +200,6 @@ func TestPathTokenization(t *testing.T) {
 			wantType: value.TypeGetPath,
 			wantSegs: 2,
 			checkPath: func(t *testing.T, path *value.PathExpression) {
-				// This will receive a GetPathExpression via AsPath conversion
 				if path.Segments[0].Type != value.PathSegmentWord || path.Segments[0].Value != "data" {
 					t.Errorf("Expected first segment to be word 'data', got %v %v", path.Segments[0].Type, path.Segments[0].Value)
 				}
@@ -291,7 +289,7 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 				}
 				setPath, ok := value.AsSetPath(vals[0])
 				if !ok {
-					t.Errorf("Expected set-path value")
+					t.Errorf("Expected set-path value, got %s", value.TypeToString(vals[0].GetType()))
 				} else if len(setPath.Segments) != 2 {
 					t.Errorf("Expected 2 segments, got %d", len(setPath.Segments))
 				}
@@ -312,7 +310,7 @@ func TestPathsWithOtherSyntax(t *testing.T) {
 				}
 				setPath, ok := value.AsSetPath(vals[0])
 				if !ok {
-					t.Errorf("Expected set-path value")
+					t.Errorf("Expected set-path value, got %s", value.TypeToString(vals[0].GetType()))
 				} else if len(setPath.Segments) != 3 {
 					t.Errorf("Expected 3 segments, got %d", len(setPath.Segments))
 				}
@@ -348,14 +346,14 @@ func TestParseRejectsLeadingEvalSegments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := Parse(tt.input)
 			if err == nil {
-				t.Fatalf("expected error for %s", tt.input)
+				t.Fatalf("Expected error for %s, got none", tt.input)
 			}
 			verr, ok := err.(*verror.Error)
 			if !ok {
-				t.Fatalf("expected verror.Error, got %T", err)
+				t.Fatalf("Expected verror.Error, got %T", err)
 			}
 			if verr.ID != verror.ErrIDPathEvalBase {
-				t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDPathEvalBase)
+				t.Fatalf("Expected error ID %s, got %s", verror.ErrIDPathEvalBase, verr.ID)
 			}
 		})
 	}
@@ -375,20 +373,20 @@ func TestParsePathReportsDetailedReasons(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := Parse(tt.input)
 			if err == nil {
-				t.Fatalf("expected error for %s", tt.input)
+				t.Fatalf("Expected error for %s, got none", tt.input)
 			}
 			verr, ok := err.(*verror.Error)
 			if !ok {
-				t.Fatalf("expected verror.Error, got %T", err)
+				t.Fatalf("Expected verror.Error, got %T", err)
 			}
 			if verr.ID != verror.ErrIDInvalidPath {
-				t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDInvalidPath)
+				t.Fatalf("Expected error ID %s, got %s", verror.ErrIDInvalidPath, verr.ID)
 			}
 			if verr.Args[1] != tt.reason {
-				t.Fatalf("expected reason %q, got %q", tt.reason, verr.Args[1])
+				t.Fatalf("Expected reason %q, got %q", tt.reason, verr.Args[1])
 			}
 			if !strings.Contains(verr.Message, tt.reason) {
-				t.Fatalf("error message should mention reason %q, got %q", tt.reason, verr.Message)
+				t.Fatalf("Expected error message to mention reason %q, got %q", tt.reason, verr.Message)
 			}
 		})
 	}
@@ -409,20 +407,20 @@ func TestParseRejectsStringLiteralSegments(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := Parse(tt.input)
 			if err == nil {
-				t.Fatalf("expected error for %s", tt.input)
+				t.Fatalf("Expected error for %s, got none", tt.input)
 			}
 			verr, ok := err.(*verror.Error)
 			if !ok {
-				t.Fatalf("expected verror.Error, got %T", err)
+				t.Fatalf("Expected verror.Error, got %T", err)
 			}
 			if verr.ID != verror.ErrIDInvalidPath {
-				t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDInvalidPath)
+				t.Fatalf("Expected error ID %s, got %s", verror.ErrIDInvalidPath, verr.ID)
 			}
 			if verr.Args[1] != tt.reason {
-				t.Fatalf("expected reason %q, got %q", tt.reason, verr.Args[1])
+				t.Fatalf("Expected reason %q, got %q", tt.reason, verr.Args[1])
 			}
 			if !strings.Contains(verr.Message, tt.reason) {
-				t.Fatalf("error message should mention reason %q, got %q", tt.reason, verr.Message)
+				t.Fatalf("Expected error message to mention reason %q, got %q", tt.reason, verr.Message)
 			}
 		})
 	}
