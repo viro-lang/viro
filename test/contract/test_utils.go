@@ -53,6 +53,10 @@ func Evaluate(src string) (core.Value, error) {
 	e := NewTestEvaluator()
 	result, err := e.DoBlock(vals, locations)
 	if err != nil {
+		if returnSig, ok := err.(*eval.ReturnSignal); ok {
+			return returnSig.Value(), nil
+		}
+
 		convertedErr := verror.ConvertLoopControlSignal(err)
 		if convertedErr != err {
 			return value.NewNoneVal(), convertedErr

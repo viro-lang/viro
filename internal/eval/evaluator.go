@@ -750,10 +750,16 @@ func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.
 		}
 
 		if position >= len(block) {
-			return position, verror.NewScriptError(
-				verror.ErrIDArgCount,
-				[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
-			)
+			for i := paramIndex; i < len(positional); i++ {
+				if !positional[i].Optional {
+					return position, verror.NewScriptError(
+						verror.ErrIDArgCount,
+						[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
+					)
+				}
+				posArgs[i] = value.NewNoneVal()
+			}
+			return position, nil
 		}
 
 		paramSpec := positional[paramIndex]
@@ -792,6 +798,9 @@ func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, re
 
 	if err == nil {
 		return result, nil
+	}
+	if _, ok := err.(*ReturnSignal); ok {
+		return result, err
 	}
 	if verr, ok := err.(*verror.Error); ok {
 		return result, verr
@@ -884,6 +893,9 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 
 	result, err := e.DoBlock(fn.Body.Elements, fn.Body.Locations())
 	if err != nil {
+		if returnSig, ok := err.(*ReturnSignal); ok {
+			return returnSig.Value(), nil
+		}
 		return value.NewNoneVal(), err
 	}
 
@@ -1307,4 +1319,8 @@ func (e *Evaluator) emitTraceResult(eventType string, word string, expr string, 
 	}
 
 	trace.GlobalTraceSession.Emit(event)
+}
+
+func (e *Evaluator) NewReturnSignal(val core.Value) error {
+	return NewReturnSignal(val)
 }

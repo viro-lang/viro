@@ -953,3 +953,16 @@ func Continue(args []core.Value, refValues map[string]core.Value, eval core.Eval
 		[3]string{fmt.Sprintf("%d", levels), "", ""},
 	)
 }
+
+func Return(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) > 1 {
+		return value.NewNoneVal(), arityError("return", 1, len(args))
+	}
+
+	returnVal := value.NewNoneVal()
+	if len(args) == 1 {
+		returnVal = args[0]
+	}
+
+	return value.NewNoneVal(), eval.NewReturnSignal(returnVal)
+}

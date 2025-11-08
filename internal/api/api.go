@@ -249,9 +249,14 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 
 	result, err := evaluator.DoBlock(values, locations)
 	if err != nil {
-		err = verror.ConvertLoopControlSignal(err)
-		printErrorToWriter(err, "Runtime", ctx.Stderr)
-		return HandleErrorWithContext(err)
+		if returnSig, ok := err.(*eval.ReturnSignal); ok {
+			result = returnSig.Value()
+			err = nil
+		} else {
+			err = verror.ConvertLoopControlSignal(err)
+			printErrorToWriter(err, "Runtime", ctx.Stderr)
+			return HandleErrorWithContext(err)
+		}
 	}
 
 	if printResult && !cfg.Quiet {
