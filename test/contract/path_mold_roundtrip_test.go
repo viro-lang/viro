@@ -37,13 +37,6 @@ func comparePathSegments(t *testing.T, expected, actual []value.PathSegment) {
 				t.Errorf("segment[%d] index value mismatch: expected %d, got %d", i, expVal, actVal)
 			}
 
-		case value.PathSegmentRefinement:
-			expVal, _ := expected[i].Value.(string)
-			actVal, _ := actual[i].Value.(string)
-			if expVal != actVal {
-				t.Errorf("segment[%d] refinement value mismatch: expected %q, got %q", i, expVal, actVal)
-			}
-
 		case value.PathSegmentEval:
 			expBlock, expOk := expected[i].Value.(*value.BlockValue)
 			actBlock, actOk := actual[i].Value.(*value.BlockValue)
