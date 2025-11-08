@@ -920,7 +920,7 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 	}
 
 	if name, ok := value.AsWordValue(result); ok {
-		return value.PathSegment{Type: value.PathSegmentWord, Value: name}, nil
+		return value.NewWordSegment(name), nil
 	}
 
 	if strVal, ok := value.AsStringValue(result); ok {
@@ -930,11 +930,11 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 				[3]string{"", "eval-empty-segment", ""},
 			)
 		}
-		return value.PathSegment{Type: value.PathSegmentWord, Value: strVal.String()}, nil
+		return value.NewWordSegment(strVal.String()), nil
 	}
 
 	if num, ok := value.AsIntValue(result); ok {
-		return value.PathSegment{Type: value.PathSegmentIndex, Value: num}, nil
+		return value.NewIndexSegment(num), nil
 	}
 
 	return value.PathSegment{}, verror.NewScriptError(
