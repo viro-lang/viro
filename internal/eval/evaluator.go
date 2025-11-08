@@ -1308,3 +1308,7 @@ func (e *Evaluator) emitTraceResult(eventType string, word string, expr string, 
 
 	trace.GlobalTraceSession.Emit(event)
 }
+
+func (e *Evaluator) NewReturnSignal(val core.Value) error {
+	return NewReturnSignal(val)
+}

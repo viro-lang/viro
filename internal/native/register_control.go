@@ -292,4 +292,25 @@ Refinements:
 			Tags:        []string{"control", "loop", "continue", "multilevel"},
 		},
 	))
+
+	registerAndBind("return", value.NewNativeFunction(
+		"return",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Return,
+		false,
+		&NativeDoc{
+			Category:    "Control",
+			Summary:     "Returns a value from a function",
+			Description: "Returns a value from the current function, terminating execution of the function and returning control to the caller. If no value is provided, returns none. Can only be used inside a function; using return outside a function causes an error.",
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to return (optional, defaults to none)", Optional: true},
+			},
+			Returns:  "[any-type! none!] The specified value or none",
+			Examples: []string{"fn [x] [when x < 0 [return 0] x * 2]  ; returns 0 for negative inputs", "fn [] [return \"hello\"]  ; returns \"hello\"", "fn [] [return]  ; returns none"},
+			SeeAlso:  []string{"fn", "break", "continue"},
+			Tags:     []string{"control", "function", "return"},
+		},
+	))
 }

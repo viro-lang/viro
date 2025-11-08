@@ -63,4 +63,5 @@ type Evaluator interface {
 	SetInputReader(reader io.Reader)
 	GetInputReader() io.Reader
 	UpdateTraceCache()
+	NewReturnSignal(val Value) error
 }
