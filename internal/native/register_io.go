@@ -268,21 +268,55 @@ conflict with the new parse dialect feature.`,
 		SeeAlso:  []string{"tokenize", "load-string", "classify", "parse"}, Tags: []string{"parser", "parse", "semantic"},
 	})
 
-	// Keep 'parse' as a temporary alias for backward compatibility
-	// This will be replaced with the parse dialect implementation in the future
-	registerSimpleIOFunc("parse", NativeParse, 1, &NativeDoc{
-		Category: "Parser",
-		Summary:  "Parses token objects into viro values (alias for parse-values)",
-		Description: `DEPRECATED: Use 'parse-values' instead. This is a temporary alias for backward compatibility.
-Takes a block of token objects (from tokenize) and parses them into viro values.
-This native will be replaced with the new parse dialect feature in a future update.`,
-		Parameters: []ParamDoc{
-			{Name: "tokens", Type: "block!", Description: "A block of token objects from tokenize", Optional: false},
+	// Register the new parse dialect - pattern matching for strings and blocks
+	registerAndBind("parse", value.NewNativeFunction(
+		"parse",
+		[]value.ParamSpec{
+			value.NewParamSpec("input", true),  // string or block to parse
+			value.NewParamSpec("rules", false), // parse rules (block)
+			value.NewRefinementSpec("case", false),
+			value.NewRefinementSpec("all", false),
+			value.NewRefinementSpec("part", true), // integer
+			value.NewRefinementSpec("any", false),
 		},
-		Returns:  "[block!] A block of parsed viro values",
-		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse tokens  ; => [x: 42]`, `values: parse tokenize "[1 2 3]"`},
-		SeeAlso:  []string{"tokenize", "load-string", "classify", "parse-values"}, Tags: []string{"parser", "parse", "semantic", "deprecated"},
-	})
+		NativeParseDialect,
+		false,
+		&NativeDoc{
+			Category: "Parse",
+			Summary:  "Pattern matching dialect for strings and blocks",
+			Description: `Matches input (string or block) against a pattern rule block using the parse dialect.
+Returns true if the pattern matches, false otherwise.
+
+The parse dialect is a powerful pattern matching DSL that supports:
+- String literals: "hello"
+- Character sets: charset "abc", charset [#"a" - #"z"]
+- Datatypes: integer!, string!, word!, etc.
+- Keywords: skip (any char), end (end of input)
+- Alternation: ["hello" | "hi"]
+- Sequences: ["hello" " " "world"]
+
+Refinements:
+--case: Case-sensitive string matching (default is case-insensitive)
+--all: Match entire input (default true, fails if input remains)
+--part N: Only parse first N elements
+--any: Allow partial matches (sets --all to false)`,
+			Parameters: []ParamDoc{
+				{Name: "input", Type: "string! block!", Description: "The input series to parse", Optional: false},
+				{Name: "rules", Type: "block!", Description: "The parse rule block", Optional: false},
+			},
+			Returns:  "[logic!] True if the pattern matches, false otherwise",
+			Examples: []string{
+				`parse "hello" ["hello"]  ; => true`,
+				`parse "hello world" ["hello" " " "world"]  ; => true`,
+				`parse "Hello" ["hello"] --case  ; => false (case-sensitive)`,
+				`parse "abc" [charset "abc" charset "abc" charset "abc"]  ; => true`,
+				`parse [1 2 3] [integer! integer! integer!]  ; => true`,
+				`parse "hi" ["hello" | "hi"]  ; => true (alternation)`,
+			},
+			SeeAlso: []string{"charset", "parse-values", "tokenize"},
+			Tags:    []string{"parse", "pattern", "matching", "dialect"},
+		},
+	))
 
 	registerSimpleIOFunc("load-string", NativeLoadString, 1, &NativeDoc{
 		Category: "Parser",

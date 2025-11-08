@@ -111,20 +111,20 @@ func TestParser_Parse(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "parse simple literal",
-			input:    `parse tokenize "42"`,
+			name:     "parse-values simple literal",
+			input:    `parse-values tokenize "42"`,
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(42)}),
 			wantErr:  false,
 		},
 		{
-			name:     "parse block",
-			input:    `parse tokenize "[1 2 3]"`,
+			name:     "parse-values block",
+			input:    `parse-values tokenize "[1 2 3]"`,
 			expected: value.NewBlockVal([]core.Value{value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)})}),
 			wantErr:  false,
 		},
 		{
-			name:     "parse string",
-			input:    `parse tokenize "\"hello\""`,
+			name:     "parse-values string",
+			input:    `parse-values tokenize "\"hello\""`,
 			expected: value.NewBlockVal([]core.Value{value.NewStrVal("hello")}),
 			wantErr:  false,
 		},
@@ -179,8 +179,8 @@ func TestParser_ParseValues(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "parse and parse-values equivalent",
-			input:    `(= (parse tokenize "x: 42") (parse-values tokenize "x: 42"))`,
+			name:     "parse-values and parse-values equivalent",
+			input:    `(= (parse-values tokenize "x: 42") (parse-values tokenize "x: 42"))`,
 			expected: value.NewLogicVal(true),
 			wantErr:  false,
 		},
@@ -353,8 +353,8 @@ func TestParser_Integration(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "tokenize then parse equals load-string",
-			input:    `(= (parse tokenize "42") (load-string "42"))`,
+			name:     "tokenize then parse-values equals load-string",
+			input:    `(= (parse-values tokenize "42") (load-string "42"))`,
 			expected: value.NewLogicVal(true),
 			wantErr:  false,
 		},

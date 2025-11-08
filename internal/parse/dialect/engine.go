@@ -106,6 +106,10 @@ func (e *Engine) matchRule(rule core.Value, pos int) (bool, int, error) {
 		// Bitset - character class match
 		return e.matchBitset(rule, pos)
 
+	case value.TypeDatatype:
+		// Datatype - match element by type
+		return e.matchDatatypeValue(rule, pos)
+
 	default:
 		// Unknown rule type
 		return false, pos, verror.NewScriptError("parse-invalid-rule", [3]string{"parse", "invalid rule type", value.TypeToString(rule.GetType())})
@@ -155,14 +159,18 @@ func (e *Engine) matchChar(expected, actual rune) bool {
 	if e.state.options.CaseSensitive {
 		return expected == actual
 	}
-	// Simple case-insensitive comparison
-	if expected >= 'A' && expected <= 'Z' {
-		expected = expected - 'A' + 'a'
+	// Convert both to lowercase for case-insensitive comparison
+	return toLower(expected) == toLower(actual)
+}
+
+// toLower converts a rune to lowercase.
+func toLower(r rune) rune {
+	if r >= 'A' && r <= 'Z' {
+		return r - 'A' + 'a'
 	}
-	if actual >= 'A' && actual <= 'Z' {
-		actual = actual - 'A' + 'a'
-	}
-	return expected == actual
+	// For Unicode beyond ASCII, use a simple approach
+	// In a full implementation, would use unicode.ToLower
+	return r
 }
 
 // matchInteger matches an exact count of elements.
@@ -283,7 +291,20 @@ func (e *Engine) matchWord(rule core.Value, pos int) (bool, int, error) {
 		return false, pos, nil
 
 	default:
-		// Try datatype matching
+		// Try to look up the word value from the evaluator
+		if e.evaluator != nil {
+			val, ok := e.evaluator.Lookup(word)
+			if ok {
+				// If it's a bitset, use it for matching
+				if bs, isBitset := value.AsBitsetValue(val); isBitset {
+					return e.matchBitsetValue(bs, pos)
+				}
+				// Otherwise, try to match it as a rule
+				return e.matchRule(val, pos)
+			}
+		}
+
+		// Try datatype matching as fallback
 		return e.matchDatatype(word, pos)
 	}
 }
@@ -304,13 +325,38 @@ func (e *Engine) matchDatatype(typename string, pos int) (bool, int, error) {
 	return false, pos, nil
 }
 
+// matchDatatypeValue matches an element by a datatype value.
+func (e *Engine) matchDatatypeValue(rule core.Value, pos int) (bool, int, error) {
+	datatypeVal, ok := value.AsDatatypeValue(rule)
+	if !ok {
+		return false, pos, nil
+	}
+
+	elem, ok := e.cursor.At(pos)
+	if !ok {
+		return false, pos, nil
+	}
+
+	// Match datatype name
+	actualType := value.TypeToString(elem.GetType())
+	if actualType == datatypeVal {
+		return true, pos + 1, nil
+	}
+
+	return false, pos, nil
+}
+
 // matchBitset matches a character against a bitset.
 func (e *Engine) matchBitset(rule core.Value, pos int) (bool, int, error) {
 	bs, ok := value.AsBitsetValue(rule)
 	if !ok {
 		return false, pos, nil
 	}
+	return e.matchBitsetValue(bs, pos)
+}
 
+// matchBitsetValue matches a character against a bitset value.
+func (e *Engine) matchBitsetValue(bs *value.BitsetValue, pos int) (bool, int, error) {
 	if !e.cursor.IsString() {
 		return false, pos, verror.NewScriptError("parse-invalid-rule", [3]string{"parse", "bitset can only be used with string input", ""})
 	}
