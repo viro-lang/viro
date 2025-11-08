@@ -182,6 +182,11 @@ var messageTemplates = map[string]string{
 	ErrIDStackOverflow:   "Stack overflow (maximum depth exceeded)",
 	ErrIDOutOfMemory:     "Out of memory",
 	ErrIDAssertionFailed: "Internal assertion failed: %1",
+
+	ErrIDBreak:               "break",
+	ErrIDContinue:            "continue",
+	ErrIDBreakOutsideLoop:    "break called outside of loop",
+	ErrIDContinueOutsideLoop: "continue called outside of loop",
 }
 
 func ToExitCode(category ErrorCategory) int {
@@ -194,5 +199,27 @@ func ToExitCode(category ErrorCategory) int {
 		return 70 // ExitInternal
 	default:
 		return 1 // ExitError
+	}
+}
+
+// ConvertLoopControlSignal converts uncaught loop control signals (ErrThrow)
+// to user-facing errors (ErrScript). Returns the converted error if the input
+// was a loop control signal, otherwise returns the original error unchanged.
+func ConvertLoopControlSignal(err error) error {
+	if err == nil {
+		return nil
+	}
+	verr, ok := err.(*Error)
+	if !ok || verr.Category != ErrThrow {
+		return err
+	}
+
+	switch verr.ID {
+	case ErrIDBreak:
+		return NewScriptError(ErrIDBreakOutsideLoop, [3]string{})
+	case ErrIDContinue:
+		return NewScriptError(ErrIDContinueOutsideLoop, [3]string{})
+	default:
+		return err
 	}
 }

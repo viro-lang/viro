@@ -626,6 +626,13 @@ func (e *Evaluator) callNativeFunction(fn *value.FunctionValue, posArgs []core.V
 func (e *Evaluator) callUserDefinedFunction(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value, name string, position int, traceStart time.Time) (core.Value, error) {
 	result, err := e.executeFunction(fn, posArgs, refValues)
 	if err != nil {
+		convertedErr := verror.ConvertLoopControlSignal(err)
+		if convertedErr != err {
+			if e.traceEnabled {
+				e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, convertedErr)
+			}
+			return value.NewNoneVal(), convertedErr
+		}
 		if e.traceEnabled {
 			e.emitTraceResult("return", name, name, value.NewNoneVal(), position, traceStart, err)
 		}

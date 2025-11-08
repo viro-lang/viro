@@ -51,7 +51,14 @@ func Evaluate(src string) (core.Value, error) {
 	}
 
 	e := NewTestEvaluator()
-	return e.DoBlock(vals, locations)
+	result, err := e.DoBlock(vals, locations)
+	if err != nil {
+		convertedErr := verror.ConvertLoopControlSignal(err)
+		if convertedErr != err {
+			return value.NewNoneVal(), convertedErr
+		}
+	}
+	return result, err
 }
 
 // RunSeriesTest is a unified test helper for series operations that handles
