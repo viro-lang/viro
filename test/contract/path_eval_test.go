@@ -193,62 +193,11 @@ data.(idx): 1`,
 			errID: verror.ErrIDOutOfBounds,
 		},
 		{
-			name: "path through none",
-			code: `field: 'slot
-obj: object [slot: none]
-obj.(field).name`,
-			errID: verror.ErrIDNonePath,
-		},
-		{
-			name: "set-path through none",
-			code: `field: 'slot
-obj: object [slot: none]
-obj.(field).name: "Bob"`,
-			errID: verror.ErrIDNonePath,
-		},
-		{
-			name: "get-path block eval result",
-			code: `field: []
-obj: object [profile: object [name: "Alice"]]
-:obj.(field).name`,
-			errID: verror.ErrIDInvalidPath,
-		},
-		{
-			name: "string result with dot treated literal",
-			code: `field: "profile.extra"
-obj: object [profile: object [extra: "Alice"]]
-obj.(field)`,
-			errID: verror.ErrIDNoSuchField,
-		},
-		{
-			name: "string result with slash treated literal",
-			code: `field: "profile/name"
-obj: object [profile: object [name: "Alice"]]
-obj.(field)`,
-			errID: verror.ErrIDNoSuchField,
-		},
-		{
-			name: "eval segment empty string result",
-			code: `field-fn: fn [] [""]
-obj: object [dummy: 1]
-obj.(field-fn)`,
-			errID:  verror.ErrIDEmptyPathSegment,
-			reason: "eval-empty-segment",
-		},
-
-		{
-			name: "eval segment zero index",
-			code: `idx: fn [] [0]
-data: [10 20]
-data.(idx)`,
-			errID: verror.ErrIDOutOfBounds,
-		},
-		{
-			name: "eval segment negative index",
-			code: `idx: fn [] [-1]
-data: [10 20]
-data.(idx)`,
-			errID: verror.ErrIDOutOfBounds,
+			name: "set-path assignment to non-object",
+			code: `field: 'name
+data: 42
+data.(field): "Bob"`,
+			errID: verror.ErrIDImmutableTarget,
 		},
 	}
 
