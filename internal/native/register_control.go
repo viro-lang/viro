@@ -257,35 +257,39 @@ Refinements:
 
 	registerAndBind("break", value.NewNativeFunction(
 		"break",
-		[]value.ParamSpec{},
+		[]value.ParamSpec{
+			value.NewRefinementSpec("levels", true),
+		},
 		Break,
 		false,
 		&NativeDoc{
 			Category:    "Control",
-			Summary:     "Exits the innermost loop immediately",
-			Description: "Causes immediate exit from the innermost loop (loop, while, or foreach). Returns none. Can only be used inside a loop; using break outside a loop causes an error. Break does not cross function boundaries.",
+			Summary:     "Exits one or more nested loops immediately",
+			Description: "Causes immediate exit from the innermost loop (loop, while, or foreach), or multiple nested loops if --levels is specified. Returns none. Can only be used inside a loop; using break outside a loop causes an error. Break does not cross function boundaries.\n\nRefinements:\n  --levels N: Exit N levels of nested loops (N >= 1, default 1)",
 			Parameters:  []ParamDoc{},
 			Returns:     "[none!] Always returns none",
-			Examples:    []string{"loop 10 [when (= x 5) [break]]  ; exits when x is 5", "foreach [1 2 3 4 5] 'n [when (= n 3) [break]]  ; stops at 3"},
+			Examples:    []string{"loop 10 [when (= x 5) [break]]  ; exits when x is 5", "foreach [1 2 3 4 5] 'n [when (= n 3) [break]]  ; stops at 3", "loop 3 [loop 3 [when (= x 2) [break --levels 2]]]  ; exits both loops"},
 			SeeAlso:     []string{"continue", "loop", "while", "foreach"},
-			Tags:        []string{"control", "loop", "break"},
+			Tags:        []string{"control", "loop", "break", "multilevel"},
 		},
 	))
 
 	registerAndBind("continue", value.NewNativeFunction(
 		"continue",
-		[]value.ParamSpec{},
+		[]value.ParamSpec{
+			value.NewRefinementSpec("levels", true),
+		},
 		Continue,
 		false,
 		&NativeDoc{
 			Category:    "Control",
-			Summary:     "Skips to the next iteration of the innermost loop",
-			Description: "Skips the rest of the current iteration and proceeds to the next iteration of the innermost loop (loop, while, or foreach). Can only be used inside a loop; using continue outside a loop causes an error. Continue does not cross function boundaries.",
+			Summary:     "Skips to the next iteration of one or more nested loops",
+			Description: "Skips the rest of the current iteration and proceeds to the next iteration of the innermost loop (loop, while, or foreach), or multiple nested loops if --levels is specified. Can only be used inside a loop; using continue outside a loop causes an error. Continue does not cross function boundaries.\n\nRefinements:\n  --levels N: Continue N levels of nested loops (N >= 1, default 1)",
 			Parameters:  []ParamDoc{},
 			Returns:     "[none!] Always returns none",
-			Examples:    []string{"loop 5 [when (= (mod i 2) 0) [continue] print i]  ; prints odd numbers", "foreach [1 2 3 4 5] 'n [when (= n 3) [continue] print n]  ; skips 3"},
+			Examples:    []string{"loop 5 [when (= (mod i 2) 0) [continue] print i]  ; prints odd numbers", "foreach [1 2 3 4 5] 'n [when (= n 3) [continue] print n]  ; skips 3", "loop 3 [loop 3 [when (= x 3) [continue --levels 2]]]  ; continues outer loop"},
 			SeeAlso:     []string{"break", "loop", "while", "foreach"},
-			Tags:        []string{"control", "loop", "continue"},
+			Tags:        []string{"control", "loop", "continue", "multilevel"},
 		},
 	))
 }
