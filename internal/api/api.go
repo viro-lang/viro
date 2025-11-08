@@ -249,9 +249,15 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 
 	result, err := evaluator.DoBlock(values, locations)
 	if err != nil {
-		err = verror.ConvertLoopControlSignal(err)
-		printErrorToWriter(err, "Runtime", ctx.Stderr)
-		return HandleErrorWithContext(err)
+		// Check for return signal (allow top-level return)
+		if returnSig, ok := err.(*eval.ReturnSignal); ok {
+			result = returnSig.Value() // Extract value and continue normally
+			err = nil
+		} else {
+			err = verror.ConvertLoopControlSignal(err)
+			printErrorToWriter(err, "Runtime", ctx.Stderr)
+			return HandleErrorWithContext(err)
+		}
 	}
 
 	if printResult && !cfg.Quiet {

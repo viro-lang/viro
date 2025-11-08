@@ -32,6 +32,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/bootstrap"
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
+	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/trace"
@@ -341,9 +342,15 @@ func (r *REPL) getCurrentPrompt() string {
 func (r *REPL) evalParsedValues(values []core.Value, locations []core.SourceLocation) {
 	result, err := r.evaluator.DoBlock(values, locations)
 	if err != nil {
-		err = verror.ConvertLoopControlSignal(err)
-		r.printError(err)
-		return
+		if returnSig, ok := err.(*eval.ReturnSignal); ok {
+			// Return signals are OK at top level - extract value
+			result = returnSig.Value()
+			err = nil // Clear error
+		} else {
+			err = verror.ConvertLoopControlSignal(err)
+			r.printError(err)
+			return
+		}
 	}
 
 	if result.GetType() != value.TypeNone {
