@@ -296,7 +296,7 @@ Refinements:
 	registerAndBind("return", value.NewNativeFunction(
 		"return",
 		[]value.ParamSpec{
-			value.NewParamSpec("value", true),
+			{Name: "value", Type: value.TypeNone, Optional: true, Refinement: false, TakesValue: false, Eval: true},
 		},
 		Return,
 		false,
