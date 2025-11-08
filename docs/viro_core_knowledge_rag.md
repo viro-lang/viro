@@ -164,7 +164,7 @@ obj.(key): "active"    ; Sets obj.status to "active"
 ;    Write:       obj: get-obj  obj.field
 ```
 
-## Performance Characteristics
+**Note**: Eval segments are materialized once per path traversal and cached within that traversal. Each call to traverse a path evaluates eval segments fresh - there is no persistent caching across different path operations.
 - **O(1)** function calls via frame allocation
 - **O(1)** variable access via index-based frames  
 - **O(n)** block evaluation (linear in size)
