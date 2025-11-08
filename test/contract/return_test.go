@@ -8,12 +8,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// TestReturn_Basic validates basic return functionality.
-//
-// Contract: return [value]
-// - With value: returns the value from function
-// - Without value: returns none from function
-// - Works with all value types (int, string, block, object, etc.)
 func TestReturn_Basic(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -106,9 +100,6 @@ func TestReturn_Basic(t *testing.T) {
 	}
 }
 
-// TestReturn_EarlyExit validates that return skips remaining code.
-//
-// Contract: return exits function immediately, skipping all remaining code.
 func TestReturn_EarlyExit(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -171,9 +162,6 @@ func TestReturn_EarlyExit(t *testing.T) {
 	}
 }
 
-// TestReturn_Nested validates return behavior in nested functions.
-//
-// Contract: return only exits the function it's called in, not outer functions.
 func TestReturn_Nested(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -265,9 +253,6 @@ func TestReturn_Nested(t *testing.T) {
 	}
 }
 
-// TestReturn_TransparentBlocks validates return through transparent blocks.
-//
-// Contract: return propagates through do, reduce, compose, when, unless blocks.
 func TestReturn_TransparentBlocks(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -343,9 +328,6 @@ func TestReturn_TransparentBlocks(t *testing.T) {
 	}
 }
 
-// TestReturn_LoopInteraction validates return behavior in loops.
-//
-// Contract: return in loop exits function, not just the loop.
 func TestReturn_LoopInteraction(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -414,9 +396,6 @@ func TestReturn_LoopInteraction(t *testing.T) {
 	}
 }
 
-// TestReturn_TopLevel validates return behavior at top level.
-//
-// Contract: return at top level exits script/REPL with the value.
 func TestReturn_TopLevel(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -491,9 +470,6 @@ func TestReturn_TopLevel(t *testing.T) {
 	}
 }
 
-// TestReturn_ValuePropagation validates complex value propagation.
-//
-// Contract: return can return any value type including function call results.
 func TestReturn_ValuePropagation(t *testing.T) {
 	tests := []struct {
 		name     string

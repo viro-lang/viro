@@ -303,7 +303,7 @@ Refinements:
 		&NativeDoc{
 			Category:    "Control",
 			Summary:     "Returns a value from a function",
-			Description: "Returns a value from the current function, terminating execution of the function and returning control to the caller. If no value is provided, returns none. Can only be used inside a function; using return outside a function causes an error.",
+			Description: "Returns a value from the current function or script, terminating execution and returning control to the caller. If no value is provided, returns none. Can be used inside functions or at the top level of scripts and REPL.",
 			Parameters: []ParamDoc{
 				{Name: "value", Type: "any-type!", Description: "The value to return (optional, defaults to none)", Optional: true},
 			},
