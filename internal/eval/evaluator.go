@@ -757,7 +757,6 @@ func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.
 						[3]string{functionDisplayName(fn), strconv.Itoa(len(positional)), strconv.Itoa(paramIndex)},
 					)
 				}
-				// For optional parameters not provided, set to none
 				posArgs[i] = value.NewNoneVal()
 			}
 			return position, nil

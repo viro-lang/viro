@@ -344,7 +344,7 @@ func (r *REPL) evalParsedValues(values []core.Value, locations []core.SourceLoca
 	if err != nil {
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
 			result = returnSig.Value()
-			err = nil // Clear error
+			err = nil
 		} else {
 			err = verror.ConvertLoopControlSignal(err)
 			r.printError(err)

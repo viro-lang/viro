@@ -54,7 +54,7 @@ func Evaluate(src string) (core.Value, error) {
 	result, err := e.DoBlock(vals, locations)
 	if err != nil {
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
-			return returnSig.Value(), nil // Extract value and return normally
+			return returnSig.Value(), nil
 		}
 
 		convertedErr := verror.ConvertLoopControlSignal(err)

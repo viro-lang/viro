@@ -250,7 +250,7 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	result, err := evaluator.DoBlock(values, locations)
 	if err != nil {
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
-			result = returnSig.Value() // Extract value and continue normally
+			result = returnSig.Value()
 			err = nil
 		} else {
 			err = verror.ConvertLoopControlSignal(err)
