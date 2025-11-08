@@ -53,7 +53,6 @@ func Evaluate(src string) (core.Value, error) {
 	e := NewTestEvaluator()
 	result, err := e.DoBlock(vals, locations)
 	if err != nil {
-		// Check for return signal (allow top-level return)
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
 			return returnSig.Value(), nil // Extract value and return normally
 		}

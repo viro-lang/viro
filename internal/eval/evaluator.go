@@ -750,7 +750,6 @@ func (e *Evaluator) collectPositionalArgs(fn *value.FunctionValue, block []core.
 		}
 
 		if position >= len(block) {
-			// Check if remaining parameters are optional
 			for i := paramIndex; i < len(positional); i++ {
 				if !positional[i].Optional {
 					return position, verror.NewScriptError(

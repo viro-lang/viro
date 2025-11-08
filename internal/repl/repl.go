@@ -343,7 +343,6 @@ func (r *REPL) evalParsedValues(values []core.Value, locations []core.SourceLoca
 	result, err := r.evaluator.DoBlock(values, locations)
 	if err != nil {
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
-			// Return signals are OK at top level - extract value
 			result = returnSig.Value()
 			err = nil // Clear error
 		} else {

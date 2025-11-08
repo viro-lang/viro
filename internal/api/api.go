@@ -249,7 +249,6 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 
 	result, err := evaluator.DoBlock(values, locations)
 	if err != nil {
-		// Check for return signal (allow top-level return)
 		if returnSig, ok := err.(*eval.ReturnSignal); ok {
 			result = returnSig.Value() // Extract value and continue normally
 			err = nil
