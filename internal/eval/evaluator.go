@@ -1086,17 +1086,19 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 	tr.values = append(tr.values, base)
 
-	endIdx := len(path.Segments)
-	if stopBeforeLast && len(path.Segments) > 1 {
-		endIdx = len(path.Segments) - 1
-	}
+	lastIndex := len(path.Segments) - 1
 
-	for i := 1; i < endIdx; i++ {
+	for i := 1; i < len(path.Segments); i++ {
 		seg, err := eval.materializeSegment(resolved[i])
 		if err != nil {
 			return nil, err
 		}
 		resolved[i] = seg
+
+		if stopBeforeLast && i == lastIndex {
+			break
+		}
+
 		current := tr.values[len(tr.values)-1]
 
 		if current.GetType() == value.TypeNone {
@@ -1165,14 +1167,6 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	}
 
 	finalSeg := tr.segments[len(tr.segments)-1]
-	if finalSeg.Type == value.PathSegmentEval {
-		resolved, err := e.materializeSegment(finalSeg)
-		if err != nil {
-			return value.NewNoneVal(), err
-		}
-		tr.segments[len(tr.segments)-1] = resolved
-		finalSeg = resolved
-	}
 
 	switch finalSeg.Type {
 	case value.PathSegmentIndex:
