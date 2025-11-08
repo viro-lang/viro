@@ -159,9 +159,10 @@ state`
 
 func TestEvalPathSegmentsErrors(t *testing.T) {
 	tests := []struct {
-		name  string
-		code  string
-		errID string
+		name   string
+		code   string
+		errID  string
+		reason string
 	}{
 		{
 			name: "path decimal eval result",
@@ -226,12 +227,57 @@ obj: object [profile: object [name: "Alice"]]
 obj.(field)`,
 			errID: verror.ErrIDNoSuchField,
 		},
+		{
+			name: "eval segment empty string result",
+			code: `field-fn: fn [] [""]
+obj: object [dummy: 1]
+obj.(field-fn)`,
+			errID:  verror.ErrIDEmptyPathSegment,
+			reason: "eval-empty-segment",
+		},
+
+		{
+			name: "eval segment zero index",
+			code: `idx: fn [] [0]
+data: [10 20]
+data.(idx)`,
+			errID: verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "eval segment negative index",
+			code: `idx: fn [] [-1]
+data: [10 20]
+data.(idx)`,
+			errID: verror.ErrIDOutOfBounds,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.reason != "" {
+				expectEvalPathError(t, tt.code, tt.errID, tt.reason)
+				return
+			}
 			expectEvalPathError(t, tt.code, tt.errID)
 		})
+	}
+}
+
+func expectEvalPathError(t *testing.T, code, errID string, reason ...string) {
+	t.Helper()
+	_, err := Evaluate(code)
+	if err == nil {
+		t.Fatalf("expected error %s", errID)
+	}
+	verr, ok := err.(*verror.Error)
+	if !ok {
+		t.Fatalf("expected verror.Error, got %T", err)
+	}
+	if verr.ID != errID {
+		t.Fatalf("got error %s, want %s", verr.ID, errID)
+	}
+	if len(reason) > 0 && verr.Args[1] != reason[0] {
+		t.Fatalf("expected reason %q, got %q", reason[0], verr.Args[1])
 	}
 }
 
@@ -263,21 +309,6 @@ func TestLeadingEvalSegmentsRejected(t *testing.T) {
 				t.Fatalf("expected syntax error, got %v", verr.Category)
 			}
 		})
-	}
-}
-
-func expectEvalPathError(t *testing.T, code, errID string) {
-	t.Helper()
-	_, err := Evaluate(code)
-	if err == nil {
-		t.Fatalf("expected error %s", errID)
-	}
-	verr, ok := err.(*verror.Error)
-	if !ok {
-		t.Fatalf("expected verror.Error, got %T", err)
-	}
-	if verr.ID != errID {
-		t.Fatalf("got error %s, want %s", verr.ID, errID)
 	}
 }
 

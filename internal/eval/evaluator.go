@@ -773,14 +773,7 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 }
 
 func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Value, error) {
-	tr, err := traversePath(e, getPath.PathExpression, false)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-	if len(tr.values) == 0 {
-		return value.NewNoneVal(), verror.NewInternalError("path traversal returned no values", [3]string{})
-	}
-	return tr.values[len(tr.values)-1], nil
+	return e.evalPathValue(getPath.PathExpression)
 }
 
 func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) (core.Value, error) {
@@ -931,6 +924,12 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 	}
 
 	if strVal, ok := value.AsStringValue(result); ok {
+		if strVal.String() == "" {
+			return value.PathSegment{}, verror.NewScriptError(
+				verror.ErrIDEmptyPathSegment,
+				[3]string{"", "eval-empty-segment", ""},
+			)
+		}
 		return value.PathSegment{Type: value.PathSegmentWord, Value: strVal.String()}, nil
 	}
 

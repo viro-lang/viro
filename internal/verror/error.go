@@ -107,6 +107,11 @@ func formatMessage(id string, args [3]string) string {
 		template = "Error: %1 %2 %3" // fallback
 	}
 
+	if args[1] == "" && strings.Contains(template, "(%2)") {
+		template = strings.ReplaceAll(template, " (%2)", "")
+		template = strings.ReplaceAll(template, "(%2)", "")
+	}
+
 	msg := template
 	msg = strings.ReplaceAll(msg, "%1", args[0])
 	msg = strings.ReplaceAll(msg, "%2", args[1])
