@@ -399,6 +399,10 @@ data: [1 2 3]
 data.2: 99      ; SetPath → evaluates 99 → assigns to data[2]
 ```
 
+### Eval Path Segments
+
+Eval-backed segments such as `obj.(field)` are materialized exactly once as the traversal walks the path. The evaluator executes the embedded block when the segment is reached, stores the resulting word or index, and reuses it for the remainder of the traversal. This applies even to the final segment on set-path assignments, so any side effects triggered by the eval block occur during traversal rather than during the assignment step.
+
 **Note:** Set-path consumes the next expression, just like set-word.
 
 ## Context and Scoping

@@ -335,6 +335,10 @@ func (p *Parser) parsePathSegment(token tokenize.Token, fullText, part string) (
 		return value.PathSegment{Type: value.PathSegmentIndex, Value: n}, nil
 	}
 
+	if len(part) >= 2 && part[0] == '"' && part[len(part)-1] == '"' {
+		return value.PathSegment{}, p.syntaxError(verror.ErrIDInvalidPath, [3]string{fullText, "string literal segments must use eval", ""}, token.Line, token.Column)
+	}
+
 	return value.PathSegment{Type: value.PathSegmentWord, Value: part}, nil
 }
 

@@ -107,6 +107,11 @@ func formatMessage(id string, args [3]string) string {
 		template = "Error: %1 %2 %3" // fallback
 	}
 
+	if args[1] == "" && strings.Contains(template, "(%2)") {
+		template = strings.ReplaceAll(template, " (%2)", "")
+		template = strings.ReplaceAll(template, "(%2)", "")
+	}
+
 	msg := template
 	msg = strings.ReplaceAll(msg, "%1", args[0])
 	msg = strings.ReplaceAll(msg, "%2", args[1])
@@ -131,6 +136,7 @@ var messageTemplates = map[string]string{
 	ErrIDEmptyPath:           "Empty path",
 	ErrIDEmptyPathSegment:    "Empty path segment",
 	ErrIDPathLeadingNumber:   "Paths cannot start with numbers",
+	ErrIDPathEvalBase:        "Path cannot start with eval segment: %1",
 
 	ErrIDNoValue:          "No value for word: %1",
 	ErrIDTypeMismatch:     "Type mismatch for '%1': expected %2, got %3",
@@ -142,7 +148,7 @@ var messageTemplates = map[string]string{
 	ErrIDActionNoImpl:     "Action not implemented for type: %1",
 	ErrIDInvalidToken:     "Invalid token object: %1",
 
-	ErrIDInvalidPath:      "Invalid path: %1",
+	ErrIDInvalidPath:      "Invalid path (%2): %1",
 	ErrIDNonePath:         "Cannot traverse path through none value",
 	ErrIDNoSuchField:      "No such field '%1' in object",
 	ErrIDPathTypeMismatch: "Type mismatch: path requires object or series type, got %1",

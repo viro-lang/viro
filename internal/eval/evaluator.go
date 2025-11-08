@@ -773,14 +773,7 @@ func (e *Evaluator) evalPathValue(path *value.PathExpression) (core.Value, error
 }
 
 func (e *Evaluator) evalGetPathValue(getPath *value.GetPathExpression) (core.Value, error) {
-	tr, err := traversePath(e, getPath.PathExpression, false)
-	if err != nil {
-		return value.NewNoneVal(), err
-	}
-	if len(tr.values) == 0 {
-		return value.NewNoneVal(), verror.NewInternalError("path traversal returned no values", [3]string{})
-	}
-	return tr.values[len(tr.values)-1], nil
+	return e.evalPathValue(getPath.PathExpression)
 }
 
 func (e *Evaluator) callNative(fn *value.FunctionValue, posArgs []core.Value, refValues map[string]core.Value) (core.Value, error) {
@@ -931,6 +924,12 @@ func (e *Evaluator) materializeSegment(seg value.PathSegment) (value.PathSegment
 	}
 
 	if strVal, ok := value.AsStringValue(result); ok {
+		if strVal.String() == "" {
+			return value.PathSegment{}, verror.NewScriptError(
+				verror.ErrIDEmptyPathSegment,
+				[3]string{"", "eval-empty-segment", ""},
+			)
+		}
 		return value.PathSegment{Type: value.PathSegmentWord, Value: strVal.String()}, nil
 	}
 
@@ -1086,12 +1085,12 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 	tr.values = append(tr.values, base)
 
-	endIdx := len(path.Segments)
-	if stopBeforeLast && len(path.Segments) > 1 {
-		endIdx = len(path.Segments) - 1
-	}
+	lastIndex := len(path.Segments) - 1
 
-	for i := 1; i < endIdx; i++ {
+	for i := 1; i < len(path.Segments); i++ {
+		if stopBeforeLast && i == lastIndex {
+			break
+		}
 		seg, err := eval.materializeSegment(resolved[i])
 		if err != nil {
 			return nil, err
@@ -1165,25 +1164,25 @@ func (e *Evaluator) assignToPathTarget(tr *pathTraversal, newVal core.Value, pat
 	}
 
 	finalSeg := tr.segments[len(tr.segments)-1]
+	seg := finalSeg
 	if finalSeg.Type == value.PathSegmentEval {
-		resolved, err := e.materializeSegment(finalSeg)
+		var err error
+		seg, err = e.materializeSegment(finalSeg)
 		if err != nil {
 			return value.NewNoneVal(), err
 		}
-		tr.segments[len(tr.segments)-1] = resolved
-		finalSeg = resolved
+		tr.segments[len(tr.segments)-1] = seg
 	}
-
-	switch finalSeg.Type {
+	switch seg.Type {
 	case value.PathSegmentIndex:
-		return e.assignToIndexTarget(container, finalSeg, newVal, pathStr)
+		return e.assignToIndexTarget(container, seg, newVal, pathStr)
 	case value.PathSegmentWord:
-		return e.assignToWordTarget(container, finalSeg, newVal, pathStr)
+		return e.assignToWordTarget(container, seg, newVal, pathStr)
 	default:
 		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDInvalidPath,
 			[3]string{
-				fmt.Sprintf("unsupported segment type for assignment: %v", finalSeg.Type),
+				fmt.Sprintf("unsupported segment type for assignment: %v", seg.Type),
 				"invalid-assignment-target",
 				"",
 			},

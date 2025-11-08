@@ -64,3 +64,31 @@ func TestFormatErrorWithContextLocation(t *testing.T) {
 		})
 	}
 }
+
+func TestInvalidPathReasonFormatting(t *testing.T) {
+	tests := []struct {
+		name string
+		args [3]string
+		want string
+	}{
+		{
+			name: "without reason",
+			args: [3]string{"bad", "", ""},
+			want: "Invalid path: bad",
+		},
+		{
+			name: "with reason",
+			args: [3]string{"bad", "missing", ""},
+			want: "Invalid path (missing): bad",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := NewScriptError(ErrIDInvalidPath, tt.args)
+			if err.Message != tt.want {
+				t.Fatalf("invalid path message mismatch\nwant: %q\ngot: %q", tt.want, err.Message)
+			}
+		})
+	}
+}

@@ -47,7 +47,7 @@ func NewPath(segments []PathSegment, base core.Value) *PathExpression {
 func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 	result := prefix
 	for i, seg := range segments {
-		if i > 0 {
+		if i > 0 || (i == 0 && seg.Type == PathSegmentEval) {
 			result += "."
 		}
 		switch seg.Type {
