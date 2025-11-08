@@ -1211,7 +1211,14 @@ func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.Path
 	}
 
 	if container.GetType() != value.TypeObject {
-		return value.NewNoneVal(), makePathTypeError("cannot assign field to", value.TypeToString(container.GetType())+" (must be object)", pathStr)
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDImmutableTarget,
+			[3]string{
+				fmt.Sprintf("cannot assign field to %s (must be object)", value.TypeToString(container.GetType())),
+				pathStr,
+				"",
+			},
+		)
 	}
 
 	obj, ok := value.AsObject(container)
