@@ -106,7 +106,7 @@ func renderPathSegments(segments []PathSegment, prefix, suffix string) string {
 			if word, ok := seg.AsWord(); ok {
 				result += word
 			} else {
-				result += ""
+				result += "<invalid-word>"
 			}
 		case PathSegmentIndex:
 			if index, ok := seg.AsIndex(); ok {
