@@ -53,21 +53,9 @@ func Evaluate(src string) (core.Value, error) {
 	e := NewTestEvaluator()
 	result, err := e.DoBlock(vals, locations)
 	if err != nil {
-		if verr, ok := err.(*verror.Error); ok {
-			if verr.Category == verror.ErrThrow {
-				if verr.ID == verror.ErrIDBreak {
-					return value.NewNoneVal(), verror.NewScriptError(
-						verror.ErrIDBreakOutsideLoop,
-						[3]string{},
-					)
-				}
-				if verr.ID == verror.ErrIDContinue {
-					return value.NewNoneVal(), verror.NewScriptError(
-						verror.ErrIDContinueOutsideLoop,
-						[3]string{},
-					)
-				}
-			}
+		convertedErr := verror.ConvertLoopControlSignal(err)
+		if convertedErr != err {
+			return value.NewNoneVal(), convertedErr
 		}
 	}
 	return result, err

@@ -341,21 +341,7 @@ func (r *REPL) getCurrentPrompt() string {
 func (r *REPL) evalParsedValues(values []core.Value, locations []core.SourceLocation) {
 	result, err := r.evaluator.DoBlock(values, locations)
 	if err != nil {
-		if verr, ok := err.(*verror.Error); ok {
-			if verr.Category == verror.ErrThrow {
-				if verr.ID == verror.ErrIDBreak {
-					err = verror.NewScriptError(
-						verror.ErrIDBreakOutsideLoop,
-						[3]string{},
-					)
-				} else if verr.ID == verror.ErrIDContinue {
-					err = verror.NewScriptError(
-						verror.ErrIDContinueOutsideLoop,
-						[3]string{},
-					)
-				}
-			}
-		}
+		err = verror.ConvertLoopControlSignal(err)
 		r.printError(err)
 		return
 	}
