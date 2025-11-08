@@ -144,14 +144,14 @@ type PathExpression struct {
 - Eval segments are only permitted after a valid base (word or index segment).
 - Valid result types from eval segment expressions: `word!`, `string!`, `integer!`.
 - Other types (block, object, decimal, etc.) raise Script error (300) with clear diagnostic message.
-- Eval segments are evaluated once per path traversal and results cached to prevent re-evaluation.
+- Eval segments are materialized once per path traversal and results cached within that traversal to prevent re-evaluation.
 
 **Evaluation Flow**:
 1. Resolve first segment (word) via current frame.
 2. Iteratively apply segments: for objects use Frame lookup; for blocks/strings adjust index; for functions apply refinement metadata.
-3. Eval segments are materialized on-demand during traversal, and results are cached.
+3. Eval segments are materialized on-demand during traversal, and results are cached within that single traversal.
 4. For assignment, keep track of penultimate target and final segment info to update underlying storage.
-5. Set-path operations never re-evaluate eval segments; cached materialized values are reused.
+5. Set-path operations never re-evaluate eval segments; cached materialized values from the traversal are reused.
 
 **Validation Rules**:
 - All intermediate values must support requested segment type; mismatches raise Script error (300).
