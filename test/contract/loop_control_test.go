@@ -491,6 +491,53 @@ func TestLoopControl_MultiLevel(t *testing.T) {
 			expected: value.NewIntVal(2),
 			wantErr:  false,
 		},
+		{
+			name: "multi-level continue in while/while loops",
+			input: `
+				x: 0
+				while [x < 10] [
+					while [x < 10] [
+						x: x + 1
+						when (= x 3) [continue --levels 2]
+						x: x + 10
+					]
+				]
+				x
+			`,
+			expected: value.NewIntVal(11),
+			wantErr:  false,
+		},
+		{
+			name: "multi-level continue in foreach/foreach loops",
+			input: `
+				x: 0
+				foreach [1 2 3] 'a [
+					foreach [10 20 30] 'b [
+						x: x + 1
+						when (= x 3) [continue --levels 2]
+						x: x + 10
+					]
+				]
+				x
+			`,
+			expected: value.NewIntVal(99),
+			wantErr:  false,
+		},
+		{
+			name: "mixed loop types - break --levels 2",
+			input: `
+				x: 0
+				loop 3 [
+					foreach [1 2 3] 'a [
+						x: x + 1
+						when (= x 2) [break --levels 2]
+					]
+				]
+				x
+			`,
+			expected: value.NewIntVal(2),
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -576,24 +623,6 @@ func TestLoopControl_MultiLevelErrors(t *testing.T) {
 			input:   "loop 2 [loop 2 [continue --levels 3]]",
 			wantErr: true,
 			errID:   verror.ErrIDContinueOutsideLoop,
-		},
-		{
-			name:    "multi-level continue in while/while loops",
-			input:   "x: 0\nwhile [x < 10] [while [x < 10] [x: x + 1\nwhen (= x 3) [continue --levels 2]\nx: x + 10]]\nx",
-			wantErr: false,
-			errID:   "",
-		},
-		{
-			name:    "multi-level continue in foreach/foreach loops",
-			input:   "x: 0\nforeach [1 2 3] 'a [foreach [10 20 30] 'b [x: x + 1\nwhen (= x 3) [continue --levels 2]\nx: x + 10]]\nx",
-			wantErr: false,
-			errID:   "",
-		},
-		{
-			name:    "mixed loop types - break --levels 2",
-			input:   "x: 0\nloop 3 [foreach [1 2 3] 'a [x: x + 1\nwhen (= x 2) [break --levels 2]]]\nx",
-			wantErr: false,
-			errID:   "",
 		},
 	}
 

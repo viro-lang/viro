@@ -406,7 +406,7 @@ func handleLoopControlSignal(err error) (shouldExit bool, shouldContinue bool, p
 	return false, true, nil
 }
 
-func parseLevelsRefinement(refValues map[string]core.Value, nativeName string) (int64, error) {
+func parseLevelsRefinement(refValues map[string]core.Value) (int64, error) {
 	levels := int64(1)
 	if levelsVal, ok := refValues["levels"]; ok && levelsVal.GetType() != value.TypeNone {
 		if levelsVal.GetType() != value.TypeInteger {
@@ -925,7 +925,7 @@ func Break(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 		return value.NewNoneVal(), arityError("break", 0, len(args))
 	}
 
-	levels, err := parseLevelsRefinement(refValues, "break")
+	levels, err := parseLevelsRefinement(refValues)
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
@@ -942,7 +942,7 @@ func Continue(args []core.Value, refValues map[string]core.Value, eval core.Eval
 		return value.NewNoneVal(), arityError("continue", 0, len(args))
 	}
 
-	levels, err := parseLevelsRefinement(refValues, "continue")
+	levels, err := parseLevelsRefinement(refValues)
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
