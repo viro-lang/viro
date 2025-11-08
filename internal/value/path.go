@@ -70,7 +70,10 @@ func (seg PathSegment) AsEvalBlock() (*BlockValue, bool) {
 		return nil, false
 	}
 	block, ok := seg.Value.(*BlockValue)
-	return block, ok
+	if !ok || block == nil {
+		return nil, false
+	}
+	return block, true
 }
 
 func NewWordSegment(word string) PathSegment {

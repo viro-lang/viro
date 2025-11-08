@@ -494,3 +494,49 @@ func TestLeadingEvalMoldRejectedByParser(t *testing.T) {
 		t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDPathEvalBase)
 	}
 }
+
+func TestAsEvalBlockNilSafety(t *testing.T) {
+	tests := []struct {
+		name    string
+		segment PathSegment
+		wantOk  bool
+		wantNil bool
+	}{
+		{
+			name:    "non-eval segment",
+			segment: NewWordSegment("test"),
+			wantOk:  false,
+			wantNil: true,
+		},
+		{
+			name:    "eval segment with valid block",
+			segment: NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("test")})),
+			wantOk:  true,
+			wantNil: false,
+		},
+		{
+			name:    "eval segment with nil block",
+			segment: PathSegment{Type: PathSegmentEval, Value: (*BlockValue)(nil)},
+			wantOk:  false,
+			wantNil: true,
+		},
+		{
+			name:    "eval segment with wrong type",
+			segment: PathSegment{Type: PathSegmentEval, Value: "not-a-block"},
+			wantOk:  false,
+			wantNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			block, ok := tt.segment.AsEvalBlock()
+			if ok != tt.wantOk {
+				t.Errorf("AsEvalBlock() ok = %v, want %v", ok, tt.wantOk)
+			}
+			if (block == nil) != tt.wantNil {
+				t.Errorf("AsEvalBlock() block == nil = %v, want %v", block == nil, tt.wantNil)
+			}
+		})
+	}
+}
