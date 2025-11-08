@@ -11,7 +11,7 @@ import (
 
 func newLeadingEvalSegments(evalElements []core.Value, tail ...PathSegment) []PathSegment {
 	block := NewBlockValue(evalElements)
-	segments := []PathSegment{{Type: PathSegmentEval, Value: block}}
+	segments := []PathSegment{NewEvalSegment(block)}
 	segments = append(segments, tail...)
 	return segments
 }
@@ -29,60 +29,60 @@ func TestPathExpressionMold(t *testing.T) {
 		{
 			name: "simple word path",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentWord, Value: "field"},
+				NewWordSegment("data"),
+				NewWordSegment("field"),
 			},
 			want: "data.field",
 		},
 		{
 			name: "path with index",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentIndex, Value: int64(1)},
+				NewWordSegment("data"),
+				NewIndexSegment(1),
 			},
 			want: "data.1",
 		},
 		{
 			name: "path with eval segment",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewStrVal("idx")})},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewStrVal("idx")})),
 			},
 			want: "data.(\"idx\")",
 		},
 		{
 			name: "path with nested eval segments",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("field")})),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("idx")})),
 			},
 			want: "data.(field).(idx)",
 		},
 		{
 			name: "path with eval index ordering",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
-				{Type: PathSegmentIndex, Value: int64(3)},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("idx")})),
+				NewIndexSegment(3),
 			},
 			want: "data.(idx).3",
 		},
 		{
 			name: "mixed path segments",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "obj"},
-				{Type: PathSegmentIndex, Value: int64(2)},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("key")})},
-				{Type: PathSegmentWord, Value: "name"},
+				NewWordSegment("obj"),
+				NewIndexSegment(2),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("key")})),
+				NewWordSegment("name"),
 			},
 			want: "obj.2.(key).name",
 		},
 		{
 			name: "path with non-block eval segment",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: "not-a-block"},
+				NewWordSegment("data"),
+				{Type: PathSegmentEval, Value: "not-a-block"}, // Keep direct construction for invalid case
 			},
 			want: "data.(eval)",
 		},
@@ -113,42 +113,42 @@ func TestGetPathExpressionMold(t *testing.T) {
 		{
 			name: "simple get-path",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentWord, Value: "field"},
+				NewWordSegment("data"),
+				NewWordSegment("field"),
 			},
 			want: ":data.field",
 		},
 		{
 			name: "get-path with eval segment",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("idx")})),
 			},
 			want: ":data.(idx)",
 		},
 		{
 			name: "get-path with nested eval segments",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("field")})},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("field")})),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("idx")})),
 			},
 			want: ":data.(field).(idx)",
 		},
 		{
 			name: "get-path with eval index ordering",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: NewBlockValue([]core.Value{NewWordVal("idx")})},
-				{Type: PathSegmentIndex, Value: int64(3)},
+				NewWordSegment("data"),
+				NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("idx")})),
+				NewIndexSegment(3),
 			},
 			want: ":data.(idx).3",
 		},
 		{
 			name: "get-path with non-block eval segment",
 			segments: []PathSegment{
-				{Type: PathSegmentWord, Value: "data"},
-				{Type: PathSegmentEval, Value: "not-a-block"},
+				NewWordSegment("data"),
+				{Type: PathSegmentEval, Value: "not-a-block"}, // Keep direct construction for invalid case
 			},
 			want: ":data.(eval)",
 		},
@@ -492,5 +492,51 @@ func TestLeadingEvalMoldRejectedByParser(t *testing.T) {
 	}
 	if verr.ID != verror.ErrIDPathEvalBase {
 		t.Fatalf("got error %s, want %s", verr.ID, verror.ErrIDPathEvalBase)
+	}
+}
+
+func TestAsEvalBlockNilSafety(t *testing.T) {
+	tests := []struct {
+		name    string
+		segment PathSegment
+		wantOk  bool
+		wantNil bool
+	}{
+		{
+			name:    "non-eval segment",
+			segment: NewWordSegment("test"),
+			wantOk:  false,
+			wantNil: true,
+		},
+		{
+			name:    "eval segment with valid block",
+			segment: NewEvalSegment(NewBlockValue([]core.Value{NewWordVal("test")})),
+			wantOk:  true,
+			wantNil: false,
+		},
+		{
+			name:    "eval segment with nil block",
+			segment: PathSegment{Type: PathSegmentEval, Value: (*BlockValue)(nil)},
+			wantOk:  false,
+			wantNil: true,
+		},
+		{
+			name:    "eval segment with wrong type",
+			segment: PathSegment{Type: PathSegmentEval, Value: "not-a-block"},
+			wantOk:  false,
+			wantNil: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			block, ok := tt.segment.AsEvalBlock()
+			if ok != tt.wantOk {
+				t.Errorf("AsEvalBlock() ok = %v, want %v", ok, tt.wantOk)
+			}
+			if (block == nil) != tt.wantNil {
+				t.Errorf("AsEvalBlock() block == nil = %v, want %v", block == nil, tt.wantNil)
+			}
+		})
 	}
 }

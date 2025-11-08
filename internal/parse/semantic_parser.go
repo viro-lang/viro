@@ -328,18 +328,18 @@ func (p *Parser) parsePathSegment(token tokenize.Token, fullText, part string) (
 		if err != nil {
 			return value.PathSegment{}, err
 		}
-		return value.PathSegment{Type: value.PathSegmentEval, Value: block}, nil
+		return value.NewEvalSegment(block), nil
 	}
 
 	if n, err := strconv.ParseInt(part, 10, 64); err == nil {
-		return value.PathSegment{Type: value.PathSegmentIndex, Value: n}, nil
+		return value.NewIndexSegment(n), nil
 	}
 
 	if len(part) >= 2 && part[0] == '"' && part[len(part)-1] == '"' {
 		return value.PathSegment{}, p.syntaxError(verror.ErrIDInvalidPath, [3]string{fullText, "string literal segments must use eval", ""}, token.Line, token.Column)
 	}
 
-	return value.PathSegment{Type: value.PathSegmentWord, Value: part}, nil
+	return value.NewWordSegment(part), nil
 }
 
 func (p *Parser) parseEvalPathSegment(token tokenize.Token, inner string) (*value.BlockValue, error) {
