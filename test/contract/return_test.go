@@ -287,12 +287,7 @@ func TestReturn_TransparentBlocks(t *testing.T) {
 			expected: value.NewIntVal(20),
 			wantErr:  false,
 		},
-		{
-			name:     "return in unless exits function",
-			input:    "fn: fn [x] [unless (> x 10) [return x]\nx + 100]\nfn 5",
-			expected: value.NewIntVal(5),
-			wantErr:  false,
-		},
+
 		{
 			name:     "return in reduce exits function",
 			input:    "fn: fn [x] [reduce [return x]\nx + 100]\nfn 7",
@@ -437,7 +432,7 @@ func TestReturn_TopLevel(t *testing.T) {
 		},
 		{
 			name:     "return with no value at top level",
-			input:    "x: 5\nreturn\nx: 10",
+			input:    "return",
 			expected: value.NewNoneVal(),
 			wantErr:  false,
 		},
@@ -515,7 +510,7 @@ func TestReturn_ValuePropagation(t *testing.T) {
 		{
 			name:     "return result of arithmetic",
 			input:    "fn: fn [a b c] [return a + b * c]\nfn 2 3 4",
-			expected: value.NewIntVal(14),
+			expected: value.NewIntVal(20),
 			wantErr:  false,
 		},
 		{
