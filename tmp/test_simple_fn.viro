@@ -1,7 +1,0 @@
-test: fn [x] [
-  print ["x is" x]
-  x
-]
-result: test 42
-print ["result is" result]
-quit

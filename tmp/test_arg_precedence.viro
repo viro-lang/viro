@@ -1,8 +1,0 @@
-print ["Test: how are function arguments parsed?"]
-
-sub: fn [a b] [a - b]
-
-print ["sub 10 3 =" (sub 10 3)]
-print ["sub 10 2 + 1 =" (sub 10 2 + 1)]
-
-quit
