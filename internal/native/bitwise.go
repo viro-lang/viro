@@ -324,7 +324,10 @@ func binaryNot(b *value.BinaryValue) core.Value {
 
 func binaryShl(b *value.BinaryValue, count int64) core.Value {
 	data := b.Bytes()
-	if count <= 0 || len(data) == 0 {
+	if count <= 0 {
+		return b
+	}
+	if len(data) == 0 {
 		return value.NewBinaryValue(data)
 	}
 
@@ -356,7 +359,10 @@ func binaryShl(b *value.BinaryValue, count int64) core.Value {
 
 func binaryShr(b *value.BinaryValue, count int64) core.Value {
 	data := b.Bytes()
-	if count <= 0 || len(data) == 0 {
+	if count <= 0 {
+		return b
+	}
+	if len(data) == 0 {
 		return value.NewBinaryValue(data)
 	}
 
