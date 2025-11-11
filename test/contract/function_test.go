@@ -224,6 +224,136 @@ result3: create-string`,
 	}
 }
 
+func TestLiteral_NonEmptyBlockSharing(t *testing.T) {
+	script := `shared-block: fn [] [[1 2 3]]
+result1: shared-block
+append result1 4
+result2: shared-block
+result2`
+
+	e, result, err := evalScriptWithEvaluator(script)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// result2 should be [1 2 3 4] because it shares the same block as result1
+	expected := value.NewBlockVal([]core.Value{
+		value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3), value.NewIntVal(4),
+	})
+	if !result.Equals(expected) {
+		t.Fatalf("expected shared block [1 2 3 4], got %v", result)
+	}
+
+	// Verify result1 and result2 are the same reference
+	result1, ok := getGlobal(e, "result1")
+	if !ok {
+		t.Fatalf("expected result1 binding")
+	}
+	if result1 != result {
+		t.Fatalf("expected result1 and result2 to be same reference")
+	}
+}
+
+func TestLiteral_NonEmptyStringSharing(t *testing.T) {
+	script := `shared-string: fn [] ["hello"]
+result1: shared-string
+append result1 " world"
+result2: shared-string
+result2`
+
+	e, result, err := evalScriptWithEvaluator(script)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// result2 should be "hello world" because it shares the same string as result1
+	expected := value.NewStrVal("hello world")
+	if !result.Equals(expected) {
+		t.Fatalf("expected shared string \"hello world\", got %v", result)
+	}
+
+	// Verify result1 and result2 are the same reference
+	result1, ok := getGlobal(e, "result1")
+	if !ok {
+		t.Fatalf("expected result1 binding")
+	}
+	if result1 != result {
+		t.Fatalf("expected result1 and result2 to be same reference")
+	}
+}
+
+func TestLiteral_NonEmptyBinarySharing(t *testing.T) {
+	script := `shared-binary: fn [] [#{0102}]
+result1: shared-binary
+append result1 #{03}
+result2: shared-binary
+result2`
+
+	e, result, err := evalScriptWithEvaluator(script)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// result2 should be #{010203} because it shares the same binary as result1
+	expected := value.NewBinaryVal([]byte{1, 2, 3})
+	if !result.Equals(expected) {
+		t.Fatalf("expected shared binary #{010203}, got %v", result)
+	}
+
+	// Verify result1 and result2 are the same reference
+	result1, ok := getGlobal(e, "result1")
+	if !ok {
+		t.Fatalf("expected result1 binding")
+	}
+	if result1 != result {
+		t.Fatalf("expected result1 and result2 to be same reference")
+	}
+}
+
+func TestLiteral_NestedStructureSharing(t *testing.T) {
+	script := `nested: fn [] [[[]]]
+result1: nested
+inner1: first result1
+append inner1 42
+result2: nested
+inner2: first result2
+inner2`
+
+	e, result, err := evalScriptWithEvaluator(script)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// inner2 should contain [42] because the entire nested structure is shared
+	// The inner [] is part of the shared non-empty outer structure
+	expected := value.NewBlockVal([]core.Value{value.NewIntVal(42)})
+	if !result.Equals(expected) {
+		t.Fatalf("expected shared inner block [42], got %v", result)
+	}
+
+	// Verify the outer structure is shared
+	result1, ok := getGlobal(e, "result1")
+	if !ok {
+		t.Fatalf("expected result1 binding")
+	}
+	result2, ok := getGlobal(e, "result2")
+	if !ok {
+		t.Fatalf("expected result2 binding")
+	}
+	if result1 == result2 {
+		// Verify the outer blocks are the same reference
+		outer1, ok1 := value.AsBlockValue(result1)
+		outer2, ok2 := value.AsBlockValue(result2)
+		if ok1 && ok2 && outer1 == outer2 {
+			// Good - outer is shared
+		} else {
+			t.Fatalf("expected outer blocks to be shared")
+		}
+	} else {
+		t.Fatalf("expected outer blocks to be shared")
+	}
+}
+
 func TestFunction_FlagRefinement(t *testing.T) {
 	script := `flag-test: fn [msg --verbose] [verbose]
 without: flag-test "hello"
