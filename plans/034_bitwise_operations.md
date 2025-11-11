@@ -209,20 +209,28 @@ Global operators (aliases to bit.shl/bit.shr)
 #### For `binary!` Operations
 
 - Operate byte-by-byte on binary data
-- **Different-length handling:** Operate on overlapping bytes, copy remaining bytes from longer operand
-  - `#{FF} bit.and #{0F 00}` → `#{0F 00}` (AND first byte, copy second)
-  - `#{AA} bit.or #{55 FF}` → `#{FF FF}` (OR first byte, copy second)
+- **Alignment:** Bytes are compared from the right (least significant byte first)
+  - `#{01 02} bit.and #{03}` compares byte `02` with `03`, byte `01` with implicit `00`
+- **Different-length handling:** 
+  - **`bit.and`:** Zero remaining bytes (shorter binary treated as zero-padded)
+    - `#{FF FF} bit.and #{FF}` → `#{00 FF}` (left byte ANDed with 0)
+  - **`bit.or`:** Copy remaining bytes from longer (X OR 0 = X)
+    - `#{FF FF} bit.or #{FF}` → `#{FF FF}` (left byte copied)
+  - **`bit.xor`:** Copy remaining bytes from longer (X XOR 0 = X)
+    - `#{FF FF} bit.xor #{FF}` → `#{FF 00}` (left byte copied)
 - **Shift semantics:** No new bytes created, overflow is lost
-  - `#{01} << 1` → `#{02}`
+  - `#{01} << 1` → `#{02}` (within byte boundary)
   - `#{80} << 1` → `#{00}` (high bit lost, no carry to new byte)
-  - `#{01 00} >> 1` → `#{00 80}` (shifts across byte boundaries)
+  - `#{01} >> 1` → `#{00}` (underflow lost)
+  - Shifts operate within series boundaries
 - **NOT operation:** Flips all bits in all bytes
   - `bit.not #{FF 00}` → `#{00 FF}`
 
-**Rationale for binary shift behavior:**
-- Consistent with series semantics (no automatic growth)
+**Rationale for binary operations:**
+- Right-alignment matches numeric interpretation (LSB first)
+- Different operators have different padding semantics matching their logical behavior
+- No automatic growth maintains series semantics
 - Predictable memory usage
-- Simple mental model (operate within boundaries)
 
 ### Error Handling
 
@@ -243,15 +251,15 @@ Global operators (aliases to bit.shl/bit.shr)
 
 1. **BitAnd** - Bitwise AND
    - Integer: `a & b`
-   - Binary: byte-by-byte AND, copy remaining from longer
+   - Binary: byte-by-byte AND from right, zero remaining bytes
 
 2. **BitOr** - Bitwise OR
    - Integer: `a | b`
-   - Binary: byte-by-byte OR, copy remaining from longer
+   - Binary: byte-by-byte OR from right, copy remaining from longer
 
 3. **BitXor** - Bitwise XOR
    - Integer: `a ^ b`
-   - Binary: byte-by-byte XOR, copy remaining from longer
+   - Binary: byte-by-byte XOR from right, copy remaining from longer
 
 4. **BitNot** - Bitwise NOT
    - Integer: `^a` (bitwise complement)
@@ -322,40 +330,45 @@ func binaryAnd(left, right *value.BinaryValue) core.Value {
     leftBytes := left.Bytes()
     rightBytes := right.Bytes()
     
-    // Determine lengths
-    minLen := len(leftBytes)
-    maxLen := len(rightBytes)
-    longer := rightBytes
-    
-    if len(leftBytes) > len(rightBytes) {
-        minLen = len(rightBytes)
-        maxLen = len(leftBytes)
-        longer = leftBytes
+    maxLen := len(leftBytes)
+    if len(rightBytes) > maxLen {
+        maxLen = len(rightBytes)
     }
     
-    // Result has length of longer operand
     result := make([]byte, maxLen)
     
-    // AND overlapping bytes
-    for i := 0; i < minLen; i++ {
-        result[i] = leftBytes[i] & rightBytes[i]
-    }
+    leftLen := len(leftBytes)
+    rightLen := len(rightBytes)
     
-    // Copy remaining bytes from longer operand
-    copy(result[minLen:], longer[minLen:])
+    for i := 0; i < maxLen; i++ {
+        leftIdx := leftLen - maxLen + i
+        rightIdx := rightLen - maxLen + i
+        
+        leftByte := byte(0)
+        if leftIdx >= 0 {
+            leftByte = leftBytes[leftIdx]
+        }
+        
+        rightByte := byte(0)
+        if rightIdx >= 0 {
+            rightByte = rightBytes[rightIdx]
+        }
+        
+        result[i] = leftByte & rightByte
+    }
     
     return value.NewBinaryValue(result)
 }
 ```
 
 **Helper functions:**
-- `binaryAnd(left, right *value.BinaryValue) core.Value`
-- `binaryOr(left, right *value.BinaryValue) core.Value`
-- `binaryXor(left, right *value.BinaryValue) core.Value`
-- `binaryNot(b *value.BinaryValue) core.Value`
-- `binaryShl(b *value.BinaryValue, count int64) core.Value`
-- `binaryShr(b *value.BinaryValue, count int64) core.Value`
-- `countBinaryBits(b *value.BinaryValue) int64`
+- `binaryAnd(left, right *value.BinaryValue) core.Value` - Right-aligned AND, zero-pad shorter
+- `binaryOr(left, right *value.BinaryValue) core.Value` - Right-aligned OR, copy longer's bytes
+- `binaryXor(left, right *value.BinaryValue) core.Value` - Right-aligned XOR, copy longer's bytes
+- `binaryNot(b *value.BinaryValue) core.Value` - Flip all bits
+- `binaryShl(b *value.BinaryValue, count int64) core.Value` - Shift left, lose overflow
+- `binaryShr(b *value.BinaryValue, count int64) core.Value` - Shift right, lose underflow
+- `countBinaryBits(b *value.BinaryValue) int64` - Count set bits across all bytes
 
 **Validation:** File compiles, functions available for registration
 
@@ -394,13 +407,13 @@ func RegisterBitwiseNatives(rootFrame core.Frame) {
             Summary:  "Performs bitwise AND operation",
             Description: `Performs bitwise AND on two values of the same type.
 For integers: standard bitwise AND using two's complement.
-For binaries: byte-by-byte AND, copies remaining bytes from longer operand.`,
+For binaries: byte-by-byte AND from right (LSB first), zeros remaining bytes from longer operand.`,
             Parameters: []ParamDoc{
                 {Name: "left", Type: "integer! binary!", Description: "First operand", Optional: false},
                 {Name: "right", Type: "integer! binary!", Description: "Second operand (must match left type)", Optional: false},
             },
             Returns:  "Same type as input",
-            Examples: []string{"2 bit.and 3  ; => 2", "#{FF 00} bit.and #{0F FF}  ; => #{0F 00}"},
+            Examples: []string{"2 bit.and 3  ; => 2", "#{FF 00} bit.and #{0F FF}  ; => #{0F 00}", "#{FF FF} bit.and #{FF}  ; => #{00 FF}"},
             SeeAlso:  []string{"bit.or", "bit.xor", "bit.not"},
             Tags:     []string{"bitwise", "logic"},
         },
@@ -575,18 +588,23 @@ func TestBitwiseBinary_AND(t *testing.T) {
         },
         {
             name:     "and different length - left longer",
-            input:    "bit.and #{FF 00 AA} #{0F}",
-            expected: value.NewBinaryValue([]byte{0x0F, 0x00, 0xAA}),  // Copy remaining
+            input:    "bit.and #{FF 00} #{0F}",
+            expected: value.NewBinaryValue([]byte{0x00, 0x00}),  // Left byte ANDed with 0
         },
         {
             name:     "and different length - right longer",
-            input:    "bit.and #{FF} #{0F 00 AA}",
-            expected: value.NewBinaryValue([]byte{0x0F, 0x00, 0xAA}),
+            input:    "bit.and #{0F} #{FF 00}",
+            expected: value.NewBinaryValue([]byte{0x00, 0x0F}),  // Right byte ANDed with 0
         },
         {
             name:     "and infix",
             input:    "#{AA} bit.and #{55}",
             expected: value.NewBinaryValue([]byte{0x00}),
+        },
+        {
+            name:     "and right-aligned comparison",
+            input:    "bit.and #{01 02} #{03}",
+            expected: value.NewBinaryValue([]byte{0x00, 0x02}),  // 01 & 00, 02 & 03
         },
     }
     // ... test execution
@@ -1069,6 +1087,8 @@ Left shift by N positions is equivalent to multiplying by 2^N for integers.`,
 ; Binary operations
 >> bit.and #{FF 00} #{0F F0}
 #{0F00}
+>> bit.and #{FF FF} #{FF}
+#{00FF}  ; Left byte zeroed (AND with 0)
 >> #{80} << 1
 #{00}
 
@@ -1273,17 +1293,24 @@ go tool cover -html=coverage.out
 
 **Issue:** Defining behavior for operations on different-length binary values
 
-**Decision:** Operate on overlapping bytes, copy remaining from longer operand
+**Decision:** 
+- Align bytes from the right (LSB first)
+- **AND:** Zero remaining bytes (shorter is zero-padded)
+- **OR/XOR:** Copy remaining bytes from longer (X OR/XOR 0 = X)
 
 **Rationale:**
-- Intuitive: treat shorter operand as if zero-padded
-- Efficient: no allocation for padding
-- Consistent: preserves length of longer operand
+- Right-alignment matches numeric interpretation (LSB first)
+- Different operators require different padding semantics:
+  - AND: X AND 0 = 0 (must zero)
+  - OR: X OR 0 = X (copy from longer)
+  - XOR: X XOR 0 = X (copy from longer)
+- Result length always matches longer operand
+- No actual allocation for padding (virtual zero-padding)
 
 **Mitigation:**
-- Clear documentation of behavior
+- Clear documentation of right-alignment behavior
 - Comprehensive tests for different-length cases
-- Examples in documentation
+- Examples showing byte-by-byte comparison from right
 
 ### Challenge 3: Negative Number Shifts
 
