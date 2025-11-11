@@ -171,7 +171,6 @@ inner1: first result1
 append inner1 99
 result2: create-nested`,
 			check: func(e *eval.Evaluator) error {
-				// result1 should be [[1 2 99]]
 				result1, ok := getGlobal(e, "result1")
 				if !ok {
 					return fmt.Errorf("expected result1 binding")
@@ -183,7 +182,6 @@ result2: create-nested`,
 					return fmt.Errorf("expected result1 to be [[1 2 99]], got %v", result1)
 				}
 
-				// result2 should be [[1 2]] (unaffected by result1 mutation)
 				result2, ok := getGlobal(e, "result2")
 				if !ok {
 					return fmt.Errorf("expected result2 binding")
@@ -193,6 +191,67 @@ result2: create-nested`,
 				})
 				if !result2.Equals(expected2) {
 					return fmt.Errorf("expected result2 to be [[1 2]], got %v", result2)
+				}
+				return nil
+			},
+		},
+		{
+			name: "binary isolation",
+			input: `create-binary: fn [] [
+  bin: #{}
+  append bin 1
+  bin
+]
+result1: create-binary
+result2: create-binary
+result3: create-binary`,
+			check: func(e *eval.Evaluator) error {
+				expected := value.NewBinaryVal([]byte{1})
+				for _, name := range []string{"result1", "result2", "result3"} {
+					val, ok := getGlobal(e, name)
+					if !ok {
+						return fmt.Errorf("expected %s binding", name)
+					}
+					if !val.Equals(expected) {
+						return fmt.Errorf("expected %s to be #{01}, got %v", name, val)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "nested binary in block isolation",
+			input: `create-mixed: fn [] [
+  outer: [#{}]
+  inner: first outer
+  append inner 42
+  outer
+]
+result1: create-mixed
+inner1: first result1
+append inner1 99
+result2: create-mixed`,
+			check: func(e *eval.Evaluator) error {
+				result1, ok := getGlobal(e, "result1")
+				if !ok {
+					return fmt.Errorf("expected result1 binding")
+				}
+				expected1 := value.NewBlockVal([]core.Value{
+					value.NewBinaryVal([]byte{42, 99}),
+				})
+				if !result1.Equals(expected1) {
+					return fmt.Errorf("expected result1 to be [#{2A63}], got %v", result1)
+				}
+
+				result2, ok := getGlobal(e, "result2")
+				if !ok {
+					return fmt.Errorf("expected result2 binding")
+				}
+				expected2 := value.NewBlockVal([]core.Value{
+					value.NewBinaryVal([]byte{42}),
+				})
+				if !result2.Equals(expected2) {
+					return fmt.Errorf("expected result2 to be [#{2A}], got %v", result2)
 				}
 				return nil
 			},

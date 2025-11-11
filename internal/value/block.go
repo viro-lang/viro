@@ -327,6 +327,27 @@ func (b *BlockValue) ClearSeries() {
 	b.locations = []core.SourceLocation{}
 }
 
+func DeepCloneValue(val core.Value) core.Value {
+	switch val.GetType() {
+	case TypeBlock, TypeParen:
+		block, _ := AsBlockValue(val)
+		clonedElements := make([]core.Value, len(block.Elements))
+		for i, elem := range block.Elements {
+			clonedElements[i] = DeepCloneValue(elem)
+		}
+		if val.GetType() == TypeBlock {
+			return NewBlockVal(clonedElements)
+		} else {
+			return NewParenVal(clonedElements)
+		}
+	case TypeBinary:
+		binary, _ := AsBinaryValue(val)
+		return binary.Clone()
+	default:
+		return val
+	}
+}
+
 func SortBlock(b *BlockValue) {
 	sort.SliceStable(b.Elements, func(i, j int) bool {
 		elemI := b.Elements[i]

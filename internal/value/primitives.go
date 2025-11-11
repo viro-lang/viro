@@ -379,25 +379,3 @@ func AsBinaryValue(v core.Value) (*BinaryValue, bool) {
 	}
 	return nil, false
 }
-
-// DeepCloneValue recursively clones values that contain mutable state.
-// Currently handles blocks and parens to prevent state sharing between
-// function invocations. Other value types are returned as-is since they
-// are either immutable or properly isolated.
-func DeepCloneValue(val core.Value) core.Value {
-	switch val.GetType() {
-	case TypeBlock, TypeParen:
-		block, _ := AsBlockValue(val)
-		clonedElements := make([]core.Value, len(block.Elements))
-		for i, elem := range block.Elements {
-			clonedElements[i] = DeepCloneValue(elem)
-		}
-		if val.GetType() == TypeBlock {
-			return NewBlockVal(clonedElements)
-		} else {
-			return NewParenVal(clonedElements)
-		}
-	default:
-		return val
-	}
-}
