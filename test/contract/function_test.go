@@ -127,6 +127,62 @@ counter`
 	}
 }
 
+func TestFunction_MutableBlockIsolation(t *testing.T) {
+	// Test that functions create fresh block literals each time they are called
+	// This prevents sharing mutable state between function invocations
+	script := `create-block: fn [] [
+  arr: []
+  append arr 1
+  arr
+]
+result1: create-block
+result2: create-block
+result3: create-block
+
+; Each call should return [1], not accumulate
+check1: length? result1
+check2: length? result2
+check3: length? result3
+
+; All should be 1
+check1 = 1 and (check2 = 1) and (check3 = 1)`
+
+	e, result, err := evalScriptWithEvaluator(script)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !result.Equals(value.NewLogicVal(true)) {
+		t.Fatalf("expected all results to have length 1, got %v", result)
+	}
+
+	// Verify each result is [1]
+	result1, ok := getGlobal(e, "result1")
+	if !ok {
+		t.Fatalf("expected result1 binding")
+	}
+	expected := value.NewBlockVal([]core.Value{value.NewIntVal(1)})
+	if !result1.Equals(expected) {
+		t.Fatalf("expected result1 to be [1], got %v", result1)
+	}
+
+	result2, ok := getGlobal(e, "result2")
+	if !ok {
+		t.Fatalf("expected result2 binding")
+	}
+	if !result2.Equals(expected) {
+		t.Fatalf("expected result2 to be [1], got %v", result2)
+	}
+
+	result3, ok := getGlobal(e, "result3")
+	if !ok {
+		t.Fatalf("expected result3 binding")
+	}
+	if !result3.Equals(expected) {
+		t.Fatalf("expected result3 to be [1], got %v", result3)
+	}
+}
+
 func TestFunction_FlagRefinement(t *testing.T) {
 	script := `flag-test: fn [msg --verbose] [verbose]
 without: flag-test "hello"
