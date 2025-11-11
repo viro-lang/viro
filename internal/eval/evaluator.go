@@ -475,11 +475,37 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 		}
 		return position + 1, element, nil
 	case value.TypeBlock, value.TypeBinary, value.TypeString:
-		cloned := value.DeepCloneValue(element)
-		if shouldTraceExpr {
-			e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+		// Only clone empty blocks/strings/binaries
+		if element.GetType() == value.TypeBlock {
+			if blockVal, ok := value.AsBlockValue(element); ok && blockVal.Length() == 0 {
+				cloned := value.DeepCloneValue(element)
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
+		} else if element.GetType() == value.TypeBinary {
+			if binaryVal, ok := value.AsBinaryValue(element); ok && binaryVal.Length() == 0 {
+				cloned := value.DeepCloneValue(element)
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
+		} else if element.GetType() == value.TypeString {
+			if stringVal, ok := value.AsStringValue(element); ok && stringVal.Length() == 0 {
+				cloned := value.DeepCloneValue(element)
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
 		}
-		return position + 1, cloned, nil
+		// For non-empty values, return as-is
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
+		}
+		return position + 1, element, nil
 
 	case value.TypeParen:
 		parenBlock, _ := value.AsBlockValue(element)

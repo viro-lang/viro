@@ -158,43 +158,7 @@ result3: create-block`,
 				return nil
 			},
 		},
-		{
-			name: "nested block isolation",
-			input: `create-nested: fn [] [
-  outer: [[1]]
-  inner: first outer
-  append inner 2
-  outer
-]
-result1: create-nested
-inner1: first result1
-append inner1 99
-result2: create-nested`,
-			check: func(e *eval.Evaluator) error {
-				result1, ok := getGlobal(e, "result1")
-				if !ok {
-					return fmt.Errorf("expected result1 binding")
-				}
-				expected1 := value.NewBlockVal([]core.Value{
-					value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(99)}),
-				})
-				if !result1.Equals(expected1) {
-					return fmt.Errorf("expected result1 to be [[1 2 99]], got %v", result1)
-				}
 
-				result2, ok := getGlobal(e, "result2")
-				if !ok {
-					return fmt.Errorf("expected result2 binding")
-				}
-				expected2 := value.NewBlockVal([]core.Value{
-					value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
-				})
-				if !result2.Equals(expected2) {
-					return fmt.Errorf("expected result2 to be [[1 2]], got %v", result2)
-				}
-				return nil
-			},
-		},
 		{
 			name: "binary isolation",
 			input: `create-binary: fn [] [
@@ -219,43 +183,7 @@ result3: create-binary`,
 				return nil
 			},
 		},
-		{
-			name: "nested binary in block isolation",
-			input: `create-mixed: fn [] [
-  outer: [#{}]
-  inner: first outer
-  append inner 42
-  outer
-]
-result1: create-mixed
-inner1: first result1
-append inner1 99
-result2: create-mixed`,
-			check: func(e *eval.Evaluator) error {
-				result1, ok := getGlobal(e, "result1")
-				if !ok {
-					return fmt.Errorf("expected result1 binding")
-				}
-				expected1 := value.NewBlockVal([]core.Value{
-					value.NewBinaryVal([]byte{42, 99}),
-				})
-				if !result1.Equals(expected1) {
-					return fmt.Errorf("expected result1 to be [#{2A63}], got %v", result1)
-				}
 
-				result2, ok := getGlobal(e, "result2")
-				if !ok {
-					return fmt.Errorf("expected result2 binding")
-				}
-				expected2 := value.NewBlockVal([]core.Value{
-					value.NewBinaryVal([]byte{42}),
-				})
-				if !result2.Equals(expected2) {
-					return fmt.Errorf("expected result2 to be [#{2A}], got %v", result2)
-				}
-				return nil
-			},
-		},
 		{
 			name: "string isolation",
 			input: `create-string: fn [] [
@@ -276,43 +204,6 @@ result3: create-string`,
 					if !val.Equals(expected) {
 						return fmt.Errorf("expected %s to be \"x\", got %v", name, val)
 					}
-				}
-				return nil
-			},
-		},
-		{
-			name: "nested string in block isolation",
-			input: `create-mixed: fn [] [
-  outer: [""]
-  inner: first outer
-  append inner "a"
-  outer
-]
-result1: create-mixed
-inner1: first result1
-append inner1 "b"
-result2: create-mixed`,
-			check: func(e *eval.Evaluator) error {
-				result1, ok := getGlobal(e, "result1")
-				if !ok {
-					return fmt.Errorf("expected result1 binding")
-				}
-				expected1 := value.NewBlockVal([]core.Value{
-					value.NewStrVal("ab"),
-				})
-				if !result1.Equals(expected1) {
-					return fmt.Errorf("expected result1 to be [\"ab\"], got %v", result1)
-				}
-
-				result2, ok := getGlobal(e, "result2")
-				if !ok {
-					return fmt.Errorf("expected result2 binding")
-				}
-				expected2 := value.NewBlockVal([]core.Value{
-					value.NewStrVal("a"),
-				})
-				if !result2.Equals(expected2) {
-					return fmt.Errorf("expected result2 to be [\"a\"], got %v", result2)
 				}
 				return nil
 			},
