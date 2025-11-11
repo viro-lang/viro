@@ -475,8 +475,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 		}
 		return position + 1, element, nil
 	case value.TypeBlock:
-		blockVal, _ := value.AsBlockValue(element)
-		cloned := blockVal.Clone()
+		cloned := value.DeepCloneValue(element)
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
 		}
