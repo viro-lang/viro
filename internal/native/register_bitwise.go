@@ -298,13 +298,10 @@ For binaries: Counts set bits across all bytes in the binary series.`,
 
 	rootFrame.Bind("bit", bitObj)
 
-	rootFrame.Bind("bit.and", andFunc)
-	rootFrame.Bind("bit.or", orFunc)
-	rootFrame.Bind("bit.xor", xorFunc)
-	rootFrame.Bind("bit.not", notFunc)
-	rootFrame.Bind("bit.shl", shlFunc)
-	rootFrame.Bind("bit.shr", shrFunc)
-
 	rootFrame.Bind("<<", shlFunc)
 	rootFrame.Bind(">>", shrFunc)
+
+	rootFrame.Bind("&", andFunc)
+	rootFrame.Bind("|", orFunc)
+	rootFrame.Bind("^", xorFunc)
 }
