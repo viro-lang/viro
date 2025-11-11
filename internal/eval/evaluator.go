@@ -468,12 +468,19 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 	switch element.GetType() {
 	case value.TypeInteger, value.TypeString, value.TypeLogic,
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
-		value.TypePort, value.TypeDatatype, value.TypeBlock,
+		value.TypePort, value.TypeDatatype,
 		value.TypeFunction, value.TypeBinary:
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
 		}
 		return position + 1, element, nil
+	case value.TypeBlock:
+		blockVal, _ := value.AsBlockValue(element)
+		cloned := blockVal.Clone()
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+		}
+		return position + 1, cloned, nil
 
 	case value.TypeParen:
 		parenBlock, _ := value.AsBlockValue(element)
