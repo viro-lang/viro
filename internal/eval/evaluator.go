@@ -1240,21 +1240,51 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 		return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
 	}
 
-	if container.GetType() != value.TypeBlock {
-		return value.NewNoneVal(), makePathTypeError("index assignment requires block type", value.TypeToString(container.GetType()), pathStr)
-	}
+	switch container.GetType() {
+	case value.TypeBlock:
+		block, ok := value.AsBlockValue(container)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast block value", [3]string{})
+		}
 
-	block, ok := value.AsBlockValue(container)
-	if !ok {
-		return value.NewNoneVal(), verror.NewInternalError("failed to cast block value", [3]string{})
-	}
+		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+			return value.NewNoneVal(), err
+		}
+		block.Elements[index-1] = newVal
 
-	if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
-		return value.NewNoneVal(), err
-	}
-	block.Elements[index-1] = newVal
+		return newVal, nil
 
-	return newVal, nil
+	case value.TypeBinary:
+		if newVal.GetType() != value.TypeInteger {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch,
+				[3]string{"binary index assignment", "integer", value.TypeToString(newVal.GetType())})
+		}
+
+		intVal, ok := value.AsIntValue(newVal)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast integer value", [3]string{})
+		}
+
+		if intVal < 0 || intVal > 255 {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds,
+				[3]string{fmt.Sprintf("%d", intVal), "0-255", "binary byte value"})
+		}
+
+		bin, ok := value.AsBinaryValue(container)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast binary value", [3]string{})
+		}
+
+		if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
+			return value.NewNoneVal(), err
+		}
+		bin.Bytes()[index-1] = byte(intVal)
+
+		return newVal, nil
+
+	default:
+		return value.NewNoneVal(), makePathTypeError("index assignment requires block or binary type", value.TypeToString(container.GetType()), pathStr)
+	}
 }
 
 func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {
