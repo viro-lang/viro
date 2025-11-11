@@ -256,6 +256,67 @@ result2: create-mixed`,
 				return nil
 			},
 		},
+		{
+			name: "string isolation",
+			input: `create-string: fn [] [
+  str: ""
+  append str "x"
+  str
+]
+result1: create-string
+result2: create-string
+result3: create-string`,
+			check: func(e *eval.Evaluator) error {
+				expected := value.NewStrVal("x")
+				for _, name := range []string{"result1", "result2", "result3"} {
+					val, ok := getGlobal(e, name)
+					if !ok {
+						return fmt.Errorf("expected %s binding", name)
+					}
+					if !val.Equals(expected) {
+						return fmt.Errorf("expected %s to be \"x\", got %v", name, val)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "nested string in block isolation",
+			input: `create-mixed: fn [] [
+  outer: [""]
+  inner: first outer
+  append inner "a"
+  outer
+]
+result1: create-mixed
+inner1: first result1
+append inner1 "b"
+result2: create-mixed`,
+			check: func(e *eval.Evaluator) error {
+				result1, ok := getGlobal(e, "result1")
+				if !ok {
+					return fmt.Errorf("expected result1 binding")
+				}
+				expected1 := value.NewBlockVal([]core.Value{
+					value.NewStrVal("ab"),
+				})
+				if !result1.Equals(expected1) {
+					return fmt.Errorf("expected result1 to be [\"ab\"], got %v", result1)
+				}
+
+				result2, ok := getGlobal(e, "result2")
+				if !ok {
+					return fmt.Errorf("expected result2 binding")
+				}
+				expected2 := value.NewBlockVal([]core.Value{
+					value.NewStrVal("a"),
+				})
+				if !result2.Equals(expected2) {
+					return fmt.Errorf("expected result2 to be [\"a\"], got %v", result2)
+				}
+				return nil
+			},
+		},
 	}
 
 	for _, tc := range testCases {

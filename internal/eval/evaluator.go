@@ -466,7 +466,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 	shouldTraceExpr := e.traceShouldTraceExpr
 
 	switch element.GetType() {
-	case value.TypeInteger, value.TypeString, value.TypeLogic,
+	case value.TypeInteger, value.TypeLogic,
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
 		value.TypePort, value.TypeDatatype,
 		value.TypeFunction:
@@ -474,7 +474,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
 		}
 		return position + 1, element, nil
-	case value.TypeBlock, value.TypeBinary:
+	case value.TypeBlock, value.TypeBinary, value.TypeString:
 		cloned := value.DeepCloneValue(element)
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)

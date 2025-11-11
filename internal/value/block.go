@@ -343,6 +343,9 @@ func DeepCloneValue(val core.Value) core.Value {
 	case TypeBinary:
 		binary, _ := AsBinaryValue(val)
 		return binary.Clone()
+	case TypeString:
+		str, _ := AsStringValue(val)
+		return str.Clone()
 	default:
 		return val
 	}
