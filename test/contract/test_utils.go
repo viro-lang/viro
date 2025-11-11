@@ -39,6 +39,7 @@ func NewTestEvaluator() *eval.Evaluator {
 	native.RegisterIONatives(rootFrame, e)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
+	native.RegisterBitwiseNatives(rootFrame)
 
 	return e
 }
