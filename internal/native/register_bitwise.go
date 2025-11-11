@@ -6,13 +6,8 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// RegisterBitwiseNatives registers all bitwise operations and creates the `bit` object.
-// The bit object contains native functions for bit manipulation on integers and binaries.
 func RegisterBitwiseNatives(rootFrame core.Frame) {
-	// Create owned frame for bit object
 	bitFrame := frame.NewFrame(frame.FrameObject, -1)
-
-	// Create function values
 	andFunc := value.NewFuncVal(value.NewNativeFunction(
 		"bit.and",
 		[]value.ParamSpec{
@@ -20,7 +15,7 @@ func RegisterBitwiseNatives(rootFrame core.Frame) {
 			value.NewParamSpec("right", true),
 		},
 		BitAnd,
-		true, // infix
+		true,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Performs bitwise AND operation",
@@ -52,7 +47,7 @@ For binaries: byte-by-byte AND from right (LSB first), zeros remaining bytes fro
 			value.NewParamSpec("right", true),
 		},
 		BitOr,
-		true, // infix
+		true,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Performs bitwise OR operation",
@@ -84,7 +79,7 @@ For binaries: byte-by-byte OR from right (LSB first), copies remaining bytes fro
 			value.NewParamSpec("right", true),
 		},
 		BitXor,
-		true, // infix
+		true,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Performs bitwise XOR operation",
@@ -115,7 +110,7 @@ For binaries: byte-by-byte XOR from right (LSB first), copies remaining bytes fr
 			value.NewParamSpec("value", true),
 		},
 		BitNot,
-		false, // prefix
+		false,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Performs bitwise NOT operation",
@@ -146,7 +141,7 @@ For binaries: flips all bits in all bytes.`,
 			value.NewParamSpec("count", true),
 		},
 		BitShl,
-		true, // infix
+		true,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Shifts bits left",
@@ -183,7 +178,7 @@ Left shift by N positions is equivalent to multiplying by 2^N for integers.`,
 			value.NewParamSpec("count", true),
 		},
 		BitShr,
-		true, // infix
+		true,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Shifts bits right",
@@ -220,7 +215,7 @@ Right shift by N positions is equivalent to dividing by 2^N for integers (with t
 			value.NewParamSpec("position", true),
 		},
 		BitOn,
-		false, // prefix
+		false,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Sets a specific bit to 1",
@@ -248,7 +243,7 @@ Returns the modified integer with the bit set.`,
 			value.NewParamSpec("position", true),
 		},
 		BitOff,
-		false, // prefix
+		false,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Clears a specific bit to 0",
@@ -275,7 +270,7 @@ Returns the modified integer with the bit cleared.`,
 			value.NewParamSpec("value", true),
 		},
 		BitCount,
-		false, // prefix
+		false,
 		&NativeDoc{
 			Category: "Bitwise",
 			Summary:  "Counts set bits (1-bits)",
@@ -299,13 +294,10 @@ For binaries: Counts set bits across all bytes in the binary series.`,
 		},
 	)))
 
-	// Create bit object
 	bitObj := value.NewObject(bitFrame)
 
-	// Bind bit object to root frame
 	rootFrame.Bind("bit", bitObj)
 
-	// Also bind bitwise functions as global operators for infix usage
 	rootFrame.Bind("bit.and", andFunc)
 	rootFrame.Bind("bit.or", orFunc)
 	rootFrame.Bind("bit.xor", xorFunc)
@@ -313,7 +305,6 @@ For binaries: Counts set bits across all bytes in the binary series.`,
 	rootFrame.Bind("bit.shl", shlFunc)
 	rootFrame.Bind("bit.shr", shrFunc)
 
-	// Also bind << and >> as global operators (aliases)
 	rootFrame.Bind("<<", shlFunc)
 	rootFrame.Bind(">>", shrFunc)
 }

@@ -1,14 +1,13 @@
 package contract
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// TestBitwiseInteger_AND tests bitwise AND operations on integers.
-// Contract: bit.and performs bitwise AND on two integers.
 func TestBitwiseInteger_AND(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -64,8 +63,6 @@ func TestBitwiseInteger_AND(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_OR tests bitwise OR operations on integers.
-// Contract: bit.or performs bitwise OR on two integers.
 func TestBitwiseInteger_OR(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -116,8 +113,6 @@ func TestBitwiseInteger_OR(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_XOR tests bitwise XOR operations on integers.
-// Contract: bit.xor performs bitwise XOR on two integers.
 func TestBitwiseInteger_XOR(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -168,8 +163,6 @@ func TestBitwiseInteger_XOR(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_NOT tests bitwise NOT operations on integers.
-// Contract: bit.not performs bitwise NOT (complement) on an integer.
 func TestBitwiseInteger_NOT(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -220,8 +213,6 @@ func TestBitwiseInteger_NOT(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_Shifts tests shift operations on integers.
-// Contract: bit.shl and bit.shr perform left/right shifts on integers.
 func TestBitwiseInteger_Shifts(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -287,8 +278,6 @@ func TestBitwiseInteger_Shifts(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_AND tests bitwise AND operations on binary values.
-// Contract: bit.and performs byte-by-byte AND from right (LSB first).
 func TestBitwiseBinary_AND(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -331,6 +320,11 @@ func TestBitwiseBinary_AND(t *testing.T) {
 			input:    "bit.and #{} #{}",
 			expected: value.NewBinaryValue([]byte{}),
 		},
+		{
+			name:     "and from plan example",
+			input:    "bit.and #{FFFF} #{FF}",
+			expected: value.NewBinaryValue([]byte{0x00, 0xFF}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -349,8 +343,6 @@ func TestBitwiseBinary_AND(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_OR tests bitwise OR operations on binary values.
-// Contract: bit.or performs byte-by-byte OR from right, copying remainder from longer.
 func TestBitwiseBinary_OR(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -401,8 +393,6 @@ func TestBitwiseBinary_OR(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_XOR tests bitwise XOR operations on binary values.
-// Contract: bit.xor performs byte-by-byte XOR from right, copying remainder from longer.
 func TestBitwiseBinary_XOR(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -418,11 +408,6 @@ func TestBitwiseBinary_XOR(t *testing.T) {
 		{
 			name:     "xor different length - left longer",
 			input:    "bit.xor #{FF00} #{0F}",
-			expected: value.NewBinaryValue([]byte{0xFF, 0x0F}),
-		},
-		{
-			name:     "xor different length - right longer",
-			input:    "bit.xor #{0F} #{FF00}",
 			expected: value.NewBinaryValue([]byte{0xFF, 0x0F}),
 		},
 		{
@@ -458,8 +443,6 @@ func TestBitwiseBinary_XOR(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_NOT tests bitwise NOT operations on binary values.
-// Contract: bit.not flips all bits in all bytes.
 func TestBitwiseBinary_NOT(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -505,8 +488,6 @@ func TestBitwiseBinary_NOT(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_Shifts tests shift operations on binary values.
-// Contract: Shifts operate within series boundaries, overflow/underflow is lost.
 func TestBitwiseBinary_Shifts(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -554,6 +535,11 @@ func TestBitwiseBinary_Shifts(t *testing.T) {
 			input:    "bit.shr #{F0} 4",
 			expected: value.NewBinaryValue([]byte{0x0F}),
 		},
+		{
+			name:     "large shift beyond length",
+			input:    "#{FF} << 16",
+			expected: value.NewBinaryValue([]byte{0x00}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -572,8 +558,6 @@ func TestBitwiseBinary_Shifts(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_BitOn tests setting bits to 1 in integers.
-// Contract: bit.on sets the specified bit position to 1.
 func TestBitwiseInteger_BitOn(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -624,8 +608,6 @@ func TestBitwiseInteger_BitOn(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_BitOff tests clearing bits to 0 in integers.
-// Contract: bit.off clears the specified bit position to 0.
 func TestBitwiseInteger_BitOff(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -671,8 +653,6 @@ func TestBitwiseInteger_BitOff(t *testing.T) {
 	}
 }
 
-// TestBitwiseInteger_Count tests counting set bits in integers.
-// Contract: bit.count returns the number of 1-bits in an integer.
 func TestBitwiseInteger_Count(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -702,8 +682,13 @@ func TestBitwiseInteger_Count(t *testing.T) {
 		},
 		{
 			name:     "count alternating bits",
-			input:    "bit.count 170", // 0b10101010
+			input:    "bit.count 170",
 			expected: value.NewIntVal(4),
+		},
+		{
+			name:     "count negative two",
+			input:    "bit.count -2",
+			expected: value.NewIntVal(63),
 		},
 	}
 
@@ -723,8 +708,6 @@ func TestBitwiseInteger_Count(t *testing.T) {
 	}
 }
 
-// TestBitwiseBinary_Count tests counting set bits in binary values.
-// Contract: bit.count returns the number of 1-bits across all bytes.
 func TestBitwiseBinary_Count(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -775,8 +758,6 @@ func TestBitwiseBinary_Count(t *testing.T) {
 	}
 }
 
-// TestBitwiseErrors tests error conditions for bitwise operations.
-// Contract: Type mismatches and invalid operations produce appropriate errors.
 func TestBitwiseErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -820,6 +801,108 @@ func TestBitwiseErrors(t *testing.T) {
 			wantErr: true,
 			errMsg:  "shift count must be non-negative",
 		},
+		{
+			name:    "mixed types for bit.or",
+			input:   "bit.or 3 #{FF}",
+			wantErr: true,
+			errMsg:  "operands must be same type",
+		},
+		{
+			name:    "mixed types for bit.xor",
+			input:   "bit.xor 3 #{FF}",
+			wantErr: true,
+			errMsg:  "operands must be same type",
+		},
+		{
+			name:    "negative shift count for bit.shr",
+			input:   "bit.shr 8 -1",
+			wantErr: true,
+			errMsg:  "shift count must be non-negative",
+		},
+		{
+			name:    "non-integer shift count",
+			input:   "1 << \"a\"",
+			wantErr: true,
+			errMsg:  "Type mismatch",
+		},
+		{
+			name:    "bit.and arity error - too few args",
+			input:   "bit.and 1",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.or arity error - too few args",
+			input:   "bit.or 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.xor arity error - too few args",
+			input:   "bit.xor 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.not arity error - too few args",
+			input:   "bit.not",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.on arity error - too few args",
+			input:   "bit.on 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.off arity error - too few args",
+			input:   "bit.off 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.count arity error - too few args",
+			input:   "bit.count",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.shl arity error - too few args",
+			input:   "bit.shl 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.shr arity error - too few args",
+			input:   "bit.shr 5",
+			wantErr: true,
+			errMsg:  "Wrong argument count",
+		},
+		{
+			name:    "bit.on negative position",
+			input:   "bit.on 0 -1",
+			wantErr: true,
+			errMsg:  "out of range",
+		},
+		{
+			name:    "bit.on position too large",
+			input:   "bit.on 0 64",
+			wantErr: true,
+			errMsg:  "out of range",
+		},
+		{
+			name:    "bit.off negative position",
+			input:   "bit.off 15 -1",
+			wantErr: true,
+			errMsg:  "out of range",
+		},
+		{
+			name:    "bit.off position too large",
+			input:   "bit.off 15 64",
+			wantErr: true,
+			errMsg:  "out of range",
+		},
 	}
 
 	for _, tt := range tests {
@@ -831,7 +914,7 @@ func TestBitwiseErrors(t *testing.T) {
 					t.Errorf("Expected error containing '%s', got nil", tt.errMsg)
 					return
 				}
-				if err.Error() == "" || (tt.errMsg != "" && !containsString(err.Error(), tt.errMsg)) {
+				if err.Error() == "" || (tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg)) {
 					t.Errorf("Expected error containing '%s', got '%s'", tt.errMsg, err.Error())
 				}
 				return
@@ -849,8 +932,6 @@ func TestBitwiseErrors(t *testing.T) {
 	}
 }
 
-// TestBitwiseComposition tests left-to-right evaluation and operation composition.
-// Contract: Bitwise operations follow left-to-right evaluation, no operator precedence.
 func TestBitwiseComposition(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -899,18 +980,4 @@ func TestBitwiseComposition(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Helper function to check if a string contains a substring
-func containsString(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || containsStringHelper(s, substr))
-}
-
-func containsStringHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

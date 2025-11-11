@@ -1,6 +1,7 @@
 package native
 
 import (
+	"fmt"
 	"math/bits"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -8,8 +9,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// BitAnd performs bitwise AND operation.
-// Supports both integer! and binary! types.
 func BitAnd(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.and", 2, len(args))
@@ -41,8 +40,6 @@ func BitAnd(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BitOr performs bitwise OR operation.
-// Supports both integer! and binary! types.
 func BitOr(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.or", 2, len(args))
@@ -74,8 +71,6 @@ func BitOr(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	}
 }
 
-// BitXor performs bitwise XOR operation.
-// Supports both integer! and binary! types.
 func BitXor(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.xor", 2, len(args))
@@ -107,8 +102,6 @@ func BitXor(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BitNot performs bitwise NOT operation.
-// Supports both integer! and binary! types.
 func BitNot(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("bit.not", 1, len(args))
@@ -128,14 +121,11 @@ func BitNot(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BitShl performs left shift operation.
-// Supports both integer! and binary! types.
 func BitShl(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.shl", 2, len(args))
 	}
 
-	// Second arg must be integer (shift count)
 	countType := args[1].GetType()
 	if countType != value.TypeInteger {
 		return value.NewNoneVal(), typeError("bit.shl", "integer!", args[1])
@@ -149,7 +139,6 @@ func BitShl(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		)
 	}
 
-	// First arg can be integer or binary
 	switch args[0].GetType() {
 	case value.TypeInteger:
 		val, _ := value.AsIntValue(args[0])
@@ -164,14 +153,11 @@ func BitShl(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BitShr performs right shift operation.
-// Supports both integer! and binary! types.
 func BitShr(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.shr", 2, len(args))
 	}
 
-	// Second arg must be integer (shift count)
 	countType := args[1].GetType()
 	if countType != value.TypeInteger {
 		return value.NewNoneVal(), typeError("bit.shr", "integer!", args[1])
@@ -185,7 +171,6 @@ func BitShr(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		)
 	}
 
-	// First arg can be integer or binary
 	switch args[0].GetType() {
 	case value.TypeInteger:
 		val, _ := value.AsIntValue(args[0])
@@ -200,8 +185,6 @@ func BitShr(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BitOn sets a specific bit to 1 in an integer.
-// Integer-only operation.
 func BitOn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.on", 2, len(args))
@@ -218,11 +201,16 @@ func BitOn(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	val, _ := value.AsIntValue(args[0])
 	pos, _ := value.AsIntValue(args[1])
 
+	if pos < 0 || pos >= 64 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("bit.on: bit position %d out of range (valid: 0-63)", pos), "", ""},
+		)
+	}
+
 	return value.NewIntVal(val | (1 << uint(pos))), nil
 }
 
-// BitOff clears a specific bit to 0 in an integer.
-// Integer-only operation.
 func BitOff(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("bit.off", 2, len(args))
@@ -239,11 +227,16 @@ func BitOff(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	val, _ := value.AsIntValue(args[0])
 	pos, _ := value.AsIntValue(args[1])
 
+	if pos < 0 || pos >= 64 {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDInvalidOperation,
+			[3]string{fmt.Sprintf("bit.off: bit position %d out of range (valid: 0-63)", pos), "", ""},
+		)
+	}
+
 	return value.NewIntVal(val &^ (1 << uint(pos))), nil
 }
 
-// BitCount counts the number of set bits (1-bits).
-// Supports both integer! and binary! types.
 func BitCount(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("bit.count", 1, len(args))
@@ -263,115 +256,61 @@ func BitCount(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	}
 }
 
-// binaryAnd performs right-aligned AND on binary values.
-// Zero-pads shorter operand.
+func binaryLogicOp(left, right *value.BinaryValue, op func(byte, byte) byte, padZero bool) core.Value {
+	leftBytes := left.Bytes()
+	rightBytes := right.Bytes()
+
+	maxLen := len(leftBytes)
+	if len(rightBytes) > maxLen {
+		maxLen = len(rightBytes)
+	}
+
+	result := make([]byte, maxLen)
+	leftLen := len(leftBytes)
+	rightLen := len(rightBytes)
+
+	for i := 0; i < maxLen; i++ {
+		leftIdx := leftLen - maxLen + i
+		rightIdx := rightLen - maxLen + i
+
+		leftByte := byte(0)
+		if leftIdx >= 0 {
+			leftByte = leftBytes[leftIdx]
+		}
+
+		rightByte := byte(0)
+		if rightIdx >= 0 {
+			rightByte = rightBytes[rightIdx]
+		}
+
+		if padZero {
+			result[i] = op(leftByte, rightByte)
+		} else {
+			if leftIdx >= 0 && rightIdx >= 0 {
+				result[i] = op(leftByte, rightByte)
+			} else if leftIdx >= 0 {
+				result[i] = leftByte
+			} else {
+				result[i] = rightByte
+			}
+		}
+	}
+
+	return value.NewBinaryValue(result)
+}
+
 func binaryAnd(left, right *value.BinaryValue) core.Value {
-	leftBytes := left.Bytes()
-	rightBytes := right.Bytes()
-
-	maxLen := len(leftBytes)
-	if len(rightBytes) > maxLen {
-		maxLen = len(rightBytes)
-	}
-
-	result := make([]byte, maxLen)
-
-	leftLen := len(leftBytes)
-	rightLen := len(rightBytes)
-
-	for i := 0; i < maxLen; i++ {
-		leftIdx := leftLen - maxLen + i
-		rightIdx := rightLen - maxLen + i
-
-		leftByte := byte(0)
-		if leftIdx >= 0 {
-			leftByte = leftBytes[leftIdx]
-		}
-
-		rightByte := byte(0)
-		if rightIdx >= 0 {
-			rightByte = rightBytes[rightIdx]
-		}
-
-		result[i] = leftByte & rightByte
-	}
-
-	return value.NewBinaryValue(result)
+	return binaryLogicOp(left, right, func(a, b byte) byte { return a & b }, true)
 }
 
-// binaryOr performs right-aligned OR on binary values.
-// Copies remainder from longer operand.
 func binaryOr(left, right *value.BinaryValue) core.Value {
-	leftBytes := left.Bytes()
-	rightBytes := right.Bytes()
-
-	maxLen := len(leftBytes)
-	if len(rightBytes) > maxLen {
-		maxLen = len(rightBytes)
-	}
-
-	result := make([]byte, maxLen)
-
-	leftLen := len(leftBytes)
-	rightLen := len(rightBytes)
-
-	for i := 0; i < maxLen; i++ {
-		leftIdx := leftLen - maxLen + i
-		rightIdx := rightLen - maxLen + i
-
-		leftByte := byte(0)
-		if leftIdx >= 0 {
-			leftByte = leftBytes[leftIdx]
-		}
-
-		rightByte := byte(0)
-		if rightIdx >= 0 {
-			rightByte = rightBytes[rightIdx]
-		}
-
-		result[i] = leftByte | rightByte
-	}
-
-	return value.NewBinaryValue(result)
+	return binaryLogicOp(left, right, func(a, b byte) byte { return a | b }, false)
 }
 
-// binaryXor performs right-aligned XOR on binary values.
-// Copies remainder from longer operand.
 func binaryXor(left, right *value.BinaryValue) core.Value {
-	leftBytes := left.Bytes()
-	rightBytes := right.Bytes()
-
-	maxLen := len(leftBytes)
-	if len(rightBytes) > maxLen {
-		maxLen = len(rightBytes)
-	}
-
-	result := make([]byte, maxLen)
-
-	leftLen := len(leftBytes)
-	rightLen := len(rightBytes)
-
-	for i := 0; i < maxLen; i++ {
-		leftIdx := leftLen - maxLen + i
-		rightIdx := rightLen - maxLen + i
-
-		leftByte := byte(0)
-		if leftIdx >= 0 {
-			leftByte = leftBytes[leftIdx]
-		}
-
-		rightByte := byte(0)
-		if rightIdx >= 0 {
-			rightByte = rightBytes[rightIdx]
-		}
-
-		result[i] = leftByte ^ rightByte
-	}
-
-	return value.NewBinaryValue(result)
+	return binaryLogicOp(left, right, func(a, b byte) byte { return a ^ b }, false)
 }
 
-// binaryNot flips all bits in all bytes.
 func binaryNot(b *value.BinaryValue) core.Value {
 	data := b.Bytes()
 	result := make([]byte, len(data))
@@ -383,8 +322,6 @@ func binaryNot(b *value.BinaryValue) core.Value {
 	return value.NewBinaryValue(result)
 }
 
-// binaryShl shifts binary value left by specified bits.
-// Overflow is lost, no new bytes created.
 func binaryShl(b *value.BinaryValue, count int64) core.Value {
 	data := b.Bytes()
 	if count <= 0 || len(data) == 0 {
@@ -397,18 +334,14 @@ func binaryShl(b *value.BinaryValue, count int64) core.Value {
 
 	result := make([]byte, len(data))
 
-	// Handle byte-level shift
 	if byteShift >= len(data) {
-		// Complete overflow
-		return value.NewBinaryValue(result) // All zeros
+		return value.NewBinaryValue(result)
 	}
 
-	// Shift bytes left (to higher indices)
 	for i := 0; i < len(data)-byteShift; i++ {
 		result[i+byteShift] = data[i]
 	}
 
-	// Shift bits within bytes
 	if bitShift > 0 {
 		carry := byte(0)
 		for i := len(result) - 1; i >= 0; i-- {
@@ -421,8 +354,6 @@ func binaryShl(b *value.BinaryValue, count int64) core.Value {
 	return value.NewBinaryValue(result)
 }
 
-// binaryShr shifts binary value right by specified bits.
-// Underflow is lost, no new bytes created.
 func binaryShr(b *value.BinaryValue, count int64) core.Value {
 	data := b.Bytes()
 	if count <= 0 || len(data) == 0 {
@@ -435,18 +366,14 @@ func binaryShr(b *value.BinaryValue, count int64) core.Value {
 
 	result := make([]byte, len(data))
 
-	// Handle byte-level shift
 	if byteShift >= len(data) {
-		// Complete underflow
-		return value.NewBinaryValue(result) // All zeros
+		return value.NewBinaryValue(result)
 	}
 
-	// Shift bytes
 	for i := byteShift; i < len(data); i++ {
 		result[i-byteShift] = data[i]
 	}
 
-	// Shift bits within bytes
 	if bitShift > 0 {
 		carry := byte(0)
 		for i := 0; i < len(result); i++ {
@@ -459,7 +386,6 @@ func binaryShr(b *value.BinaryValue, count int64) core.Value {
 	return value.NewBinaryValue(result)
 }
 
-// countBinaryBits counts set bits across all bytes in binary value.
 func countBinaryBits(b *value.BinaryValue) int64 {
 	data := b.Bytes()
 	count := 0
