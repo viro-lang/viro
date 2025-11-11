@@ -1,6 +1,7 @@
 package contract
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -128,58 +129,87 @@ counter`
 }
 
 func TestFunction_MutableBlockIsolation(t *testing.T) {
-	// Test that functions create fresh block literals each time they are called
-	// This prevents sharing mutable state between function invocations
-	script := `create-block: fn [] [
+	testCases := []struct {
+		name  string
+		input string
+		check func(e *eval.Evaluator) error
+	}{
+		{
+			name: "flat block isolation",
+			input: `create-block: fn [] [
   arr: []
   append arr 1
   arr
 ]
 result1: create-block
 result2: create-block
-result3: create-block
+result3: create-block`,
+			check: func(e *eval.Evaluator) error {
+				expected := value.NewBlockVal([]core.Value{value.NewIntVal(1)})
+				for _, name := range []string{"result1", "result2", "result3"} {
+					val, ok := getGlobal(e, name)
+					if !ok {
+						return fmt.Errorf("expected %s binding", name)
+					}
+					if !val.Equals(expected) {
+						return fmt.Errorf("expected %s to be [1], got %v", name, val)
+					}
+				}
+				return nil
+			},
+		},
+		{
+			name: "nested block isolation",
+			input: `create-nested: fn [] [
+  outer: [[1]]
+  inner: first outer
+  append inner 2
+  outer
+]
+result1: create-nested
+inner1: first result1
+append inner1 99
+result2: create-nested`,
+			check: func(e *eval.Evaluator) error {
+				// result1 should be [[1 2 99]]
+				result1, ok := getGlobal(e, "result1")
+				if !ok {
+					return fmt.Errorf("expected result1 binding")
+				}
+				expected1 := value.NewBlockVal([]core.Value{
+					value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(99)}),
+				})
+				if !result1.Equals(expected1) {
+					return fmt.Errorf("expected result1 to be [[1 2 99]], got %v", result1)
+				}
 
-; Each call should return [1], not accumulate
-check1: length? result1
-check2: length? result2
-check3: length? result3
-
-; All should be 1
-check1 = 1 and (check2 = 1) and (check3 = 1)`
-
-	e, result, err := evalScriptWithEvaluator(script)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+				// result2 should be [[1 2]] (unaffected by result1 mutation)
+				result2, ok := getGlobal(e, "result2")
+				if !ok {
+					return fmt.Errorf("expected result2 binding")
+				}
+				expected2 := value.NewBlockVal([]core.Value{
+					value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+				})
+				if !result2.Equals(expected2) {
+					return fmt.Errorf("expected result2 to be [[1 2]], got %v", result2)
+				}
+				return nil
+			},
+		},
 	}
 
-	if !result.Equals(value.NewLogicVal(true)) {
-		t.Fatalf("expected all results to have length 1, got %v", result)
-	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, _, err := evalScriptWithEvaluator(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	// Verify each result is [1]
-	result1, ok := getGlobal(e, "result1")
-	if !ok {
-		t.Fatalf("expected result1 binding")
-	}
-	expected := value.NewBlockVal([]core.Value{value.NewIntVal(1)})
-	if !result1.Equals(expected) {
-		t.Fatalf("expected result1 to be [1], got %v", result1)
-	}
-
-	result2, ok := getGlobal(e, "result2")
-	if !ok {
-		t.Fatalf("expected result2 binding")
-	}
-	if !result2.Equals(expected) {
-		t.Fatalf("expected result2 to be [1], got %v", result2)
-	}
-
-	result3, ok := getGlobal(e, "result3")
-	if !ok {
-		t.Fatalf("expected result3 binding")
-	}
-	if !result3.Equals(expected) {
-		t.Fatalf("expected result3 to be [1], got %v", result3)
+			if err := tc.check(e); err != nil {
+				t.Fatalf("check failed: %v", err)
+			}
+		})
 	}
 }
 
