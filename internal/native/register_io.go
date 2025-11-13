@@ -252,18 +252,71 @@ This is the first stage of the two-stage parser.`,
 		SeeAlso:  []string{"parse", "load-string", "classify"}, Tags: []string{"parser", "tokenize", "lexer"},
 	})
 
-	registerSimpleIOFunc("parse", NativeParse, 1, &NativeDoc{
+	// Register parse-values as the primary name for the second-stage parser
+	registerSimpleIOFunc("parse-values", NativeParseValues, 1, &NativeDoc{
 		Category: "Parser",
-		Summary:  "Parses token objects into viro values",
+		Summary:  "Parses token objects into viro values (second-stage parser)",
 		Description: `Takes a block of token objects (from tokenize) and parses them into viro values.
-This is the second stage of the two-stage parser. Returns a block of parsed values.`,
+This is the second stage of the two-stage parser. Returns a block of parsed values.
+This native was previously named 'parse' but has been renamed to 'parse-values' to avoid
+conflict with the new parse dialect feature.`,
 		Parameters: []ParamDoc{
 			{Name: "tokens", Type: "block!", Description: "A block of token objects from tokenize", Optional: false},
 		},
 		Returns:  "[block!] A block of parsed viro values",
-		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse tokens  ; => [x: 42]`, `values: parse tokenize "[1 2 3]"`},
-		SeeAlso:  []string{"tokenize", "load-string", "classify"}, Tags: []string{"parser", "parse", "semantic"},
+		Examples: []string{`tokens: tokenize "x: 42"\nvalues: parse-values tokens  ; => [x: 42]`, `values: parse-values tokenize "[1 2 3]"`},
+		SeeAlso:  []string{"tokenize", "load-string", "classify", "parse"}, Tags: []string{"parser", "parse", "semantic"},
 	})
+
+	// Register the new parse dialect - pattern matching for strings and blocks
+	registerAndBind("parse", value.NewNativeFunction(
+		"parse",
+		[]value.ParamSpec{
+			value.NewParamSpec("input", true),  // string or block to parse
+			value.NewParamSpec("rules", false), // parse rules (block)
+			value.NewRefinementSpec("case", false),
+			value.NewRefinementSpec("all", false),
+			value.NewRefinementSpec("part", true), // integer
+			value.NewRefinementSpec("any", false),
+		},
+		NativeParseDialect,
+		false,
+		&NativeDoc{
+			Category: "Parse",
+			Summary:  "Pattern matching dialect for strings and blocks",
+			Description: `Matches input (string or block) against a pattern rule block using the parse dialect.
+Returns true if the pattern matches, false otherwise.
+
+The parse dialect is a powerful pattern matching DSL that supports:
+- String literals: "hello"
+- Character sets: charset "abc", charset [#"a" - #"z"]
+- Datatypes: integer!, string!, word!, etc.
+- Keywords: skip (any char), end (end of input)
+- Alternation: ["hello" | "hi"]
+- Sequences: ["hello" " " "world"]
+
+Refinements:
+--case: Case-sensitive string matching (default is case-insensitive)
+--all: Match entire input (default true, fails if input remains)
+--part N: Only parse first N elements
+--any: Allow partial matches (sets --all to false)`,
+			Parameters: []ParamDoc{
+				{Name: "input", Type: "string! block!", Description: "The input series to parse", Optional: false},
+				{Name: "rules", Type: "block!", Description: "The parse rule block", Optional: false},
+			},
+			Returns:  "[logic!] True if the pattern matches, false otherwise",
+			Examples: []string{
+				`parse "hello" ["hello"]  ; => true`,
+				`parse "hello world" ["hello" " " "world"]  ; => true`,
+				`parse "Hello" ["hello"] --case  ; => false (case-sensitive)`,
+				`parse "abc" [charset "abc" charset "abc" charset "abc"]  ; => true`,
+				`parse [1 2 3] [integer! integer! integer!]  ; => true`,
+				`parse "hi" ["hello" | "hi"]  ; => true (alternation)`,
+			},
+			SeeAlso: []string{"charset", "parse-values", "tokenize"},
+			Tags:    []string{"parse", "pattern", "matching", "dialect"},
+		},
+	))
 
 	registerSimpleIOFunc("load-string", NativeLoadString, 1, &NativeDoc{
 		Category: "Parser",

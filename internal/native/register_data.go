@@ -381,4 +381,37 @@ For blocks and other types, returns their human-readable form.`,
 			Tags:     []string{"data", "conversion", "type", "string"},
 		},
 	))
+
+	registerAndBind("charset", value.NewNativeFunction(
+		"charset",
+		[]value.ParamSpec{
+			value.NewParamSpec("spec", true), // evaluated
+		},
+		NativeCharset,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Creates a character set (bitset) for parse dialect",
+			Description: `Creates a bitset containing specified characters for use in parse dialect.
+Accepts a string (all characters), a block specification with ranges and operations,
+or another bitset to clone. Block specs support:
+- Character literals: #"a"
+- Strings: "abc" 
+- Ranges: [#"a" - #"z"]
+- Complement: not [...]
+- Union: multiple elements are combined`,
+			Parameters: []ParamDoc{
+				{Name: "spec", Type: "string! block! bitset!", Description: "Character set specification", Optional: false},
+			},
+			Returns:  "[bitset!] A character set",
+			Examples: []string{
+				`charset "abc"  ; => charset with a, b, c`,
+				`charset [#"a" - #"z"]  ; => charset with lowercase letters`,
+				`charset ["aeiou"]  ; => charset with vowels`,
+				`charset [not "0123456789"]  ; => charset without digits`,
+			},
+			SeeAlso: []string{"parse"},
+			Tags:    []string{"data", "charset", "parse", "bitset"},
+		},
+	))
 }
