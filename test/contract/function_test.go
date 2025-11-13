@@ -312,12 +312,12 @@ result2`
 
 func TestLiteral_NestedStructureSharing(t *testing.T) {
 	script := `nested: fn [] [[[]]]
-result1: nested
-inner1: first result1
-append inner1 42
-result2: nested
-inner2: first result2
-inner2`
+	result1: nested
+	inner1: first result1
+	append inner1 42
+	result2: nested
+	inner2: first result2
+	inner2`
 
 	e, result, err := evalScriptWithEvaluator(script)
 	if err != nil {
@@ -340,17 +340,105 @@ inner2`
 	if !ok {
 		t.Fatalf("expected result2 binding")
 	}
-	if result1 == result2 {
-		// Verify the outer blocks are the same reference
-		outer1, ok1 := value.AsBlockValue(result1)
-		outer2, ok2 := value.AsBlockValue(result2)
-		if ok1 && ok2 && outer1 == outer2 {
-			// Good - outer is shared
-		} else {
-			t.Fatalf("expected outer blocks to be shared")
-		}
-	} else {
+	if result1 != result2 {
 		t.Fatalf("expected outer blocks to be shared")
+	}
+}
+
+func TestLiteral_EmptyContainerCloning(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+		check func(e *eval.Evaluator) error
+	}{
+		{
+			name: "empty string cloning",
+			input: `empty-string: fn [] [""]
+result1: empty-string
+result2: empty-string`,
+			check: func(e *eval.Evaluator) error {
+				result1, ok1 := getGlobal(e, "result1")
+				result2, ok2 := getGlobal(e, "result2")
+				if !ok1 || !ok2 {
+					return fmt.Errorf("expected bindings")
+				}
+				// Both should be empty strings, but different references (cloned)
+				expected := value.NewStrVal("")
+				if !result1.Equals(expected) {
+					return fmt.Errorf("expected result1 to be \"\", got %v", result1)
+				}
+				if !result2.Equals(expected) {
+					return fmt.Errorf("expected result2 to be \"\", got %v", result2)
+				}
+				if result1 == result2 {
+					return fmt.Errorf("expected distinct references for empty strings")
+				}
+				return nil
+			},
+		},
+		{
+			name: "empty string cloning",
+			input: `empty-string: fn [] [""]
+result1: empty-string
+result2: empty-string`,
+			check: func(e *eval.Evaluator) error {
+				result1, ok1 := getGlobal(e, "result1")
+				result2, ok2 := getGlobal(e, "result2")
+				if !ok1 || !ok2 {
+					return fmt.Errorf("expected bindings")
+				}
+				// Both should be empty strings, but different references (cloned)
+				expected := value.NewStrVal("")
+				if !result1.Equals(expected) {
+					return fmt.Errorf("expected result1 to be \"\", got %v", result1)
+				}
+				if !result2.Equals(expected) {
+					return fmt.Errorf("expected result2 to be \"\", got %v", result2)
+				}
+				if result1 == result2 {
+					return fmt.Errorf("expected distinct references for empty strings")
+				}
+				return nil
+			},
+		},
+		{
+			name: "empty binary cloning",
+			input: `empty-binary: fn [] [#{}]
+result1: empty-binary
+result2: empty-binary`,
+			check: func(e *eval.Evaluator) error {
+				result1, ok1 := getGlobal(e, "result1")
+				result2, ok2 := getGlobal(e, "result2")
+				if !ok1 || !ok2 {
+					return fmt.Errorf("expected bindings")
+				}
+				// Both should be empty binaries, but different references (cloned)
+				expected := value.NewBinaryVal([]byte{})
+				if !result1.Equals(expected) {
+					return fmt.Errorf("expected result1 to be #{}, got %v", result1)
+				}
+				if !result2.Equals(expected) {
+					return fmt.Errorf("expected result2 to be #{}, got %v", result2)
+				}
+				if result1 == result2 {
+					return fmt.Errorf("expected distinct references for empty binaries")
+				}
+				return nil
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			e, _, err := evalScriptWithEvaluator(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if err := tc.check(e); err != nil {
+				t.Fatalf("check failed: %v", err)
+			}
+		})
 	}
 }
 

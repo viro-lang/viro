@@ -107,8 +107,7 @@ weekends: take days 2     ; Gets remaining from shared block
 
 This behavior is implemented in `internal/eval/evaluator.go` lines 477-508, where:
 
-- Empty literals (`Length() == 0`) are deep cloned using `value.DeepCloneValue()`
+- Empty literals (`Length() == 0`) are cloned using type-specific `Clone()` methods
 - Non-empty literals are returned as-is (shared reference)
 
-**WARNING**: Changing this behavior would be a breaking change that could affect performance and existing code expectations. Any modifications must preserve the current semantics.</content>
-<parameter name="filePath">docs/literal-sharing-semantics.md
+**WARNING**: Changing this behavior would be a breaking change that could affect performance and existing code expectations. Any modifications must preserve the current semantics.

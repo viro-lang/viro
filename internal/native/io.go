@@ -643,7 +643,7 @@ func ReadPort(spec string, opts map[string]core.Value) (core.Value, error) {
 	if isLines {
 		content := string(data)
 		lines := strings.Split(content, "\n")
-		
+
 		// Remove trailing empty line only if content ends with newline
 		if len(lines) > 0 && len(content) > 0 && content[len(content)-1] == '\n' && lines[len(lines)-1] == "" {
 			lines = lines[:len(lines)-1]

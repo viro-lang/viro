@@ -480,7 +480,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 		// Only clone empty blocks/strings/binaries
 		if element.GetType() == value.TypeBlock {
 			if blockVal, ok := value.AsBlockValue(element); ok && blockVal.Length() == 0 {
-				cloned := value.DeepCloneValue(element)
+				cloned := blockVal.Clone()
 				if shouldTraceExpr {
 					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
 				}
@@ -488,7 +488,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 			}
 		} else if element.GetType() == value.TypeBinary {
 			if binaryVal, ok := value.AsBinaryValue(element); ok && binaryVal.Length() == 0 {
-				cloned := value.DeepCloneValue(element)
+				cloned := binaryVal.Clone()
 				if shouldTraceExpr {
 					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
 				}
@@ -496,7 +496,7 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 			}
 		} else if element.GetType() == value.TypeString {
 			if stringVal, ok := value.AsStringValue(element); ok && stringVal.Length() == 0 {
-				cloned := value.DeepCloneValue(element)
+				cloned := stringVal.Clone()
 				if shouldTraceExpr {
 					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
 				}

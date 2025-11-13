@@ -189,6 +189,7 @@ For binaries: Shifts all bytes right within the series boundaries.
   - Underflow beyond the series length is lost.
   - No new bytes are created.
   - Result has same length as input.
+  - Right shifts move bytes toward higher indices (so the example #{0080} bit.shr 8 => #{8000} reflects byte-order semantics).
 
 Right shift by N positions is equivalent to dividing by 2^N for integers (with truncation).`,
 			Parameters: []ParamDoc{
