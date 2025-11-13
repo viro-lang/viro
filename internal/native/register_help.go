@@ -176,7 +176,8 @@ with stepping commands. Inspect state with --locals and --stack.`,
 			Category: "Debug",
 			Summary:  "Displays molded representation of a value for debugging",
 			Description: `Outputs the molded representation of any value prefixed with '== ' to stdout.
-In quiet mode or when stdout is unavailable, sends the output to the trace system instead.
+In quiet mode or when stdout is unavailable, attempts to send the output to the trace system.
+If trace is unavailable, outputs to the error stream instead.
 Returns the original value unchanged, making it useful for debugging in expression chains.`,
 			Parameters: []ParamDoc{
 				{Name: "value", Type: "any-type!", Description: "The value to probe", Optional: false},

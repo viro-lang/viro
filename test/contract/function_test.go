@@ -377,26 +377,26 @@ result2: empty-string`,
 			},
 		},
 		{
-			name: "empty string cloning",
-			input: `empty-string: fn [] [""]
-result1: empty-string
-result2: empty-string`,
+			name: "empty block cloning",
+			input: `empty-block: fn [] [[]]
+result1: empty-block
+result2: empty-block`,
 			check: func(e *eval.Evaluator) error {
 				result1, ok1 := getGlobal(e, "result1")
 				result2, ok2 := getGlobal(e, "result2")
 				if !ok1 || !ok2 {
 					return fmt.Errorf("expected bindings")
 				}
-				// Both should be empty strings, but different references (cloned)
-				expected := value.NewStrVal("")
+				// Both should be empty blocks, but different references (cloned)
+				expected := value.NewBlockVal([]core.Value{})
 				if !result1.Equals(expected) {
-					return fmt.Errorf("expected result1 to be \"\", got %v", result1)
+					return fmt.Errorf("expected result1 to be [], got %v", result1)
 				}
 				if !result2.Equals(expected) {
-					return fmt.Errorf("expected result2 to be \"\", got %v", result2)
+					return fmt.Errorf("expected result2 to be [], got %v", result2)
 				}
 				if result1 == result2 {
-					return fmt.Errorf("expected distinct references for empty strings")
+					return fmt.Errorf("expected distinct references for empty blocks")
 				}
 				return nil
 			},

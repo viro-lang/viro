@@ -8,9 +8,10 @@ This guide covers the enhanced trace system designed for debugging Viro programs
 2. [Trace Output Format](#trace-output-format)
 3. [Event Types](#event-types)
 4. [Trace Levels](#trace-levels)
-5. [Common Debugging Patterns](#common-debugging-patterns)
-6. [Performance Notes](#performance-notes)
-7. [Parsing Trace Output](#parsing-trace-output)
+5. [Debugging Functions](#debugging-functions)
+6. [Common Debugging Patterns](#common-debugging-patterns)
+7. [Performance Notes](#performance-notes)
+8. [Parsing Trace Output](#parsing-trace-output)
 
 ## Quick Start
 
@@ -178,6 +179,53 @@ trace --on --step-level 1
 
 ### Level 2: All (Future)
 Reserved for even more detailed tracing (e.g., internal operations).
+
+## Debugging Functions
+
+### `probe`
+
+The `probe` function is a debugging utility that displays the molded representation of any value and returns the value unchanged. It's useful for inspecting intermediate values during execution without modifying the program flow.
+
+**Syntax:**
+```viro
+probe value
+```
+
+**Behavior:**
+- **Normal mode**: Outputs `== <molded-value>` to stdout and returns the original value
+- **Quiet mode**: When stdout is suppressed (e.g., `--quiet` flag or redirected output), falls back to:
+  1. **Trace output**: If a trace session is active, emits a `debug` event with the molded value
+  2. **Error output**: If no trace session is active, outputs to stderr
+
+**Examples:**
+
+```viro
+; Basic usage - outputs to stdout
+probe 42          ; outputs: == 42
+                  ; returns: 42
+
+probe "hello"     ; outputs: == "hello"
+                  ; returns: "hello"
+
+probe [1 2 3]     ; outputs: == [1 2 3]
+                  ; returns: [1 2 3]
+
+; In quiet mode with active trace session
+trace --on
+; probe output goes to trace instead of stdout
+result: probe calculate-something
+trace --off
+
+; In quiet mode without trace session
+; probe output goes to stderr
+result: probe calculate-something
+```
+
+**Use Cases:**
+- Inspecting values during development without modifying code structure
+- Debugging in automated scripts where stdout is redirected
+- Quick value inspection in REPL sessions
+- Non-intrusive debugging that preserves program flow
 
 ## Common Debugging Patterns
 

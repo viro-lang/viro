@@ -977,13 +977,10 @@ func Probe(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	val := args[0]
 	molded := val.Mold()
 
-	// Check if stdout is available (not quiet mode)
 	writer := eval.GetOutputWriter()
 	if writer != io.Discard {
-		// Write to stdout with == prefix
 		fmt.Fprintf(writer, "== %s\n", molded)
 	} else {
-		// In quiet/sandbox mode, emit to trace/log instead
 		if trace.GlobalTraceSession != nil {
 			event := trace.TraceEvent{
 				Timestamp: time.Now(),
@@ -992,9 +989,10 @@ func Probe(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 				EventType: "debug",
 			}
 			trace.GlobalTraceSession.Emit(event)
+		} else {
+			fmt.Fprintf(eval.GetErrorWriter(), "== %s\n", molded)
 		}
 	}
 
-	// Return the original value unchanged
 	return val, nil
 }

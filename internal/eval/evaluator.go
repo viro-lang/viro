@@ -475,9 +475,6 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 		}
 		return position + 1, element, nil
 	case value.TypeBlock, value.TypeBinary, value.TypeString:
-		// INTENTIONAL BEHAVIOR: Clone empty literals for isolation, share non-empty for performance
-		// See docs/literal-sharing-semantics.md for detailed explanation
-		// Only clone empty blocks/strings/binaries
 		if element.GetType() == value.TypeBlock {
 			if blockVal, ok := value.AsBlockValue(element); ok && blockVal.Length() == 0 {
 				cloned := blockVal.Clone()
@@ -503,7 +500,6 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 				return position + 1, cloned, nil
 			}
 		}
-		// For non-empty values, return as-is (shared for performance)
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
 		}

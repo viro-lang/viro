@@ -66,19 +66,19 @@ This behavior is **intentional** and optimized for performance:
 
 3. **Performance optimization**: Avoids deep cloning of large literals on every function call while providing expected isolation for empty containers.
 
-## Nested Structure Surprises
+## Nested Structures
 
-Sharing behavior applies to the top-level literal, but nested empty structures within shared non-empty literals are still cloned:
+Sharing behavior applies to the top-level literal, and nested empty structures inside a shared non-empty literal remain shared (mutations persist across calls):
 
 ```viro
 nested: fn [] [[[]]]      ; Non-empty outer block is shared
 result1: nested           ; Returns [[[]]]
 inner1: first result1     ; Gets the inner []
-append inner1 1           ; Modifies inner1
-result2: nested           ; Returns [[[]]] - outer shared, but inner is fresh!
+append inner1 1           ; Modifies inner1 (persists!)
+result2: nested           ; Returns [[[1]]] - outer and inner both shared!
 ```
 
-The outer `[[[]]]` is shared, but the inner `[]` gets cloned each time the function is called.
+The outer `[[[]]]` is shared, and the inner `[]` within it is also shared, so mutations to nested empty structures persist across function calls.
 
 ## Best Practices
 
@@ -105,7 +105,7 @@ weekends: take days 2     ; Gets remaining from shared block
 
 ## Implementation
 
-This behavior is implemented in `internal/eval/evaluator.go` lines 477-508, where:
+This behavior is implemented in the evaluator's literal-handling path:
 
 - Empty literals (`Length() == 0`) are cloned using type-specific `Clone()` methods
 - Non-empty literals are returned as-is (shared reference)
