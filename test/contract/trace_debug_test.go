@@ -1,10 +1,12 @@
 package contract
 
 import (
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
@@ -305,6 +307,101 @@ func TestDebugBreakpoints(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+// TestProbeNative tests the probe debug native function.
+func TestProbeNative(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		expectOutput string
+		expectResult string
+		quiet        bool
+	}{
+		{
+			name:         "probe with integer",
+			input:        "42",
+			expectOutput: "== 42\n",
+			expectResult: "42",
+			quiet:        false,
+		},
+		{
+			name:         "probe with string",
+			input:        `"hello world"`,
+			expectOutput: `== "hello world"` + "\n",
+			expectResult: `"hello world"`,
+			quiet:        false,
+		},
+		{
+			name:         "probe with block",
+			input:        "[1 2 3]",
+			expectOutput: "== [1 2 3]\n",
+			expectResult: "[1 2 3]",
+			quiet:        false,
+		},
+		{
+			name:         "probe with integer in quiet mode",
+			input:        "42",
+			expectOutput: "", // No stdout output in quiet mode
+			expectResult: "42",
+			quiet:        true,
+		},
+		{
+			name:         "probe with string in quiet mode",
+			input:        `"hello world"`,
+			expectOutput: "",
+			expectResult: `"hello world"`,
+			quiet:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Parse the probe expression
+			script := "probe " + tt.input
+			vals, locations, perr := parse.ParseWithSource(script, "(test)")
+			if perr != nil {
+				t.Fatalf("Parse failed: %v", perr)
+			}
+
+			// Create evaluator
+			e := NewTestEvaluator()
+
+			var captured string
+			var result core.Value
+			var err error
+
+			if tt.quiet {
+				// In quiet mode, set output writer to io.Discard and don't capture output
+				e.SetOutputWriter(io.Discard)
+				result, err = e.DoBlock(vals, locations)
+				captured = "" // Expect no output
+			} else {
+				// In normal mode, capture output
+				captured, result, err = captureOutput(t, e, func() (core.Value, error) {
+					val, derr := e.DoBlock(vals, locations)
+					if derr != nil {
+						return value.NewNoneVal(), derr
+					}
+					return val, nil
+				})
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Check result value
+			if result.Mold() != tt.expectResult {
+				t.Errorf("expected result %s, got %s", tt.expectResult, result.Mold())
+			}
+
+			// Check stdout output
+			if captured != tt.expectOutput {
+				t.Errorf("expected stdout %q, got %q", tt.expectOutput, captured)
 			}
 		})
 	}
