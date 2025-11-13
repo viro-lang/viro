@@ -165,6 +165,29 @@ with stepping commands. Inspect state with --locals and --stack.`,
 		},
 	)))
 
+	rootFrame.Bind("probe", value.NewFuncVal(value.NewNativeFunction(
+		"probe",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true),
+		},
+		Probe,
+		false,
+		&NativeDoc{
+			Category: "Debug",
+			Summary:  "Displays molded representation of a value for debugging",
+			Description: `Outputs the molded representation of any value prefixed with '== ' to stdout.
+In quiet mode or when stdout is unavailable, attempts to send the output to the trace system.
+If trace is unavailable, outputs to the error stream instead.
+Returns the original value unchanged, making it useful for debugging in expression chains.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to probe", Optional: false},
+			},
+			Returns:  "[any-type!] The original value unchanged",
+			Examples: []string{"probe 42  ; outputs '== 42' and returns 42", `probe "hello"  ; outputs '== "hello"' and returns "hello"`, "probe [1 2 3]  ; outputs '== [1 2 3]' and returns [1 2 3]"},
+			SeeAlso:  []string{"trace", "debug", "print"}, Tags: []string{"debug", "output", "inspection"},
+		},
+	)))
+
 	rootFrame.Bind("type-of", value.NewFuncVal(value.NewNativeFunction(
 		"type-of",
 		[]value.ParamSpec{

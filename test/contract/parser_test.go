@@ -70,8 +70,8 @@ func TestParser_Tokenize(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "tokenize empty string",
-			input:   `tokenize ""`,
+			name:  "tokenize empty string",
+			input: `tokenize ""`,
 			expected: func(v core.Value) bool {
 				block, ok := value.AsBlockValue(v)
 				return ok && len(block.Elements) == 0

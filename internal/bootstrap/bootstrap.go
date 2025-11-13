@@ -58,6 +58,7 @@ func NewEvaluatorWithNatives(stdout, stderr io.Writer, stdin io.Reader, quiet bo
 	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
+	native.RegisterBitwiseNatives(rootFrame)
 
 	return evaluator
 }

@@ -6,7 +6,9 @@ package native
 
 import (
 	"fmt"
+	"io"
 	"strconv"
+	"time"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
@@ -965,4 +967,32 @@ func Return(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 
 	return value.NewNoneVal(), eval.NewReturnSignal(returnVal)
+}
+
+func Probe(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("probe", 1, len(args))
+	}
+
+	val := args[0]
+	molded := val.Mold()
+
+	writer := eval.GetOutputWriter()
+	if writer != io.Discard {
+		fmt.Fprintf(writer, "== %s\n", molded)
+	} else {
+		if trace.GlobalTraceSession != nil {
+			event := trace.TraceEvent{
+				Timestamp: time.Now(),
+				Value:     molded,
+				Word:      "probe",
+				EventType: "debug",
+			}
+			trace.GlobalTraceSession.Emit(event)
+		} else {
+			fmt.Fprintf(eval.GetErrorWriter(), "== %s\n", molded)
+		}
+	}
+
+	return val, nil
 }

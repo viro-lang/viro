@@ -466,10 +466,40 @@ func (e *Evaluator) evaluateElement(block []core.Value, locations []core.SourceL
 	shouldTraceExpr := e.traceShouldTraceExpr
 
 	switch element.GetType() {
-	case value.TypeInteger, value.TypeString, value.TypeLogic,
+	case value.TypeInteger, value.TypeLogic,
 		value.TypeNone, value.TypeDecimal, value.TypeObject,
-		value.TypePort, value.TypeDatatype, value.TypeBlock,
-		value.TypeFunction, value.TypeBinary:
+		value.TypePort, value.TypeDatatype,
+		value.TypeFunction:
+		if shouldTraceExpr {
+			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
+		}
+		return position + 1, element, nil
+	case value.TypeBlock, value.TypeBinary, value.TypeString:
+		if element.GetType() == value.TypeBlock {
+			if blockVal, ok := value.AsBlockValue(element); ok && blockVal.Length() == 0 {
+				cloned := blockVal.Clone()
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
+		} else if element.GetType() == value.TypeBinary {
+			if binaryVal, ok := value.AsBinaryValue(element); ok && binaryVal.Length() == 0 {
+				cloned := binaryVal.Clone()
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
+		} else if element.GetType() == value.TypeString {
+			if stringVal, ok := value.AsStringValue(element); ok && stringVal.Length() == 0 {
+				cloned := stringVal.Clone()
+				if shouldTraceExpr {
+					e.emitTraceResult("eval", "", element.Form(), cloned, position, traceStart, nil)
+				}
+				return position + 1, cloned, nil
+			}
+		}
 		if shouldTraceExpr {
 			e.emitTraceResult("eval", "", element.Form(), element, position, traceStart, nil)
 		}
@@ -1206,21 +1236,51 @@ func (e *Evaluator) assignToIndexTarget(container core.Value, finalSeg value.Pat
 		return value.NewNoneVal(), verror.NewInternalError("index segment does not contain int64", [3]string{})
 	}
 
-	if container.GetType() != value.TypeBlock {
-		return value.NewNoneVal(), makePathTypeError("index assignment requires block type", value.TypeToString(container.GetType()), pathStr)
-	}
+	switch container.GetType() {
+	case value.TypeBlock:
+		block, ok := value.AsBlockValue(container)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast block value", [3]string{})
+		}
 
-	block, ok := value.AsBlockValue(container)
-	if !ok {
-		return value.NewNoneVal(), verror.NewInternalError("failed to cast block value", [3]string{})
-	}
+		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
+			return value.NewNoneVal(), err
+		}
+		block.Elements[index-1] = newVal
 
-	if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
-		return value.NewNoneVal(), err
-	}
-	block.Elements[index-1] = newVal
+		return newVal, nil
 
-	return newVal, nil
+	case value.TypeBinary:
+		if newVal.GetType() != value.TypeInteger {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch,
+				[3]string{"binary index assignment", "integer", value.TypeToString(newVal.GetType())})
+		}
+
+		intVal, ok := value.AsIntValue(newVal)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast integer value", [3]string{})
+		}
+
+		if intVal < 0 || intVal > 255 {
+			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds,
+				[3]string{fmt.Sprintf("%d", intVal), "0-255", "binary byte value"})
+		}
+
+		bin, ok := value.AsBinaryValue(container)
+		if !ok {
+			return value.NewNoneVal(), verror.NewInternalError("failed to cast binary value", [3]string{})
+		}
+
+		if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
+			return value.NewNoneVal(), err
+		}
+		bin.Bytes()[index-1] = byte(intVal)
+
+		return newVal, nil
+
+	default:
+		return value.NewNoneVal(), makePathTypeError("index assignment requires block or binary type", value.TypeToString(container.GetType()), pathStr)
+	}
 }
 
 func (e *Evaluator) assignToWordTarget(container core.Value, finalSeg value.PathSegment, newVal core.Value, pathStr string) (core.Value, error) {

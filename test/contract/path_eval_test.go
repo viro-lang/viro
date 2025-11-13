@@ -57,6 +57,23 @@ obj.profile.name`,
 			want:     "\"Bob\"",
 		},
 		{
+			name: "binary index assignment",
+			code: `b: #{0000}
+b.1: 255
+b`,
+			wantType: value.TypeBinary,
+			want:     "#{FF00}",
+		},
+		{
+			name: "binary index assignment with eval",
+			code: `b: #{0000}
+i: 1
+b.(i): 255
+b`,
+			wantType: value.TypeBinary,
+			want:     "#{FF00}",
+		},
+		{
 			name: "nested eval chain",
 			code: `outer: 'profile
 inner: 'name
@@ -273,6 +290,24 @@ data.1`,
 			code: `data: "hello"
 data.1: "x"`,
 			errID: verror.ErrIDPathTypeMismatch,
+		},
+		{
+			name: "binary index assignment with non-integer",
+			code: `b: #{00}
+b.1: "string"`,
+			errID: verror.ErrIDTypeMismatch,
+		},
+		{
+			name: "binary index assignment out of byte range",
+			code: `b: #{00}
+b.1: 256`,
+			errID: verror.ErrIDOutOfBounds,
+		},
+		{
+			name: "binary index assignment negative value",
+			code: `b: #{00}
+b.1: -1`,
+			errID: verror.ErrIDOutOfBounds,
 		},
 	}
 

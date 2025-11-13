@@ -284,6 +284,7 @@ func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator
 	native.RegisterIONatives(rootFrame, evaluator)
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
+	native.RegisterBitwiseNatives(rootFrame)
 
 	// Initialize debugger for script execution (same as REPL)
 	debug.InitDebugger()
