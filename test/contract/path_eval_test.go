@@ -82,6 +82,52 @@ obj.(outer).(inner)`,
 			wantType: value.TypeString,
 			want:     "\"Zoe\"",
 		},
+		{
+			name:     "missing object field returns none",
+			code:     "obj: object [name: \"Alice\"] obj.missing",
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name:     "out of bounds block index returns none",
+			code:     "data: [1 2 3] data.10",
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name:     "zero index returns none",
+			code:     "data: [1 2 3] data.0",
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name:     "eval segment zero index returns none",
+			code:     `idx: fn [] [0] data: [10 20] data.(idx)`,
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name:     "eval segment negative index returns none",
+			code:     `idx: fn [] [-1] data: [10 20] data.(idx)`,
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name: "string result with dot treated literal returns none",
+			code: `field: "profile.extra"
+obj: object [profile: object [extra: "Alice"]]
+obj.(field)`,
+			wantType: value.TypeNone,
+			want:     "none",
+		},
+		{
+			name: "string result with slash treated literal returns none",
+			code: `field: "profile/name"
+obj: object [profile: object [name: "Alice"]]
+obj.(field)`,
+			wantType: value.TypeNone,
+			want:     "none",
+		},
 	}
 
 	for _, tt := range tests {
@@ -230,20 +276,7 @@ obj: object [profile: object [name: "Alice"]]
 :obj.(field).name`,
 			errID: verror.ErrIDInvalidPath,
 		},
-		{
-			name: "string result with dot treated literal",
-			code: `field: "profile.extra"
-obj: object [profile: object [extra: "Alice"]]
-obj.(field)`,
-			errID: verror.ErrIDNoSuchField,
-		},
-		{
-			name: "string result with slash treated literal",
-			code: `field: "profile/name"
-obj: object [profile: object [name: "Alice"]]
-obj.(field)`,
-			errID: verror.ErrIDNoSuchField,
-		},
+
 		{
 			name: "eval segment empty string result",
 			code: `field-fn: fn [] [""]
@@ -252,20 +285,7 @@ obj.(field-fn)`,
 			errID:  verror.ErrIDEmptyPathSegment,
 			reason: "eval-empty-segment",
 		},
-		{
-			name: "eval segment zero index",
-			code: `idx: fn [] [0]
-data: [10 20]
-data.(idx)`,
-			errID: verror.ErrIDOutOfBounds,
-		},
-		{
-			name: "eval segment negative index",
-			code: `idx: fn [] [-1]
-data: [10 20]
-data.(idx)`,
-			errID: verror.ErrIDOutOfBounds,
-		},
+
 		{
 			name: "set-path assignment to non-object",
 			code: `field: 'name

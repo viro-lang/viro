@@ -394,50 +394,43 @@ func TestErrors_ActionWrongArity(t *testing.T) {
 
 func TestErrors_ActionEmptySeries(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantErrID string
+		name  string
+		input string
+		want  string
 	}{
 		{
-			name:      "first on empty block",
-			input:     "first []",
-			wantErrID: "empty-series",
+			name:  "first on empty block returns none",
+			input: "first []",
+			want:  "none",
 		},
 		{
-			name:      "first on empty string",
-			input:     `first ""`,
-			wantErrID: "empty-series",
+			name:  "first on empty string returns none",
+			input: `first ""`,
+			want:  "none",
 		},
 		{
-			name:      "last on empty block",
-			input:     "last []",
-			wantErrID: "empty-series",
+			name:  "last on empty block returns none",
+			input: "last []",
+			want:  "none",
 		},
 		{
-			name:      "last on empty string",
-			input:     `last ""`,
-			wantErrID: "empty-series",
+			name:  "last on empty string returns none",
+			input: `last ""`,
+			want:  "none",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, evalErr := Evaluate(tt.input)
+			result, evalErr := Evaluate(tt.input)
 
-			if evalErr == nil {
-				t.Fatal("Expected error but got nil")
+			if evalErr != nil {
+				t.Fatalf("Unexpected error: %v", evalErr)
 			}
 
-			vErr, ok := evalErr.(*verror.Error)
-			if !ok {
-				t.Fatalf("Expected *verror.Error, got %T", evalErr)
+			if result.Mold() != tt.want {
+				t.Errorf("Expected %s, got %s", tt.want, result.Mold())
 			}
-
-			if vErr.ID != tt.wantErrID {
-				t.Errorf("Expected error ID %s, got %s", tt.wantErrID, vErr.ID)
-			}
-
-			t.Logf("Error message: %s", vErr.Error())
 		})
 	}
 }

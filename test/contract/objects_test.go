@@ -334,9 +334,11 @@ func TestPathReadTraversal(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:    "missing field",
-			code:    "obj: object [name: \"Alice\"] obj.age",
-			wantErr: true, // Should raise Script error (no-such-field)
+			name:       "missing field returns none",
+			code:       "obj: object [name: \"Alice\"] obj.age",
+			expectType: value.TypeNone,
+			expectStr:  "none",
+			wantErr:    false,
 		},
 		{
 			name:    "none-path error",
@@ -585,14 +587,18 @@ func TestPathIndexing(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:    "index out of range",
-			code:    "data: [10 20] data.5",
-			wantErr: true, // Should raise Script error (index-out-of-range)
+			name:       "index out of range returns none",
+			code:       "data: [10 20] data.5",
+			expectType: value.TypeNone,
+			expectStr:  "none",
+			wantErr:    false,
 		},
 		{
-			name:    "zero index (1-based indexing)",
-			code:    "data: [10 20 30] data.0",
-			wantErr: true, // Should raise error (invalid index)
+			name:       "zero index returns none",
+			code:       "data: [10 20 30] data.0",
+			expectType: value.TypeNone,
+			expectStr:  "none",
+			wantErr:    false,
 		},
 		{
 			name:       "nested block access",
@@ -615,9 +621,11 @@ func TestPathIndexing(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:    "string index out of range",
-			code:    "str: \"hi\" str.10",
-			wantErr: true, // Should raise Script error (index-out-of-range)
+			name:       "string index out of range returns none",
+			code:       "str: \"hi\" str.10",
+			expectType: value.TypeNone,
+			expectStr:  "none",
+			wantErr:    false,
 		},
 	}
 
@@ -685,6 +693,15 @@ func TestParentPrototype(t *testing.T) {
 			       level3.a`,
 			expectType: value.TypeInteger,
 			expectStr:  "1",
+			wantErr:    false,
+		},
+		{
+			name: "missing field with prototype returns none",
+			code: `base: make object! [x: 10]
+			       derived: make base [y: 20]
+			       derived.missing`,
+			expectType: value.TypeNone,
+			expectStr:  "none",
 			wantErr:    false,
 		},
 	}
@@ -770,24 +787,7 @@ func TestPathErrorHandling(t *testing.T) {
 			expectCat:   verror.ErrScript,
 			expectToken: "none",
 		},
-		{
-			name:        "no-such-field error",
-			code:        "obj: object [x: 10] obj.y",
-			expectCat:   verror.ErrScript,
-			expectToken: "field",
-		},
-		{
-			name:        "index out of range",
-			code:        "data: [1 2 3] data.10",
-			expectCat:   verror.ErrScript,
-			expectToken: "range",
-		},
-		{
-			name:        "string index out of range",
-			code:        "str: \"hi\" str.10",
-			expectCat:   verror.ErrScript,
-			expectToken: "range",
-		},
+
 		{
 			name:        "path on non-object non-series",
 			code:        "x: 42 x.field",
@@ -957,9 +957,11 @@ func TestGetPathEvaluation(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name:    "get-path on missing field",
-			code:    "obj: object [x: 10] :obj.missing",
-			wantErr: true, // Should raise Script error (no-such-field)
+			name:       "get-path on missing field returns none",
+			code:       "obj: object [x: 10] :obj.missing",
+			expectType: value.TypeNone,
+			expectStr:  "none",
+			wantErr:    false,
 		},
 	}
 

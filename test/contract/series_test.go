@@ -33,16 +33,21 @@ func TestSeries_First(t *testing.T) {
 			want:  value.NewStrVal("h"),
 		},
 		{
-			name:    "empty block error",
-			input:   "first []",
-			wantErr: true,
-			errID:   verror.ErrIDEmptySeries,
+			name:  "empty block returns none",
+			input: "first []",
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "empty string error",
-			input:   "first \"\"",
-			wantErr: true,
-			errID:   verror.ErrIDEmptySeries,
+			name:  "empty string returns none",
+			input: "first \"\"",
+			want:  value.NewNoneVal(),
+		},
+		{
+			name: "first at tail position returns none",
+			input: `data: [1 2 3]
+tailData: tail data
+first tailData`,
+			want: value.NewNoneVal(),
 		},
 		{
 			name:    "non series error",
@@ -101,16 +106,14 @@ func TestSeries_Last(t *testing.T) {
 			want:  value.NewStrVal("o"),
 		},
 		{
-			name:    "empty block error",
-			input:   "last []",
-			wantErr: true,
-			errID:   verror.ErrIDEmptySeries,
+			name:  "empty block returns none",
+			input: "last []",
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "empty string error",
-			input:   "last \"\"",
-			wantErr: true,
-			errID:   verror.ErrIDEmptySeries,
+			name:  "empty string returns none",
+			input: "last \"\"",
+			want:  value.NewNoneVal(),
 		},
 		{
 			name:    "non series error",
@@ -1996,29 +1999,25 @@ func TestSeries_Tail(t *testing.T) {
 		errArgs []string
 	}{
 		{
-			name: "tail block",
+			name: "tail block then first returns none",
 			input: `data: [1 2 3]
 tailData: tail data
 first tailData`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			want: value.NewNoneVal(),
 		},
 		{
-			name: "tail string",
+			name: "tail string then first returns none",
 			input: `str: "hello"
 tailStr: tail str
 first tailStr`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			want: value.NewNoneVal(),
 		},
 		{
-			name: "first at tail position error args",
+			name: "first at tail position returns none",
 			input: `data: [1 2 3]
 tailData: tail data
 first tailData`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
-			errArgs: []string{"3", "3", "3"},
+			want: value.NewNoneVal(),
 		},
 		{
 			name: "tail preserves original position",
@@ -2029,12 +2028,11 @@ first data`,
 			want: value.NewIntVal(1),
 		},
 		{
-			name: "tail on already at tail",
+			name: "tail on already at tail then first returns none",
 			input: `data: [1 2 3]
 tailData: tail data
 first tailData`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			want: value.NewNoneVal(),
 		},
 		{
 			name:    "tail? non-series error",
@@ -2284,34 +2282,29 @@ func TestSeries_At(t *testing.T) {
 			want:  value.NewStrVal("w"),
 		},
 		{
-			name:    "block index out of bounds negative",
-			input:   "at [1 2 3] 0",
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			name:  "block index zero returns none",
+			input: "at [1 2 3] 0",
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "block index out of bounds too large",
-			input:   "at [1 2 3] 4",
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			name:  "block index out of bounds too large returns none",
+			input: "at [1 2 3] 4",
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "string index out of bounds",
-			input:   `at "hi" 3`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			name:  "string index out of bounds returns none",
+			input: `at "hi" 3`,
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "empty block error",
-			input:   "at [] 1",
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			name:  "empty block returns none",
+			input: "at [] 1",
+			want:  value.NewNoneVal(),
 		},
 		{
-			name:    "empty string error",
-			input:   `at "" 1`,
-			wantErr: true,
-			errID:   verror.ErrIDOutOfBounds,
+			name:  "empty string returns none",
+			input: `at "" 1`,
+			want:  value.NewNoneVal(),
 		},
 		{
 			name:    "wrong series type error",

@@ -270,9 +270,9 @@ func TestBinaryLiteral_InExpressions(t *testing.T) {
 			want:  value.NewIntVal(0xEF),
 		},
 		{
-			name:    "first of empty binary error",
-			input:   "first #{}",
-			wantErr: true,
+			name:  "first of empty binary returns none",
+			input: "first #{}",
+			want:  value.NewNoneVal(),
 		},
 		{
 			name:  "assignment to variable",
