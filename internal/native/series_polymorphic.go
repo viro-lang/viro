@@ -2,7 +2,6 @@ package native
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -15,12 +14,13 @@ func seriesFirst(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), err
 	}
 
+	if seriesVal.Length() == 0 {
+		return value.NewNoneVal(), nil
+	}
+
 	val, err := seriesVal.FirstValue()
 	if err != nil {
-		if strings.Contains(err.Error(), "empty series") {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"first element", "", ""})
-		}
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", seriesVal.GetIndex()), fmt.Sprintf("%d", seriesVal.Length()), fmt.Sprintf("%d", seriesVal.GetIndex())})
+		return value.NewNoneVal(), nil
 	}
 	return val, nil
 }
@@ -31,9 +31,13 @@ func seriesLast(args []core.Value, refValues map[string]core.Value, eval core.Ev
 		return value.NewNoneVal(), err
 	}
 
+	if seriesVal.Length() == 0 {
+		return value.NewNoneVal(), nil
+	}
+
 	val, err := seriesVal.LastValue()
 	if err != nil {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDEmptySeries, [3]string{"last element", "", ""})
+		return value.NewNoneVal(), nil
 	}
 	return val, nil
 }
@@ -44,22 +48,18 @@ func seriesOrdinalAccess(series core.Value, ordinal int) (core.Value, error) {
 		return value.NewNoneVal(), err
 	}
 
-	if ordinal < 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", ordinal), fmt.Sprintf("%d", s.Length()), fmt.Sprintf("%d", s.GetIndex())})
-	}
-
 	current := s.GetIndex()
 	length := s.Length()
 
 	if current == 0 {
-		if length <= ordinal {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", ordinal+1), fmt.Sprintf("%d", length), fmt.Sprintf("%d", current)})
+		if ordinal < 0 || length <= ordinal {
+			return value.NewNoneVal(), nil
 		}
 		return s.ElementAt(ordinal), nil
 	}
 
 	target := current + ordinal
-	if target >= length {
+	if ordinal < 0 || target >= length {
 		return value.NewNoneVal(), nil
 	}
 	return s.ElementAt(target), nil

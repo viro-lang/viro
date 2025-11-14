@@ -74,20 +74,9 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 	currentIndex := seriesVal.GetIndex()
 	length := seriesVal.Length()
 
-	if index < 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-	}
-
-	if length == 0 && currentIndex == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-	}
-
 	absoluteIndex := currentIndex + index
 
-	if absoluteIndex >= length {
-		if currentIndex == 0 {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-		}
+	if index < 0 || length == 0 || absoluteIndex >= length {
 		return value.NewNoneVal(), nil
 	}
 
