@@ -534,7 +534,7 @@ func TestHas(t *testing.T) {
 		code      string
 		checkFunc func(*testing.T, core.Value)
 		wantErr   bool
-		errMsg    string
+		errID     string
 	}{
 		{
 			name: "has? existing field",
@@ -607,21 +607,50 @@ func TestHas(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "has? with variable field name",
+			code: "obj: object [name: \"Alice\" age: 30]\nfield: 'name\nhas? obj field",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for variable field name")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? with string field name",
+			code: "obj: object [name: \"Alice\" age: 30]\nhas? obj \"name\"",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for string field name")
+				}
+			},
+			wantErr: false,
+		},
+		{
 			name:    "has? with non-object",
 			code:    "has? 42 'field",
 			wantErr: true,
-			errMsg:  "object",
+			errID:   verror.ErrIDTypeMismatch,
 		},
 		{
 			name:    "has? with wrong number of args (too few)",
 			code:    "obj: object [x: 1]\nhas? obj",
 			wantErr: true,
+			errID:   verror.ErrIDArgCount,
 		},
 		{
-			name:    "has? with non-word field argument",
+			name:    "has? with invalid field type",
 			code:    "obj: object [x: 1]\nhas? obj 42",
 			wantErr: true,
-			errMsg:  "word!",
+			errID:   verror.ErrIDTypeMismatch,
 		},
 	}
 
@@ -633,7 +662,7 @@ func TestHas(t *testing.T) {
 				if err == nil {
 					t.Fatal("expected error but got none")
 				}
-				if tt.errMsg != "" {
+				if tt.errID != "" {
 					verr, ok := err.(*verror.Error)
 					if !ok {
 						t.Fatalf("expected *verror.Error, got %T", err)
@@ -641,8 +670,8 @@ func TestHas(t *testing.T) {
 					if verr.Category != verror.ErrScript {
 						t.Errorf("expected Script error, got %v", verr.Category)
 					}
-					if !strings.Contains(strings.ToLower(verr.Message), tt.errMsg) {
-						t.Errorf("expected error message to contain %q, got %q", tt.errMsg, verr.Message)
+					if verr.ID != tt.errID {
+						t.Errorf("expected error ID %q, got %q", tt.errID, verr.ID)
 					}
 				}
 				return

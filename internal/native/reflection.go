@@ -256,16 +256,20 @@ func Has(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 		)
 	}
 
-	if fieldVal.GetType() != value.TypeWord {
+	var fieldName string
+	if fieldVal.GetType() == value.TypeWord {
+		fieldName, _ = value.AsWordValue(fieldVal)
+	} else if fieldVal.GetType() == value.TypeString {
+		str, _ := value.AsStringValue(fieldVal)
+		fieldName = str.String()
+	} else {
 		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDTypeMismatch,
-			[3]string{"word!", value.TypeToString(fieldVal.GetType()), ""},
+			[3]string{"word! or string!", value.TypeToString(fieldVal.GetType()), ""},
 		)
 	}
 
 	obj, _ := value.AsObject(objVal)
-	fieldName, _ := value.AsWordValue(fieldVal)
-
 	_, exists := obj.GetFieldWithProto(fieldName)
 	return value.NewLogicVal(exists), nil
 }

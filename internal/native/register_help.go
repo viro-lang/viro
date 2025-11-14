@@ -332,11 +332,11 @@ returns the object definition with field names.`,
 inherited through the prototype chain. Returns false if the field does not exist.`,
 			Parameters: []ParamDoc{
 				{Name: "object", Type: "object!", Description: "The object to check", Optional: false},
-				{Name: "field", Type: "word!", Description: "The field name to check for", Optional: false},
+				{Name: "field", Type: "word! string!", Description: "The field name to check for", Optional: false},
 			},
 			Returns:  "[logic!] True if field exists, false otherwise",
-			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "obj: object [name: \"Alice\"]\nhas? obj 'age  ; => false"},
-			SeeAlso:  []string{"words-of", "values-of", "spec-of"}, Tags: []string{"reflection", "object", "field"},
+			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "obj: object [name: \"Alice\"]\nhas? obj 'age  ; => false", "obj: object [name: \"Alice\"]\nfield: 'name\nhas? obj field  ; => true"},
+			SeeAlso:  []string{"words-of", "values-of", "spec-of", "select", "put"}, Tags: []string{"reflection", "object", "field"},
 		},
 	)))
 }
