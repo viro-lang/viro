@@ -316,4 +316,27 @@ returns the object definition with field names.`,
 			SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
 		},
 	)))
+
+	rootFrame.Bind("has?", value.NewFuncVal(value.NewNativeFunction(
+		"has?",
+		[]value.ParamSpec{
+			value.NewParamSpec("object", true),
+			value.NewParamSpec("field", true),
+		},
+		Has,
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Checks if an object has a specific field",
+			Description: `Returns true if the object contains the specified field name, including fields
+inherited through the prototype chain. Returns false if the field does not exist.`,
+			Parameters: []ParamDoc{
+				{Name: "object", Type: "object!", Description: "The object to check", Optional: false},
+				{Name: "field", Type: "word!", Description: "The field name to check for", Optional: false},
+			},
+			Returns:  "[logic!] True if field exists, false otherwise",
+			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "obj: object [name: \"Alice\"]\nhas? obj 'age  ; => false"},
+			SeeAlso:  []string{"words-of", "values-of", "spec-of"}, Tags: []string{"reflection", "object", "field"},
+		},
+	)))
 }

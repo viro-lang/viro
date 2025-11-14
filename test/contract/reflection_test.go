@@ -526,3 +526,135 @@ func TestSource(t *testing.T) {
 		})
 	}
 }
+
+// Test for has? native
+func TestHas(t *testing.T) {
+	tests := []struct {
+		name      string
+		code      string
+		checkFunc func(*testing.T, core.Value)
+		wantErr   bool
+		errMsg    string
+	}{
+		{
+			name: "has? existing field",
+			code: "obj: object [name: \"Alice\" age: 30]\nhas? obj 'name",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for existing field")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? non-existing field",
+			code: "obj: object [name: \"Alice\" age: 30]\nhas? obj 'email",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for non-existing field")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? with prototype chain",
+			code: "parent: make object! [shared: \"inherited\"]\nchild: make parent [own: 42]\nhas? child 'shared",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for field in prototype chain")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? child field overrides parent",
+			code: "parent: object [field: \"parent\"]\nchild: object [field: \"child\"]\nchild.parent: parent\nhas? child 'field",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for overridden field")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? empty object",
+			code: "obj: object []\nhas? obj 'any",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for field in empty object")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:    "has? with non-object",
+			code:    "has? 42 'field",
+			wantErr: true,
+			errMsg:  "object",
+		},
+		{
+			name:    "has? with wrong number of args (too few)",
+			code:    "obj: object [x: 1]\nhas? obj",
+			wantErr: true,
+		},
+		{
+			name:    "has? with non-word field argument",
+			code:    "obj: object [x: 1]\nhas? obj 42",
+			wantErr: true,
+			errMsg:  "word!",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.code)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error but got none")
+				}
+				if tt.errMsg != "" {
+					verr, ok := err.(*verror.Error)
+					if !ok {
+						t.Fatalf("expected *verror.Error, got %T", err)
+					}
+					if verr.Category != verror.ErrScript {
+						t.Errorf("expected Script error, got %v", verr.Category)
+					}
+					if !strings.Contains(strings.ToLower(verr.Message), tt.errMsg) {
+						t.Errorf("expected error message to contain %q, got %q", tt.errMsg, verr.Message)
+					}
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.checkFunc != nil {
+				tt.checkFunc(t, result)
+			}
+		})
+	}
+}

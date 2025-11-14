@@ -241,6 +241,35 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
+func Has(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("has?", 2, len(args))
+	}
+
+	objVal := args[0]
+	fieldVal := args[1]
+
+	if objVal.GetType() != value.TypeObject {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"object!", value.TypeToString(objVal.GetType()), ""},
+		)
+	}
+
+	if fieldVal.GetType() != value.TypeWord {
+		return value.NewNoneVal(), verror.NewScriptError(
+			verror.ErrIDTypeMismatch,
+			[3]string{"word!", value.TypeToString(fieldVal.GetType()), ""},
+		)
+	}
+
+	obj, _ := value.AsObject(objVal)
+	fieldName, _ := value.AsWordValue(fieldVal)
+
+	_, exists := obj.GetFieldWithProto(fieldName)
+	return value.NewLogicVal(exists), nil
+}
+
 // formatBlock formats a block of values into a string representation
 func formatBlock(elements []core.Value) string {
 	parts := make([]string, len(elements))
