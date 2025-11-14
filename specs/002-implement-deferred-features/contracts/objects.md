@@ -69,9 +69,9 @@ context spec
 ### Behavior
 1. Evaluate first element (word/path value) to produce base value.
 2. For each subsequent segment:
-   - If base is `object!` and segment `word!`, lookup field; if missing, check parent objects recursively; if still missing, Script error (`no-such-field`).
-   - If base `block!` or `string!` and segment `integer!`, perform 1-based index access; out-of-range → Script error (`index-out-of-range`).
-   - If segment is paren, evaluate expression each time.
+    - If base is `object!` and segment `word!`, lookup field; if missing, check parent objects recursively; if still missing, return `none`.
+    - If base `block!` or `string!` and segment `integer!`, perform 1-based index access; out-of-range → return `none`.
+    - If segment is paren, evaluate expression each time.
 3. Prior to final resolution, capture penultimate base and segment metadata for assignment operations.
 4. For `object.field: value`, perform type validation if hint exists, update frame slot in place.
 
