@@ -638,7 +638,7 @@ func TestHas(t *testing.T) {
 			name:    "has? with non-object",
 			code:    "has? 42 'field",
 			wantErr: true,
-			errID:   verror.ErrIDTypeMismatch,
+			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
 			name:    "has? with wrong number of args (too few)",
@@ -651,6 +651,64 @@ func TestHas(t *testing.T) {
 			code:    "obj: object [x: 1]\nhas? obj 42",
 			wantErr: true,
 			errID:   verror.ErrIDTypeMismatch,
+		},
+		// Paren! membership tests
+		{
+			name: "has? paren! with existing value",
+			code: "prn: first load-string \"(1 2 3)\"\nhas? prn 2",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for existing value in paren")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? paren! with non-existing value",
+			code: "prn: first load-string \"(1 2 3)\"\nhas? prn 4",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for non-existing value in paren")
+				}
+			},
+			wantErr: false,
+		},
+		// Empty series tests
+		{
+			name: "has? empty string!",
+			code: "str: \"\"\nhas? str \"a\"",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for value in empty string")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? empty binary!",
+			code: "bin: #{}\nhas? bin 1",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for value in empty binary")
+				}
+			},
+			wantErr: false,
 		},
 	}
 

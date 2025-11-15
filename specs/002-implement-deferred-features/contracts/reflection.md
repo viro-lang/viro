@@ -2,7 +2,7 @@
 
 **Feature**: Deferred Language Capabilities (002)  
 **Functional Requirements**: FR-022  
-**Applies To**: `type-of`, `spec-of`, `body-of`, `words-of`, `values-of`, `source`
+**Applies To**: `type-of`, `spec-of`, `body-of`, `words-of`, `values-of`, `source`, `has?`
 
 ---
 
@@ -122,6 +122,32 @@ source value
 
 ### Error Cases
 - Value with no source representation → Script error (`source-unsupported`).
+
+---
+
+## 7. `has?`
+
+### Signature
+```
+has? target value
+```
+
+### Parameters
+- `target`: `object!` or series type (`block!`, `paren!`, `string!`, `binary!`)
+- `value`: any Viro value (for objects: `word!` or `string!` field name)
+
+### Return
+- `logic!`: `true` if membership/field exists, `false` otherwise
+
+### Behavior
+- **Object targets**: Checks for field existence including prototype chain lookup. Field names can be `word!` or `string!`.
+- **Series targets**: Performs O(n) linear scan from index 0, ignoring series cursor position. Uses `core.Value.Equals` for comparison. Accepts any value type for membership testing.
+- **Empty series**: Returns `false` for any sought value.
+- **None handling**: `none` is treated as a regular value for membership testing.
+
+### Error Cases
+- Non-object/non-series target → Script error (`action-no-impl`).
+- Object target with invalid field type (not `word!` or `string!`) → Script error (`type-mismatch`).
 
 ---
 

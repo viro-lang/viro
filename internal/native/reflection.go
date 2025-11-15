@@ -246,32 +246,35 @@ func Has(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 		return value.NewNoneVal(), arityError("has?", 2, len(args))
 	}
 
-	objVal := args[0]
-	fieldVal := args[1]
+	targetVal := args[0]
+	soughtVal := args[1]
 
-	if objVal.GetType() != value.TypeObject {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"object!", value.TypeToString(objVal.GetType()), ""},
-		)
-	}
+	if targetVal.GetType() == value.TypeObject {
+		// Object field lookup
+		var fieldName string
+		if soughtVal.GetType() == value.TypeWord {
+			fieldName, _ = value.AsWordValue(soughtVal)
+		} else if soughtVal.GetType() == value.TypeString {
+			str, _ := value.AsStringValue(soughtVal)
+			fieldName = str.String()
+		} else {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"word! or string!", value.TypeToString(soughtVal.GetType()), ""},
+			)
+		}
 
-	var fieldName string
-	if fieldVal.GetType() == value.TypeWord {
-		fieldName, _ = value.AsWordValue(fieldVal)
-	} else if fieldVal.GetType() == value.TypeString {
-		str, _ := value.AsStringValue(fieldVal)
-		fieldName = str.String()
+		obj, _ := value.AsObject(targetVal)
+		_, exists := obj.GetFieldWithProto(fieldName)
+		return value.NewLogicVal(exists), nil
 	} else {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"word! or string!", value.TypeToString(fieldVal.GetType()), ""},
-		)
+		// Series membership test
+		seriesVal, err := assertSeries(targetVal)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		return value.NewLogicVal(seriesHasValue(seriesVal, soughtVal)), nil
 	}
-
-	obj, _ := value.AsObject(objVal)
-	_, exists := obj.GetFieldWithProto(fieldName)
-	return value.NewLogicVal(exists), nil
 }
 
 // formatBlock formats a block of values into a string representation

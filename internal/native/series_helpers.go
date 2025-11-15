@@ -94,6 +94,16 @@ func seriesTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	return tailSeries, nil
 }
 
+func seriesHasValue(series value.Series, sought core.Value) bool {
+	for i := 0; i < series.Length(); i++ {
+		element := series.ElementAt(i)
+		if element.Equals(sought) {
+			return true
+		}
+	}
+	return false
+}
+
 func assertSeries(series core.Value) (value.Series, error) {
 	seriesVal, ok := series.(value.Series)
 	if !ok {
