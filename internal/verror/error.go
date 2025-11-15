@@ -142,7 +142,6 @@ var messageTemplates = map[string]string{
 	ErrIDTypeMismatch:     "Type mismatch for '%1': expected %2, got %3",
 	ErrIDInvalidOperation: "Invalid operation: %1",
 	ErrIDArgCount:         "Wrong argument count for '%1': expected %2, got %3",
-	ErrIDEmptySeries:      "Cannot get %1 of empty series",
 	ErrIDOutOfBounds:      "Index %1 out of bounds (length: %2)",
 	ErrIDNotImplemented:   "Feature not yet implemented: %1",
 	ErrIDActionNoImpl:     "Action not implemented for type: %1",

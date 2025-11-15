@@ -50,12 +50,6 @@ func TestSC003_ErrorMessageUsability(t *testing.T) {
 			expectedCategory: "Script Error",
 			expectedElements: []string{"argument", "+"},
 		},
-		{
-			name:             "Empty series access",
-			input:            "first []",
-			expectedCategory: "Script Error",
-			expectedElements: []string{"empty", "first"},
-		},
 	}
 
 	passedTests := 0
