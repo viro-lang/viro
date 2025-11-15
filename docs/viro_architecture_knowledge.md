@@ -184,7 +184,7 @@ func FunctionName(args []core.Value, refValues map[string]core.Value, eval core.
 - **object/context**: Create object instances
 - **make**: Object creation with prototypes
 - **select**: Field lookup with defaults
-- **put**: Field assignment
+- **put**: Field assignment (objects and block association lists)
 
 ### Function Arguments & Refinements
 
