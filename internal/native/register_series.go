@@ -447,11 +447,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the first element of a series",
+		Summary:  "Returns the first element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get first element from"},
 		},
-		Returns:  "any! The first element of the series",
+		Returns:  "any! The first element of the series or none",
 		Examples: []string{"first [1 2 3]  ; => 1", `first "hello"  ; => "h"`, "first #{DEADBEEF}  ; => 222"},
 		SeeAlso:  []string{"last", "skip", "take"},
 		Tags:     []string{"series"},
@@ -461,11 +461,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the last element of a series",
+		Summary:  "Returns the last element of a series or none if the series is empty",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get last element from"},
 		},
-		Returns:  "any! The last element of the series",
+		Returns:  "any! The last element of the series or none if empty",
 		Examples: []string{"last [1 2 3]  ; => 3", `last "hello"  ; => "o"`, "last #{DEADBEEF}  ; => 239"},
 		SeeAlso:  []string{"first", "skip", "take"},
 		Tags:     []string{"series"},
@@ -475,11 +475,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the second element of a series",
+		Summary:  "Returns the second element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get second element from"},
 		},
-		Returns:  "any! The second element of the series",
+		Returns:  "any! The second element of the series or none",
 		Examples: []string{"second [1 2 3]  ; => 2", `second "hello"  ; => "e"`, "second #{DEADBEEF}  ; => 173"},
 		SeeAlso:  []string{"first", "third", "at"},
 		Tags:     []string{"series"},
@@ -489,11 +489,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the third element of a series",
+		Summary:  "Returns the third element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get third element from"},
 		},
-		Returns:  "any! The third element of the series",
+		Returns:  "any! The third element of the series or none",
 		Examples: []string{"third [1 2 3]  ; => 3", `third "hello"  ; => "l"`, "third #{DEADBEEF}  ; => 190"},
 		SeeAlso:  []string{"second", "fourth", "at"},
 		Tags:     []string{"series"},
@@ -503,11 +503,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the fourth element of a series",
+		Summary:  "Returns the fourth element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get fourth element from"},
 		},
-		Returns:  "any! The fourth element of the series",
+		Returns:  "any! The fourth element of the series or none",
 		Examples: []string{"fourth [1 2 3 4]  ; => 4", `fourth "hello"  ; => "l"`, "fourth #{DEADBEEF}  ; => 239"},
 		SeeAlso:  []string{"third", "sixth", "at"},
 		Tags:     []string{"series"},
@@ -517,11 +517,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the sixth element of a series",
+		Summary:  "Returns the sixth element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get sixth element from"},
 		},
-		Returns:  "any! The sixth element of the series",
+		Returns:  "any! The sixth element of the series or none",
 		Examples: []string{"sixth [1 2 3 4 5 6]  ; => 6", `sixth "hello world"  ; => " "`, "sixth #{DEADBEEF0102}  ; => 2"},
 		SeeAlso:  []string{"fourth", "seventh", "at"},
 		Tags:     []string{"series"},
@@ -531,11 +531,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the seventh element of a series",
+		Summary:  "Returns the seventh element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get seventh element from"},
 		},
-		Returns:  "any! The seventh element of the series",
+		Returns:  "any! The seventh element of the series or none",
 		Examples: []string{"seventh [1 2 3 4 5 6 7]  ; => 7", `seventh "hello world"  ; => "w"`, "seventh #{DEADBEEF010203}  ; => 3"},
 		SeeAlso:  []string{"sixth", "eighth", "at"},
 		Tags:     []string{"series"},
@@ -545,11 +545,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the eighth element of a series",
+		Summary:  "Returns the eighth element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get eighth element from"},
 		},
-		Returns:  "any! The eighth element of the series",
+		Returns:  "any! The eighth element of the series or none",
 		Examples: []string{"eighth [1 2 3 4 5 6 7 8]  ; => 8", `eighth "hello world"  ; => "o"`, "eighth #{DEADBEEF0102030405}  ; => 4"},
 		SeeAlso:  []string{"seventh", "ninth", "at"},
 		Tags:     []string{"series"},
@@ -559,11 +559,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the ninth element of a series",
+		Summary:  "Returns the ninth element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get ninth element from"},
 		},
-		Returns:  "any! The ninth element of the series",
+		Returns:  "any! The ninth element of the series or none",
 		Examples: []string{"ninth [1 2 3 4 5 6 7 8 9]  ; => 9", `ninth "hello world"  ; => "r"`, "ninth #{DEADBEEF010203040506}  ; => 5"},
 		SeeAlso:  []string{"eighth", "tenth", "at"},
 		Tags:     []string{"series"},
@@ -573,11 +573,11 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the tenth element of a series",
+		Summary:  "Returns the tenth element of a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get tenth element from"},
 		},
-		Returns:  "any! The tenth element of the series",
+		Returns:  "any! The tenth element of the series or none",
 		Examples: []string{"tenth [1 2 3 4 5 6 7 8 9 10]  ; => 10", `tenth "hello world"  ; => "l"`, "tenth #{DEADBEEF01020304050607}  ; => 6"},
 		SeeAlso:  []string{"ninth", "at"},
 		Tags:     []string{"series"},
@@ -604,12 +604,12 @@ func RegisterSeriesNatives(rootFrame core.Frame) {
 		value.NewParamSpec("index", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns the element at the specified 1-based index from a series",
+		Summary:  "Returns the element at the specified 1-based index from a series or none when no element remains (empty series or cursor at tail)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to get element from"},
 			{Name: "index", Type: "integer!", Description: "1-based index of the element to return"},
 		},
-		Returns:  "any! The element at the specified index",
+		Returns:  "any! The element at the specified index or none",
 		Examples: []string{"at [1 2 3] 2  ; => 2", `at "hello" 1  ; => "h"`, "at #{DEADBEEF} 3  ; => 190"},
 		SeeAlso:  []string{"first", "last", "skip", "take"},
 		Tags:     []string{"series", "indexing"},
@@ -927,12 +927,12 @@ Zero count is a no-op. Oversized counts (where index+count exceeds length) raise
 		value.NewParamSpec("series", true),
 	}, &NativeDoc{
 		Category: "Series",
-		Summary:  "Returns true if the series has zero elements",
+		Summary:  "Returns true when the current series index is at or beyond the tail (no remaining elements)",
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to check"},
 		},
-		Returns:  "logic! true if series is empty, false otherwise",
-		Examples: []string{"empty? []  ; => true", "empty? [1 2 3]  ; => false", `empty? ""  ; => true`, `empty? "hello"  ; => false`},
+		Returns:  "logic! true if no remaining elements from current position, false otherwise",
+		Examples: []string{"empty? tail [1 2 3]  ; => true", "empty? back tail [1 2 3]  ; => false", "empty? []  ; => true", "empty? [1 2 3]  ; => false", `empty? ""  ; => true`, `empty? "hello"  ; => false`},
 		SeeAlso:  []string{"length?", "head?", "tail?"},
 		Tags:     []string{"series", "query"},
 	}))
