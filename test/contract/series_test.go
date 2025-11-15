@@ -2450,6 +2450,71 @@ func TestSeries_QueryFunctions(t *testing.T) {
 			errID:   verror.ErrIDActionNoImpl,
 		},
 		{
+			name:  "empty? block at tail",
+			input: "empty? tail [1 2 3]",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? block after skip to end",
+			input: "empty? skip [1 2 3] 3",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? block after back from tail",
+			input: "empty? back tail [1 2 3]",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "empty? string at tail",
+			input: `empty? tail "hello"`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? string after next single char",
+			input: `empty? next "a"`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? string after skip to end",
+			input: `empty? skip "hello" 5`,
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? binary at head",
+			input: "empty? #{DEADBEEF}",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "empty? binary at tail",
+			input: "empty? tail #{DEADBEEF}",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? binary after next",
+			input: "empty? next #{DE}",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? binary after back from tail",
+			input: "empty? back tail #{DEADBEEF}",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "empty? binary after skip to end",
+			input: "empty? skip #{DEADBEEF} 4",
+			want:  value.NewLogicVal(true),
+		},
+		{
+			name:  "empty? block mid-series false",
+			input: "empty? next [1 2 3]",
+			want:  value.NewLogicVal(false),
+		},
+		{
+			name:  "empty? empty block at tail",
+			input: "empty? tail []",
+			want:  value.NewLogicVal(true),
+		},
+		{
 			name:  "head? block at head",
 			input: "head? [1 2 3]",
 			want:  value.NewLogicVal(true),
