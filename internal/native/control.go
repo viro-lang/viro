@@ -649,10 +649,10 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	seriesVal := args[0]
 
-	if !value.IsSeries(seriesVal.GetType()) {
+	if !value.IsSeries(seriesVal.GetType()) && seriesVal.GetType() != value.TypeObject {
 		return value.NewNoneVal(), verror.NewScriptError(
 			verror.ErrIDTypeMismatch,
-			[3]string{"foreach requires series type (block!, string!, binary!)", "", ""},
+			[3]string{"foreach requires series or object type (block!, string!, binary!, object!)", "", ""},
 		)
 	}
 
@@ -680,7 +680,10 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		varNames = make([]string, len(wordBlock.Elements))
 		for i, varElement := range wordBlock.Elements {
 			if !value.IsWord(varElement.GetType()) {
-				return value.NewNoneVal(), typeError("foreach", "word for variable name", varElement)
+				return value.NewNoneVal(), verror.NewScriptError(
+					verror.ErrIDInvalidOperation,
+					[3]string{"foreach vars must be a word or block of words", "", ""},
+				)
 			}
 			varName, _ := value.AsWordValue(varElement)
 			varNames[i] = varName
@@ -692,63 +695,109 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		)
 	}
 
-	series, ok := seriesVal.(value.Series)
-	if !ok {
-		return value.NewNoneVal(), verror.NewScriptError(
-			verror.ErrIDTypeMismatch,
-			[3]string{"value does not implement Series interface", "", ""},
-		)
-	}
-
-	numVars := len(varNames)
-	startIndex := series.GetIndex()
-	length := series.Length()
-
-	if length == 0 || startIndex >= length {
-		return value.NewNoneVal(), nil
-	}
-
-	var result core.Value
-	var err error
-
 	currentFrameIdx := eval.CurrentFrameIndex()
 	currentFrame := eval.GetFrameByIndex(currentFrameIdx)
 
-	numVars = len(varNames)
-	length = series.Length()
-
+	numVars := len(varNames)
+	var result core.Value
+	var err error
 	var iteration int
-	for i := startIndex; i < length; {
-		for j := 0; j < numVars; j++ {
-			if i < length {
-				element := series.ElementAt(i)
-				currentFrame.Bind(varNames[j], element)
-				i++
-			} else {
-				currentFrame.Bind(varNames[j], value.NewNoneVal())
-			}
+
+	if seriesVal.GetType() == value.TypeObject {
+		obj, ok := seriesVal.(*value.ObjectInstance)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"value is not a valid object", "", ""},
+			)
 		}
 
-		if hasIndexRef && indexVal.GetType() != value.TypeNone {
-			currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
+		bindings := obj.GetAllFieldsWithProto()
+		if len(bindings) == 0 {
+			return value.NewNoneVal(), nil
 		}
 
-		result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
+		for _, binding := range bindings {
+			for j := 0; j < numVars; j++ {
+				if j == 0 {
+					currentFrame.Bind(varNames[j], value.NewStrVal(binding.Symbol))
+				} else if j == 1 {
+					fieldVal, _ := obj.GetFieldWithProto(binding.Symbol)
+					currentFrame.Bind(varNames[j], fieldVal)
+				} else {
+					currentFrame.Bind(varNames[j], value.NewNoneVal())
+				}
+			}
 
-		if err != nil {
-			shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
-			if propagateErr != nil {
-				return value.NewNoneVal(), propagateErr
+			if hasIndexRef && indexVal.GetType() != value.TypeNone {
+				currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
 			}
-			if shouldExit {
-				return value.NewNoneVal(), nil
+
+			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
+
+			if err != nil {
+				shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+				if propagateErr != nil {
+					return value.NewNoneVal(), propagateErr
+				}
+				if shouldExit {
+					return value.NewNoneVal(), nil
+				}
+				if shouldContinue {
+					iteration++
+					continue
+				}
 			}
-			if shouldContinue {
-				iteration++
-				continue
-			}
+			iteration++
 		}
-		iteration++
+	} else {
+		series, ok := seriesVal.(value.Series)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"value does not implement Series interface", "", ""},
+			)
+		}
+
+		startIndex := series.GetIndex()
+		length := series.Length()
+
+		if length == 0 || startIndex >= length {
+			return value.NewNoneVal(), nil
+		}
+
+		for i := startIndex; i < length; {
+			for j := 0; j < numVars; j++ {
+				if i < length {
+					element := series.ElementAt(i)
+					currentFrame.Bind(varNames[j], element)
+					i++
+				} else {
+					currentFrame.Bind(varNames[j], value.NewNoneVal())
+				}
+			}
+
+			if hasIndexRef && indexVal.GetType() != value.TypeNone {
+				currentFrame.Bind(indexWord, value.NewIntVal(int64(iteration)))
+			}
+
+			result, err = eval.DoBlock(bodyBlock.Elements, bodyBlock.Locations())
+
+			if err != nil {
+				shouldExit, shouldContinue, propagateErr := handleLoopControlSignal(err)
+				if propagateErr != nil {
+					return value.NewNoneVal(), propagateErr
+				}
+				if shouldExit {
+					return value.NewNoneVal(), nil
+				}
+				if shouldContinue {
+					iteration++
+					continue
+				}
+			}
+			iteration++
+		}
 	}
 
 	return result, nil

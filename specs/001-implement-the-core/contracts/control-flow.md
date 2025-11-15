@@ -210,6 +210,78 @@ while [true] [42]                → infinite loop (user interrupts)
 
 ---
 
+## Native: `foreach`
+
+**Signature**: `foreach series [vars] [body] [--with-index word]`
+
+**Parameters**:
+- `series`: Value (series or object to iterate over)
+- `vars`: Block or Word (variable names for binding)
+- `body`: Block (executed for each iteration)
+- `--with-index`: Optional refinement to bind iteration index
+
+**Return**: Value from last iteration (last value of last body evaluation), none if series/object is empty
+
+**Behavior**:
+1. **Series Iteration**: For series types (block!, string!, binary!), iterates over elements as before
+2. **Object Iteration**: For object! values:
+   - Snapshots all field names once at start using `GetAllFieldsWithProto`
+   - Iterates over field names in prototype inclusion order (parent fields first, then child fields; child overrides parent)
+   - Binds key to first variable, value to second variable, none to extras
+   - Fetches current values per iteration using `GetFieldWithProto` (live lookup)
+3. **Variable Binding**:
+   - Single variable: binds key (for objects) or element (for series)
+   - Two or more variables: binds key+value+none for extras
+   - Extra variables beyond available values bind to none
+4. **Index Counter**: Shared counter increments per iteration regardless of variable count
+5. **Empty Handling**: Returns none for empty series or objects
+
+**Type Rules**:
+- Series: must be series type (block!, string!, binary!) or object! type
+- Vars: must be word or block of words (all elements must be words)
+- Body: must be Block type
+- --with-index: if provided, value must be word type
+
+**Examples**:
+```viro
+; Series iteration (existing behavior)
+foreach [1 2 3] [n] [print n]           → prints 1, 2, 3; returns 3
+foreach "abc" [c] [print c]             → prints "a", "b", "c"; returns "c"
+foreach [1 2 3 4] [a b] [print [a b]]   → prints [1 2], [3 4]; returns 4
+
+; Object iteration (new behavior)
+obj: object [a: 1 b: 2 c: 3]
+foreach obj [key] [print key]           → prints "a", "b", "c"; returns "c"
+foreach obj [key value] [print [key value]] → prints ["a" 1], ["b" 2], ["c" 3]; returns 3
+foreach obj [k v extra] [print [k v extra]] → prints ["a" 1 none], ["b" 2 none], ["c" 3 none]
+
+; With index
+foreach obj --with-index 'i [k] [print [i k]] → prints [0 "a"], [1 "b"], [2 "c"]
+foreach [10 20] --with-index 'i [n] [print [i n]] → prints [0 10], [1 20]
+```
+
+**Error Cases**:
+- Non-series/object value → Script error: "foreach requires series or object type (block!, string!, binary!, object!)"
+- Non-block body → Script error: "Expected block for foreach body"
+- Non-word in vars block → Script error: "foreach vars must be a word or block of words"
+- Empty vars block → Script error: "foreach vars block must contain at least one word"
+- --with-index non-word → Script error: "--with-index requires a word"
+
+**Test Cases**:
+1. `foreach [] [n] [n]` returns `none` (empty series)
+2. `foreach object [] [n] [n]` returns `none` (empty object)
+3. `foreach [1 2 3] [n] [n]` returns `3` (last value)
+4. `foreach obj [k] [k]` iterates keys in prototype order
+5. `foreach obj [k v] [v]` binds key and value, returns last value
+6. `foreach obj [k v x] [x]` binds none to extra variables
+7. `foreach obj --with-index 'i [k] [i]` increments index per iteration
+8. `foreach "abc" --with-index 'i [c] [i]` works with strings
+9. Error on non-series/object input
+10. Error on non-block body
+11. Error on non-word vars
+
+---
+
 ## Common Properties
 
 **Truthy Evaluation** (for all control flow):

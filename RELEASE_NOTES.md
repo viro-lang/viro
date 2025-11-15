@@ -381,6 +381,20 @@ For bug reports, feature requests, or questions:
 
 ### v1.0.1 (Unreleased) - Copy Function Behavioral Change
 
+**New Features**:
+- **`foreach` object iteration**: The `foreach` native now supports iterating over `object!` values in addition to series types
+  - **Object iteration**: Iterates over object fields in prototype inclusion order (parent fields first, then child fields)
+  - **Variable binding**: Single variable binds to field name, two or more variables bind field name + field value + none for extras
+  - **Live value lookup**: Field values are fetched per iteration using `GetFieldWithProto` for current values
+  - **Index support**: `--with-index` refinement works with objects, incrementing per field iteration
+  - **Examples**:
+    ```viro
+    obj: object [a: 1 b: 2 c: 3]
+    foreach obj [key] [print key]           ; prints: a b c
+    foreach obj [key value] [print [key value]] ; prints: [a 1] [b 2] [c 3]
+    foreach obj --with-index 'i [k] [print [i k]] ; prints: [0 a] [1 b] [2 c]
+    ```
+
 **Breaking Changes**:
 - **`copy` function behavior**: The `copy` function now only copies from the current index position forward, not the entire series
   - **Old behavior**: `copy` always copied the entire series regardless of the current index position
