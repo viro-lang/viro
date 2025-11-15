@@ -248,21 +248,28 @@ func blockKeyMatches(candidate core.Value, sought core.Value) bool {
 	return candidate.Equals(sought)
 }
 
+// firstKeyIndexFrom returns the index of the first key after the given start index,
+// ensuring we start on a key position (even indices in 0-based alternating key/value pairs)
+// For put operations, this ensures we search from after the current cursor position
 func firstKeyIndexFrom(block *value.BlockValue, start int) int {
 	elements := block.Elements
 	if start >= len(elements) {
 		return len(elements)
 	}
-	// If start points to a value (odd position), advance to next key
-	if start%2 == 1 {
-		start++
+	// Always advance to the next key position after start
+	nextKey := ((start + 1) / 2 * 2) + 2
+	if nextKey > len(elements) {
+		return len(elements)
 	}
-	return start
+	return nextKey
 }
 
 func putBlockAssoc(block *value.BlockValue, key core.Value, newVal core.Value) core.Value {
 	elements := block.Elements
 	startIdx := firstKeyIndexFrom(block, block.Index)
+	if block.Index == 0 {
+		startIdx = 0
+	}
 
 	for i := startIdx; i < len(elements); i += 2 {
 		if blockKeyMatches(elements[i], key) {

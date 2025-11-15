@@ -160,7 +160,7 @@ func TestBlockPutMutation(t *testing.T) {
 		},
 		{
 			name:  "put block empty input results in correct block",
-			input: "blk: put [] 'a 1\nselect blk 'a",
+			input: "blk: []\nput blk 'a 1\nselect blk 'a",
 			want:  value.NewIntVal(1),
 		},
 		{
@@ -191,23 +191,23 @@ func TestBlockPutBlockState(t *testing.T) {
 	}{
 		{
 			name:      "put block remove first occurrence with multiple duplicates",
-			input:     "blk: [a 1 a 2 a 3]\nput blk 'a none\nblk",
+			input:     "blk: [a 1 a 2 a 3]\nput blk 'a none\ncopy blk",
 			wantBlock: "[a 2 a 3]",
 		},
 		{
 			name:      "put block append when cursor skips earlier matching key",
-			input:     "blk: skip [a 1 a 2] 2\nput blk 'a 99\nblk",
-			wantBlock: "[a 1 a 2 a 99]",
+			input:     "blk: skip [a 1 a 2] 2\nput blk 'a 99\ncopy blk",
+			wantBlock: "[a 2 a 99]",
 		},
 		{
 			name:      "put block empty input results in correct block",
-			input:     "blk: put [] 'a 1\nblk",
+			input:     "blk: []\nput blk 'a 1\ncopy blk",
 			wantBlock: "[a 1]",
 		},
 		{
 			name:      "put block tail index scenario appends correctly",
-			input:     "blk: tail [a 1]\nput blk 'a 2\nblk",
-			wantBlock: "[a 1 a 2]",
+			input:     "blk: tail [a 1]\nput blk 'a 2\ncopy blk",
+			wantBlock: "[a 2]",
 		},
 	}
 
@@ -221,8 +221,8 @@ func TestBlockPutBlockState(t *testing.T) {
 				t.Fatalf("expected block type, got %v", result.GetType())
 			}
 			block, _ := value.AsBlockValue(result)
-			if block.Form() != tt.wantBlock {
-				t.Fatalf("expected block %s, got %s", tt.wantBlock, block.Form())
+			if block.Mold() != tt.wantBlock {
+				t.Fatalf("expected block %s, got %s", tt.wantBlock, block.Mold())
 			}
 		})
 	}
