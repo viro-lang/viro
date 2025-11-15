@@ -195,9 +195,9 @@ func TestBlockPutBlockState(t *testing.T) {
 			wantBlock: "[a 2 a 3]",
 		},
 		{
-			name:      "put block append when cursor skips earlier matching key",
+			name:      "put block update when cursor points at target key",
 			input:     "blk: skip [a 1 a 2] 2\nput blk 'a 99\ncopy blk",
-			wantBlock: "[a 2 a 99]",
+			wantBlock: "[a 99]",
 		},
 		{
 			name:      "put block empty input results in correct block",
@@ -208,6 +208,16 @@ func TestBlockPutBlockState(t *testing.T) {
 			name:      "put block tail index scenario appends correctly",
 			input:     "blk: tail [a 1]\nput blk 'a 2\ncopy blk",
 			wantBlock: "[a 2]",
+		},
+		{
+			name:      "put block respect index cursor updates second pair",
+			input:     "blk: next [a 1 a 2]\nput blk 'a 99\ncopy head blk",
+			wantBlock: "[a 1 a 99]",
+		},
+		{
+			name:      "put block remove when cursor points at value of target pair",
+			input:     "blk: next [a 1 a 2]\nput blk 'a none\ncopy head blk",
+			wantBlock: "[a 1]",
 		},
 	}
 
