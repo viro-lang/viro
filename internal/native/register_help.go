@@ -320,23 +320,25 @@ returns the object definition with field names.`,
 	rootFrame.Bind("has?", value.NewFuncVal(value.NewNativeFunction(
 		"has?",
 		[]value.ParamSpec{
-			value.NewParamSpec("object", true),
-			value.NewParamSpec("field", true),
+			value.NewParamSpec("target", true),
+			value.NewParamSpec("value", true),
 		},
 		Has,
 		false,
 		&NativeDoc{
 			Category: "Reflection",
-			Summary:  "Checks if an object has a specific field",
-			Description: `Returns true if the object contains the specified field name, including fields
-inherited through the prototype chain. Returns false if the field does not exist.`,
+			Summary:  "Tests for membership or field existence",
+			Description: `For objects: Returns true if the object contains the specified field name, including fields
+inherited through the prototype chain. For series (block!, paren!, string!, binary!): Performs
+linear scan to test if the value exists anywhere in the series, ignoring the series cursor position.
+Empty series always return false. Uses O(n) scan for series membership.`,
 			Parameters: []ParamDoc{
-				{Name: "object", Type: "object!", Description: "The object to check", Optional: false},
-				{Name: "field", Type: "word! string!", Description: "The field name to check for", Optional: false},
+				{Name: "target", Type: "object! block! paren! string! binary!", Description: "The target to check", Optional: false},
+				{Name: "value", Type: "any (field name for objects)", Description: "The value/field to check for", Optional: false},
 			},
-			Returns:  "[logic!] True if field exists, false otherwise",
-			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "obj: object [name: \"Alice\"]\nhas? obj 'age  ; => false", "obj: object [name: \"Alice\"]\nfield: 'name\nhas? obj field  ; => true"},
-			SeeAlso:  []string{"words-of", "values-of", "spec-of", "select", "put"}, Tags: []string{"reflection", "object", "field"},
+			Returns:  "[logic!] True if value/field exists, false otherwise",
+			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "blk: [1 2 3]\nhas? blk 2  ; => true", "prn: first load-string \"(1 2 3)\"\nhas? prn 2  ; => true", "str: \"hello\"\nhas? str \"e\"  ; => true", "bin: #{010203}\nhas? bin 2  ; => true", "blk: []\nhas? blk 1  ; => false"},
+			SeeAlso:  []string{"words-of", "values-of", "spec-of", "select", "put", "find"}, Tags: []string{"reflection", "object", "field", "series", "membership"},
 		},
 	)))
 }

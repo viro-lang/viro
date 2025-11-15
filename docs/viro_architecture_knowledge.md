@@ -186,6 +186,41 @@ func FunctionName(args []core.Value, refValues map[string]core.Value, eval core.
 - **select**: Field lookup with defaults
 - **put**: Field assignment (objects and block association lists)
 
+#### Membership Testing (`has?`)
+- **Polymorphic function**: Works on both objects and series types
+- **Object behavior**: Field existence check with prototype chain lookup
+- **Series behavior**: O(n) linear scan from index 0, ignoring cursor position
+- **Comparison**: Uses `core.Value.Equals` for deep equality comparison
+- **Empty series**: Always returns `false`
+- **Performance**: Series membership is linear time, suitable for small to medium series
+
+**Examples**:
+```viro
+; Object field testing
+obj: object [name: "Alice" age: 30]
+has? obj 'name     ; true
+has? obj 'email    ; false (field doesn't exist)
+
+; Series membership testing
+blk: [1 2 3 "hello"]
+has? blk 2         ; true
+has? blk 4         ; false
+has? blk "hello"   ; true
+
+prn: first load-string "(1 2 3)"
+has? prn 2         ; true (works with paren! series)
+
+str: "world"
+has? str "o"       ; true
+has? str "z"       ; false
+
+bin: #{010203}
+has? bin 2         ; true (works with binary! series)
+
+empty: []
+has? empty 1       ; false
+```
+
 ### Function Arguments & Refinements
 
 Viro supports two types of function parameters:
