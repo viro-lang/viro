@@ -490,32 +490,36 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	fieldVal := args[1]
 	newVal := args[2]
 
-	// Extract field name
-	var fieldName string
-	switch fieldVal.GetType() {
-	case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
-		fieldName, _ = value.AsWordValue(fieldVal)
-	case value.TypeString:
-		str, _ := value.AsStringValue(fieldVal)
-		fieldName = str.String()
+	// Support objects and blocks
+	switch targetVal.GetType() {
+	case value.TypeObject:
+		// Extract field name for objects
+		var fieldName string
+		switch fieldVal.GetType() {
+		case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
+			fieldName, _ = value.AsWordValue(fieldVal)
+		case value.TypeString:
+			str, _ := value.AsStringValue(fieldVal)
+			fieldName = str.String()
+		default:
+			return value.NewNoneVal(), typeError("put field", "word or string", fieldVal)
+		}
+
+		obj, _ := value.AsObject(targetVal)
+
+		// Set the field using owned frame (creates field if it doesn't exist)
+		obj.SetField(fieldName, newVal)
+
+		// Emit trace event for field write (Feature 002, T097)
+		trace.TraceObjectFieldWrite(fieldName, newVal.Form())
+
+		return newVal, nil
+	case value.TypeBlock:
+		block, _ := value.AsBlockValue(targetVal)
+		return putBlockAssoc(block, fieldVal, newVal), nil
 	default:
-		return value.NewNoneVal(), typeError("put field", "word or string", fieldVal)
+		return value.NewNoneVal(), typeError("put target", "object or block", targetVal)
 	}
-
-	// Only support objects for now
-	if targetVal.GetType() != value.TypeObject {
-		return value.NewNoneVal(), typeError("put target", "object", targetVal)
-	}
-
-	obj, _ := value.AsObject(targetVal)
-
-	// Set the field using owned frame (creates field if it doesn't exist)
-	obj.SetField(fieldName, newVal)
-
-	// Emit trace event for field write (Feature 002, T097)
-	trace.TraceObjectFieldWrite(fieldName, newVal.Form())
-
-	return newVal, nil
 }
 
 // ToInteger implements the `to-integer` native for converting values to integers.
