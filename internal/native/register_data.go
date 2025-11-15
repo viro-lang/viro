@@ -296,8 +296,8 @@ new or overriding field definitions. The new object shares the parent's fields b
 		&NativeDoc{
 			Category: "Objects",
 			Summary:  "Sets a field value in an object or key/value pair in a block",
-			Description: `For objects: Updates an existing field in an object with a new value.
-The field must already exist in the object's manifest - dynamic field addition is not allowed.
+			Description: `For objects: Sets or updates an object field with a new value.
+Creates the field if it doesn't exist, allowing dynamic field addition.
 If the field has a type hint, the new value must match that type.
 
 For blocks: Treats the block as an association list of alternating key/value pairs.

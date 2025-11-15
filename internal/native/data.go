@@ -490,10 +490,8 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 	fieldVal := args[1]
 	newVal := args[2]
 
-	// Support objects and blocks
 	switch targetVal.GetType() {
 	case value.TypeObject:
-		// Extract field name for objects
 		var fieldName string
 		switch fieldVal.GetType() {
 		case value.TypeWord, value.TypeGetWord, value.TypeLitWord:
@@ -507,10 +505,8 @@ func Put(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 
 		obj, _ := value.AsObject(targetVal)
 
-		// Set the field using owned frame (creates field if it doesn't exist)
 		obj.SetField(fieldName, newVal)
 
-		// Emit trace event for field write (Feature 002, T097)
 		trace.TraceObjectFieldWrite(fieldName, newVal.Form())
 
 		return newVal, nil

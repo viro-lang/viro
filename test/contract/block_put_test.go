@@ -7,10 +7,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// Test suite for Feature 038: Block put support
-// Contract tests validate block association list mutation via put native
-// These tests follow TDD: they MUST FAIL initially before implementation
-
 func TestBlockPut(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -86,6 +82,26 @@ func TestBlockPut(t *testing.T) {
 			input: "blk: next [a 1 a 2]\nput blk 'a none",
 			want:  value.NewNoneVal(),
 		},
+		{
+			name:  "put block remove first occurrence with multiple duplicates",
+			input: "blk: [a 1 a 2 a 3]\nput blk 'a none",
+			want:  value.NewNoneVal(),
+		},
+		{
+			name:  "put block append when cursor skips earlier matching key",
+			input: "blk: skip [a 1 a 2] 2\nput blk 'a 99",
+			want:  value.NewIntVal(99),
+		},
+		{
+			name:  "put block empty input",
+			input: "put [] 'a 1",
+			want:  value.NewIntVal(1),
+		},
+		{
+			name:  "put block tail index scenario",
+			input: "blk: tail [a 1]\nput blk 'a 2",
+			want:  value.NewIntVal(2),
+		},
 	}
 
 	for _, tt := range tests {
@@ -100,7 +116,6 @@ func TestBlockPut(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			// Special case for object test - just check it's an object
 			if tt.name == "put block mixed value types object" {
 				if result.GetType() != value.TypeObject {
 					t.Fatalf("expected object type, got %v", result.GetType())
@@ -133,6 +148,26 @@ func TestBlockPutMutation(t *testing.T) {
 			input: "blk: [a 1 b 2]\nput blk 'a none\nselect blk 'a",
 			want:  value.NewNoneVal(),
 		},
+		{
+			name:  "put block remove first occurrence with multiple duplicates",
+			input: "blk: [a 1 a 2 a 3]\nput blk 'a none\nselect blk 'a",
+			want:  value.NewIntVal(2),
+		},
+		{
+			name:  "put block append when cursor skips earlier matching key",
+			input: "blk: skip [a 1 a 2] 2\nput blk 'a 99\nselect blk 'a",
+			want:  value.NewIntVal(1),
+		},
+		{
+			name:  "put block empty input results in correct block",
+			input: "blk: put [] 'a 1\nselect blk 'a",
+			want:  value.NewIntVal(1),
+		},
+		{
+			name:  "put block tail index scenario appends correctly",
+			input: "blk: tail [a 1]\nput blk 'a 2\nselect blk 'a",
+			want:  value.NewIntVal(1),
+		},
 	}
 
 	for _, tt := range mutationTests {
@@ -143,6 +178,51 @@ func TestBlockPutMutation(t *testing.T) {
 			}
 			if !result.Equals(tt.want) {
 				t.Fatalf("expected %v, got %v", tt.want, result)
+			}
+		})
+	}
+}
+
+func TestBlockPutBlockState(t *testing.T) {
+	blockStateTests := []struct {
+		name      string
+		input     string
+		wantBlock string
+	}{
+		{
+			name:      "put block remove first occurrence with multiple duplicates",
+			input:     "blk: [a 1 a 2 a 3]\nput blk 'a none\nblk",
+			wantBlock: "[a 2 a 3]",
+		},
+		{
+			name:      "put block append when cursor skips earlier matching key",
+			input:     "blk: skip [a 1 a 2] 2\nput blk 'a 99\nblk",
+			wantBlock: "[a 1 a 2 a 99]",
+		},
+		{
+			name:      "put block empty input results in correct block",
+			input:     "blk: put [] 'a 1\nblk",
+			wantBlock: "[a 1]",
+		},
+		{
+			name:      "put block tail index scenario appends correctly",
+			input:     "blk: tail [a 1]\nput blk 'a 2\nblk",
+			wantBlock: "[a 1 a 2]",
+		},
+	}
+
+	for _, tt := range blockStateTests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if result.GetType() != value.TypeBlock {
+				t.Fatalf("expected block type, got %v", result.GetType())
+			}
+			block, _ := value.AsBlockValue(result)
+			if block.Form() != tt.wantBlock {
+				t.Fatalf("expected block %s, got %s", tt.wantBlock, block.Form())
 			}
 		})
 	}

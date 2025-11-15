@@ -14,7 +14,6 @@ func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	sought := args[1]
 
-	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
 	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
@@ -118,8 +117,8 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	hasHead := hasRefinement(refValues, "head")
 	hasTail := hasRefinement(refValues, "tail")
-	hasAuto := hasRefinement(refValues, "auto")   // ignored for blocks
-	hasLines := hasRefinement(refValues, "lines") // ignored for blocks
+	hasAuto := hasRefinement(refValues, "auto")
+	hasLines := hasRefinement(refValues, "lines")
 	hasAll := hasRefinement(refValues, "all")
 	hasWith, withVal := getRefinementValue(refValues, "with")
 
@@ -240,8 +239,6 @@ func blockTrimWith(block *value.BlockValue, withVal core.Value) core.Value {
 	return block
 }
 
-// blockKeyMatches compares a candidate key with a sought key using the same logic as select:
-// word-like types are compared by symbol equality, others by Equals
 func blockKeyMatches(candidate core.Value, sought core.Value) bool {
 	if isWordLike(candidate.GetType()) && isWordLike(sought.GetType()) {
 		candidateSymbol, _ := value.AsWordValue(candidate)
@@ -251,8 +248,6 @@ func blockKeyMatches(candidate core.Value, sought core.Value) bool {
 	return candidate.Equals(sought)
 }
 
-// firstKeyIndexFrom returns the index of the first key at or after the given start index,
-// ensuring we start on a key position (even indices in 0-based alternating key/value pairs)
 func firstKeyIndexFrom(block *value.BlockValue, start int) int {
 	elements := block.Elements
 	if start >= len(elements) {
@@ -265,25 +260,18 @@ func firstKeyIndexFrom(block *value.BlockValue, start int) int {
 	return start
 }
 
-// putBlockAssoc mutates a block as an association list, updating/appending/removing key/value pairs
-// Returns the assigned value (or none for removal)
 func putBlockAssoc(block *value.BlockValue, key core.Value, newVal core.Value) core.Value {
 	elements := block.Elements
 	startIdx := firstKeyIndexFrom(block, block.Index)
 
-	// Search for existing key starting from cursor
 	for i := startIdx; i < len(elements); i += 2 {
 		if blockKeyMatches(elements[i], key) {
 			if newVal.GetType() == value.TypeNone {
-				// Remove key/value pair
 				if i+1 < len(elements) {
-					// Has value, remove both
 					block.Elements = append(elements[:i], elements[i+2:]...)
 				} else {
-					// No value (odd length), remove just key
 					block.Elements = elements[:i]
 				}
-				// Adjust index if removal occurred before current position
 				if i < block.Index {
 					block.Index -= 2
 					if block.Index < 0 {
@@ -292,12 +280,9 @@ func putBlockAssoc(block *value.BlockValue, key core.Value, newVal core.Value) c
 				}
 				return value.NewNoneVal()
 			} else {
-				// Update existing value
 				if i+1 < len(elements) {
-					// Has existing value, replace it
 					elements[i+1] = newVal
 				} else {
-					// No existing value (odd length), append it
 					block.Elements = append(elements, newVal)
 				}
 				return newVal
@@ -305,12 +290,9 @@ func putBlockAssoc(block *value.BlockValue, key core.Value, newVal core.Value) c
 		}
 	}
 
-	// Key not found
 	if newVal.GetType() == value.TypeNone {
-		// No action for removal of non-existent key
 		return value.NewNoneVal()
 	} else {
-		// Append new key/value pair
 		block.Elements = append(elements, key, newVal)
 		return newVal
 	}
