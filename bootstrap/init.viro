@@ -1,0 +1,10 @@
+
+import: fn [file] [ do parse tokenize read file ]
+
+map: fn [series f] [
+  result: []
+  foreach series item [
+    append result f item
+  ]
+  result
+]

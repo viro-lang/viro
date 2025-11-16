@@ -96,6 +96,11 @@ func NewAccessError(id string, args [3]string) *Error {
 	return NewError(ErrAccess, id, args)
 }
 
+// NewBootstrapError creates a bootstrap error (initialization).
+func NewBootstrapError(id string, args [3]string) *Error {
+	return NewError(ErrBootstrap, id, args)
+}
+
 // NewInternalError creates an internal error (interpreter bug).
 func NewInternalError(id string, args [3]string) *Error {
 	return NewError(ErrInternal, id, args)
@@ -174,6 +179,8 @@ var messageTemplates = map[string]string{
 	ErrIDConnectionRefused:     "Connection refused: %1",
 	ErrIDUnknownScheme:         "Unknown port scheme: %1",
 
+	ErrIDBootstrapFailure: "Bootstrap error during %1: %2",
+
 	ErrIDSpecUnsupported:   "spec-of: unsupported type %1",
 	ErrIDNoBody:            "body-of: %1",
 	ErrIDSourceUnsupported: "source: unsupported type %1",
@@ -194,6 +201,8 @@ func ToExitCode(category ErrorCategory) int {
 		return 2 // ExitSyntax
 	case ErrAccess:
 		return 3 // ExitAccess
+	case ErrBootstrap:
+		return 70 // ExitInternal
 	case ErrInternal:
 		return 70 // ExitInternal
 	default:

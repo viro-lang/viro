@@ -22,13 +22,14 @@ package verror
 type ErrorCategory uint16
 
 const (
-	ErrThrow    ErrorCategory = 0   // Loop control: break outside loop, etc.
-	ErrNote     ErrorCategory = 100 // Warnings: non-fatal issues
-	ErrSyntax   ErrorCategory = 200 // Syntax: parsing errors, malformed input
-	ErrScript   ErrorCategory = 300 // Script: undefined words, type mismatches, invalid operations
-	ErrMath     ErrorCategory = 400 // Math: division by zero, overflow, underflow
-	ErrAccess   ErrorCategory = 500 // Access: file errors, permissions (future)
-	ErrInternal ErrorCategory = 900 // Internal: stack overflow, out-of-memory, interpreter bugs
+	ErrThrow     ErrorCategory = 0   // Loop control: break outside loop, etc.
+	ErrNote      ErrorCategory = 100 // Warnings: non-fatal issues
+	ErrSyntax    ErrorCategory = 200 // Syntax: parsing errors, malformed input
+	ErrScript    ErrorCategory = 300 // Script: undefined words, type mismatches, invalid operations
+	ErrMath      ErrorCategory = 400 // Math: division by zero, overflow, underflow
+	ErrAccess    ErrorCategory = 500 // Access: file errors, permissions (future)
+	ErrBootstrap ErrorCategory = 600 // Bootstrap: interpreter initialization failures
+	ErrInternal  ErrorCategory = 900 // Internal: stack overflow, out-of-memory, interpreter bugs
 )
 
 // String returns the category name for display.
@@ -46,6 +47,8 @@ func (c ErrorCategory) String() string {
 		return "Math"
 	case ErrAccess:
 		return "Access"
+	case ErrBootstrap:
+		return "Bootstrap"
 	case ErrInternal:
 		return "Internal"
 	default:
@@ -117,11 +120,14 @@ const (
 
 	// Access errors (500) - Feature 002: Port I/O
 	ErrIDPortClosed            = "port-closed"             // operation on closed port
-	ErrIDTLSVerificationFailed = "tls-verification-failed" // HTTPS certificate validation failed
+	ErrIDTLSVerificationFailed = "tls-verification-failed" // HTTPS certificate verification failed
 	ErrIDSandboxViolation      = "sandbox-violation"       // file path escapes sandbox root
 	ErrIDTimeout               = "timeout"                 // I/O operation timeout
 	ErrIDConnectionRefused     = "connection-refused"      // TCP/HTTP connection refused
 	ErrIDUnknownScheme         = "unknown-port-scheme"     // unsupported port scheme
+
+	// Bootstrap errors (600)
+	ErrIDBootstrapFailure = "bootstrap-failure"
 
 	// Internal errors (900)
 	ErrIDStackOverflow   = "stack-overflow"

@@ -140,6 +140,8 @@ func FormatErrorWithContext(err *Error) string {
 		category = "Math"
 	case 500:
 		category = "Access"
+	case 600:
+		category = "Bootstrap"
 	case 900:
 		category = "Internal"
 	}

@@ -136,7 +136,10 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 		return nil, err
 	}
 
-	evaluator := bootstrap.NewEvaluatorWithNatives(os.Stdout, os.Stderr, os.Stdin, false)
+	evaluator, err := bootstrap.NewEvaluatorWithNatives(os.Stdout, os.Stderr, os.Stdin, false)
+	if err != nil {
+		return nil, err
+	}
 	bootstrap.InjectSystemArgs(evaluator, opts.Args)
 
 	repl := &REPL{
@@ -173,7 +176,11 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	bootstrap.InitDebugger()
 
 	if e == nil {
-		e = bootstrap.NewEvaluatorWithNatives(out, out, strings.NewReader(""), false)
+		evaluator, err := bootstrap.NewEvaluatorWithNatives(out, out, strings.NewReader(""), false)
+		if err != nil {
+			panic(err)
+		}
+		e = evaluator
 		bootstrap.InjectSystemArgs(e, []string{})
 	} else {
 		// If evaluator is provided, just configure I/O
