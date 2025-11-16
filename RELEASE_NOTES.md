@@ -384,13 +384,13 @@ For bug reports, feature requests, or questions:
 **New Features**:
 - **`foreach` object iteration**: The `foreach` native now supports iterating over `object!` values in addition to series types
   - **Object iteration**: Iterates over object fields in prototype inclusion order (parent fields first, then child fields)
-  - **Variable binding**: Single variable binds to field name, two or more variables bind field name + field value + none for extras
+  - **Variable binding**: Single variable binds to field name as `word!` value, two or more variables bind field name + field value + none for extras
   - **Live value lookup**: Field values are fetched per iteration using `GetFieldWithProto` for current values
   - **Index support**: `--with-index` refinement works with objects, incrementing per field iteration
   - **Examples**:
     ```viro
     obj: object [a: 1 b: 2 c: 3]
-    foreach obj [key] [print key]           ; prints: a b c
+    foreach obj [key] [print key]           ; prints: a b c (keys as words)
     foreach obj [key value] [print [key value]] ; prints: [a 1] [b 2] [c 3]
     foreach obj --with-index 'i [k] [print [i k]] ; prints: [0 a] [1 b] [2 c]
     ```
