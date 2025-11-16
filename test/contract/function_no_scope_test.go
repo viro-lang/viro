@@ -181,6 +181,42 @@ func TestFunction_NoScope(t *testing.T) {
 			expected: value.NewNoneVal(),
 			wantErr:  true,
 		},
+		{
+			name: "no-scope function can read caller positional parameter",
+			code: `
+				outer: fn [param] [
+					inner: fn --no-scope [] [param]
+					inner
+				]
+				outer 42
+			`,
+			expected: value.NewIntVal(42),
+			wantErr:  false,
+		},
+		{
+			name: "no-scope function can read caller refinement flag",
+			code: `
+				outer: fn [val --flag] [
+					inner: fn --no-scope [] [flag]
+					inner
+				]
+				outer 10 --flag
+			`,
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name: "no-scope function can read caller refinement value",
+			code: `
+				outer: fn [val --refine value] [
+					inner: fn --no-scope [] [value]
+					inner
+				]
+				outer 10 --refine 99
+			`,
+			expected: value.NewIntVal(99),
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
