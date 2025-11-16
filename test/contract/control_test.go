@@ -771,12 +771,12 @@ func TestControlFlow_Foreach(t *testing.T) {
 		{
 			name:     "foreach object single var binds keys",
 			input:    "obj: object [a: 1 b: 2 c: 3]\nresult: []\nforeach obj [k] [result: append result k]\nresult",
-			expected: value.NewBlockVal([]core.Value{value.NewStrVal("a"), value.NewStrVal("b"), value.NewStrVal("c")}),
+			expected: value.NewBlockVal([]core.Value{value.NewWordVal("a"), value.NewWordVal("b"), value.NewWordVal("c")}),
 			wantErr:  false,
 		},
 		{
 			name:     "foreach object two vars binds key and value",
-			input:    "obj: object [x: 10 y: 20]\nresult: []\nforeach obj [k v] [result: append result (join k (form v))]\nresult",
+			input:    "obj: object [x: 10 y: 20]\nresult: []\nforeach obj [k v] [result: append result (join (form k) (form v))]\nresult",
 			expected: value.NewBlockVal([]core.Value{value.NewStrVal("x10"), value.NewStrVal("y20")}),
 			wantErr:  false,
 		},
@@ -795,7 +795,7 @@ func TestControlFlow_Foreach(t *testing.T) {
 		{
 			name:     "foreach object with prototype ordering",
 			input:    "parent: make object! [a: 1 c: 3]\nchild: make parent [b: 2 c: 30]\nresult: []\nforeach child [k] [result: append result k]\nresult",
-			expected: value.NewBlockVal([]core.Value{value.NewStrVal("a"), value.NewStrVal("c"), value.NewStrVal("b")}),
+			expected: value.NewBlockVal([]core.Value{value.NewWordVal("a"), value.NewWordVal("c"), value.NewWordVal("b")}),
 			wantErr:  false,
 		},
 		{
@@ -814,6 +814,12 @@ func TestControlFlow_Foreach(t *testing.T) {
 			name:     "foreach object with index",
 			input:    "obj: object [p: 1 q: 2]\nresult: []\nforeach obj --with-index 'i [k] [result: append result i]\nresult",
 			expected: value.NewBlockVal([]core.Value{value.NewIntVal(0), value.NewIntVal(1)}),
+			wantErr:  false,
+		},
+		{
+			name:     "foreach object keys are word values",
+			input:    "obj: object [test: 42]\nforeach obj [k] [type-of k]",
+			expected: value.NewWordVal("word!"),
 			wantErr:  false,
 		},
 	}
