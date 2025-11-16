@@ -184,6 +184,7 @@ Be careful to avoid infinite loops.`,
 		[]value.ParamSpec{
 			value.NewParamSpec("params", false),
 			value.NewParamSpec("body", false),
+			value.NewRefinementSpec("no-scope", false),
 		},
 		Fn,
 		false,
@@ -192,14 +193,24 @@ Be careful to avoid infinite loops.`,
 			Summary:  "Creates a new function",
 			Description: `Defines a new function with parameters and a body. The first argument is a block
 containing parameter names, and the second is a block containing the function body code.
-Returns a function value that can be called. Functions capture their defining context (closure).`,
+Returns a function value that can be called. Functions capture their defining context (closure).
+
+Refinements:
+  --no-scope: Execute function in caller's scope instead of creating a new local scope.
+    This allows the function to access and modify caller variables, but parameters are
+    restored after execution to prevent leakage.`,
 			Parameters: []ParamDoc{
 				{Name: "params", Type: "block!", Description: "A block of parameter names (words)", Optional: false},
 				{Name: "body", Type: "block!", Description: "A block of code to execute when the function is called", Optional: false},
 			},
-			Returns:  "[function!] The newly created function",
-			Examples: []string{"square: fn [n] [n * n]  ; => function", "add: fn [a b] [a + b]\nadd 3 4  ; => 7", "greet: fn [name] [print [\"Hello\" name]]\ngreet \"Alice\"  ; prints: Hello Alice"},
-			SeeAlso:  []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure"},
+			Returns: "[function!] The newly created function",
+			Examples: []string{
+				"square: fn [n] [n * n]  ; => function",
+				"add: fn [a b] [a + b]\nadd 3 4  ; => 7",
+				"greet: fn [name] [print [\"Hello\" name]]\ngreet \"Alice\"  ; prints: Hello Alice",
+				"modify: fn --no-scope [] [x: 42]\nmodify  ; modifies caller's x variable",
+			},
+			SeeAlso: []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure", "scope"},
 		},
 	))
 

@@ -8,11 +8,12 @@
 
 ## Native: `fn`
 
-**Signature**: `fn [params] [body]`
+**Signature**: `fn [params] [body]` or `fn --no-scope [params] [body]`
 
 **Parameters**:
 - `params`: Block containing parameter specifications
 - `body`: Block containing function body code
+- `--no-scope`: Optional refinement that makes the function execute in the caller's scope instead of creating a new local scope
 
 **Return**: Function value (user-defined function)
 
@@ -113,6 +114,53 @@ process [1 2 3] --deep               → deep copy
 process [1 2 3] --deep --limit 2     → deep copy, first 2
 process [1 2 3] --limit 2 --deep     → same (order doesn't matter)
 ```
+
+### `--no-scope` Refinement
+
+The `--no-scope` refinement changes function execution to reuse the caller's scope instead of creating a new local scope. This allows functions to:
+
+- Access and modify variables from the caller's environment
+- Have side effects that persist after the function returns
+- Share state with the calling context
+
+**Examples**:
+
+```viro
+; Normal function (local scope)
+x: 10
+normal: fn [] [x: 20]  ; Creates local x
+normal                 ; Returns 20
+x                      ; Still 10 (global unchanged)
+
+; Function with --no-scope (shared scope)
+x: 10
+shared: fn --no-scope [] [x: 20]  ; Modifies caller's x
+shared                 ; Returns 20
+x                      ; Now 20 (global modified)
+
+; Accessing caller variables
+y: 5
+accessor: fn --no-scope [z] [y + z]  ; Can access caller's y
+accessor 3             ; Returns 8 (5 + 3)
+
+; Parameter restoration
+a: 100
+temp: fn --no-scope [a] [a: 50]  ; Parameter 'a' shadows global
+temp                    ; Returns 50
+a                      ; Still 100 (parameter was restored, global unchanged)
+```
+
+**Key Behaviors**:
+- Function parameters are bound temporarily and restored after execution
+- Other assignments in the function body persist in the caller scope
+- The function can access variables defined in the caller's scope
+- Closures still work normally (lexical parent access is preserved)
+- Nested functions with `--no-scope` share the same caller scope
+
+**Trade-offs**:
+- **Pros**: Enables dynamic scoping for specific use cases, allows side effects
+- **Cons**: Can make code harder to reason about, breaks encapsulation
+- **Recommendation**: Use sparingly, prefer explicit parameter passing when possible
 
 **Type Rules**:
 - First argument must be Block (parameter list)
