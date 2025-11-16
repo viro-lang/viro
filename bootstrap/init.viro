@@ -8,3 +8,20 @@ map: fn [series f] [
   ]
   result
 ]
+
+any: fn [conditions] [
+  while [not tail? conditions] [
+    value: do --next 'conditions conditions
+    when value [ return true ]
+  ]
+  false
+]
+
+all: fn [conditions] [
+  while [not tail? conditions] [
+    value: do --next 'conditions conditions
+    when not value [ return false ]
+  ]
+  return true
+]
+
