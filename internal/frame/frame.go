@@ -132,16 +132,13 @@ func (f *Frame) SetName(name string) {
 // Per data-model.md: This is the core of local-by-default scoping.
 // Assignment in a function creates a local variable, NOT a global.
 func (f *Frame) Bind(symbol string, val core.Value) {
-	// Check if word already exists in this frame
 	for i, w := range f.Words {
 		if w == symbol {
-			// Update existing binding
 			f.Values[i] = val
 			return
 		}
 	}
 
-	// Add new binding (local-by-default)
 	f.Words = append(f.Words, symbol)
 	f.Values = append(f.Values, val)
 }
@@ -178,6 +175,20 @@ func (f *Frame) HasWord(symbol string) bool {
 	return slices.Contains(f.Words, symbol)
 }
 
+// Unbind removes a symbol binding from this frame.
+// Returns true if the symbol was found and removed, false if not found.
+func (f *Frame) Unbind(symbol string) bool {
+	for i, w := range f.Words {
+		if w == symbol {
+			// Remove the binding by slicing out the element
+			f.Words = append(f.Words[:i], f.Words[i+1:]...)
+			f.Values = append(f.Values[:i], f.Values[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 // Count returns the number of bindings in this frame.
 func (f *Frame) Count() int {
 	return len(f.Words)
@@ -212,4 +223,80 @@ func (f *Frame) Clone() core.Frame {
 		Parent: f.Parent,
 		Index:  -1, // Clone gets a new index when added to frameStore
 	}
+}
+
+// SharedFrame wraps a caller frame for --no-scope function execution.
+// It delegates Bind/Set operations to the caller frame but overrides GetParent
+// to point to the function's lexical parent, enabling closure access.
+type SharedFrame struct {
+	callerFrame   core.Frame // The caller's frame for Bind/Set operations
+	lexicalParent int        // The function's captured lexical parent
+}
+
+// NewSharedFrame creates a shared frame wrapper.
+func NewSharedFrame(callerFrame core.Frame, lexicalParent int) *SharedFrame {
+	return &SharedFrame{
+		callerFrame:   callerFrame,
+		lexicalParent: lexicalParent,
+	}
+}
+
+func (s *SharedFrame) GetType() core.FrameType {
+	return s.callerFrame.GetType()
+}
+
+func (s *SharedFrame) ChangeType(newType core.FrameType) {
+	s.callerFrame.ChangeType(newType)
+}
+
+func (s *SharedFrame) Bind(symbol string, value core.Value) {
+	s.callerFrame.Bind(symbol, value)
+}
+
+func (s *SharedFrame) Get(symbol string) (core.Value, bool) {
+	return s.callerFrame.Get(symbol)
+}
+
+func (s *SharedFrame) Set(symbol string, value core.Value) bool {
+	return s.callerFrame.Set(symbol, value)
+}
+
+func (s *SharedFrame) HasWord(symbol string) bool {
+	return s.callerFrame.HasWord(symbol)
+}
+
+func (s *SharedFrame) Unbind(symbol string) bool {
+	return s.callerFrame.Unbind(symbol)
+}
+
+func (s *SharedFrame) GetParent() int {
+	return s.lexicalParent
+}
+
+func (s *SharedFrame) GetIndex() int {
+	return s.callerFrame.GetIndex()
+}
+
+func (s *SharedFrame) SetIndex(index int) {
+	s.callerFrame.SetIndex(index)
+}
+
+func (s *SharedFrame) Count() int {
+	return s.callerFrame.Count()
+}
+
+func (s *SharedFrame) GetAll() []core.Binding {
+	return s.callerFrame.GetAll()
+}
+
+func (s *SharedFrame) Clone() core.Frame {
+	return s.callerFrame.Clone()
+}
+
+func (s *SharedFrame) GetName() string {
+	return s.callerFrame.GetName()
+}
+
+func (s *SharedFrame) SetName(name string) {
+	s.callerFrame.SetName(name)
 }
