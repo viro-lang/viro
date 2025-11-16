@@ -225,10 +225,10 @@ while [true] [42]                → infinite loop (user interrupts)
 **Behavior**:
 1. **Series Iteration**: For series types (block!, string!, binary!), iterates over elements as before
 2. **Object Iteration**: For object! values:
-   - Snapshots all field names once at start using `GetAllFieldsWithProto`
-   - Iterates over field names in prototype inclusion order (parent fields first, then child fields; child overrides parent)
-   - Binds key to first variable, value to second variable, none to extras
-   - Fetches current values per iteration using `GetFieldWithProto` (live lookup)
+    - Snapshots all field names once at start using `GetAllFieldsWithProto`
+    - Iterates over field names in prototype inclusion order (parent fields first, then child fields; child overrides parent)
+    - Binds key as `word!` value to first variable, value to second variable, none to extras
+    - Fetches current values per iteration using `GetFieldWithProto` (live lookup)
 3. **Variable Binding**:
    - Single variable: binds key (for objects) or element (for series)
    - Two or more variables: binds key+value+none for extras
@@ -251,9 +251,9 @@ foreach [1 2 3 4] [a b] [print [a b]]   → prints [1 2], [3 4]; returns 4
 
 ; Object iteration (new behavior)
 obj: object [a: 1 b: 2 c: 3]
-foreach obj [key] [print key]           → prints "a", "b", "c"; returns "c"
-foreach obj [key value] [print [key value]] → prints ["a" 1], ["b" 2], ["c" 3]; returns 3
-foreach obj [k v extra] [print [k v extra]] → prints ["a" 1 none], ["b" 2 none], ["c" 3 none]
+foreach obj [key] [print key]           → prints a, b, c; returns c
+foreach obj [key value] [print [key value]] → prints [a 1], [b 2], [c 3]; returns 3
+foreach obj [k v extra] [print [k v extra]] → prints [a 1 none], [b 2 none], [c 3 none]
 
 ; With index
 foreach obj --with-index 'i [k] [print [i k]] → prints [0 "a"], [1 "b"], [2 "c"]
