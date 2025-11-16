@@ -25,7 +25,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 
 **Evaluation Engine**:
 - Type-based dispatch with left-to-right evaluation
-- Local-by-default scoping
+- Local-by-default scoping with optional dynamic scoping via `fn --no-scope`
 - Lexical closures
 - Recursive function support (150+ depth)
 
