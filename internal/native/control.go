@@ -720,7 +720,7 @@ func Foreach(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		for _, binding := range bindings {
 			for j := 0; j < numVars; j++ {
 				if j == 0 {
-					currentFrame.Bind(varNames[j], value.NewStrVal(binding.Symbol))
+					currentFrame.Bind(varNames[j], value.NewWordVal(binding.Symbol))
 				} else if j == 1 {
 					fieldVal, _ := obj.GetFieldWithProto(binding.Symbol)
 					currentFrame.Bind(varNames[j], fieldVal)
