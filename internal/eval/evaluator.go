@@ -27,10 +27,6 @@ type Evaluator struct {
 	ErrorWriter  io.Writer
 	InputReader  io.Reader
 
-	// Cached trace state fields for performance optimization.
-	// These fields are synchronized with the global trace session and must be updated via UpdateTraceCache().
-	// Call UpdateTraceCache() after any change to the global trace session (e.g., enabling/disabling tracing,
-	// or modifying trace filters) to ensure cache consistency.
 	traceEnabled         bool
 	traceShouldTraceExpr bool
 }
@@ -127,7 +123,6 @@ func (e *Evaluator) popFrame() int {
 	e.Frames = e.Frames[:len(e.Frames)-1]
 	idx := frm.GetIndex()
 
-	// Special handling for SharedFrame: don't clear the underlying caller frame
 	if _, isSharedFrame := frm.(*frame.SharedFrame); !isSharedFrame {
 		if !e.captured[idx] {
 			e.frameStore[idx] = nil
@@ -628,7 +623,7 @@ func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs 
 	var args map[string]string
 	if e.traceEnabled {
 		traceStart = time.Now()
-		args = e.captureFunctionArgs(nil, posArgs, refValues) // fn is not needed for arg capture
+		args = e.captureFunctionArgs(nil, posArgs, refValues)
 		event := trace.TraceEvent{
 			Timestamp:  traceStart,
 			Value:      "",
@@ -885,7 +880,6 @@ func (e *Evaluator) readRefinements(tokens []core.Value, locations []core.Source
 			return pos, refinementError("duplicate", refName)
 		}
 
-		// Handle refinements that take values vs. boolean flags
 		if spec.TakesValue {
 			if pos+1 >= len(tokens) {
 				return pos, refinementError("missing-value", refName)

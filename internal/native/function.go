@@ -13,15 +13,6 @@ type frameProvider interface {
 	MarkFrameCaptured(index int)
 }
 
-// Fn implements the function definition native.
-//
-// Contract per contracts/function.md:
-//
-//	fn [params] [body] -> function value
-//
-// - Parameters block defines positional parameters and refinements
-// - Body block captures function code (stored as block value)
-// - Returns a user-defined function with captured lexical parent
 func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
 		return value.NewNoneVal(), arityError("fn", 2, len(args))
@@ -63,7 +54,6 @@ func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		}
 	}
 
-	// Check for --no-scope refinement
 	noScope := false
 	if noScopeVal, exists := refValues["no-scope"]; exists {
 		if logicVal, ok := value.AsLogicValue(noScopeVal); ok {
@@ -101,7 +91,6 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 			return nil, invalidParamSpecError(elem.String())
 		}
 
-		// Refinement
 		if strings.HasPrefix(paramName, "--") {
 			if !eval {
 				return nil, verror.NewScriptError(
@@ -124,7 +113,7 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 			takesValue := false
 			if i+1 < len(block.Elements) && block.Elements[i+1].GetType() == value.TypeBlock {
 				takesValue = true
-				i++ // Skip metadata block (type/docstring)
+				i++
 			}
 			specs = append(specs, value.ParamSpec{
 				Name:       name,
@@ -132,7 +121,7 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 				Optional:   true,
 				Refinement: true,
 				TakesValue: takesValue,
-				Eval:       true, // refinements zawsze ewaluowane
+				Eval:       true,
 			})
 			continue
 		}

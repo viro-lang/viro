@@ -1,6 +1,3 @@
-// Package native provides built-in native functions for the Viro interpreter.
-//
-// This file contains control flow native function registrations.
 package native
 
 import (
@@ -10,19 +7,9 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// RegisterControlNatives registers all control flow native functions in the root frame.
-//
-// The function panics if:
-//   - rootFrame is nil
-//   - Any duplicate function name is registered
-//   - Any function creation fails
-//
-// This is intentional fail-fast behavior for critical initialization errors.
 func RegisterControlNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function
 	registerAndBind := func(name string, fn *value.FunctionValue) {
 		if fn == nil {
 			panic(fmt.Sprintf("RegisterControlNatives: attempted to register nil function for '%s'", name))
@@ -31,14 +18,11 @@ func RegisterControlNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterControlNatives: duplicate registration of function '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, value.NewFuncVal(fn))
 
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Group 10: Control flow (4 functions - all need evaluator)
 	registerAndBind("when", value.NewNativeFunction(
 		"when",
 		[]value.ParamSpec{
@@ -178,7 +162,6 @@ Be careful to avoid infinite loops.`,
 		},
 	))
 
-	// Group 11: Function creation (1 function - needs evaluator)
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
@@ -214,7 +197,6 @@ Refinements:
 		},
 	))
 
-	// Group 12: Block manipulation (2 functions - need evaluator)
 	registerAndBind("compose", value.NewNativeFunction(
 		"compose",
 		[]value.ParamSpec{

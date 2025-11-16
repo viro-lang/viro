@@ -7,43 +7,26 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/docmodel"
 )
 
-// FunctionType distinguishes native (built-in) from user-defined functions.
 type FunctionType uint8
 
 const (
-	FuncNative FunctionType = iota // Built-in function (implemented in Go)
-	FuncUser                       // User-defined function (via fn native)
+	FuncNative FunctionType = iota
+	FuncUser
 )
 
-// ParamSpec defines a function parameter specification.
-// Supports positional parameters and refinements (flags and value options).
-//
-// Design per contracts/function.md:
-// - Positional: regular arguments (name, required/optional)
-// - Flag refinement: --verbose (boolean, true if present, false otherwise)
-// - Value refinement: --title [] (accepts value, none if not provided)
 type ParamSpec struct {
-	Name       string         // parameter name (without -- prefix for refinements)
-	Type       core.ValueType // expected type (TypeNone = any type accepted)
-	Optional   bool           // true if parameter can be omitted
-	Refinement bool           // true if this is a refinement (--flag or --option)
-	TakesValue bool           // for refinements: true if accepts value, false if boolean flag
-	Eval       bool           // NEW: if true, argument is evaluated; if false, passed raw
+	Name       string
+	Type       core.ValueType
+	Optional   bool
+	Refinement bool
+	TakesValue bool
+	Eval       bool
 }
 
-// NewParamSpec creates a ParamSpec for a positional parameter.
-// This is a convenience function for native function registration.
-//
-// Parameters:
-//   - name: parameter name
-//   - eval: if true, argument is evaluated before passing to function;
-//     if false, argument is passed raw (unevaluated)
-//
-// The parameter is non-optional, accepts any type, and is not a refinement.
 func NewParamSpec(name string, eval bool) ParamSpec {
 	return ParamSpec{
 		Name:       name,
-		Type:       TypeNone, // any type by default
+		Type:       TypeNone,
 		Optional:   false,
 		Refinement: false,
 		TakesValue: false,
@@ -51,55 +34,29 @@ func NewParamSpec(name string, eval bool) ParamSpec {
 	}
 }
 
-// NewRefinementSpec creates a ParamSpec for a refinement (flag or option).
-// This is a convenience function for native function registration.
-//
-// Parameters:
-//   - name: refinement name (without -- prefix)
-//   - takesValue: if true, refinement accepts a value (e.g., --title "text");
-//     if false, refinement is a boolean flag (e.g., --verbose)
-//
-// Refinements are always optional and their arguments are always evaluated.
 func NewRefinementSpec(name string, takesValue bool) ParamSpec {
 	return ParamSpec{
 		Name:       name,
-		Type:       TypeNone, // any type by default
-		Optional:   true,     // refinements are always optional
+		Type:       TypeNone,
+		Optional:   true,
 		Refinement: true,
 		TakesValue: takesValue,
-		Eval:       true, // refinement values always evaluated
+		Eval:       true,
 	}
 }
 
-// FunctionValue represents an executable function.
-//
-// Native functions:
-// - Type = FuncNative
-// - Native field set to Go function pointer
-// - Body is nil
-//
-// User-defined functions:
-// - Type = FuncUser
-// - Body field set to block containing function body
-// - Native is nil
-//
-// Design per data-model.md §5:
-// - Functions are immutable after creation
-// - Local-by-default scoping: all words in body are local by default
-// - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	Type    FunctionType    // Native or User
-	Name    string          // function name (for error messages and debugging)
-	Params  []ParamSpec     // formal parameter specifications
-	Body    *BlockValue     // function body (nil for natives)
-	Native  core.NativeFunc // native implementation (nil for user functions)
-	Parent  int             // parent frame index for closures (-1 if none)
-	Infix   bool            // true if function can be used as infix operator
-	NoScope bool            // true if function executes in caller's scope (--no-scope refinement)
+	Type    FunctionType
+	Name    string
+	Params  []ParamSpec
+	Body    *BlockValue
+	Native  core.NativeFunc
+	Parent  int
+	Infix   bool
+	NoScope bool
 	Doc     *docmodel.FuncDoc
 }
 
-// NewNativeFunction creates a native (built-in) function.
 func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc, infix bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
 		Type:    FuncNative,
@@ -109,12 +66,11 @@ func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc, in
 		Native:  impl,
 		Parent:  -1,
 		Infix:   infix,
-		NoScope: false, // native functions don't use --no-scope
+		NoScope: false,
 		Doc:     doc,
 	}
 }
 
-// NewUserFunction creates a user-defined function.
 func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFrame int, noScope bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
 		Type:    FuncUser,
@@ -128,12 +84,10 @@ func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFr
 	}
 }
 
-// String returns a string representation for debugging.
 func (f *FunctionValue) String() string {
 	return f.Mold()
 }
 
-// Mold returns the mold-formatted function representation.
 func (f *FunctionValue) Mold() string {
 	if f.Type == FuncNative {
 		return fmt.Sprintf("native[%s]", f.Name)
@@ -141,12 +95,10 @@ func (f *FunctionValue) Mold() string {
 	return fmt.Sprintf("function[%s]", f.Name)
 }
 
-// Form returns the form-formatted function representation (same as mold for functions).
 func (f *FunctionValue) Form() string {
 	return f.Mold()
 }
 
-// Arity returns the number of required positional parameters.
 func (f *FunctionValue) Arity() int {
 	count := 0
 	for _, p := range f.Params {
@@ -157,7 +109,6 @@ func (f *FunctionValue) Arity() int {
 	return count
 }
 
-// HasRefinement checks if function has a refinement with given name.
 func (f *FunctionValue) HasRefinement(name string) bool {
 	for _, p := range f.Params {
 		if p.Refinement && p.Name == name {
@@ -167,7 +118,6 @@ func (f *FunctionValue) HasRefinement(name string) bool {
 	return false
 }
 
-// GetRefinement returns the ParamSpec for a refinement (nil if not found).
 func (f *FunctionValue) GetRefinement(name string) *ParamSpec {
 	for i := range f.Params {
 		if f.Params[i].Refinement && f.Params[i].Name == name {
