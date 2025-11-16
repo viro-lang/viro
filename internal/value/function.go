@@ -88,41 +88,43 @@ func NewRefinementSpec(name string, takesValue bool) ParamSpec {
 // - Local-by-default scoping: all words in body are local by default
 // - Closures capture parent frame via Parent field
 type FunctionValue struct {
-	Type   FunctionType      // Native or User
-	Name   string            // function name (for error messages and debugging)
-	Params []ParamSpec       // formal parameter specifications
-	Body   *BlockValue       // function body (nil for natives)
-	Native core.NativeFunc   // native implementation (nil for user functions)
-	Parent int               // parent frame index for closures (-1 if none)
-	Infix  bool              // true if function can be used as infix operator
-	Doc    *docmodel.FuncDoc // dokumentacja funkcji użytkownika (nil jeśli brak)
+	Type    FunctionType    // Native or User
+	Name    string          // function name (for error messages and debugging)
+	Params  []ParamSpec     // formal parameter specifications
+	Body    *BlockValue     // function body (nil for natives)
+	Native  core.NativeFunc // native implementation (nil for user functions)
+	Parent  int             // parent frame index for closures (-1 if none)
+	Infix   bool            // true if function can be used as infix operator
+	NoScope bool            // true if function executes in caller's scope (--no-scope refinement)
+	Doc     *docmodel.FuncDoc
 }
 
 // NewNativeFunction creates a native (built-in) function.
 func NewNativeFunction(name string, params []ParamSpec, impl core.NativeFunc, infix bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
-		Type:   FuncNative,
-		Name:   name,
-		Params: params,
-		Body:   nil,
-		Native: impl,
-		Parent: -1,
-		Infix:  infix,
-		Doc:    doc,
+		Type:    FuncNative,
+		Name:    name,
+		Params:  params,
+		Body:    nil,
+		Native:  impl,
+		Parent:  -1,
+		Infix:   infix,
+		NoScope: false, // native functions don't use --no-scope
+		Doc:     doc,
 	}
 }
 
 // NewUserFunction creates a user-defined function.
-// Dodano argument doc typu *docmodel.FuncDoc (może być nil)
-func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFrame int, doc *docmodel.FuncDoc) *FunctionValue {
+func NewUserFunction(name string, params []ParamSpec, body *BlockValue, parentFrame int, noScope bool, doc *docmodel.FuncDoc) *FunctionValue {
 	return &FunctionValue{
-		Type:   FuncUser,
-		Name:   name,
-		Params: params,
-		Body:   body,
-		Native: nil,
-		Parent: parentFrame,
-		Doc:    doc,
+		Type:    FuncUser,
+		Name:    name,
+		Params:  params,
+		Body:    body,
+		Native:  nil,
+		Parent:  parentFrame,
+		NoScope: noScope,
+		Doc:     doc,
 	}
 }
 

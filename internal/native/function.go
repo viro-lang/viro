@@ -63,7 +63,15 @@ func Fn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator)
 		}
 	}
 
-	fnValue := value.NewUserFunction("", specs, bodyClone.(*value.BlockValue), parentIndex, nil)
+	// Check for --no-scope refinement
+	noScope := false
+	if noScopeVal, exists := refValues["no-scope"]; exists {
+		if logicVal, ok := value.AsLogicValue(noScopeVal); ok {
+			noScope = logicVal
+		}
+	}
+
+	fnValue := value.NewUserFunction("", specs, bodyClone.(*value.BlockValue), parentIndex, noScope, nil)
 	return value.NewFuncVal(fnValue), nil
 }
 
@@ -76,7 +84,6 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 		eval := true
 		paramName := ""
 
-		// Obsługa lit-wordów
 		if elem.GetType() == value.TypeLitWord {
 			wordStr, ok := value.AsWordValue(elem)
 			if !ok {
@@ -97,7 +104,6 @@ func ParseParamSpecs(block *value.BlockValue) ([]value.ParamSpec, error) {
 		// Refinement
 		if strings.HasPrefix(paramName, "--") {
 			if !eval {
-				// Lit-word refinement: błąd
 				return nil, verror.NewScriptError(
 					verror.ErrIDInvalidOperation,
 					[3]string{"Refinements cannot be unevaluated (lit-word)", paramName, ""},
