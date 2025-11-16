@@ -272,6 +272,78 @@ function[test]
 
 ---
 
+## Opting Out: `--no-scope` Refinement
+
+While Viro defaults to local-by-default scoping, the `fn --no-scope` refinement allows functions to execute in the caller's scope instead of creating a new local scope.
+
+### When to Use `--no-scope`
+
+Use `--no-scope` when you need:
+
+1. **Dynamic scoping**: Access variables from the call site
+2. **Side effects**: Modify caller's variables directly
+3. **Shared state**: Multiple functions operating on the same data
+
+### Examples
+
+```viro
+>> x: 10
+10
+>> y: 20
+20
+>> modify: fn --no-scope [] [x: 30  y: 40]
+function[modify]
+>> modify
+40
+>> x
+30
+>> y
+40
+```
+
+**Parameter Restoration**: Function parameters are temporary and restored after execution:
+
+```viro
+>> x: 100
+100
+>> temp: fn --no-scope [x] [x: 50]
+function[temp]
+>> temp 200
+50
+>> x
+100
+```
+
+**Accessing Caller Variables**:
+
+```viro
+>> data: [1 2 3]
+[1 2 3]
+>> process: fn --no-scope [] [append data 4]
+function[process]
+>> process
+[1 2 3 4]
+>> data
+[1 2 3 4]
+```
+
+### Trade-offs and Warnings
+
+**Advantages**:
+- Enables dynamic scoping patterns
+- Allows direct side effects
+- Can simplify some state management
+
+**Disadvantages**:
+- **Breaks encapsulation**: Functions can modify unexpected variables
+- **Harder to reason about**: Dependencies are implicit, not explicit
+- **Testing challenges**: Functions depend on call-site context
+- **Potential bugs**: Accidental variable shadowing or modification
+
+**Best Practice**: Use `--no-scope` sparingly. Prefer explicit parameter passing and return values for most cases.
+
+---
+
 ## Best Practices
 
 ### 1. Prefer Pure Functions
