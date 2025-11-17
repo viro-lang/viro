@@ -169,6 +169,52 @@ if type? value = 'integer! [
 
 ---
 
+## Native: `none?`
+
+**Signature**: `none? value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: Logic (true/false)
+
+**Behavior**:
+Returns `true` if the value is `none`, `false` otherwise.
+
+**Truth Table**:
+- `none` → `true`
+- Any other value → `false`
+
+**Examples**:
+```viro
+none? none       → true
+none? 42         → false
+none? "hello"    → false
+none? []         → false
+none? true       → false
+```
+
+**Test Cases**:
+1. `none? none` returns `true`
+2. `none? 42` returns `false`
+3. `none? "hello"` returns `false`
+4. `none? [1 2 3]` returns `false`
+5. `none? true` returns `false`
+6. `none? false` returns `false`
+7. `none? :x` returns `false` (unless x is none)
+8. Works inside expressions: `if none? value [print "is none"]`
+
+**Error Cases**:
+- No arguments → Script error: "none? expects 1 argument"
+- Too many arguments → Script error: "none? expects 1 argument"
+
+**Implementation Note**:
+- Standard boolean predicate semantics
+- Evaluates argument before checking type
+- Returns logic! type (true/false values)
+
+---
+
 ## Native: `form`
 
 **Signature**: `form value`
