@@ -91,6 +91,27 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		},
 	))
 
+	registerAndBind("none?", value.NewNativeFunction(
+		"none?",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		NoneQ,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Returns true if value is none",
+			Description: `Returns true if the given value is none, false otherwise.
+This is a type predicate function that checks if a value represents the absence of a value.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to check", Optional: false},
+			},
+			Returns:  "[logic!] True if value is none, false otherwise",
+			Examples: []string{"none? none  ; => true", "none? 42  ; => false", `none? "hello"  ; => false`},
+			SeeAlso:  []string{"type?"}, Tags: []string{"data", "type", "predicate", "none"},
+		},
+	))
+
 	registerAndBind("form", value.NewNativeFunction(
 		"form",
 		[]value.ParamSpec{
