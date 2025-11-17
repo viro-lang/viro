@@ -288,6 +288,17 @@ func registerStringSeriesActions() {
 		value.NewParamSpec("s1", true),
 		value.NewParamSpec("s2", true),
 	}, StringUnion, false, nil))
+	RegisterActionImpl(value.TypeString, "codepoints-of", value.NewNativeFunction("codepoints-of", []value.ParamSpec{
+		value.NewParamSpec("string", true),
+	}, CodepointsOf, false, nil))
+	RegisterActionImpl(value.TypeString, "codepoint-at", value.NewNativeFunction("codepoint-at", []value.ParamSpec{
+		value.NewParamSpec("string", true),
+		value.NewParamSpec("index", true),
+		value.NewRefinementSpec("default", true),
+	}, CodepointAt, false, nil))
+	RegisterActionImpl(value.TypeString, "string-from-codepoints", value.NewNativeFunction("string-from-codepoints", []value.ParamSpec{
+		value.NewParamSpec("codepoints", true),
+	}, StringFromCodepoints, false, nil))
 }
 
 func registerBinarySeriesActions() {
@@ -1057,6 +1068,73 @@ Empty delimiter is not allowed and will raise an error. Consecutive delimiters c
 			Examples: []string{`split "hello world" " "  ; => ["hello" "world"]`, `split "a,b,c" ","  ; => ["a" "b" "c"]`, `split "a,,b" ","  ; => ["a" "" "b"]`},
 			SeeAlso:  []string{"join", "form", "mold"},
 			Tags:     []string{"series", "string", "split"},
+		}))
+
+	registerAndBind("codepoints-of", value.NewNativeFunction(
+		"codepoints-of",
+		[]value.ParamSpec{
+			value.NewParamSpec("string", true),
+		},
+		CodepointsOf,
+		false,
+		&NativeDoc{
+			Category: "Series",
+			Summary:  "Converts a string to a block of Unicode code point integers",
+			Description: `Returns a block containing the Unicode code point values (as integers) for each character in the string.
+The code points are in the same order as the characters in the string.`,
+			Parameters: []ParamDoc{
+				{Name: "string", Type: "string!", Description: "The string to convert to code points"},
+			},
+			Returns:  "[block!] Block of integers representing Unicode code points",
+			Examples: []string{`codepoints-of "ABC"  ; => [65 66 67]`, `codepoints-of "🚀"  ; => [128640]`, `codepoints-of ""  ; => []`},
+			SeeAlso:  []string{"string-from-codepoints", "codepoint-at"},
+			Tags:     []string{"series", "string", "unicode"},
+		}))
+
+	registerAndBind("codepoint-at", value.NewNativeFunction(
+		"codepoint-at",
+		[]value.ParamSpec{
+			value.NewParamSpec("string", true),
+			value.NewParamSpec("index", true),
+			value.NewRefinementSpec("default", true),
+		},
+		CodepointAt,
+		false,
+		&NativeDoc{
+			Category: "Series",
+			Summary:  "Returns the Unicode code point at a specific position in a string",
+			Description: `Returns the Unicode code point (as an integer) at the specified 1-based index in the string.
+If the index is out of bounds, returns none unless the /default refinement is provided.`,
+			Parameters: []ParamDoc{
+				{Name: "string", Type: "string!", Description: "The string to get code point from"},
+				{Name: "index", Type: "integer!", Description: "1-based index of the character"},
+				{Name: "--default", Type: "any!", Description: "Value to return if index is out of bounds", Optional: true},
+			},
+			Returns:  "integer! The Unicode code point, or none/default if out of bounds",
+			Examples: []string{`codepoint-at "ABC" 1  ; => 65`, `codepoint-at "🚀" 1  ; => 128640`, `codepoint-at "ABC" 10  ; => none`, `codepoint-at "ABC" 10 --default 0  ; => 0`},
+			SeeAlso:  []string{"codepoints-of", "at", "pick"},
+			Tags:     []string{"series", "string", "unicode"},
+		}))
+
+	registerAndBind("string-from-codepoints", value.NewNativeFunction(
+		"string-from-codepoints",
+		[]value.ParamSpec{
+			value.NewParamSpec("codepoints", true),
+		},
+		StringFromCodepoints,
+		false,
+		&NativeDoc{
+			Category: "Series",
+			Summary:  "Creates a string from a block of Unicode code point integers",
+			Description: `Creates a string from a block of integers representing Unicode code points.
+All code points must be valid (0-0x10FFFF) and not in the surrogate range (0xD800-0xDFFF).`,
+			Parameters: []ParamDoc{
+				{Name: "codepoints", Type: "block!", Description: "Block of integers representing Unicode code points"},
+			},
+			Returns:  "string! The constructed string",
+			Examples: []string{`string-from-codepoints [65 66 67]  ; => "ABC"`, `string-from-codepoints [128640]  ; => "🚀"`, `string-from-codepoints []  ; => ""`},
+			SeeAlso:  []string{"codepoints-of", "codepoint-at"},
+			Tags:     []string{"series", "string", "unicode"},
 		}))
 
 	registerAndBind("intersect", CreateAction("intersect", []value.ParamSpec{
