@@ -69,6 +69,17 @@ func TypeQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	return value.NewWordVal(typeName), nil
 }
 
+// NoneQ implements the `none?` native.
+//
+// Contract: none? value -> logic! true only for none values
+func NoneQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("none?", 1, len(args))
+	}
+
+	return value.NewLogicVal(args[0].GetType() == value.TypeNone), nil
+}
+
 // Form implements the `form` native.
 //
 // Contract: form value -> string! human-readable representation
