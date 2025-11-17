@@ -73,14 +73,14 @@ func getTokenTypeName(t tokenize.TokenType) string {
 	}
 }
 
-func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func NativeParseValues(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("parse", 1, len(args))
+		return value.NewNoneVal(), arityError("parse-values", 1, len(args))
 	}
 
 	tokensBlockVal, ok := value.AsBlockValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("parse", "block!", args[0])
+		return value.NewNoneVal(), typeError("parse-values", "block!", args[0])
 	}
 	tokensBlock := tokensBlockVal.Elements
 
@@ -95,7 +95,7 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 		if vErr, ok := err.(*verror.Error); ok {
 			return value.NewNoneVal(), vErr
 		}
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidToken, [3]string{"parse", err.Error(), ""})
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidToken, [3]string{"parse-values", err.Error(), ""})
 	}
 
 	block := value.NewBlockVal(values)
@@ -105,13 +105,19 @@ func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.E
 	return block, nil
 }
 
+// NativeParse is kept as an alias for backward compatibility during transition
+// Will be replaced with the parse dialect implementation
+func NativeParse(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return NativeParseValues(args, refValues, eval)
+}
+
 func convertToTokens(tokensBlock []core.Value) ([]tokenize.Token, error) {
 	tokens := make([]tokenize.Token, 0, len(tokensBlock)+1)
 
 	for _, tokenVal := range tokensBlock {
 		obj, ok := value.AsObject(tokenVal)
 		if !ok {
-			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse", "token object", value.TypeToString(tokenVal.GetType())})
+			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse-values", "token object", value.TypeToString(tokenVal.GetType())})
 		}
 
 		typeVal, typeOk := obj.GetField("type")
@@ -120,7 +126,7 @@ func convertToTokens(tokensBlock []core.Value) ([]tokenize.Token, error) {
 		columnVal, columnOk := obj.GetField("column")
 
 		if !typeOk || !valueOk || !lineOk || !columnOk {
-			return nil, verror.NewScriptError("invalid-arg", [3]string{"parse", "token object must have type, value, line, and column fields", ""})
+			return nil, verror.NewScriptError("invalid-arg", [3]string{"parse-values", "token object must have type, value, line, and column fields", ""})
 		}
 
 		tokenTypeStrVal, ok := value.AsStringValue(typeVal)
@@ -141,12 +147,12 @@ func convertToTokens(tokensBlock []core.Value) ([]tokenize.Token, error) {
 
 		lineInt, ok := value.AsIntValue(lineVal)
 		if !ok {
-			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse", "token line must be integer", value.TypeToString(lineVal.GetType())})
+			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse-values", "token line must be integer", value.TypeToString(lineVal.GetType())})
 		}
 
 		columnInt, ok := value.AsIntValue(columnVal)
 		if !ok {
-			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse", "token column must be integer", value.TypeToString(columnVal.GetType())})
+			return nil, verror.NewScriptError("type-mismatch", [3]string{"parse-values", "token column must be integer", value.TypeToString(columnVal.GetType())})
 		}
 
 		tokenType := getTokenTypeFromName(tokenTypeStr)
