@@ -855,3 +855,78 @@ func TestData_MoldFormWithSeriesIndex(t *testing.T) {
 		})
 	}
 }
+
+// TestData_NoneQ validates the 'none?' native.
+//
+// Contract: none? value → logic! true only for none values
+func TestData_NoneQ(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "none? none returns true",
+			input:    "none? none",
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "none? integer returns false",
+			input:    "none? 42",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? string returns false",
+			input:    `none? "hello"`,
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? block returns false",
+			input:    "none? [1 2 3]",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? logic false returns false",
+			input:    "none? false",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? with expression",
+			input:    "value: none\nnone? value",
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:    "none? with no arguments errors",
+			input:   "none?",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Fatalf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
