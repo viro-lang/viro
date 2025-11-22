@@ -165,8 +165,8 @@ Be careful to avoid infinite loops.`,
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
-			value.NewParamSpec("params", false),
-			value.NewParamSpec("body", false),
+			value.NewParamSpec("params", true),
+			value.NewParamSpec("body", true),
 			value.NewRefinementSpec("no-scope", false),
 		},
 		Fn,
