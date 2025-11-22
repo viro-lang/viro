@@ -328,3 +328,33 @@ func TestREPL_PrinOutputVisible(t *testing.T) {
 		t.Fatalf("expected print output to be 'world\\n', got %q", output)
 	}
 }
+
+func TestREPL_InteractivePrinEndsWithNewline(t *testing.T) {
+	evaluator := NewTestEvaluator()
+	var out bytes.Buffer
+	loop := repl.NewREPLForTest(evaluator, &out)
+
+	// Test interactive prin output gets extra newline safeguard
+	out.Reset()
+	loop.EvalLineInteractiveForTest(`prin "hello"`)
+	output := out.String()
+	if output != "hello\n" {
+		t.Fatalf("expected interactive prin output to end with newline safeguard, got %q", output)
+	}
+
+	// Test interactive print output still has its own newline
+	out.Reset()
+	loop.EvalLineInteractiveForTest(`print "world"`)
+	output = out.String()
+	if output != "world\n" {
+		t.Fatalf("expected interactive print output to be 'world\\n', got %q", output)
+	}
+
+	// Test non-interactive prin behavior unchanged
+	out.Reset()
+	loop.EvalLineForTest(`prin "test"`)
+	output = out.String()
+	if output != "test" {
+		t.Fatalf("expected non-interactive prin output to remain unchanged, got %q", output)
+	}
+}
