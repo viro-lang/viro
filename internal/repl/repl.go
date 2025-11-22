@@ -40,6 +40,32 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
+// newlineTrackingWriter wraps an io.Writer and tracks whether the last byte written was a newline.
+type newlineTrackingWriter struct {
+	writer    io.Writer
+	lastWasLF bool
+}
+
+func newNewlineTrackingWriter(w io.Writer) *newlineTrackingWriter {
+	return &newlineTrackingWriter{writer: w}
+}
+
+func (w *newlineTrackingWriter) Write(p []byte) (n int, err error) {
+	n, err = w.writer.Write(p)
+	if n > 0 {
+		w.lastWasLF = p[n-1] == '\n'
+	}
+	return n, err
+}
+
+func (w *newlineTrackingWriter) LastEndedWithLF() bool {
+	return w.lastWasLF
+}
+
+func (w *newlineTrackingWriter) ResetLF() {
+	w.lastWasLF = false
+}
+
 const (
 	primaryPrompt      = ">> "
 	debugPrompt        = "[debug] >> "
@@ -69,6 +95,8 @@ type REPL struct {
 	evaluator      core.Evaluator
 	rl             *readline.Instance
 	out            io.Writer
+	trackingOut    *newlineTrackingWriter
+	trackingErr    *newlineTrackingWriter
 	history        []string
 	historyCursor  int
 	pendingLines   []string
@@ -146,7 +174,11 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 		stderr = os.Stderr
 	}
 
-	evaluator, err := bootstrap.NewEvaluatorWithNatives(stdout, stderr, os.Stdin, false)
+	// Wrap stdout and stderr with newline tracking
+	trackingOut := newNewlineTrackingWriter(stdout)
+	trackingErr := newNewlineTrackingWriter(stderr)
+
+	evaluator, err := bootstrap.NewEvaluatorWithNatives(trackingOut, trackingErr, os.Stdin, false)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +188,8 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 		evaluator:      evaluator,
 		rl:             rl,
 		out:            stdout,
+		trackingOut:    trackingOut,
+		trackingErr:    trackingErr,
 		history:        []string{},
 		historyCursor:  0,
 		pendingLines:   nil,
@@ -185,8 +219,11 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	}
 	bootstrap.InitDebugger()
 
+	var trackingOut, trackingErr *newlineTrackingWriter
 	if e == nil {
-		evaluator, err := bootstrap.NewEvaluatorWithNatives(out, out, strings.NewReader(""), false)
+		trackingOut = newNewlineTrackingWriter(out)
+		trackingErr = newNewlineTrackingWriter(out)
+		evaluator, err := bootstrap.NewEvaluatorWithNatives(trackingOut, trackingErr, strings.NewReader(""), false)
 		if err != nil {
 			panic(err)
 		}
@@ -195,8 +232,10 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 	} else {
 		// If evaluator is provided, just configure I/O
 		if out != nil {
-			e.SetOutputWriter(out)
-			e.SetErrorWriter(out) // For tests, use same writer for both
+			trackingOut = newNewlineTrackingWriter(out)
+			trackingErr = newNewlineTrackingWriter(out)
+			e.SetOutputWriter(trackingOut)
+			e.SetErrorWriter(trackingErr) // For tests, use same writer for both
 		}
 		e.SetInputReader(strings.NewReader("")) // Empty input for tests
 	}
@@ -206,6 +245,8 @@ func NewREPLForTest(e core.Evaluator, out io.Writer) *REPL {
 		evaluator:      e,
 		rl:             nil,
 		out:            out,
+		trackingOut:    trackingOut,
+		trackingErr:    trackingErr,
 		history:        []string{},
 		historyCursor:  0,
 		pendingLines:   nil,
@@ -265,6 +306,14 @@ func (r *REPL) EvalLineForTest(input string) {
 	r.processLine(strings.TrimRight(input, "\r\n"), false)
 }
 
+// EvalLineInteractiveForTest evaluates a single line in interactive mode for testing.
+func (r *REPL) EvalLineInteractiveForTest(input string) {
+	if r == nil {
+		return
+	}
+	r.processLine(strings.TrimRight(input, "\r\n"), true)
+}
+
 // AwaitingContinuation reports whether the REPL is waiting for additional lines
 // to complete the current command (multi-line input state).
 func (r *REPL) AwaitingContinuation() bool {
@@ -287,6 +336,9 @@ func (r *REPL) processLine(input string, interactive bool) {
 		r.awaitingCont = false
 		r.recordHistory(trimmed)
 		r.handleExit(interactive)
+		if interactive {
+			r.ensureInteractiveNewline()
+		}
 		return
 	}
 
@@ -295,6 +347,9 @@ func (r *REPL) processLine(input string, interactive bool) {
 	if !r.awaitingCont && trimmed == "?" {
 		r.recordHistory(trimmed)
 		r.handleHelpShortcut()
+		if interactive {
+			r.ensureInteractiveNewline()
+		}
 		return
 	}
 
@@ -324,6 +379,9 @@ func (r *REPL) processLine(input string, interactive bool) {
 		r.pendingLines = nil
 		r.recordHistory(joined)
 		r.printError(err)
+		if interactive {
+			r.ensureInteractiveNewline()
+		}
 		return
 	}
 
@@ -334,6 +392,9 @@ func (r *REPL) processLine(input string, interactive bool) {
 	r.pendingLines = nil
 	r.recordHistory(joined)
 	r.evalParsedValues(values, locations)
+	if interactive {
+		r.ensureInteractiveNewline()
+	}
 }
 
 // getCurrentPrompt returns the appropriate prompt based on debugger state (T154)
@@ -622,6 +683,18 @@ func (r *REPL) setPrompt(prompt string) {
 		return
 	}
 	r.rl.SetPrompt(prompt)
+}
+
+// ensureInteractiveNewline emits a newline if the last write did not end with one.
+// This prevents readline from erasing output that lacks a trailing newline.
+func (r *REPL) ensureInteractiveNewline() {
+	if r == nil || r.trackingOut == nil {
+		return
+	}
+	if !r.trackingOut.LastEndedWithLF() {
+		fmt.Fprintln(r.trackingOut)
+		r.trackingOut.ResetLF()
+	}
 }
 
 // handleHelpShortcut handles the special REPL-only '?' command (no arguments).
