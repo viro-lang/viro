@@ -136,7 +136,17 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 		return nil, err
 	}
 
-	evaluator, err := bootstrap.NewEvaluatorWithNatives(os.Stdout, os.Stderr, os.Stdin, false)
+	// Use readline's writers for output to ensure prin and other output goes through readline
+	stdout := rl.Stdout()
+	if stdout == nil {
+		stdout = os.Stdout
+	}
+	stderr := rl.Stderr()
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+
+	evaluator, err := bootstrap.NewEvaluatorWithNatives(stdout, stderr, os.Stdin, false)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +155,7 @@ func NewREPLWithOptions(opts *Options) (*REPL, error) {
 	repl := &REPL{
 		evaluator:      evaluator,
 		rl:             rl,
-		out:            os.Stdout,
+		out:            stdout,
 		history:        []string{},
 		historyCursor:  0,
 		pendingLines:   nil,
