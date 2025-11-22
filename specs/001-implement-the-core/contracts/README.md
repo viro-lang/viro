@@ -57,12 +57,12 @@ Each native function contract specifies:
 |----------|-----------|-------|
 | Control Flow | if, when, loop, while | 4 |
 | Data | set, get, type? | 3 |
-| I/O | print, input | 2 |
+| I/O | print, prin, input | 3 |
 | Math | +, -, *, /, <, >, <=, >=, =, <>, and, or, not | 13 |
 | Series | first, last, append, insert, length? | 5 |
 | Function | fn | 1 |
 
-**Total**: 28 natives (meets ~50 target with room for expansion)
+**Total**: 29 natives (meets ~50 target with room for expansion)
 
 ---
 

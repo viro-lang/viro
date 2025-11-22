@@ -882,13 +882,7 @@ func serializeValue(val core.Value) string {
 	}
 }
 
-// emitPrintLike encapsulates the common logic for print-like functions.
-// It handles arity checking, output building, and writing with optional newline.
-func emitPrintLike(name string, args []core.Value, eval core.Evaluator, newline bool) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), arityError(name, 1, len(args))
-	}
-
+func emitPrintLike(name string, args []core.Value, eval core.Evaluator, newline bool, flush bool) (core.Value, error) {
 	output, err := buildPrintOutput(args[0], eval)
 	if err != nil {
 		return value.NewNoneVal(), err
@@ -908,29 +902,28 @@ func emitPrintLike(name string, args []core.Value, eval core.Evaluator, newline 
 		)
 	}
 
+	// Flush if requested and writer supports it
+	if flush {
+		if flusher, ok := writer.(interface{ Flush() error }); ok {
+			if flushErr := flusher.Flush(); flushErr != nil {
+				return value.NewNoneVal(), verror.NewAccessError(
+					verror.ErrIDInvalidOperation,
+					[3]string{fmt.Sprintf("%s output flush error: %v", name, flushErr), "", ""},
+				)
+			}
+		}
+		// If writer doesn't support Flush, silently ignore (no-op)
+	}
+
 	return value.NewNoneVal(), nil
 }
 
-// Print implements the `print` native.
-//
-// Contract: print value
-// - Accepts any value
-// - For blocks: reduce elements (evaluate each) and join with spaces
-// - Writes result to stdout followed by newline
-// - Returns none
 func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return emitPrintLike("print", args, eval, true)
+	return emitPrintLike("print", args, eval, true, false)
 }
 
-// Prin implements the `prin` native.
-//
-// Contract: prin value
-// - Accepts any value
-// - For blocks: reduce elements (evaluate each) and join with spaces
-// - Writes result to stdout without trailing newline
-// - Returns none
 func Prin(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	return emitPrintLike("prin", args, eval, false)
+	return emitPrintLike("prin", args, eval, false, true)
 }
 
 // Input implements the `input` native.

@@ -496,6 +496,8 @@ Hello>>
 1 2 3>>
 ```
 
+*Note: Since `prin` does not output a newline, the REPL prompt `>>` appears on the same line as the output.*
+
 ### Input
 
 Read line from stdin:
@@ -707,7 +709,7 @@ function[test]
 ### Language Characteristics
 
 - **Scoping**: Local-by-default for safe, predictable behavior
-- **Native count**: 28 core functions
+- **Native count**: 29 core functions
 - **Series model**: Simplified value-based series
 - **Datatypes**: 10 core types
 

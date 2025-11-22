@@ -39,7 +39,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 - Parentheses control order
 - Function calls consume arguments first
 
-### Native Functions (28)
+### Native Functions (29)
 
 **Math & Logic**:
 - `+`, `-`, `*`, `/` - Arithmetic
@@ -66,6 +66,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 
 **I/O**:
 - `print` - Display output
+- `prin` - Display output without newline
 - `input` - Read from stdin
 
 ### REPL Features
@@ -272,7 +273,7 @@ go test ./...
 
 1. **Scoping**: Local-by-default for safe, predictable behavior
 2. **Evaluation**: Left-to-right with no operator precedence
-3. **Native Count**: 28 core functions
+3. **Native Count**: 29 core functions
 4. **Series Model**: Simplified value-based series
 5. **Datatypes**: 10 core types
 
@@ -418,6 +419,14 @@ Previously, `copy` ignored the current position, making it inconsistent with the
 The new behavior provides more intuitive and predictable semantics when working with series at advanced positions, 
 enabling powerful pattern-matching and stream-processing workflows where you can advance through a series and 
 copy remaining portions without needing to track indices manually.
+
+**New Features**:
+- **`prin` native function**: Added `prin` as a companion to `print` that outputs values without trailing newlines
+  - **Same behavior as `print`**: Accepts any value, reduces blocks, joins with spaces
+  - **No newline**: Unlike `print`, `prin` does not append a newline character
+  - **REPL integration**: When used in REPL, prompt appears on same line as output
+  - **Examples**: `prin "Hello"` outputs "Hello" without newline, `prin [1 2 3]` outputs "1 2 3" without newline
+  - **Contract compliance**: Full contract specification and comprehensive test coverage
 
 **Internal Improvements**:
 - Refactored `ClampToRemaining` helper to remove error handling (validation moved to native layer)

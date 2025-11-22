@@ -101,7 +101,7 @@ func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 			},
 			Returns:  "[none!] Always returns none",
 			Examples: []string{`prin "Hello, world!"  ; prints: Hello, world! (no newline)`, "prin 42  ; prints: 42 (no newline)", "prin [1 2 3]  ; prints: 1 2 3 (no newline)"},
-			SeeAlso:  []string{"print", "input"}, Tags: []string{"io", "output", "print", "display"},
+			SeeAlso:  []string{"print", "input"}, Tags: []string{"io", "output", "prin", "display"},
 		},
 	))
 
@@ -113,7 +113,7 @@ The trailing newline is removed. Blocks until input is received.`,
 		Parameters: []ParamDoc{},
 		Returns:    "[string!] The line of text read from standard input",
 		Examples:   []string{`name: input  ; waits for user input`, `print "Enter your name:"\nname: input\nprint ["Hello" name]`},
-		SeeAlso:    []string{"print", "read"}, Tags: []string{"io", "input", "stdin", "read"},
+		SeeAlso:    []string{"print", "prin", "read"}, Tags: []string{"io", "input", "stdin", "read"},
 	})
 
 	// ===== Group 9: Port operations (8 functions) =====

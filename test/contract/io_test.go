@@ -2,6 +2,7 @@
 package contract
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/eval"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/value"
+	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
 // captureOutput configures evaluator output and returns captured output.
@@ -109,6 +111,198 @@ func TestIO_Print(t *testing.T) {
 
 			if !result.Equals(value.NewNoneVal()) {
 				t.Fatalf("print should return none, got %v", result)
+			}
+		})
+	}
+}
+
+func TestIO_Prin(t *testing.T) {
+	tests := []struct {
+		name     string
+		script   string
+		expected string
+	}{
+		{
+			name:     "prin integer",
+			script:   "prin 42",
+			expected: "42",
+		},
+		{
+			name:     "prin string",
+			script:   "prin \"hello\"",
+			expected: "hello",
+		},
+		{
+			name:     "prin reduced block",
+			script:   "prin [1 + 1 3 * 4]",
+			expected: "2 12",
+		},
+		{
+			name:     "prin interpolated block",
+			script:   "name: \"Alice\"\nprin [\"Hello\" name]",
+			expected: "Hello Alice",
+		},
+		{
+			name:     "prin logic true",
+			script:   "prin true",
+			expected: "true",
+		},
+		{
+			name:     "prin none",
+			script:   "prin none",
+			expected: "none",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vals, locations, perr := parse.ParseWithSource(tt.script, "(test)")
+			if perr != nil {
+				t.Fatalf("Parse failed: %v", perr)
+			}
+
+			e := NewTestEvaluator()
+
+			captured, result, evalErr := captureOutput(t, e, func() (core.Value, error) {
+				val, derr := e.DoBlock(vals, locations)
+				if derr != nil {
+					return value.NewNoneVal(), derr
+				}
+				return val, nil
+			})
+
+			if evalErr != nil {
+				t.Fatalf("Unexpected evaluation error: %v", evalErr)
+			}
+
+			if captured != tt.expected {
+				t.Fatalf("Unexpected stdout. want %q, got %q", tt.expected, captured)
+			}
+
+			if !result.Equals(value.NewNoneVal()) {
+				t.Fatalf("prin should return none, got %v", result)
+			}
+		})
+	}
+}
+
+func TestIO_PrintPrin_WriteError(t *testing.T) {
+	// Create a failing writer
+	failingWriter := &failingWriter{}
+
+	// Create evaluator with failing writer
+	e := NewTestEvaluator()
+	e.SetOutputWriter(failingWriter)
+
+	tests := []struct {
+		name   string
+		script string
+	}{
+		{"print write error", "print 42"},
+		{"prin write error", "prin 42"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vals, locations, perr := parse.ParseWithSource(tt.script, "(test)")
+			if perr != nil {
+				t.Fatalf("Parse failed: %v", perr)
+			}
+
+			_, evalErr := e.DoBlock(vals, locations)
+			if evalErr == nil {
+				t.Fatalf("Expected access error due to write failure, got nil")
+			}
+
+			// Check that it's an access error
+			if vErr, ok := evalErr.(*verror.Error); ok {
+				if vErr.Category != verror.ErrAccess {
+					t.Fatalf("Expected access error, got %v error: %v", vErr.Category, evalErr)
+				}
+			} else {
+				t.Fatalf("Expected verror.Error, got %T: %v", evalErr, evalErr)
+			}
+		})
+	}
+}
+
+// failingWriter always returns an error on Write
+type failingWriter struct{}
+
+func (f *failingWriter) Write(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("simulated write error")
+}
+
+// flushTrackingWriter records writes and flush calls
+type flushTrackingWriter struct {
+	writes  []string
+	flushes int
+}
+
+func (f *flushTrackingWriter) Write(p []byte) (n int, err error) {
+	f.writes = append(f.writes, string(p))
+	return len(p), nil
+}
+
+func (f *flushTrackingWriter) Flush() error {
+	f.flushes++
+	return nil
+}
+
+func TestIO_PrinFlush(t *testing.T) {
+	// Test that prin triggers flush while print does not
+	trackingWriter := &flushTrackingWriter{}
+
+	e := NewTestEvaluator()
+	e.SetOutputWriter(trackingWriter)
+
+	tests := []struct {
+		name           string
+		script         string
+		expectFlush    bool
+		expectedOutput string
+	}{
+		{
+			name:           "prin triggers flush",
+			script:         "prin 42",
+			expectFlush:    true,
+			expectedOutput: "42",
+		},
+		{
+			name:           "print does not trigger flush",
+			script:         "print 42",
+			expectFlush:    false,
+			expectedOutput: "42\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset tracking writer state
+			trackingWriter.writes = nil
+			trackingWriter.flushes = 0
+
+			vals, locations, perr := parse.ParseWithSource(tt.script, "(test)")
+			if perr != nil {
+				t.Fatalf("Parse failed: %v", perr)
+			}
+
+			_, evalErr := e.DoBlock(vals, locations)
+			if evalErr != nil {
+				t.Fatalf("Unexpected evaluation error: %v", evalErr)
+			}
+
+			// Check output
+			if len(trackingWriter.writes) != 1 || trackingWriter.writes[0] != tt.expectedOutput {
+				t.Fatalf("Unexpected output. want %q, got %q", tt.expectedOutput, trackingWriter.writes)
+			}
+
+			// Check flush behavior
+			if tt.expectFlush && trackingWriter.flushes != 1 {
+				t.Fatalf("Expected flush to be called once, got %d calls", trackingWriter.flushes)
+			}
+			if !tt.expectFlush && trackingWriter.flushes != 0 {
+				t.Fatalf("Expected flush to not be called, got %d calls", trackingWriter.flushes)
 			}
 		})
 	}

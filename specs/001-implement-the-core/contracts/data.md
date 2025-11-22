@@ -206,7 +206,8 @@ none? true       → false
 
 **Error Cases**:
 - No arguments → Script error: "none? expects 1 argument"
-- Too many arguments → Script error: "none? expects 1 argument"
+
+**Note**: Additional values after the function call are treated as separate expressions and do not trigger arity errors.
 
 **Implementation Note**:
 - Standard boolean predicate semantics
