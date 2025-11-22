@@ -882,16 +882,11 @@ func serializeValue(val core.Value) string {
 	}
 }
 
-// Print implements the `print` native.
-//
-// Contract: print value
-// - Accepts any value
-// - For blocks: reduce elements (evaluate each) and join with spaces
-// - Writes result to stdout followed by newline
-// - Returns none
-func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+// emitPrintLike encapsulates the common logic for print-like functions.
+// It handles arity checking, output building, and writing with optional newline.
+func emitPrintLike(name string, args []core.Value, eval core.Evaluator, newline bool) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("print", 1, len(args))
+		return value.NewNoneVal(), arityError(name, 1, len(args))
 	}
 
 	output, err := buildPrintOutput(args[0], eval)
@@ -900,14 +895,42 @@ func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluat
 	}
 
 	writer := eval.GetOutputWriter()
-	if _, writeErr := fmt.Fprintln(writer, output); writeErr != nil {
+	var writeErr error
+	if newline {
+		_, writeErr = fmt.Fprintln(writer, output)
+	} else {
+		_, writeErr = fmt.Fprint(writer, output)
+	}
+	if writeErr != nil {
 		return value.NewNoneVal(), verror.NewAccessError(
 			verror.ErrIDInvalidOperation,
-			[3]string{fmt.Sprintf("print output error: %v", writeErr), "", ""},
+			[3]string{fmt.Sprintf("%s output error: %v", name, writeErr), "", ""},
 		)
 	}
 
 	return value.NewNoneVal(), nil
+}
+
+// Print implements the `print` native.
+//
+// Contract: print value
+// - Accepts any value
+// - For blocks: reduce elements (evaluate each) and join with spaces
+// - Writes result to stdout followed by newline
+// - Returns none
+func Print(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return emitPrintLike("print", args, eval, true)
+}
+
+// Prin implements the `prin` native.
+//
+// Contract: prin value
+// - Accepts any value
+// - For blocks: reduce elements (evaluate each) and join with spaces
+// - Writes result to stdout without trailing newline
+// - Returns none
+func Prin(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return emitPrintLike("prin", args, eval, false)
 }
 
 // Input implements the `input` native.

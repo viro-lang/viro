@@ -483,6 +483,19 @@ Hello, world!
 
 ```
 
+### Prin
+
+Display value without trailing newline and return none:
+
+```
+>> prin "Hello"
+Hello>>
+>> prin 42
+42>>
+>> prin [1 2 3]
+1 2 3>>
+```
+
 ### Input
 
 Read line from stdin:

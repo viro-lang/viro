@@ -62,7 +62,7 @@ func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 		))
 	}
 
-	// ===== Group 8: I/O operations (2 functions - print needs evaluator) =====
+	// ===== Group 8: I/O operations (3 functions - print/prin need evaluator) =====
 	registerAndBind("print", value.NewNativeFunction(
 		"print",
 		[]value.ParamSpec{
@@ -74,13 +74,34 @@ func RegisterIONatives(rootFrame core.Frame, eval core.Evaluator) {
 			Category: "I/O",
 			Summary:  "Prints a value to standard output",
 			Description: `Evaluates and prints a value to standard output, followed by a newline.
-Blocks are formatted with spaces between elements. Returns none.`,
+ Blocks are formatted with spaces between elements. Returns none.`,
 			Parameters: []ParamDoc{
 				{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
 			},
 			Returns:  "[none!] Always returns none",
 			Examples: []string{`print "Hello, world!"  ; prints: Hello, world!`, "print 42  ; prints: 42", "print [1 2 3]  ; prints: 1 2 3"},
-			SeeAlso:  []string{"input"}, Tags: []string{"io", "output", "print", "display"},
+			SeeAlso:  []string{"prin", "input"}, Tags: []string{"io", "output", "print", "display"},
+		},
+	))
+
+	registerAndBind("prin", value.NewNativeFunction(
+		"prin",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		Prin,
+		false,
+		&NativeDoc{
+			Category: "I/O",
+			Summary:  "Prints a value to standard output without newline",
+			Description: `Evaluates and prints a value to standard output without a trailing newline.
+ Blocks are formatted with spaces between elements. Returns none.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to print (will be evaluated)", Optional: false},
+			},
+			Returns:  "[none!] Always returns none",
+			Examples: []string{`prin "Hello, world!"  ; prints: Hello, world! (no newline)`, "prin 42  ; prints: 42 (no newline)", "prin [1 2 3]  ; prints: 1 2 3 (no newline)"},
+			SeeAlso:  []string{"print", "input"}, Tags: []string{"io", "output", "print", "display"},
 		},
 	))
 
