@@ -245,6 +245,36 @@ func TestData_NoneQ(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "none? false returns false",
+			input:    "none? false",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? non-empty block returns false",
+			input:    "none? [1 2 3]",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? with non-none value",
+			input:    "value: 10\nnone? value",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
+			name:     "none? with get-word none",
+			input:    "x: none\nnone? :x",
+			expected: value.NewLogicVal(true),
+			wantErr:  false,
+		},
+		{
+			name:     "none? with get-word non-none",
+			input:    "x: 42\nnone? :x",
+			expected: value.NewLogicVal(false),
+			wantErr:  false,
+		},
+		{
 			name:    "none? with no arguments errors",
 			input:   "none?",
 			wantErr: true,
