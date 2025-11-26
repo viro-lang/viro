@@ -1,0 +1,25 @@
+
+import: fn [file] [ do parse tokenize read file ]
+
+map: fn [series f] [
+  result: []
+  foreach series item [
+    append result f item
+  ]
+  result
+]
+
+any: fn --no-scope [conditions] [
+  while [not tail? conditions] [
+    when (do --next 'conditions conditions) [ return true ]
+  ]
+  false
+]
+
+all: fn --no-scope [conditions] [
+  while [not tail? conditions] [
+    when not (do --next 'conditions conditions) [ return false ]
+  ]
+  return true
+]
+

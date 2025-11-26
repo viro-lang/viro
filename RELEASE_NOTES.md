@@ -25,7 +25,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 
 **Evaluation Engine**:
 - Type-based dispatch with left-to-right evaluation
-- Local-by-default scoping
+- Local-by-default scoping with optional dynamic scoping via `fn --no-scope`
 - Lexical closures
 - Recursive function support (150+ depth)
 
@@ -39,7 +39,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 - Parentheses control order
 - Function calls consume arguments first
 
-### Native Functions (28)
+### Native Functions (29)
 
 **Math & Logic**:
 - `+`, `-`, `*`, `/` - Arithmetic
@@ -66,6 +66,7 @@ Viro v1.0.0 is the first production release of a homoiconic programming language
 
 **I/O**:
 - `print` - Display output
+- `prin` - Display output without newline
 - `input` - Read from stdin
 
 ### REPL Features
@@ -272,7 +273,7 @@ go test ./...
 
 1. **Scoping**: Local-by-default for safe, predictable behavior
 2. **Evaluation**: Left-to-right with no operator precedence
-3. **Native Count**: 28 core functions
+3. **Native Count**: 29 core functions
 4. **Series Model**: Simplified value-based series
 5. **Datatypes**: 10 core types
 
@@ -381,6 +382,20 @@ For bug reports, feature requests, or questions:
 
 ### v1.0.1 (Unreleased) - Copy Function Behavioral Change
 
+**New Features**:
+- **`foreach` object iteration**: The `foreach` native now supports iterating over `object!` values in addition to series types
+  - **Object iteration**: Iterates over object fields in prototype inclusion order (parent fields first, then child fields)
+  - **Variable binding**: Single variable binds to field name as `word!` value, two or more variables bind field name + field value + none for extras
+  - **Live value lookup**: Field values are fetched per iteration using `GetFieldWithProto` for current values
+  - **Index support**: `--with-index` refinement works with objects, incrementing per field iteration
+  - **Examples**:
+    ```viro
+    obj: object [a: 1 b: 2 c: 3]
+    foreach obj [key] [print key]           ; prints: a b c (keys as words)
+    foreach obj [key value] [print [key value]] ; prints: [a 1] [b 2] [c 3]
+    foreach obj --with-index 'i [k] [print [i k]] ; prints: [0 a] [1 b] [2 c]
+    ```
+
 **Breaking Changes**:
 - **`copy` function behavior**: The `copy` function now only copies from the current index position forward, not the entire series
   - **Old behavior**: `copy` always copied the entire series regardless of the current index position
@@ -404,6 +419,14 @@ Previously, `copy` ignored the current position, making it inconsistent with the
 The new behavior provides more intuitive and predictable semantics when working with series at advanced positions, 
 enabling powerful pattern-matching and stream-processing workflows where you can advance through a series and 
 copy remaining portions without needing to track indices manually.
+
+**New Features**:
+- **`prin` native function**: Added `prin` as a companion to `print` that outputs values without trailing newlines
+  - **Same behavior as `print`**: Accepts any value, reduces blocks, joins with spaces
+  - **No newline**: Unlike `print`, `prin` does not append a newline character
+  - **REPL integration**: When used in REPL, prompt appears on same line as output
+  - **Examples**: `prin "Hello"` outputs "Hello" without newline, `prin [1 2 3]` outputs "1 2 3" without newline
+  - **Contract compliance**: Full contract specification and comprehensive test coverage
 
 **Internal Improvements**:
 - Refactored `ClampToRemaining` helper to remove error handling (validation moved to native layer)

@@ -27,10 +27,6 @@ type Evaluator struct {
 	ErrorWriter  io.Writer
 	InputReader  io.Reader
 
-	// Cached trace state fields for performance optimization.
-	// These fields are synchronized with the global trace session and must be updated via UpdateTraceCache().
-	// Call UpdateTraceCache() after any change to the global trace session (e.g., enabling/disabling tracing,
-	// or modifying trace filters) to ensure cache consistency.
 	traceEnabled         bool
 	traceShouldTraceExpr bool
 }
@@ -126,10 +122,13 @@ func (e *Evaluator) popFrame() int {
 	frm := e.Frames[len(e.Frames)-1]
 	e.Frames = e.Frames[:len(e.Frames)-1]
 	idx := frm.GetIndex()
-	if !e.captured[idx] {
-		e.frameStore[idx] = nil
-	} else if frm.GetType() != frame.FrameClosure {
-		frm.ChangeType(frame.FrameClosure)
+
+	if _, isSharedFrame := frm.(*frame.SharedFrame); !isSharedFrame {
+		if !e.captured[idx] {
+			e.frameStore[idx] = nil
+		} else if frm.GetType() != frame.FrameClosure {
+			frm.ChangeType(frame.FrameClosure)
+		}
 	}
 	return idx
 }
@@ -624,7 +623,7 @@ func (e *Evaluator) setupFunctionCallTracing(name string, position int, posArgs 
 	var args map[string]string
 	if e.traceEnabled {
 		traceStart = time.Now()
-		args = e.captureFunctionArgs(nil, posArgs, refValues) // fn is not needed for arg capture
+		args = e.captureFunctionArgs(nil, posArgs, refValues)
 		event := trace.TraceEvent{
 			Timestamp:  traceStart,
 			Value:      "",
@@ -881,7 +880,6 @@ func (e *Evaluator) readRefinements(tokens []core.Value, locations []core.Source
 			return pos, refinementError("duplicate", refName)
 		}
 
-		// Handle refinements that take values vs. boolean flags
 		if spec.TakesValue {
 			if pos+1 >= len(tokens) {
 				return pos, refinementError("missing-value", refName)
@@ -905,6 +903,10 @@ func (e *Evaluator) readRefinements(tokens []core.Value, locations []core.Source
 }
 
 func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) (core.Value, error) {
+	if fn.NoScope {
+		return e.executeFunctionNoScope(fn, posArgs, refinements)
+	}
+
 	parent := fn.Parent
 	if parent == -1 {
 		parent = 0
@@ -930,6 +932,66 @@ func (e *Evaluator) executeFunction(fn *value.FunctionValue, posArgs []core.Valu
 	}
 
 	return result, nil
+}
+
+func (e *Evaluator) executeFunctionNoScope(fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) (core.Value, error) {
+	callerFrameIndex := e.CurrentFrameIndex()
+	if callerFrameIndex < 0 {
+		callerFrameIndex = 0
+	}
+	callerFrame := e.GetFrameByIndex(callerFrameIndex)
+
+	sharedFrame := frame.NewSharedFrame(callerFrame, fn.Parent)
+	sharedFrame.SetName(functionDisplayName(fn))
+
+	e.PushFrameContext(sharedFrame)
+	defer e.popFrame()
+
+	originalBindings := make(map[string]core.Value)
+	originalExists := make(map[string]bool)
+
+	paramNames := make(map[string]bool)
+	for _, spec := range fn.Params {
+		if spec.Refinement {
+			paramNames[spec.Name] = true
+		} else {
+			paramNames[spec.Name] = true
+		}
+	}
+
+	for paramName := range paramNames {
+		if val, exists := callerFrame.Get(paramName); exists {
+			originalBindings[paramName] = val
+			originalExists[paramName] = true
+		} else {
+			originalExists[paramName] = false
+		}
+	}
+
+	e.bindFunctionParameters(sharedFrame, fn, posArgs, refinements)
+
+	if fn.Body == nil {
+		return value.NewNoneVal(), verror.NewInternalError("function body missing", [3]string{})
+
+	}
+
+	result, err := e.DoBlock(fn.Body.Elements, fn.Body.Locations())
+	if err != nil {
+		if returnSig, ok := err.(*ReturnSignal); ok {
+			result = returnSig.Value()
+			err = nil
+		}
+	}
+
+	for paramName := range paramNames {
+		if originalExists[paramName] {
+			callerFrame.Set(paramName, originalBindings[paramName])
+		} else {
+			callerFrame.Unbind(paramName)
+		}
+	}
+
+	return result, err
 }
 
 func (e *Evaluator) bindFunctionParameters(frame core.Frame, fn *value.FunctionValue, posArgs []core.Value, refinements map[string]core.Value) {
@@ -1025,7 +1087,7 @@ func (e *Evaluator) resolvePathBase(firstSeg value.PathSegment) (core.Value, err
 	}
 }
 
-func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
+func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment, current core.Value, lenient bool) error {
 	if current.GetType() != value.TypeObject {
 		return makePathTypeError("word segment requires object", value.TypeToString(current.GetType()), "")
 	}
@@ -1042,6 +1104,10 @@ func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment
 
 	fieldVal, found := obj.GetFieldWithProto(fieldName)
 	if !found {
+		if lenient {
+			tr.values = append(tr.values, value.NewNoneVal())
+			return nil
+		}
 		return verror.NewScriptError(verror.ErrIDNoSuchField, [3]string{fieldName, "", ""})
 	}
 
@@ -1049,7 +1115,7 @@ func (e *Evaluator) traverseWordSegment(tr *pathTraversal, seg value.PathSegment
 	return nil
 }
 
-func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegment, current core.Value) error {
+func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegment, current core.Value, lenient bool) error {
 	index, ok := seg.AsIndex()
 	if !ok {
 		return verror.NewInternalError("index segment does not contain int64", [3]string{})
@@ -1061,8 +1127,12 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 		if !ok {
 			return verror.NewInternalError("failed to cast block value", [3]string{})
 		}
-		if err := checkIndexBounds(index, int64(len(block.Elements)), "block"); err != nil {
-			return err
+		if index < 1 || index > int64(len(block.Elements)) {
+			if lenient {
+				tr.values = append(tr.values, value.NewNoneVal())
+				return nil
+			}
+			return checkIndexBounds(index, int64(len(block.Elements)), "block")
 		}
 		tr.values = append(tr.values, block.Elements[index-1])
 
@@ -1072,8 +1142,12 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 			return verror.NewInternalError("failed to cast string value", [3]string{})
 		}
 		runes := []rune(str.String())
-		if err := checkIndexBounds(index, int64(len(runes)), "string"); err != nil {
-			return err
+		if index < 1 || index > int64(len(runes)) {
+			if lenient {
+				tr.values = append(tr.values, value.NewNoneVal())
+				return nil
+			}
+			return checkIndexBounds(index, int64(len(runes)), "string")
 		}
 		tr.values = append(tr.values, value.NewStrVal(string(runes[index-1])))
 
@@ -1082,8 +1156,12 @@ func (e *Evaluator) traverseIndexSegment(tr *pathTraversal, seg value.PathSegmen
 		if !ok {
 			return verror.NewInternalError("failed to cast binary value", [3]string{})
 		}
-		if err := checkIndexBounds(index, int64(bin.Length()), "binary"); err != nil {
-			return err
+		if index < 1 || index > int64(bin.Length()) {
+			if lenient {
+				tr.values = append(tr.values, value.NewNoneVal())
+				return nil
+			}
+			return checkIndexBounds(index, int64(bin.Length()), "binary")
 		}
 		tr.values = append(tr.values, value.NewIntVal(int64(bin.At(int(index-1)))))
 
@@ -1144,12 +1222,12 @@ func traversePath(e core.Evaluator, path *value.PathExpression, stopBeforeLast b
 
 		switch seg.Type {
 		case value.PathSegmentWord:
-			if err := eval.traverseWordSegment(tr, seg, current); err != nil {
+			if err := eval.traverseWordSegment(tr, seg, current, !stopBeforeLast); err != nil {
 				return nil, err
 			}
 
 		case value.PathSegmentIndex:
-			if err := eval.traverseIndexSegment(tr, seg, current); err != nil {
+			if err := eval.traverseIndexSegment(tr, seg, current, !stopBeforeLast); err != nil {
 				return nil, err
 			}
 

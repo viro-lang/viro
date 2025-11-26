@@ -8,15 +8,11 @@ import (
 
 	"github.com/marcin-radoszewski/viro/internal/bootstrap"
 	"github.com/marcin-radoszewski/viro/internal/config"
-	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/debug"
 	"github.com/marcin-radoszewski/viro/internal/eval"
-	"github.com/marcin-radoszewski/viro/internal/frame"
-	"github.com/marcin-radoszewski/viro/internal/native"
 	"github.com/marcin-radoszewski/viro/internal/parse"
 	"github.com/marcin-radoszewski/viro/internal/profile"
 	"github.com/marcin-radoszewski/viro/internal/trace"
-	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
@@ -244,8 +240,12 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 		return ExitSuccess
 	}
 
-	evaluator := setupEvaluatorWithContext(cfg, ctx)
-	initializeSystemObjectInEvaluator(evaluator, args)
+	evaluator, err := setupEvaluatorWithContext(cfg, ctx)
+	if err != nil {
+		fmt.Fprintf(ctx.Stderr, "Error setting up evaluator: %v\n", err)
+		return HandleErrorWithContext(err)
+	}
+	bootstrap.InjectSystemArgs(evaluator, args)
 
 	result, err := evaluator.DoBlock(values, locations)
 	if err != nil {
@@ -266,47 +266,15 @@ func executeViroCodeWithContext(cfg *Config, input InputSource, args []string, p
 	return ExitSuccess
 }
 
-func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) *eval.Evaluator {
-	evaluator := eval.NewEvaluator()
-
-	if cfg.Quiet {
-		evaluator.SetOutputWriter(io.Discard)
-	} else {
-		evaluator.SetOutputWriter(ctx.Stdout)
+func setupEvaluatorWithContext(cfg *Config, ctx *RuntimeContext) (*eval.Evaluator, error) {
+	evaluator, err := bootstrap.NewEvaluatorWithNatives(ctx.Stdout, ctx.Stderr, ctx.Stdin, cfg.Quiet)
+	if err != nil {
+		return nil, err
 	}
-	evaluator.SetErrorWriter(ctx.Stderr)
-	evaluator.SetInputReader(ctx.Stdin)
 
-	rootFrame := evaluator.GetFrameByIndex(0)
-	native.RegisterMathNatives(rootFrame)
-	native.RegisterDataNatives(rootFrame)
-	native.RegisterSeriesNatives(rootFrame)
-	native.RegisterIONatives(rootFrame, evaluator)
-	native.RegisterControlNatives(rootFrame)
-	native.RegisterHelpNatives(rootFrame)
-	native.RegisterBitwiseNatives(rootFrame)
-
-	// Initialize debugger for script execution (same as REPL)
 	debug.InitDebugger()
 
-	return evaluator
-}
-
-func initializeSystemObjectInEvaluator(evaluator *eval.Evaluator, args []string) {
-	viroArgs := make([]core.Value, len(args))
-	for i, arg := range args {
-		viroArgs[i] = value.NewStringValue(arg)
-	}
-
-	argsBlock := value.NewBlockValue(viroArgs)
-
-	ownedFrame := frame.NewFrame(frame.FrameObject, -1)
-	ownedFrame.Bind("args", argsBlock)
-
-	systemObj := value.NewObject(ownedFrame)
-
-	rootFrame := evaluator.GetFrameByIndex(0)
-	rootFrame.Bind("system", systemObj)
+	return evaluator, nil
 }
 
 func HandleErrorWithContext(err error) int {

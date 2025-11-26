@@ -35,6 +35,7 @@ type Frame interface {
 	Get(symbol string) (Value, bool)
 	Set(symbol string, value Value) bool
 	HasWord(symbol string) bool
+	Unbind(symbol string) bool
 	GetParent() int
 	GetIndex() int
 	SetIndex(int)

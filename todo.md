@@ -2,39 +2,7 @@
 
 ## High Priority
 
-- [x] **CLI Interface Improvements**
-  - STATUS: ✅ COMPLETE
-  - Full CLI implementation exists in cmd/viro/main.go and run.go
-  - All modes implemented: REPL, script execution, eval, check, version, help
-  - Configuration system with flags and environment variables working
-  - See: cmd/viro/run.go:38-60 for mode execution
-
-- [x] **Fix Examples**
-  - STATUS: ✅ COMPLETE
-  - All 9 example files run successfully without errors
-  - Examples cover: basics, control flow, functions, series, data manipulation, objects, advanced patterns, practical algorithms, and script arguments
-  - Located: examples/*.viro
-
 ## Medium Priority
-
-- [x] **Series Functions - Complete Implementation**
-  - STATUS: ✅ COMPLETE
-  - All series functions fully implemented and registered
-  - Implemented: pick, poke, select, clear, change, trim (all with full documentation)
-  - See: internal/native/register_series.go:95-124 for complete implementation
-
-- [x] **While Loop - Accept logic! and integer!**
-  - STATUS: ✅ COMPLETE
-  - While loop now accepts blocks, logic!, and integer! values for condition
-  - Blocks are re-evaluated on each iteration, other values used directly
-  - See: internal/native/control.go:159-222 for implementation
-
-- [x] **Read Native - Directory Support**
-  - STATUS: ✅ COMPLETE
-  - Implemented directory reading in internal/native/io.go:556-577
-  - Returns block with filenames when given a directory path
-  - Respects sandbox rules for security
-  - Tests added in test/contract/ports_test.go:500-610
 
 ## Low Priority
 

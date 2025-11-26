@@ -1,6 +1,3 @@
-// Package native provides built-in native functions for the Viro interpreter.
-//
-// This file contains control flow native function registrations.
 package native
 
 import (
@@ -10,19 +7,9 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
-// RegisterControlNatives registers all control flow native functions in the root frame.
-//
-// The function panics if:
-//   - rootFrame is nil
-//   - Any duplicate function name is registered
-//   - Any function creation fails
-//
-// This is intentional fail-fast behavior for critical initialization errors.
 func RegisterControlNatives(rootFrame core.Frame) {
-	// Validation: Track registered names to detect duplicates
 	registered := make(map[string]bool)
 
-	// Helper function to register and bind a native function
 	registerAndBind := func(name string, fn *value.FunctionValue) {
 		if fn == nil {
 			panic(fmt.Sprintf("RegisterControlNatives: attempted to register nil function for '%s'", name))
@@ -31,14 +18,11 @@ func RegisterControlNatives(rootFrame core.Frame) {
 			panic(fmt.Sprintf("RegisterControlNatives: duplicate registration of function '%s'", name))
 		}
 
-		// Bind to root frame
 		rootFrame.Bind(name, value.NewFuncVal(fn))
 
-		// Mark as registered
 		registered[name] = true
 	}
 
-	// Group 10: Control flow (4 functions - all need evaluator)
 	registerAndBind("when", value.NewNativeFunction(
 		"when",
 		[]value.ParamSpec{
@@ -154,34 +138,36 @@ Be careful to avoid infinite loops.`,
 		false,
 		&NativeDoc{
 			Category:    "Control",
-			Summary:     "Iterates over a series, binding each element to a variable",
-			Description: "Iterates over any series type (block!, string!, binary!), binding each element to one or more variables and executing a body block. The loop variable(s) are bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series is empty. Supports multiple variables for multi-value assignment. Index represents the iteration number (0-based) regardless of how many elements are consumed per iteration.\n\nRefinements:\n  --with-index 'word: Binds the current iteration index (0, 1, 2, ...) to the specified word.",
+			Summary:     "Iterates over a series or object, binding each element/field to a variable",
+			Description: "Iterates over any series type (block!, string!, binary!) or object!, binding each element/field to one or more variables and executing a body block. For series, iterates over elements. For objects, iterates over fields in prototype inclusion order (parent fields first, then child fields; child overrides parent), binding field name as word! value to first variable and field value to second variable. The loop variable(s) are bound in the current scope (not a new scope), allowing access to outer variables. Returns the result of the last iteration, or none if the series/object is empty. Supports multiple variables for multi-value assignment. Index represents the iteration number (0-based) regardless of how many elements are consumed per iteration.\n\nRefinements:\n  --with-index 'word: Binds the current iteration index (0, 1, 2, ...) to the specified word.",
 			Parameters: []ParamDoc{
-				{Name: "series", Type: "block! string! binary!", Description: "The series to iterate over (evaluated)", Optional: false},
+				{Name: "series", Type: "block! string! binary! object!", Description: "The series or object to iterate over (evaluated)", Optional: false},
 				{Name: "vars", Type: "word! block!", Description: "A single word or block of words for the loop variable(s) (quoted)", Optional: false},
-				{Name: "body", Type: "block!", Description: "The code to execute for each element", Optional: false},
+				{Name: "body", Type: "block!", Description: "The code to execute for each element/field", Optional: false},
 			},
-			Returns: "[any-type! none!] The result of the last iteration, or none if series is empty",
+			Returns: "[any-type! none!] The result of the last iteration, or none if series/object is empty",
 			Examples: []string{
 				"foreach [1 2 3] [n] [print n]  ; prints: 1 2 3",
 				"foreach [1 2 3] n [print n]  ; single word (quoted)",
 				"sum: 0\nforeach [10 20 30] [n] [sum: (+ sum n)]  ; sum becomes 60",
 				"foreach \"hello\" [c] [print c]  ; prints each character",
 				"foreach [1 2 3 4 5 6] [a b] [print [a b]]  ; multi-value assignment",
-				"foreach [a b c] --with-index 'pos [print pos]  ; prints: 0 1 2",
+				"foreach [a b c] --with-index 'pos [n] [print pos]  ; prints: 0 1 2",
 				"foreach [10 20 30] --with-index 'i [v] [print [i v]]  ; prints: [0 10] [1 20] [2 30]",
+				"obj: object [a: 1 b: 2]\nforeach obj [k] [print k]  ; prints: a b (as words)",
+				"foreach obj [key value] [print [key value]]  ; prints: [a 1] [b 2] (key as word)",
 			},
 			SeeAlso: []string{"loop", "while", "map", "filter"},
 			Tags:    []string{"control", "iteration", "loop", "foreach"},
 		},
 	))
 
-	// Group 11: Function creation (1 function - needs evaluator)
 	registerAndBind("fn", value.NewNativeFunction(
 		"fn",
 		[]value.ParamSpec{
-			value.NewParamSpec("params", false),
-			value.NewParamSpec("body", false),
+			value.NewParamSpec("params", true),
+			value.NewParamSpec("body", true),
+			value.NewRefinementSpec("no-scope", false),
 		},
 		Fn,
 		false,
@@ -190,18 +176,27 @@ Be careful to avoid infinite loops.`,
 			Summary:  "Creates a new function",
 			Description: `Defines a new function with parameters and a body. The first argument is a block
 containing parameter names, and the second is a block containing the function body code.
-Returns a function value that can be called. Functions capture their defining context (closure).`,
+Returns a function value that can be called. Functions capture their defining context (closure).
+
+Refinements:
+  --no-scope: Execute function in caller's scope instead of creating a new local scope.
+    This allows the function to access and modify caller variables, but parameters are
+    restored after execution to prevent leakage.`,
 			Parameters: []ParamDoc{
 				{Name: "params", Type: "block!", Description: "A block of parameter names (words)", Optional: false},
 				{Name: "body", Type: "block!", Description: "A block of code to execute when the function is called", Optional: false},
 			},
-			Returns:  "[function!] The newly created function",
-			Examples: []string{"square: fn [n] [n * n]  ; => function", "add: fn [a b] [a + b]\nadd 3 4  ; => 7", "greet: fn [name] [print [\"Hello\" name]]\ngreet \"Alice\"  ; prints: Hello Alice"},
-			SeeAlso:  []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure"},
+			Returns: "[function!] The newly created function",
+			Examples: []string{
+				"square: fn [n] [n * n]  ; => function",
+				"add: fn [a b] [a + b]\nadd 3 4  ; => 7",
+				"greet: fn [name] [print [\"Hello\" name]]\ngreet \"Alice\"  ; prints: Hello Alice",
+				"modify: fn --no-scope [] [x: 42]\nmodify  ; modifies caller's x variable",
+			},
+			SeeAlso: []string{"set", "get"}, Tags: []string{"function", "definition", "lambda", "closure", "scope"},
 		},
 	))
 
-	// Group 12: Block manipulation (2 functions - need evaluator)
 	registerAndBind("compose", value.NewNativeFunction(
 		"compose",
 		[]value.ParamSpec{

@@ -1,7 +1,7 @@
 # Contract: I/O Natives
 
 **Category**: Input/Output Operations  
-**Functions**: `print`, `input`  
+**Functions**: `print`, `prin`, `input`  
 **Purpose**: Basic console I/O for REPL interaction
 
 ---
@@ -77,17 +77,105 @@ func TestNativePrint(t *testing.T) {
     oldStdout := os.Stdout
     r, w, _ := os.Pipe()
     os.Stdout = w
-    
+
     result, err := NativePrint([]Value{IntVal(42)})
-    
+
     w.Close()
     os.Stdout = oldStdout
-    
+
     var buf bytes.Buffer
     io.Copy(&buf, r)
-    
+
     assert.NoError(t, err)
     assert.Equal(t, "42\n", buf.String())
+    assert.Equal(t, NoneVal(), result)
+}
+```
+
+---
+
+## Native: `prin`
+
+**Signature**: `prin value`
+
+**Parameters**:
+- `value`: Any type (evaluated)
+
+**Return**: None
+
+**Behavior**:
+1. Evaluate argument
+2. If argument is a block: **reduce** it (evaluate each element), then join results with spaces
+3. If argument is any other type: convert value to string representation
+4. Output string to standard output (stdout) without newline
+5. Return none
+
+**Type Rules**:
+- Accepts any value type
+- **Special handling for blocks**: reduces (evaluates contents) before printing
+- Automatic conversion to string for display
+
+**String Conversion Rules**:
+- Integer → decimal representation (e.g., `42` → "42")
+- String → content without quotes (e.g., `"hello"` → hello)
+- Block → **REDUCE block first**, then join elements with spaces (e.g., `[1 2 3]` → "1 2 3", `["Hello" name]` with name="Alice" → "Hello Alice")
+- Word → symbol name (e.g., `'x` → x)
+- Logic → `true` or `false`
+- None → empty string or "none" (implementation choice)
+- Function → `[function]` or function name
+
+**Examples**:
+```viro
+prin 42            → prints "42" (without newline)
+prin "hello"       → prints "hello"
+prin [1 2 3]       → prints "1 2 3" (block reduced: each element evaluated and joined)
+prin ["Hi" "there"]→ prints "Hi there" (strings joined with space)
+name: "Alice"
+prin ["Hello" name]→ prints "Hello Alice" (name evaluated to "Alice", joined)
+prin true          → prints "true"
+prin none          → prints "none" or empty line
+```
+
+**Test Cases**:
+1. `prin 42` outputs "42" to stdout, returns none
+2. `prin "hello"` outputs "hello", returns none
+3. `prin [1 2 3]` outputs "1 2 3" (reduced block), returns none
+4. `prin ["Hi" "there"]` outputs "Hi there", returns none
+5. `name: "Alice"` then `prin ["Hello" name]` outputs "Hello Alice", returns none
+6. `prin true` outputs "true", returns none
+7. `prin none` outputs "none" or "", returns none
+8. Capture output: verify exact string without newline
+9. Return value: always none
+
+**Block Reduction Behavior**:
+- When prin receives a block, it evaluates each element in the block
+- Results are converted to strings and joined with single spaces
+- Example: `prin [1 + 1 3 * 4]` → "2 12" (evaluates expressions)
+- Example: `x: 5  prin ["Value:" x]` → "Value: 5" (evaluates word)
+
+**Side Effects**:
+- Writes to stdout (observable in tests via output capture)
+- Does NOT add newline after content
+
+**Error Cases**: None (accepts any value, converts to string)
+
+**Usage in Tests**:
+```go
+func TestNativePrin(t *testing.T) {
+    oldStdout := os.Stdout
+    r, w, _ := os.Pipe()
+    os.Stdout = w
+
+    result, err := NativePrin([]Value{IntVal(42)})
+
+    w.Close()
+    os.Stdout = oldStdout
+
+    var buf bytes.Buffer
+    io.Copy(&buf, r)
+
+    assert.NoError(t, err)
+    assert.Equal(t, "42", buf.String())  // No newline!
     assert.Equal(t, NoneVal(), result)
 }
 ```
@@ -167,36 +255,36 @@ func TestNativeInput(t *testing.T) {
 ## Common Properties
 
 **Standard I/O**:
-- `print` writes to stdout
+- `print` and `prin` write to stdout
 - `input` reads from stdin
 - Standard Go I/O streams (`os.Stdout`, `os.Stdin`)
 
 **String Handling**:
-- `print` converts any value to string representation
-- **`print` reduces blocks**: evaluates each element and joins with spaces
+- `print` and `prin` convert any value to string representation
+- **`print` and `prin` reduce blocks**: evaluates each element and joins with spaces
 - `input` always returns string (no automatic parsing)
 - User must convert input if numeric value needed
 
-**Block Reduction in Print**:
-- Critical feature: `print [...]` evaluates block contents before printing
-- Enables convenient string interpolation: `print ["Hello" name]`
+**Block Reduction in Print/Prin**:
+- Critical feature: `print [...]` and `prin [...]` evaluate block contents before printing
+- Enables convenient string interpolation: `print ["Hello" name]` or `prin ["Hello" name]`
 - Without this, would need separate `reduce` function (not in Phase 1)
 - Similar to Viro's print behavior
 
 **Error Handling**:
-- `print` does not error (best effort output)
+- `print` and `prin` do not error (best effort output)
 - `input` can error on read failure (Access error category)
 
 **Return Values**:
-- `print` always returns none
+- `print` and `prin` always return none
 - `input` returns string
 
 **Blocking Behavior**:
-- `print` is non-blocking (writes immediately)
+- `print` and `prin` are non-blocking (writes immediately)
 - `input` blocks until user provides input
 
 **Testing Considerations**:
-- Must capture/redirect stdout for print tests
+- Must capture/redirect stdout for print and prin tests
 - Must simulate stdin for input tests
 - Use Go's `os.Pipe()` for I/O redirection in tests
 
@@ -251,10 +339,10 @@ You entered: test    ; block reduced with x evaluated
 
 For each native:
 - [ ] Function signature matches contract
-- [ ] Correct I/O stream (stdout for print, stdin for input)
-- [ ] Value to string conversion (print)
-- [ ] Newline handling (print adds, input strips)
-- [ ] Return correct value (none for print, string for input)
+- [ ] Correct I/O stream (stdout for print/prin, stdin for input)
+- [ ] Value to string conversion (print/prin)
+- [ ] Newline handling (print adds, prin does not, input strips)
+- [ ] Return correct value (none for print/prin, string for input)
 - [ ] All test cases pass
 - [ ] I/O redirection in tests works correctly
 
@@ -264,13 +352,13 @@ For each native:
 - Go standard library: `os`, `bufio`, `fmt`
 
 **Testing Strategy**:
-- Output capture for print tests (verify exact output)
+- Output capture for print and prin tests (verify exact output)
 - Input simulation for input tests (use pipes)
 - Round-trip tests (input → print)
 - Empty input tests (edge cases)
-- Type conversion tests (print with various types)
-- **Block reduction tests** (verify print evaluates block contents)
-- **Interpolation tests** (print with variables in blocks)
+- Type conversion tests (print/prin with various types)
+- **Block reduction tests** (verify print/prin evaluates block contents)
+- **Interpolation tests** (print/prin with variables in blocks)
 
 **Performance Considerations**:
 - Print operations should be fast (buffered I/O)

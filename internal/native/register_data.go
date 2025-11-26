@@ -91,6 +91,27 @@ Possible types include: integer!, decimal!, string!, block!, word!, function!, o
 		},
 	))
 
+	registerAndBind("none?", value.NewNativeFunction(
+		"none?",
+		[]value.ParamSpec{
+			value.NewParamSpec("value", true), // evaluated
+		},
+		NoneQ,
+		false,
+		&NativeDoc{
+			Category: "Data",
+			Summary:  "Returns true if value is none",
+			Description: `Returns true if the given value is none, false otherwise.
+This is a type predicate function that checks if a value represents the absence of a value.`,
+			Parameters: []ParamDoc{
+				{Name: "value", Type: "any-type!", Description: "The value to check", Optional: false},
+			},
+			Returns:  "[logic!] True if value is none, false otherwise",
+			Examples: []string{"none? none  ; => true", "none? 42  ; => false", `none? "hello"  ; => false`},
+			SeeAlso:  []string{"type?"}, Tags: []string{"data", "type", "predicate", "none"},
+		},
+	))
+
 	registerAndBind("form", value.NewNativeFunction(
 		"form",
 		[]value.ParamSpec{
@@ -287,31 +308,38 @@ new or overriding field definitions. The new object shares the parent's fields b
 	registerAndBind("put", value.NewNativeFunction(
 		"put",
 		[]value.ParamSpec{
-			value.NewParamSpec("object", true),
-			value.NewParamSpec("field", true),
+			value.NewParamSpec("target", true),
+			value.NewParamSpec("key", true),
 			value.NewParamSpec("value", true),
 		},
 		Put,
 		false,
 		&NativeDoc{
 			Category: "Objects",
-			Summary:  "Sets a field value in an object",
-			Description: `Updates an existing field in an object with a new value.
-The field must already exist in the object's manifest - dynamic field addition is not allowed.
+			Summary:  "Sets a field value in an object or key/value pair in a block",
+			Description: `For objects: Sets or updates an object field with a new value.
+Creates the field if it doesn't exist, allowing dynamic field addition.
 If the field has a type hint, the new value must match that type.
-Returns the assigned value.`,
+
+For blocks: Treats the block as an association list of alternating key/value pairs.
+Updates or appends key/value pairs, or removes pairs when value is none.
+Respects the block's current index when searching for keys.
+Keys are matched using the same logic as select (word-like symbol comparison or general equality).
+Returns the assigned value (or none for removal).`,
 			Parameters: []ParamDoc{
-				{Name: "object", Type: "object!", Description: "The object to modify", Optional: false},
-				{Name: "field", Type: "word! or string!", Description: "The field name to update", Optional: false},
-				{Name: "value", Type: "any-type!", Description: "The new value to assign", Optional: false},
+				{Name: "target", Type: "object! or block!", Description: "The object or block to modify", Optional: false},
+				{Name: "key", Type: "any-type!", Description: "The field name (for objects) or key (for blocks) to update", Optional: false},
+				{Name: "value", Type: "any-type!", Description: "The new value to assign (use none to remove from blocks)", Optional: false},
 			},
 			Returns: "[any-type!] The assigned value",
 			Examples: []string{
 				"obj: object [x: 10 y: 20]\nput obj 'x 42  ; => 42, obj.x is now 42",
-				"person: object [name: \"Alice\" age: 30]\nput person 'age 31",
+				"blk: [a 1 b 2]\nput blk 'a 99  ; => 99, blk is now [a 99 b 2]",
+				"blk: [a 1 b 2]\nput blk 'c 3  ; => 3, blk is now [a 1 b 2 c 3]",
+				"blk: [a 1 b 2]\nput blk 'a none  ; => none, blk is now [b 2]",
 			},
 			SeeAlso: []string{"select", "set", "object"},
-			Tags:    []string{"objects", "mutation", "field-update"},
+			Tags:    []string{"objects", "blocks", "mutation", "field-update", "association-lists"},
 		},
 	))
 

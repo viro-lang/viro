@@ -14,7 +14,6 @@ func BlockFind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	sought := args[1]
 
-	// --last refinement: find last occurrence
 	lastVal, hasLast := refValues["last"]
 	isLast := hasLast && lastVal.GetType() == value.TypeLogic && lastVal.Equals(value.NewLogicVal(true))
 
@@ -118,8 +117,8 @@ func BlockTrim(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	hasHead := hasRefinement(refValues, "head")
 	hasTail := hasRefinement(refValues, "tail")
-	hasAuto := hasRefinement(refValues, "auto")   // ignored for blocks
-	hasLines := hasRefinement(refValues, "lines") // ignored for blocks
+	hasAuto := hasRefinement(refValues, "auto")
+	hasLines := hasRefinement(refValues, "lines")
 	hasAll := hasRefinement(refValues, "all")
 	hasWith, withVal := getRefinementValue(refValues, "with")
 
@@ -240,6 +239,68 @@ func blockTrimWith(block *value.BlockValue, withVal core.Value) core.Value {
 	return block
 }
 
+func blockKeyMatches(candidate core.Value, sought core.Value) bool {
+	if isWordLike(candidate.GetType()) && isWordLike(sought.GetType()) {
+		candidateSymbol, _ := value.AsWordValue(candidate)
+		soughtSymbol, _ := value.AsWordValue(sought)
+		return candidateSymbol == soughtSymbol
+	}
+	return candidate.Equals(sought)
+}
+
+func firstKeyIndexFrom(block *value.BlockValue, start int) int {
+	elements := block.Elements
+	if start >= len(elements) {
+		return len(elements)
+	}
+	if start%2 == 0 {
+		return start
+	}
+	nextKey := start + 1
+	if nextKey > len(elements) {
+		return len(elements)
+	}
+	return nextKey
+}
+
+func putBlockAssoc(block *value.BlockValue, key core.Value, newVal core.Value) core.Value {
+	elements := block.Elements
+	startIdx := firstKeyIndexFrom(block, block.Index)
+
+	for i := startIdx; i < len(elements); i += 2 {
+		if blockKeyMatches(elements[i], key) {
+			if newVal.GetType() == value.TypeNone {
+				if i+1 < len(elements) {
+					block.Elements = append(elements[:i], elements[i+2:]...)
+				} else {
+					block.Elements = elements[:i]
+				}
+				if i < block.Index {
+					block.Index -= 2
+					if block.Index < 0 {
+						block.Index = 0
+					}
+				}
+				return value.NewNoneVal()
+			} else {
+				if i+1 < len(elements) {
+					elements[i+1] = newVal
+				} else {
+					block.Elements = append(elements, newVal)
+				}
+				return newVal
+			}
+		}
+	}
+
+	if newVal.GetType() == value.TypeNone {
+		return value.NewNoneVal()
+	} else {
+		block.Elements = append(elements, key, newVal)
+		return newVal
+	}
+}
+
 func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	hasDefault := false
 	defaultVal, ok := refValues["default"]
@@ -256,16 +317,7 @@ func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.E
 	elements := block.Elements
 
 	for i, elem := range elements {
-		matches := false
-		if isWordLike(elem.GetType()) && isWordLike(sought.GetType()) {
-			elemSymbol, _ := value.AsWordValue(elem)
-			searchSymbol, _ := value.AsWordValue(sought)
-			matches = elemSymbol == searchSymbol
-		} else {
-			matches = elem.Equals(sought)
-		}
-
-		if matches {
+		if blockKeyMatches(elem, sought) {
 			if i+1 < len(elements) {
 				return elements[i+1], nil
 			}

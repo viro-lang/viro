@@ -74,20 +74,9 @@ func seriesAt(series core.Value, index int) (core.Value, error) {
 	currentIndex := seriesVal.GetIndex()
 	length := seriesVal.Length()
 
-	if index < 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-	}
-
-	if length == 0 && currentIndex == 0 {
-		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-	}
-
 	absoluteIndex := currentIndex + index
 
-	if absoluteIndex >= length {
-		if currentIndex == 0 {
-			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDOutOfBounds, [3]string{fmt.Sprintf("%d", index), fmt.Sprintf("%d", length), fmt.Sprintf("%d", currentIndex)})
-		}
+	if index < 0 || length == 0 || absoluteIndex >= length {
 		return value.NewNoneVal(), nil
 	}
 
@@ -103,6 +92,16 @@ func seriesTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	tailSeries := seriesVal.Clone()
 	tailSeries.SetIndex(seriesVal.Length())
 	return tailSeries, nil
+}
+
+func seriesHasValue(series value.Series, sought core.Value) bool {
+	for i := series.GetIndex(); i < series.Length(); i++ {
+		element := series.ElementAt(i)
+		if element.Equals(sought) {
+			return true
+		}
+	}
+	return false
 }
 
 func assertSeries(series core.Value) (value.Series, error) {
@@ -122,7 +121,7 @@ func seriesEmpty(args []core.Value, refValues map[string]core.Value, eval core.E
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
-	return value.NewLogicVal(seriesVal.Length() == 0), nil
+	return value.NewLogicVal(isSeriesAtOrBeyondTail(seriesVal)), nil
 }
 
 func seriesHeadQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -133,12 +132,16 @@ func seriesHeadQ(args []core.Value, refValues map[string]core.Value, eval core.E
 	return value.NewLogicVal(seriesVal.GetIndex() == 0), nil
 }
 
+func isSeriesAtOrBeyondTail(seriesVal value.Series) bool {
+	return seriesVal.GetIndex() >= seriesVal.Length()
+}
+
 func seriesTailQ(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	seriesVal, err := assertSeries(args[0])
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
-	return value.NewLogicVal(seriesVal.GetIndex() == seriesVal.Length()), nil
+	return value.NewLogicVal(isSeriesAtOrBeyondTail(seriesVal)), nil
 }
 
 func readPartCount(refValues map[string]core.Value) (int, bool, error) {

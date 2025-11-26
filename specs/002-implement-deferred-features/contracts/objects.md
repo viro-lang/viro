@@ -69,9 +69,9 @@ context spec
 ### Behavior
 1. Evaluate first element (word/path value) to produce base value.
 2. For each subsequent segment:
-   - If base is `object!` and segment `word!`, lookup field; if missing, check parent objects recursively; if still missing, Script error (`no-such-field`).
-   - If base `block!` or `string!` and segment `integer!`, perform 1-based index access; out-of-range → Script error (`index-out-of-range`).
-   - If segment is paren, evaluate expression each time.
+    - If base is `object!` and segment `word!`, lookup field; if missing, check parent objects recursively; if still missing, return `none`.
+    - If base `block!` or `string!` and segment `integer!`, perform 1-based index access; out-of-range → return `none`.
+    - If segment is paren, evaluate expression each time.
 3. Prior to final resolution, capture penultimate base and segment metadata for assignment operations.
 4. For `object.field: value`, perform type validation if hint exists, update frame slot in place.
 
@@ -112,12 +112,28 @@ select series selector --default value
 
 ### Signature
 ```
-put object field value
+put target key value
 ```
 
+### Parameters
+- `target`: `object!` or `block!` to modify
+- `key`: field name (for objects) or key (for blocks)
+- `value`: value to assign
+
 ### Behavior
-- Sets or updates object field after validation.
-- Creates field if allowed by manifest (`allow-new` spec flag; default false). Attempt to add unknown field → Script error.
+- **For objects**: Sets or updates object field after validation.
+- **For blocks**: Treats block as association list of alternating key/value pairs:
+  - Searches from current block index (respecting cursor position)
+  - Updates existing key/value pair if key found
+  - Appends new key/value pair if key not found (unless value is `none`)
+  - Removes key/value pair if value is `none`
+  - Handles odd-length blocks gracefully
+  - Keys matched using same logic as `select` (word-like symbol equality or general `Equals`)
+- Returns the assigned value (or `none` for removal)
+
+### Error Cases
+- Invalid target type → Script error (`put target`)
+- Invalid field/key type for objects → Script error (`put field`)
 
 ---
 

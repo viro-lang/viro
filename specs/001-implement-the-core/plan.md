@@ -19,7 +19,7 @@ Implement a homoiconic programming language interpreter in Go with a working REP
 **Project Type**: Single CLI application (interpreter + REPL)  
 **Performance Goals**: Stack ops <100ns, simple eval <10ms, complex eval <100ms per spec SC-005, tracked via Go benchmarks  
 **Constraints**: Interactive response time <100ms for 95th percentile operations, stack depth 100+ function calls, command history 100+ entries, supports 10,000 values in memory simultaneously  
-**Scale/Scope**: ~28 native functions initially (expanding to 600+ long-term), 8 core value types, 7 error categories, 1000+ REPL evaluation cycles without leaks
+**Scale/Scope**: ~29 native functions initially (expanding to 600+ long-term), 8 core value types, 7 error categories, 1000+ REPL evaluation cycles without leaks
 
 ## Constitution Check
 
@@ -156,7 +156,7 @@ No violations detected. All constitutional principles are satisfied by the curre
 
 **Design Artifacts**:
 - `data-model.md`: Complete entity definitions for 9 core entities (Value, Block, Paren, Word, Function, Frame, Stack, Error, Series) with fields, validation rules, state transitions, relationships, and data flow examples
-- `contracts/README.md`: Overview of 28 native functions organized by category
+- `contracts/README.md`: Overview of 29 native functions organized by category
 - `contracts/control-flow.md`: Contracts for if, when, loop, while
 - `contracts/data.md`: Contracts for set, get, type?
 - `contracts/io.md`: Contracts for print, input
@@ -189,7 +189,7 @@ No violations detected. All constitutional principles are satisfied by the curre
 
 ✅ **Principle VI - Observable Behavior**: Print/input natives provide I/O. Error messages include near/where context per contracts.
 
-✅ **Principle VII - YAGNI**: Contracts cover 28 natives (minimal set), parse dialect and advanced features deferred per spec out-of-scope.
+✅ **Principle VII - YAGNI**: Contracts cover 29 natives (minimal set), parse dialect and advanced features deferred per spec out-of-scope.
 
 **Gate Status**: ✅ PASSED - All constitutional requirements remain satisfied after design phase.
 
@@ -212,7 +212,7 @@ specs/001-implement-the-core/
 ├── data-model.md        ✅ Entity definitions and relationships
 ├── quickstart.md        ✅ Build, run, test guide
 └── contracts/           ✅ Native function specifications
-    ├── README.md        ✅ Overview (28 natives)
+    ├── README.md        ✅ Overview (29 natives)
     ├── control-flow.md  ✅ if, when, loop, while
     ├── data.md          ✅ set, get, type?
     ├── io.md            ✅ print, input
@@ -255,7 +255,7 @@ specs/001-implement-the-core/
 - Complex expression evaluation: <100 ms (per spec SC-005)
 
 **Quality Gates**:
-- 28 natives fully implemented per contracts
+- 29 natives fully implemented per contracts
 - All contract tests passing (100%)
 - Integration tests passing for user stories P1-P6
 - Code coverage ≥80% for core systems

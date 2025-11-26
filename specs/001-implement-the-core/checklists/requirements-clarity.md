@@ -89,7 +89,7 @@
 
 ## Native Function Contract Clarity
 
-- [X] CHK054 - Are all 28 native function signatures specified with parameter names, types, and return types? ✅ contracts/*.md: each function has Signature, Parameters (with types), Return sections
+- [X] CHK054 - Are all 29 native function signatures specified with parameter names, types, and return types? ✅ contracts/*.md: each function has Signature, Parameters (with types), Return sections
 - [X] CHK055 - Is operator precedence table (7 levels) complete with associativity rules for all operators? ✅ contracts/math.md: precedence table with 7 levels + associativity column
 - [X] CHK056 - Are requirements specified for parser AST construction to respect operator precedence (not left-to-right)? ✅ contracts/math.md: "Parser must build AST respecting precedence, not simple left-to-right evaluation"
 - [X] CHK057 - Is the print function's "reduce block and join with spaces" behavior clarified with nested block examples? ✅ FR-024: "reduce it (evaluate each element) and join results with spaces" + example given

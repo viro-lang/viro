@@ -9,14 +9,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-// Reflection natives (Feature 002, FR-022)
-// Contract per contracts/reflection.md: type-of, spec-of, body-of, words-of, values-of, source
-
-// TypeOf implements the `type-of` native (T155).
-//
-// Contract: type-of value -> word! representing type name
-// Returns canonical type name as word (e.g., integer!, string!, object!)
-// For functions, distinguishes between native! and function! based on FunctionValue.Type
 func TypeOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("type-of", 1, len(args))
@@ -24,7 +16,6 @@ func TypeOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	val := args[0]
 
-	// Special handling for functions to distinguish native! from function!
 	if val.GetType() == value.TypeFunction {
 		if fn, ok := value.AsFunctionValue(val); ok {
 			if fn.Type == value.FuncNative {
@@ -38,11 +29,6 @@ func TypeOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	return value.NewWordVal(typeName), nil
 }
 
-// SpecOf implements the `spec-of` native (T156).
-//
-// Contract: spec-of value -> block! copy of specification
-// Supports: function!, native!, object!
-// Returns immutable copy of specification block
 func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("spec-of", 1, len(args))
@@ -53,7 +39,6 @@ func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	switch val.GetType() {
 	case value.TypeFunction:
 		fn, _ := value.AsFunctionValue(val)
-		// Build spec block from Params
 		specElements := []core.Value{}
 		for _, param := range fn.Params {
 			specElements = append(specElements, value.NewWordVal(param.Name))
@@ -62,7 +47,6 @@ func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build spec block from all accessible fields (including inherited)
 		specElements := []core.Value{}
 		bindings := obj.GetAllFieldsWithProto()
 		for _, binding := range bindings {
@@ -78,12 +62,6 @@ func SpecOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// BodyOf implements the `body-of` native (T157).
-//
-// Contract: body-of value -> block! copy of body
-// Supports: function!, object!
-// Returns deep copy to prevent mutation of original
-// Native functions return an error as they have no accessible body
 func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("body-of", 1, len(args))
@@ -94,14 +72,12 @@ func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	switch val.GetType() {
 	case value.TypeFunction:
 		fn, _ := value.AsFunctionValue(val)
-		// Check if this is a native function (no body)
 		if fn.Type == value.FuncNative {
 			return value.NewNoneVal(), verror.NewScriptError(
 				verror.ErrIDNoBody,
 				[3]string{"native functions have no accessible body", "", ""},
 			)
 		}
-		// User-defined function: return deep copy of body block
 		if fn.Body == nil {
 			return value.NewBlockVal([]core.Value{}), nil
 		}
@@ -111,7 +87,6 @@ func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Build body block from all accessible fields (including inherited)
 		bodyElements := []core.Value{}
 		bindings := obj.GetAllFieldsWithProto()
 		for _, binding := range bindings {
@@ -128,11 +103,6 @@ func BodyOf(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// WordsOf implements the `words-of` native (T158).
-//
-// Contract: words-of value -> block! of words
-// Supports: object!
-// Returns block of field names
 func WordsOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("words-of", 1, len(args))
@@ -149,7 +119,6 @@ func WordsOf(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of words from all accessible fields (including inherited)
 	bindings := obj.GetAllFieldsWithProto()
 	wordElements := make([]core.Value, len(bindings))
 	for i, binding := range bindings {
@@ -159,11 +128,6 @@ func WordsOf(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 	return value.NewBlockVal(wordElements), nil
 }
 
-// ValuesOf implements the `values-of` native (T159).
-//
-// Contract: values-of value -> block! of values
-// Supports: object!
-// Returns block of field values (deep copies for safety)
 func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("values-of", 1, len(args))
@@ -180,7 +144,6 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 
 	obj, _ := value.AsObject(val)
 
-	// Build block of values from all accessible fields (including inherited)
 	bindings := obj.GetAllFieldsWithProto()
 	valueElements := make([]core.Value, len(bindings))
 	for i, binding := range bindings {
@@ -190,11 +153,6 @@ func ValuesOf(args []core.Value, refValues map[string]core.Value, eval core.Eval
 	return value.NewBlockVal(valueElements), nil
 }
 
-// Source implements the `source` native (T160).
-//
-// Contract: source value -> string! formatted source
-// Supports: function!, native!, object!
-// Returns formatted string representation
 func Source(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("source", 1, len(args))
@@ -205,15 +163,12 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	switch val.GetType() {
 	case value.TypeFunction:
 		fn, _ := value.AsFunctionValue(val)
-		// Format: fn [spec] [body]
-		// Build spec from Params
 		specElements := []core.Value{}
 		for _, param := range fn.Params {
 			specElements = append(specElements, value.NewWordVal(param.Name))
 		}
 		specStr := formatBlock(specElements)
 
-		// Body
 		bodyStr := "[]"
 		if fn.Body != nil {
 			bodyStr = formatBlock(fn.Body.Elements)
@@ -223,7 +178,6 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 
 	case value.TypeObject:
 		obj, _ := value.AsObject(val)
-		// Format: object [field: value ...]
 		bindings := obj.GetAllFieldsWithProto()
 		fields := []string{}
 		for _, binding := range bindings {
@@ -241,7 +195,40 @@ func Source(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	}
 }
 
-// formatBlock formats a block of values into a string representation
+func Has(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("has?", 2, len(args))
+	}
+
+	targetVal := args[0]
+	soughtVal := args[1]
+
+	if targetVal.GetType() == value.TypeObject {
+		var fieldName string
+		if soughtVal.GetType() == value.TypeWord {
+			fieldName, _ = value.AsWordValue(soughtVal)
+		} else if soughtVal.GetType() == value.TypeString {
+			str, _ := value.AsStringValue(soughtVal)
+			fieldName = str.String()
+		} else {
+			return value.NewNoneVal(), verror.NewScriptError(
+				verror.ErrIDTypeMismatch,
+				[3]string{"word! or string!", value.TypeToString(soughtVal.GetType()), ""},
+			)
+		}
+
+		obj, _ := value.AsObject(targetVal)
+		_, exists := obj.GetFieldWithProto(fieldName)
+		return value.NewLogicVal(exists), nil
+	} else {
+		seriesVal, err := assertSeries(targetVal)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		return value.NewLogicVal(seriesHasValue(seriesVal, soughtVal)), nil
+	}
+}
+
 func formatBlock(elements []core.Value) string {
 	parts := make([]string, len(elements))
 	for i, elem := range elements {

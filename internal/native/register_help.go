@@ -316,4 +316,29 @@ returns the object definition with field names.`,
 			SeeAlso:  []string{"spec-of", "body-of", "type-of"}, Tags: []string{"reflection", "source", "format"},
 		},
 	)))
+
+	rootFrame.Bind("has?", value.NewFuncVal(value.NewNativeFunction(
+		"has?",
+		[]value.ParamSpec{
+			value.NewParamSpec("target", true),
+			value.NewParamSpec("value", true),
+		},
+		Has,
+		false,
+		&NativeDoc{
+			Category: "Reflection",
+			Summary:  "Tests for membership or field existence",
+			Description: `For objects: Returns true if the object contains the specified field name, including fields
+inherited through the prototype chain. For series (block!, paren!, string!, binary!): Performs
+linear scan to test if the value exists in the series from the current cursor position onward.
+Empty series always return false. Uses O(n) scan for series membership.`,
+			Parameters: []ParamDoc{
+				{Name: "target", Type: "object! block! paren! string! binary!", Description: "The target to check", Optional: false},
+				{Name: "value", Type: "any (field name for objects)", Description: "The value/field to check for", Optional: false},
+			},
+			Returns:  "[logic!] True if value/field exists, false otherwise",
+			Examples: []string{"obj: object [name: \"Alice\"]\nhas? obj 'name  ; => true", "blk: [1 2 3]\nhas? blk 2  ; => true", "prn: first load-string \"(1 2 3)\"\nhas? prn 2  ; => true", "str: \"hello\"\nhas? str \"e\"  ; => true", "bin: #{010203}\nhas? bin 2  ; => true", "blk: []\nhas? blk 1  ; => false"},
+			SeeAlso:  []string{"words-of", "values-of", "spec-of", "select", "put", "find"}, Tags: []string{"reflection", "object", "field", "series", "membership"},
+		},
+	)))
 }
