@@ -95,7 +95,7 @@ func seriesTail(args []core.Value, refValues map[string]core.Value, eval core.Ev
 }
 
 func seriesHasValue(series value.Series, sought core.Value) bool {
-	for i := 0; i < series.Length(); i++ {
+	for i := series.GetIndex(); i < series.Length(); i++ {
 		element := series.ElementAt(i)
 		if element.Equals(sought) {
 			return true

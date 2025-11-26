@@ -710,6 +710,34 @@ func TestHas(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "has? block with cursor advanced, value after cursor",
+			code: "blk: next [1 2 3]\nhas? blk 3",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for value after cursor in block")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? block with cursor advanced, value before cursor",
+			code: "blk: next [1 2 3]\nhas? blk 1",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for value before cursor in block")
+				}
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

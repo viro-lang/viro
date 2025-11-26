@@ -330,7 +330,7 @@ returns the object definition with field names.`,
 			Summary:  "Tests for membership or field existence",
 			Description: `For objects: Returns true if the object contains the specified field name, including fields
 inherited through the prototype chain. For series (block!, paren!, string!, binary!): Performs
-linear scan to test if the value exists anywhere in the series, ignoring the series cursor position.
+linear scan to test if the value exists in the series from the current cursor position onward.
 Empty series always return false. Uses O(n) scan for series membership.`,
 			Parameters: []ParamDoc{
 				{Name: "target", Type: "object! block! paren! string! binary!", Description: "The target to check", Optional: false},
