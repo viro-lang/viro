@@ -12,6 +12,7 @@ func InitTypeFrames() {
 	TypeRegistry = make(map[core.ValueType]core.Frame)
 
 	TypeRegistry[value.TypeBlock] = createTypeFrame("block!")
+	TypeRegistry[value.TypeParen] = createTypeFrame("paren!")
 	TypeRegistry[value.TypeString] = createTypeFrame("string!")
 	TypeRegistry[value.TypeBinary] = createTypeFrame("binary!")
 
