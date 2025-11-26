@@ -141,7 +141,7 @@ has? target value
 
 ### Behavior
 - **Object targets**: Checks for field existence including prototype chain lookup. Field names can be `word!` or `string!`.
-- **Series targets**: Performs O(n) linear scan from index 0, ignoring series cursor position. Uses `core.Value.Equals` for comparison. Accepts any value type for membership testing.
+- **Series targets**: Performs O(n) linear scan starting from `target`'s current index (cursor). Uses `core.Value.Equals` for comparison. Accepts any value type for membership testing.
 - **Empty series**: Returns `false` for any sought value.
 - **None handling**: `none` is treated as a regular value for membership testing.
 

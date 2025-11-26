@@ -1,4 +1,3 @@
-// Package frame - type frame initialization and management
 package frame
 
 import (

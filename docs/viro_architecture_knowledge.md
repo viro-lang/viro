@@ -189,7 +189,7 @@ func FunctionName(args []core.Value, refValues map[string]core.Value, eval core.
 #### Membership Testing (`has?`)
 - **Polymorphic function**: Works on both objects and series types
 - **Object behavior**: Field existence check with prototype chain lookup
-- **Series behavior**: O(n) linear scan from index 0, ignoring cursor position
+- **Series behavior**: O(n) linear scan beginning at the current cursor position, ignoring values before the cursor
 - **Comparison**: Uses `core.Value.Equals` for deep equality comparison
 - **Empty series**: Always returns `false`
 - **Performance**: Series membership is linear time, suitable for small to medium series
