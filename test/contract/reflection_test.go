@@ -738,6 +738,148 @@ func TestHas(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		// Additional cursor-aware tests for all series types
+		{
+			name: "has? paren! with cursor advanced, value after cursor",
+			code: "prn: next first load-string \"(1 2 3)\"\nhas? prn 3",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for value after cursor in paren")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? paren! with cursor advanced, value before cursor",
+			code: "prn: next first load-string \"(1 2 3)\"\nhas? prn 1",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for value before cursor in paren")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? string! with cursor advanced, char after cursor",
+			code: "str: next \"abc\"\nhas? str \"c\"",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for char after cursor in string")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? string! with cursor advanced, char before cursor",
+			code: "str: next \"abc\"\nhas? str \"a\"",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for char before cursor in string")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? binary! with cursor advanced, byte after cursor",
+			code: "bin: next #{010203}\nhas? bin 3",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if !logic {
+					t.Error("expected true for byte after cursor in binary")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? binary! with cursor advanced, byte before cursor",
+			code: "bin: next #{010203}\nhas? bin 1",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for byte before cursor in binary")
+				}
+			},
+			wantErr: false,
+		},
+		// Tail scenario tests
+		{
+			name: "has? block at tail, any value",
+			code: "blk: tail [1 2]\nhas? blk 2",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for any value when cursor is at tail")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? paren! at tail, any value",
+			code: "prn: tail first load-string \"(1 2)\"\nhas? prn 2",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for any value when cursor is at tail")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? string! at tail, any char",
+			code: "str: tail \"ab\"\nhas? str \"b\"",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for any char when cursor is at tail")
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "has? binary! at tail, any byte",
+			code: "bin: tail #{0102}\nhas? bin 2",
+			checkFunc: func(t *testing.T, v core.Value) {
+				if v.GetType() != value.TypeLogic {
+					t.Errorf("expected logic!, got %v", value.TypeToString(v.GetType()))
+				}
+				logic, _ := value.AsLogicValue(v)
+				if logic {
+					t.Error("expected false for any byte when cursor is at tail")
+				}
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
