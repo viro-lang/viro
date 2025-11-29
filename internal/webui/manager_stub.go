@@ -18,20 +18,21 @@ func newManager() Manager {
 	}
 }
 
-func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
+func (m *manager) CreateWindow(spec *WindowSpec) (uint32, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.closed {
-		return 0, nil
+		return 0, ErrManagerClosed
 	}
 
 	m.nextID++
 	id := m.nextID
 	m.windows[id] = &windowState{
-		id:     id,
-		ready:  false,
-		closed: false,
+		id:       id,
+		ready:    false,
+		closed:   false,
+		handlers: make(map[string][]HandlerEntry),
 	}
 
 	return id, nil
@@ -39,14 +40,24 @@ func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
 
 func (m *manager) Render(windowID uint32, markup core.Value, options map[string]core.Value) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	window, exists := m.windows[windowID]
-	if !exists || window.closed {
-		return nil
+	if !exists {
+		m.mu.Unlock()
+		return ErrWindowNotFound
+	}
+	if window.closed {
+		m.mu.Unlock()
+		return ErrWindowClosed
 	}
 
+	// Reset ready state on render start
+	window.ready = false
+	m.mu.Unlock()
+
+	// Simulate ready event (stubbed)
+	m.mu.Lock()
 	window.ready = true
+	m.mu.Unlock()
 
 	return nil
 }
@@ -56,8 +67,11 @@ func (m *manager) Inject(windowID uint32, html core.Value) error {
 	defer m.mu.Unlock()
 
 	window, exists := m.windows[windowID]
-	if !exists || window.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
+	}
+	if window.closed {
+		return ErrWindowClosed
 	}
 
 	return nil
@@ -68,8 +82,11 @@ func (m *manager) Send(windowID uint32, message string, payload core.Value) erro
 	defer m.mu.Unlock()
 
 	window, exists := m.windows[windowID]
-	if !exists || window.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
+	}
+	if window.closed {
+		return ErrWindowClosed
 	}
 
 	return nil
@@ -80,9 +97,15 @@ func (m *manager) RegisterEvent(entry HandlerEntry) error {
 	defer m.mu.Unlock()
 
 	window, exists := m.windows[entry.WindowID]
-	if !exists || window.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
 	}
+	if window.closed {
+		return ErrWindowClosed
+	}
+
+	// Allow multiple handlers per event/selector combination
+	window.handlers[entry.Event] = append(window.handlers[entry.Event], entry)
 
 	return nil
 }
@@ -94,7 +117,18 @@ func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
 	default:
 	}
 
-	return []EventMessage{}, nil
+	var events []EventMessage
+	// Drain all queued events until empty
+	for {
+		select {
+		case event := <-m.events:
+			if windowID == nil || event.HandlerEntry.WindowID == *windowID {
+				events = append(events, event)
+			}
+		default:
+			return events, nil
+		}
+	}
 }
 
 func (m *manager) Close(windowID uint32) bool {
