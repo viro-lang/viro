@@ -736,4 +736,50 @@ See "Operator Evaluation Reference" section in `docs/operator-precedence.md` for
 
 ---
 
+## WebUI Support
+
+Viro includes WebUI integration for creating GUI applications. WebUI scripts can create native windows with HTML/CSS/JS content.
+
+### Running WebUI Scripts
+
+```bash
+# Execute a WebUI script
+./viro examples/10_webui.viro
+
+# Or run directly in REPL
+>> webui.window [title: "Test"] webui.render window "<h1>Hello</h1>"
+```
+
+### WebUI API
+
+- `webui.window spec` - Create a window
+- `webui.render window markup options?` - Load HTML content
+- `webui.inject window html` - Inject HTML snippet
+- `webui.send window message payload` - Send data to JavaScript
+- `webui.on window event selector handler` - Register event handler
+- `webui.poll window` - Process events
+- `webui.close window` - Close window
+- `webui.ready? window` - Check if window is ready
+
+### Event Loop Pattern
+
+```viro
+window: webui.window [title: "My App"]
+webui.render window "<html><body><button id='btn'>Click</button></body></html>"
+webui.on window "click" "#btn" [print "Button clicked!"]
+
+forever [
+    webui.poll window
+    wait 0.1
+]
+```
+
+### Dependencies
+
+WebUI requires CGO and platform-specific libraries. For headless environments, use the `webui_stub` build tag.
+
+See `docs/webui.md` for complete documentation.
+
+---
+
 Enjoy exploring Viro! 🚀

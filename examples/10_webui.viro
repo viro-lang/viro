@@ -1,0 +1,78 @@
+#!/usr/bin/env viro
+; WebUI Example Script
+; Demonstrates basic WebUI window creation, rendering, and event handling
+
+; Create a window
+window: webui.window [
+    title: "Viro WebUI Example"
+    width: 800
+    height: 600
+]
+
+; Define some HTML content
+html-content: {
+<html>
+<head>
+    <title>Viro WebUI Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 5px; }
+        #output { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Viro WebUI Demo</h1>
+    <p>This window is controlled by Viro!</p>
+    <button id="hello-btn">Say Hello</button>
+    <button id="count-btn">Increment Counter</button>
+    <button id="close-btn">Close Window</button>
+    <div id="output">Click buttons to see events...</div>
+    <script>
+        let counter = 0;
+        function updateOutput(msg) {
+            document.getElementById('output').textContent = msg;
+        }
+        function incrementCounter() {
+            counter++;
+            updateOutput('Counter: ' + counter);
+        }
+    </script>
+</body>
+</html>
+}
+
+; Render the HTML
+webui.render window html-content
+
+; Set up event handlers
+webui.on window "click" "#hello-btn" [
+    print "Hello button clicked!"
+    ; Send data back to JavaScript
+    webui.send window "update" [message: "Hello from Viro!" timestamp: now]
+]
+
+webui.on window "click" "#count-btn" [
+    print "Count button clicked!"
+    webui.send window "increment" []
+]
+
+webui.on window "click" "#close-btn" [
+    print "Close button clicked - closing window"
+    webui.close window
+]
+
+; Main event loop
+print "WebUI window opened. Click buttons or close window to exit."
+
+forever [
+    ; Poll for events (returns none when done)
+    result: webui.poll window
+    if none? result [
+        print "Event loop ended"
+        break
+    ]
+    ; Small delay to prevent busy loop
+    wait 0.1
+]
+
+print "Script finished"

@@ -1,0 +1,226 @@
+//go:build webui && !webui_stub
+
+package webui
+
+import (
+	"sync"
+	"time"
+
+	"github.com/marcin-radoszewski/viro/internal/core"
+	ui "github.com/webui-dev/go-webui/v2"
+)
+
+func NewManager() Manager {
+	return newManager()
+}
+
+func newManager() Manager {
+	return &manager{
+		windows: make(map[uint32]*windowState),
+		events:  make(chan EventMessage, 100),
+		done:    make(chan struct{}),
+	}
+}
+
+func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.closed {
+		return 0, nil
+	}
+
+	m.nextID++
+	id := m.nextID
+	window := ui.NewWindow()
+	state := &windowState{
+		id:       id,
+		window:   window,
+		ready:    false,
+		closed:   false,
+		handlers: make(map[string]HandlerEntry),
+	}
+	m.windows[id] = state
+
+	// Bind ready event
+	ui.Bind(window, "__ready", func(e ui.Event) any {
+		m.mu.Lock()
+		state.ready = true
+		m.mu.Unlock()
+		return nil
+	})
+
+	return id, nil
+}
+
+func (m *manager) Render(windowID uint32, markup core.Value, options map[string]core.Value) error {
+	m.mu.Lock()
+	state, exists := m.windows[windowID]
+	m.mu.Unlock()
+
+	if !exists || state.closed {
+		return nil
+	}
+
+	content := ""
+	if str, ok := markup.(core.StringValue); ok {
+		content = str.String()
+	} else if bin, ok := markup.(core.BinaryValue); ok {
+		content = string(bin.Bytes())
+	}
+
+	// Reset ready state
+	state.ready = false
+
+	// Show the window
+	state.window.Show(content)
+
+	return nil
+}
+
+func (m *manager) Inject(windowID uint32, html core.Value) error {
+	m.mu.Lock()
+	state, exists := m.windows[windowID]
+	m.mu.Unlock()
+
+	if !exists || state.closed {
+		return nil
+	}
+
+	content := ""
+	if str, ok := html.(core.StringValue); ok {
+		content = str.String()
+	} else if bin, ok := html.(core.BinaryValue); ok {
+		content = string(bin.Bytes())
+	}
+
+	// Inject HTML - this might need a JS call
+	state.window.Run("document.body.innerHTML += " + content)
+
+	return nil
+}
+
+func (m *manager) Send(windowID uint32, message string, payload core.Value) error {
+	m.mu.Lock()
+	state, exists := m.windows[windowID]
+	m.mu.Unlock()
+
+	if !exists || state.closed {
+		return nil
+	}
+
+	// Send data to JS - this might need a JS call or custom event
+	js := "window.dispatchEvent(new CustomEvent('" + message + "', {detail: " + payload.String() + "}));"
+	state.window.Run(js)
+
+	return nil
+}
+
+func (m *manager) RegisterEvent(entry HandlerEntry) error {
+	m.mu.Lock()
+	state, exists := m.windows[entry.WindowID]
+	m.mu.Unlock()
+
+	if !exists || state.closed {
+		return nil
+	}
+
+	state.handlers[entry.Event] = entry
+
+	// Bind the event handler
+	ui.Bind(state.window, entry.Event, func(e ui.Event) any {
+		m.eventMu.Lock()
+		defer m.eventMu.Unlock()
+
+		eventMsg := EventMessage{
+			HandlerEntry: entry,
+			Payload:      core.NewStringVal(""), // TODO: extract payload from event
+			Timestamp:    time.Now().Unix(),
+		}
+		select {
+		case m.events <- eventMsg:
+		default:
+			// Queue full, drop event
+		}
+		return nil
+	})
+
+	return nil
+}
+
+func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
+	select {
+	case <-m.done:
+		return nil, nil
+	default:
+	}
+
+	var events []EventMessage
+	select {
+	case event := <-m.events:
+		if windowID == nil || event.HandlerEntry.WindowID == *windowID {
+			events = append(events, event)
+		}
+	default:
+	}
+
+	return events, nil
+}
+
+func (m *manager) Close(windowID uint32) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	state, exists := m.windows[windowID]
+	if !exists || state.closed {
+		return false
+	}
+
+	state.closed = true
+	state.window.Close()
+
+	// Check if all windows closed
+	allClosed := true
+	for _, w := range m.windows {
+		if !w.closed {
+			allClosed = false
+			break
+		}
+	}
+
+	if allClosed && !m.closed {
+		m.closed = true
+		close(m.done)
+	}
+
+	return true
+}
+
+func (m *manager) CloseAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, state := range m.windows {
+		if !state.closed {
+			state.window.Close()
+			state.closed = true
+		}
+	}
+
+	if !m.closed {
+		m.closed = true
+		close(m.done)
+	}
+}
+
+func (m *manager) Done() <-chan struct{} {
+	return m.done
+}
+
+func (m *manager) Ready(windowID uint32) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	state, exists := m.windows[windowID]
+	return exists && state.ready && !state.closed
+}
