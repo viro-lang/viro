@@ -1,22 +1,20 @@
-// Package contract validates WebUI natives per contracts/webui.md
 package contract
 
 import (
 	"testing"
 )
 
-// TestWebUI_Window validates webui.window native
 func TestWebUI_Window(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected string // Molded string for comparison
+		expected string
 		wantErr  bool
 	}{
 		{
 			name:     "window with title",
 			input:    "webui.window [title: \"Test\"]",
-			expected: "webui-window!", // Mock handle
+			expected: "webui-window!",
 			wantErr:  false,
 		},
 		{
@@ -26,8 +24,56 @@ func TestWebUI_Window(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "window with debug flag",
+			input:    "webui.window [debug?: true]",
+			expected: "webui-window!",
+			wantErr:  false,
+		},
+		{
+			name:     "window with resizable flag",
+			input:    "webui.window [resizable?: false]",
+			expected: "webui-window!",
+			wantErr:  false,
+		},
+		{
+			name:     "window with icon",
+			input:    "webui.window [icon: \"icon.png\"]",
+			expected: "webui-window!",
+			wantErr:  false,
+		},
+		{
+			name:     "window with source",
+			input:    "webui.window [source: \"index.html\"]",
+			expected: "webui-window!",
+			wantErr:  false,
+		},
+		{
+			name:     "window with html",
+			input:    "webui.window [html: \"<html></html>\"]",
+			expected: "webui-window!",
+			wantErr:  false,
+		},
+		{
 			name:     "invalid spec type",
 			input:    "webui.window \"invalid\"",
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "invalid spec key",
+			input:    "webui.window [invalid: \"key\"]",
+			expected: "",
+			wantErr:  false, // Should ignore unknown keys
+		},
+		{
+			name:     "invalid title type",
+			input:    "webui.window [title: 123]",
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "odd spec length",
+			input:    "webui.window [title: \"Test\" extra]",
 			expected: "",
 			wantErr:  true,
 		},
@@ -47,7 +93,6 @@ func TestWebUI_Window(t *testing.T) {
 	}
 }
 
-// TestWebUI_Render validates webui.render native
 func TestWebUI_Render(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -101,7 +146,6 @@ func TestWebUI_Render(t *testing.T) {
 	}
 }
 
-// TestWebUI_Send validates webui.send native
 func TestWebUI_Send(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -118,6 +162,18 @@ func TestWebUI_Send(t *testing.T) {
 		{
 			name:     "send map",
 			input:    "w: webui.window [] webui.send w \"msg\" [key: \"value\"]",
+			expected: "true",
+			wantErr:  false,
+		},
+		{
+			name:     "send block",
+			input:    "w: webui.window [] webui.send w \"msg\" [1 2 3]",
+			expected: "true",
+			wantErr:  false,
+		},
+		{
+			name:     "send binary",
+			input:    "w: webui.window [] webui.send w \"msg\" #{010203}",
 			expected: "true",
 			wantErr:  false,
 		},
@@ -143,7 +199,6 @@ func TestWebUI_Send(t *testing.T) {
 	}
 }
 
-// TestWebUI_On validates webui.on native
 func TestWebUI_On(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -158,8 +213,20 @@ func TestWebUI_On(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "register handler with selector block",
+			input:    "w: webui.window [] webui.on w \"click\" [\"#btn\" \".link\"] [print event-name]",
+			expected: "true",
+			wantErr:  false,
+		},
+		{
 			name:     "invalid selector type",
 			input:    "w: webui.window [] webui.on w \"click\" 123 [block]",
+			expected: "",
+			wantErr:  true,
+		},
+		{
+			name:     "invalid selector in block",
+			input:    "w: webui.window [] webui.on w \"click\" [123] [block]",
 			expected: "",
 			wantErr:  true,
 		},
@@ -179,7 +246,6 @@ func TestWebUI_On(t *testing.T) {
 	}
 }
 
-// TestWebUI_Poll validates webui.poll native
 func TestWebUI_Poll(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -221,7 +287,6 @@ func TestWebUI_Poll(t *testing.T) {
 	}
 }
 
-// TestWebUI_Close validates webui.close native
 func TestWebUI_Close(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -257,7 +322,6 @@ func TestWebUI_Close(t *testing.T) {
 	}
 }
 
-// TestWebUI_Ready validates webui.ready? native
 func TestWebUI_Ready(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -277,6 +341,12 @@ func TestWebUI_Ready(t *testing.T) {
 			expected: "true",
 			wantErr:  false,
 		},
+		{
+			name:     "ready reset after consecutive renders",
+			input:    "w: webui.window [] webui.render w \"<html></html>\" webui.ready? w webui.render w \"<html>2</html>\" webui.ready? w",
+			expected: "true",
+			wantErr:  false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -293,7 +363,6 @@ func TestWebUI_Ready(t *testing.T) {
 	}
 }
 
-// TestWebUI_Inject validates webui.inject native
 func TestWebUI_Inject(t *testing.T) {
 	tests := []struct {
 		name     string

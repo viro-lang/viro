@@ -1,6 +1,8 @@
 package native
 
 import (
+	"strings"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
@@ -21,15 +23,90 @@ func WebUIWindow(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), arityError("webui.window", 1, len(args))
 	}
 
-	_, ok := value.AsBlockValue(args[0])
+	block, ok := value.AsBlockValue(args[0])
 	if !ok {
 		return value.NewNoneVal(), typeError("webui.window", "block", args[0])
 	}
 
-	specMap := make(map[string]core.Value)
+	spec := &webui.WindowSpec{}
 
-	id, err := manager.CreateWindow(specMap)
+	// Parse spec block - support even length for key-value pairs
+	for i := 0; i < len(block.Elements)-1; i += 2 {
+		key := block.Elements[i]
+		val := block.Elements[i+1]
+
+		word, ok := value.AsWordValue(key)
+		if !ok {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-key", "keys must be words", ""})
+		}
+
+		switch word {
+		case "title":
+			if str, ok := value.AsStringValue(val); ok {
+				spec.Title = str.String()
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "title must be string!", ""})
+			}
+		case "width":
+			if intVal, ok := value.AsIntValue(val); ok {
+				spec.Width = int(intVal)
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "width must be integer!", ""})
+			}
+		case "height":
+			if intVal, ok := value.AsIntValue(val); ok {
+				spec.Height = int(intVal)
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "height must be integer!", ""})
+			}
+		case "debug?":
+			if logic, ok := value.AsLogicValue(val); ok {
+				spec.Debug = logic
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "debug? must be logic!", ""})
+			}
+		case "resizable?":
+			if logic, ok := value.AsLogicValue(val); ok {
+				spec.Resizable = logic
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "resizable? must be logic!", ""})
+			}
+		case "icon":
+			if str, ok := value.AsStringValue(val); ok {
+				spec.Icon = str.String()
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "icon must be string!", ""})
+			}
+		case "source":
+			if str, ok := value.AsStringValue(val); ok {
+				spec.Source = str.String()
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "source must be string!", ""})
+			}
+		case "html":
+			if str, ok := value.AsStringValue(val); ok {
+				spec.HTML = str.String()
+			} else if bin, ok := value.AsBinaryValue(val); ok {
+				spec.HTML = string(bin.Bytes())
+			} else {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec-value", "html must be string! or binary!", ""})
+			}
+		}
+	}
+
+	// Validate even length
+	if len(block.Elements)%2 != 0 {
+		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-spec", "spec block must have even number of elements", ""})
+	}
+
+	id, err := manager.CreateWindow(spec)
 	if err != nil {
+		if err == webui.ErrManagerClosed {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDManagerClosed, "", ""})
+		}
+		if err == webui.ErrFeatureUnavailable {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"feature-unavailable", "", ""})
+		}
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"create-window-failed", err.Error(), ""})
 	}
 
@@ -60,18 +137,25 @@ func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	if contentType, exists := options["content-type"]; exists {
-		if ct, ok := value.AsWordValue(contentType); ok {
-			validTypes := []string{"text/html", "text/plain", "application/xhtml+xml", "application/json", "text/javascript"}
-			valid := false
-			for _, vt := range validTypes {
-				if ct == vt {
-					valid = true
-					break
-				}
+		var ct string
+		if wordVal, ok := value.AsWordValue(contentType); ok {
+			ct = wordVal
+		} else if strVal, ok := value.AsStringValue(contentType); ok {
+			ct = strVal.String()
+		} else {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-content-type", "must be word! or string!", ""})
+		}
+
+		validTypes := []string{"text/html", "text/plain", "application/xhtml+xml", "application/json", "text/javascript"}
+		valid := false
+		for _, vt := range validTypes {
+			if strings.EqualFold(ct, vt) {
+				valid = true
+				break
 			}
-			if !valid {
-				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-content-type", ct, ""})
-			}
+		}
+		if !valid {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-content-type", ct, ""})
 		}
 	} else if markup.GetType() == value.TypeBinary {
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"content-type-required", "", ""})
@@ -79,6 +163,12 @@ func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.E
 
 	err := manager.Render(window.ID, markup, options)
 	if err != nil {
+		if err == webui.ErrWindowNotFound {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWindowNotFound, "", ""})
+		}
+		if err == webui.ErrWindowClosed {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"window-closed", "", ""})
+		}
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"render-failed", err.Error(), ""})
 	}
 
@@ -105,6 +195,12 @@ func WebUISend(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	err := manager.Send(window.ID, message.String(), payload)
 	if err != nil {
+		if err == webui.ErrWindowNotFound {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWindowNotFound, "", ""})
+		}
+		if err == webui.ErrWindowClosed {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"window-closed", "", ""})
+		}
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"send-failed", err.Error(), ""})
 	}
 
@@ -139,17 +235,44 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 	frameIndex := eval.CurrentFrameIndex()
 
-	entry := webui.HandlerEntry{
-		WindowID:      window.ID,
-		Event:         event.String(),
-		Selector:      selector.Mold(),
-		HandlerBlock:  handler,
-		CapturedFrame: frameIndex,
+	// Handle selector blocks by registering each selector individually
+	selectors := []string{}
+	if selector.GetType() == value.TypeString {
+		if str, ok := value.AsStringValue(selector); ok {
+			selectors = []string{str.String()}
+		}
+	} else if selector.GetType() == value.TypeBlock {
+		if block, ok := value.AsBlockValue(selector); ok {
+			for _, elem := range block.Elements {
+				if str, ok := value.AsStringValue(elem); ok {
+					selectors = append(selectors, str.String())
+				} else {
+					return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"invalid-selector", "selector block elements must be strings", ""})
+				}
+			}
+		}
 	}
 
-	err := manager.RegisterEvent(entry)
-	if err != nil {
-		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"register-event-failed", err.Error(), ""})
+	// Register handler for each selector
+	for _, sel := range selectors {
+		entry := webui.HandlerEntry{
+			WindowID:      window.ID,
+			Event:         event.String(),
+			Selector:      sel,
+			HandlerBlock:  handler,
+			CapturedFrame: frameIndex,
+		}
+
+		err := manager.RegisterEvent(entry)
+		if err != nil {
+			if err == webui.ErrWindowNotFound {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWindowNotFound, "", ""})
+			}
+			if err == webui.ErrWindowClosed {
+				return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"window-closed", "", ""})
+			}
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"register-event-failed", err.Error(), ""})
+		}
 	}
 
 	return value.NewLogicVal(true), nil
@@ -180,6 +303,7 @@ func WebUIPoll(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		childFrame.Bind("event-name", value.NewStrVal(event.HandlerEntry.Event))
 		childFrame.Bind("event-selector", value.NewStrVal(event.HandlerEntry.Selector))
 		childFrame.Bind("event-payload", event.Payload)
+		childFrame.Bind("event-raw", value.NewStrVal(event.Raw))
 		childFrame.Bind("event-window", value.WebUIWindowVal(value.NewWebUIWindow(event.HandlerEntry.WindowID)))
 
 		eval.PushFrameContext(childFrame)
@@ -245,6 +369,12 @@ func WebUIInject(args []core.Value, refValues map[string]core.Value, eval core.E
 
 	err := manager.Inject(window.ID, html)
 	if err != nil {
+		if err == webui.ErrWindowNotFound {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWindowNotFound, "", ""})
+		}
+		if err == webui.ErrWindowClosed {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"window-closed", "", ""})
+		}
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"inject-failed", err.Error(), ""})
 	}
 
