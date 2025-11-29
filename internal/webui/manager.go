@@ -1,11 +1,30 @@
 package webui
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
+
+var (
+	ErrManagerClosed      = errors.New("manager closed")
+	ErrWindowNotFound     = errors.New("window not found")
+	ErrWindowClosed       = errors.New("window closed")
+	ErrFeatureUnavailable = errors.New("feature unavailable")
+)
+
+type WindowSpec struct {
+	Title     string
+	Width     int
+	Height    int
+	Debug     bool
+	Resizable bool
+	Icon      string
+	Source    string
+	HTML      string
+}
 
 type HandlerEntry struct {
 	WindowID      uint32
@@ -18,11 +37,12 @@ type HandlerEntry struct {
 type EventMessage struct {
 	HandlerEntry HandlerEntry
 	Payload      core.Value
+	Raw          string
 	Timestamp    int64
 }
 
 type Manager interface {
-	CreateWindow(spec map[string]core.Value) (uint32, error)
+	CreateWindow(spec *WindowSpec) (uint32, error)
 	Render(windowID uint32, markup core.Value, options map[string]core.Value) error
 	Inject(windowID uint32, html core.Value) error
 	Send(windowID uint32, message string, payload core.Value) error
@@ -35,9 +55,11 @@ type Manager interface {
 }
 
 type windowState struct {
-	id     uint32
-	ready  bool
-	closed bool
+	id       uint32
+	window   interface{} // abstracted window handle (ui.Window for real, nil for stub)
+	ready    bool
+	closed   bool
+	handlers map[string][]HandlerEntry
 }
 
 type manager struct {
