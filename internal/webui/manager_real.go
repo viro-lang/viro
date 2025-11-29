@@ -3,6 +3,7 @@
 package webui
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -22,12 +23,12 @@ func newManager() Manager {
 	}
 }
 
-func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
+func (m *manager) CreateWindow(spec *WindowSpec) (uint32, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.closed {
-		return 0, nil
+		return 0, ErrManagerClosed
 	}
 
 	m.nextID++
@@ -38,9 +39,20 @@ func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
 		window:   window,
 		ready:    false,
 		closed:   false,
-		handlers: make(map[string]HandlerEntry),
+		handlers: make(map[string][]HandlerEntry),
 	}
 	m.windows[id] = state
+
+	// Apply window spec
+	if spec != nil {
+		if spec.Title != "" {
+			window.SetTitle(spec.Title)
+		}
+		if spec.Width > 0 && spec.Height > 0 {
+			window.SetSize(spec.Width, spec.Height)
+		}
+		// TODO: Apply other spec values (debug, resizable, icon, etc.)
+	}
 
 	// Bind ready event
 	ui.Bind(window, "__ready", func(e ui.Event) any {
@@ -56,11 +68,18 @@ func (m *manager) CreateWindow(spec map[string]core.Value) (uint32, error) {
 func (m *manager) Render(windowID uint32, markup core.Value, options map[string]core.Value) error {
 	m.mu.Lock()
 	state, exists := m.windows[windowID]
-	m.mu.Unlock()
-
-	if !exists || state.closed {
-		return nil
+	if !exists {
+		m.mu.Unlock()
+		return ErrWindowNotFound
 	}
+	if state.closed {
+		m.mu.Unlock()
+		return ErrWindowClosed
+	}
+
+	// Reset ready state
+	state.ready = false
+	m.mu.Unlock()
 
 	content := ""
 	if str, ok := markup.(core.StringValue); ok {
@@ -68,9 +87,6 @@ func (m *manager) Render(windowID uint32, markup core.Value, options map[string]
 	} else if bin, ok := markup.(core.BinaryValue); ok {
 		content = string(bin.Bytes())
 	}
-
-	// Reset ready state
-	state.ready = false
 
 	// Show the window
 	state.window.Show(content)
@@ -83,8 +99,11 @@ func (m *manager) Inject(windowID uint32, html core.Value) error {
 	state, exists := m.windows[windowID]
 	m.mu.Unlock()
 
-	if !exists || state.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
+	}
+	if state.closed {
+		return ErrWindowClosed
 	}
 
 	content := ""
@@ -95,7 +114,8 @@ func (m *manager) Inject(windowID uint32, html core.Value) error {
 	}
 
 	// Inject HTML - this might need a JS call
-	state.window.Run("document.body.innerHTML += " + content)
+	js := jsQuote(content)
+	state.window.Run("document.body.innerHTML += " + js)
 
 	return nil
 }
@@ -105,12 +125,21 @@ func (m *manager) Send(windowID uint32, message string, payload core.Value) erro
 	state, exists := m.windows[windowID]
 	m.mu.Unlock()
 
-	if !exists || state.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
+	}
+	if state.closed {
+		return ErrWindowClosed
+	}
+
+	// Serialize payload to JSON
+	jsonPayload, err := value.ToJSON(payload)
+	if err != nil {
+		return err
 	}
 
 	// Send data to JS - this might need a JS call or custom event
-	js := "window.dispatchEvent(new CustomEvent('" + message + "', {detail: " + payload.String() + "}));"
+	js := "window.dispatchEvent(new CustomEvent(" + jsQuote(message) + ", {detail: " + jsonPayload + "}));"
 	state.window.Run(js)
 
 	return nil
@@ -121,26 +150,43 @@ func (m *manager) RegisterEvent(entry HandlerEntry) error {
 	state, exists := m.windows[entry.WindowID]
 	m.mu.Unlock()
 
-	if !exists || state.closed {
-		return nil
+	if !exists {
+		return ErrWindowNotFound
+	}
+	if state.closed {
+		return ErrWindowClosed
 	}
 
-	state.handlers[entry.Event] = entry
+	// Allow multiple handlers per event/selector combination
+	state.handlers[entry.Event] = append(state.handlers[entry.Event], entry)
 
 	// Bind the event handler
 	ui.Bind(state.window, entry.Event, func(e ui.Event) any {
-		m.eventMu.Lock()
-		defer m.eventMu.Unlock()
+		// Extract payload from event arguments
+		var payload core.Value = value.NewNoneVal()
+		var raw string
+		if e.GetCount() > 0 {
+			if arg, err := ui.GetArg[string](e); err == nil {
+				raw = arg
+				// Try to parse as JSON
+				if parsed, err := value.FromJSON(arg); err == nil {
+					payload = parsed
+				} else {
+					payload = value.NewStrVal(arg)
+				}
+			}
+		}
 
 		eventMsg := EventMessage{
 			HandlerEntry: entry,
-			Payload:      core.NewStringVal(""), // TODO: extract payload from event
+			Payload:      payload,
+			Raw:          raw,
 			Timestamp:    time.Now().Unix(),
 		}
 		select {
 		case m.events <- eventMsg:
 		default:
-			// Queue full, drop event
+			// Queue full, drop event (TODO: consider overflow handling)
 		}
 		return nil
 	})
@@ -156,15 +202,18 @@ func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
 	}
 
 	var events []EventMessage
-	select {
-	case event := <-m.events:
-		if windowID == nil || event.HandlerEntry.WindowID == *windowID {
-			events = append(events, event)
+	// Drain all queued events
+	for {
+		select {
+		case event := <-m.events:
+			if windowID == nil || event.HandlerEntry.WindowID == *windowID {
+				events = append(events, event)
+			}
+		default:
+			// No more events in queue
+			return events, nil
 		}
-	default:
 	}
-
-	return events, nil
 }
 
 func (m *manager) Close(windowID uint32) bool {
@@ -223,4 +272,16 @@ func (m *manager) Ready(windowID uint32) bool {
 
 	state, exists := m.windows[windowID]
 	return exists && state.ready && !state.closed
+}
+
+// jsQuote escapes a string for safe inclusion in JavaScript code
+func jsQuote(s string) string {
+	// Simple implementation - replace backslash and quote
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "\"", "\\\"")
+	s = strings.ReplaceAll(s, "'", "\\'")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	s = strings.ReplaceAll(s, "\r", "\\r")
+	s = strings.ReplaceAll(s, "\t", "\\t")
+	return "\"" + s + "\""
 }
