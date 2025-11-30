@@ -383,6 +383,10 @@ For bug reports, feature requests, or questions:
 ### v1.0.1 (Unreleased) - Copy Function Behavioral Change
 
 **New Features**:
+- **`webui-show` non-blocking behavior**: `webui-show` and `webui-show-browser` now return immediately after showing windows, even without JavaScript bridge connection
+  - **Non-blocking display**: Windows appear immediately and stay open until `webui-wait` or `webui-close`
+  - **Plain HTML support**: Scripts can display HTML content without requiring `webui.js` for basic use cases
+  - **Configurable blocking**: Use `webui-set-config 0 true` to re-enable waiting for JavaScript bridge connection if needed
 - **`foreach` object iteration**: The `foreach` native now supports iterating over `object!` values in addition to series types
   - **Object iteration**: Iterates over object fields in prototype inclusion order (parent fields first, then child fields)
   - **Variable binding**: Single variable binds to field name as `word!` value, two or more variables bind field name + field value + none for extras
