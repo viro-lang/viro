@@ -1,0 +1,11 @@
+win: webui.window [title: "Hello!"]
+
+webui.render win "<html>Render</html>"
+
+while true [
+  res: webui.poll win
+  when none? res [
+    break
+  ]
+]
+

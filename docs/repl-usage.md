@@ -776,7 +776,7 @@ forever [
 
 ### Dependencies
 
-WebUI requires CGO and platform-specific libraries. For headless environments, use the `webui_stub` build tag.
+WebUI requires CGO and platform-specific libraries. Build with `-tags webui` to enable WebUI functionality.
 
 See `docs/webui.md` for complete documentation.
 

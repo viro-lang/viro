@@ -217,13 +217,6 @@ func (p *Parser) ClassifyLiteral(token tokenize.Token) (core.Value, error) {
 		return value.NewSetWordVal(base), nil
 	}
 
-	if text == "true" {
-		return value.NewLogicVal(true), nil
-	}
-	if text == "false" {
-		return value.NewLogicVal(false), nil
-	}
-
 	if intPattern.MatchString(text) {
 		n, _ := strconv.ParseInt(text, 10, 64)
 		return value.NewIntVal(n), nil

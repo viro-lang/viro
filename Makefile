@@ -1,9 +1,10 @@
-.PHONY: build test clean all install test-summary install-syntax
+.PHONY: build test clean all install test-summary install-syntax submodules
 
 # Binary name
 BINARY_NAME=viro
 BUILD_DIR=.
 CMD_DIR=./cmd/viro
+SUBMODULES=dependencies/go-webui
 
 # Go parameters
 GOCMD=go
@@ -15,10 +16,13 @@ GOMOD=$(GOCMD) mod
 
 all: test build
 
-build:
-	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
+submodules:
+	git submodule update --init --recursive $(SUBMODULES)
 
-test:
+build: submodules
+	CGO_CFLAGS="-w" CGO_ENABLED=1 $(GOBUILD) -tags webui -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
+
+test: submodules
 	@$(GOTEST) ./...
 
 clean:
@@ -31,7 +35,7 @@ install: build
 pack: build 
 	upx -9 $(BUILD_DIR)/$(BINARY_NAME)
 
-deps:
+deps: submodules
 	$(GOMOD) download
 	$(GOMOD) verify
 

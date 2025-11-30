@@ -33,16 +33,15 @@ sudo pacman -S webkit2gtk
 **macOS:**
 - WebKit framework (built-in)
 
-### Stub Build Tag
+### Build Tag
 
-For headless environments (CI, testing without GUI), use the `webui_stub` build tag:
+WebUI functionality is only available when built with the `webui` build tag:
 
 ```bash
-go build -tags webui_stub ./cmd/viro
-go test -tags webui_stub ./...
+go build -tags webui ./cmd/viro
 ```
 
-This provides a stub implementation that satisfies the API without requiring CGO or GUI libraries.
+Without this tag, `webui.*` natives are not available and will result in undefined word errors.
 
 ## API Overview
 
@@ -59,30 +58,31 @@ All WebUI functionality is accessed via dot-notation on the `webui` object:
 
 ## Lifecycle Behavior
 
-1. **Initialization:** `webui.start` initializes the subsystem (auto-called by other methods)
-2. **Window Creation:** `webui.window` creates a native window and returns a handle
-3. **Rendering:** `webui.render` loads HTML content and waits for DOM ready
-4. **Event Handling:** Scripts register handlers with `webui.on`, poll events with `webui.poll`
-5. **Communication:** Use `webui.send` to push data to JavaScript, receive via events
-6. **Cleanup:** Windows auto-close on interpreter exit, or manually with `webui.close`
+1. **Window Creation:** `webui.window` creates a native window and returns a handle
+2. **Rendering:** `webui.render` loads HTML content and shows the window
+3. **Event Handling:** Scripts register handlers with `webui.on` which bind directly to go-webui events
+4. **Communication:** Use `webui.send` to push data to JavaScript via injected scripts
+5. **Event Processing:** `webui.poll none` blocks until all windows close; `webui.poll window` is a no-op
+6. **Cleanup:** Windows close with `webui.close` or when the interpreter exits
 
 ## Event Loop Pattern
 
-Typical GUI application structure:
+WebUI uses synchronous event handling - events are processed immediately when they occur:
 
 ```viro
 window: webui.window [title: "My App" width: 800 height: 600]
 
 webui.on window "click" "#button" [
     print ["Button clicked:" event-payload]
+    ; Send data back to JavaScript
+    webui.send window "update" [message: "Button was clicked!"]
 ]
 
 webui.render window "<html><body><button id='button'>Click me</button></body></html>"
 
-forever [
-    webui.poll window
-    wait 0.1  ; Prevent busy loop
-]
+; Block until all windows close
+webui.poll none
+print "All windows closed"
 ```
 
 ## Hot Reload

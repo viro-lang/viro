@@ -176,12 +176,13 @@ Handlers execute with auto-bound locals: `event-name`, `event-selector`, `event-
   - Linux: WebKitGTK
   - Windows: Edge WebView2
   - macOS: WebKit
-- Use `webui_stub` build tag for headless testing
+- Build with `webui` tag to enable functionality
 
 ## Implementation Notes
 
-- Manager interface for testability
-- Stub implementation for CI
+- Direct go-webui integration without manager abstraction
+- Synchronous event handling via go-webui callbacks
+- `webui.poll none` blocks until all windows close
 - Window handles are numeric IDs
 - Event queue drained by `webui.poll`
 - Lifecycle: Windows closed on interpreter exit

@@ -17,7 +17,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/trace"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	"github.com/marcin-radoszewski/viro/internal/verror"
-	"github.com/marcin-radoszewski/viro/internal/webui"
 )
 
 func wrapBootstrapError(err error, context string) error {
@@ -90,7 +89,7 @@ func InitTraceWithOutput(profile bool, output string) error {
 	if profile {
 		return trace.InitTraceSilent()
 	}
-	return trace.InitTrace(output, 50) // default 50MB max size
+	return trace.InitTrace(output, 50)
 }
 
 func InitDebugger() {
@@ -120,7 +119,9 @@ func NewEvaluatorWithNatives(stdout, stderr io.Writer, stdin io.Reader, quiet bo
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 	native.RegisterBitwiseNatives(rootFrame)
-	native.RegisterWebUINatives(rootFrame, webui.NewManager())
+
+	// Register WebUI natives only if WebUI is available
+	registerWebUINativesIfAvailable(rootFrame)
 
 	if err := LoadAndExecuteBootstrapScripts(evaluator); err != nil {
 		return nil, err

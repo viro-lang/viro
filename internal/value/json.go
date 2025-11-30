@@ -9,7 +9,6 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 )
 
-// FromJSON parses a JSON string into a Viro value
 func FromJSON(jsonStr string) (core.Value, error) {
 	var raw interface{}
 	if err := json.Unmarshal([]byte(jsonStr), &raw); err != nil {
@@ -25,18 +24,15 @@ func fromJSONValue(raw interface{}) (core.Value, error) {
 	case bool:
 		return NewLogicVal(v), nil
 	case float64:
-		// JSON numbers are float64, check if it's an integer
 		if v == float64(int64(v)) {
 			return NewIntVal(int64(v)), nil
 		}
-		// Create decimal from float64
 		big := &decimal.Big{}
 		big.SetFloat64(v)
 		return DecimalVal(big, 0), nil
 	case string:
 		return NewStrVal(v), nil
 	case []interface{}:
-		// JSON array -> Viro block
 		elements := make([]core.Value, len(v))
 		for i, item := range v {
 			val, err := fromJSONValue(item)
@@ -47,8 +43,7 @@ func fromJSONValue(raw interface{}) (core.Value, error) {
 		}
 		return NewBlockValue(elements), nil
 	case map[string]interface{}:
-		// JSON object -> Viro object
-		obj := NewObject(nil) // No parent frame for JSON objects
+		obj := NewObject(nil)
 		for key, value := range v {
 			val, err := fromJSONValue(value)
 			if err != nil {
@@ -62,7 +57,6 @@ func fromJSONValue(raw interface{}) (core.Value, error) {
 	}
 }
 
-// ToJSON converts a Viro value to a JSON string
 func ToJSON(val core.Value) (string, error) {
 	raw, err := toJSONValue(val)
 	if err != nil {
@@ -116,7 +110,6 @@ func toJSONValue(val core.Value) (interface{}, error) {
 	case TypeObject:
 		if obj, ok := AsObject(val); ok {
 			result := make(map[string]interface{})
-			// Get all bindings from the object frame
 			for _, binding := range obj.Frame.GetAll() {
 				converted, err := toJSONValue(binding.Value)
 				if err != nil {

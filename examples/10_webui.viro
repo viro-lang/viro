@@ -1,4 +1,3 @@
-#!/usr/bin/env viro
 ; WebUI Example Script
 ; Demonstrates basic WebUI window creation, rendering, and event handling
 
@@ -10,7 +9,7 @@ window: webui.window [
 ]
 
 ; Define some HTML content
-html-content: {
+html-content: "
 <html>
 <head>
     <title>Viro WebUI Demo</title>
@@ -23,10 +22,10 @@ html-content: {
 <body>
     <h1>Viro WebUI Demo</h1>
     <p>This window is controlled by Viro!</p>
-    <button id="hello-btn">Say Hello</button>
-    <button id="count-btn">Increment Counter</button>
-    <button id="close-btn">Close Window</button>
-    <div id="output">Click buttons to see events...</div>
+    <button id='hello-btn'>Say Hello</button>
+    <button id='count-btn'>Increment Counter</button>
+    <button id='close-btn'>Close Window</button>
+    <div id='output'>Click buttons to see events...</div>
     <script>
         let counter = 0;
         function updateOutput(msg) {
@@ -39,7 +38,7 @@ html-content: {
     </script>
 </body>
 </html>
-}
+"
 
 ; Render the HTML
 webui.render window html-content
@@ -61,18 +60,9 @@ webui.on window "click" "#close-btn" [
     webui.close window
 ]
 
-; Main event loop
+; Main event loop - blocks until all windows close
 print "WebUI window opened. Click buttons or close window to exit."
 
-forever [
-    ; Poll for events (returns none when done)
-    result: webui.poll window
-    if none? result [
-        print "Event loop ended"
-        break
-    ]
-    ; Small delay to prevent busy loop
-    wait 0.1
-]
+webui.poll none
 
-print "Script finished"
+print "All windows closed, script finished"

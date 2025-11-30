@@ -10,3 +10,5 @@ require (
 )
 
 require golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
+
+replace github.com/webui-dev/go-webui/v2 => ./dependencies/go-webui/v2
