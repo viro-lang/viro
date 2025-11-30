@@ -58,11 +58,17 @@ All WebUI functionality is accessed via direct kebab-case native functions:
 ## Lifecycle Behavior
 
 1. **Window Creation:** `webui-new-window` creates a native window and returns a window ID
-2. **Rendering:** `webui-show` loads HTML content and shows the window
+2. **Rendering:** `webui-show` loads HTML content and shows the window immediately (non-blocking)
 3. **Event Handling:** Scripts register handlers with `webui-bind` which execute immediately when events occur
 4. **Communication:** Use `webui-run` to execute JavaScript in the window
 5. **Event Processing:** `webui-wait` blocks until all windows close
 6. **Cleanup:** Windows close with `webui-close` or when the interpreter exits
+
+### Non-blocking Behavior
+
+By default, `webui-show` and `webui-show-browser` return immediately after showing the window, even if no JavaScript bridge (`webui.js`) is loaded. The window remains open until `webui-wait` is called or the window is explicitly closed. This allows scripts to display plain HTML content without requiring a JavaScript handshake.
+
+If you need to wait for the JavaScript bridge to connect before proceeding, use `webui-set-config 0 true` to re-enable blocking behavior.
 
 ## Event Loop Pattern
 

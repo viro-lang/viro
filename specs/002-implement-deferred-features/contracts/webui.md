@@ -49,7 +49,7 @@ Shows a window with HTML content.
 
 **Returns:** `logic!` Success status
 
-**Notes:** Shows the WebUI window with the specified HTML content.
+**Notes:** Shows the WebUI window with the specified HTML content. Returns immediately (non-blocking) after displaying the window, even if no JavaScript bridge is present. The window stays open until `webui-wait` or `webui-close` is called.
 
 #### webui-show-browser
 
@@ -64,7 +64,7 @@ Shows a window in a specific browser with HTML content.
 
 **Returns:** `logic!` Success status
 
-**Notes:** Shows the WebUI window in a specific browser with HTML content.
+**Notes:** Shows the WebUI window in a specific browser with HTML content. Returns immediately (non-blocking) after displaying the window, even if no JavaScript bridge is present. The window stays open until `webui-wait` or `webui-close` is called.
 
 ### Event Handling
 
