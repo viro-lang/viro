@@ -1,3 +1,5 @@
+//go:build webui
+
 package native
 
 import (
@@ -19,9 +21,10 @@ var (
 )
 
 type webuiRuntime struct {
-	mu      sync.RWMutex
-	windows map[uint32]*webuiWindow
-	nextID  uint32
+	mu         sync.RWMutex
+	callbackMu sync.Mutex // Protects interpreter re-entry during callbacks
+	windows    map[uint32]*webuiWindow
+	nextID     uint32
 }
 
 type webuiWindow struct {
@@ -168,8 +171,8 @@ func WebUIWindow(args []core.Value, refValues map[string]core.Value, eval core.E
 }
 
 func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 3 {
-		return value.NewNoneVal(), arityError("webui.render", 3, len(args))
+	if len(args) < 2 || len(args) > 3 {
+		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"render-arity", "expected 2-3 arguments", ""})
 	}
 
 	window, ok := value.AsWebUIWindow(args[0])
@@ -198,7 +201,7 @@ func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 
 	options := make(map[string]core.Value)
-	if args[2].GetType() == value.TypeBlock {
+	if len(args) > 2 && args[2].GetType() == value.TypeBlock {
 		if opts, ok := value.AsBlockValue(args[2]); ok {
 			for i := 0; i < len(opts.Elements)-1; i += 2 {
 				if word, ok := value.AsWordValue(opts.Elements[i]); ok {
@@ -352,6 +355,11 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 
 		// Bind the event to go-webui
 		webuiWin.window.Bind(sel, func(e ui.Event) any {
+			// Prevent concurrent interpreter re-entry
+			rt.callbackMu.Lock()
+			defer rt.callbackMu.Unlock()
+
+			// Get handler entries (read-only access to handlers map)
 			rt.mu.RLock()
 			entries, exists := webuiWin.handlers[eventKey]
 			rt.mu.RUnlock()
@@ -366,14 +374,12 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 				childFrame.Bind("event-selector", value.NewStrVal(entry.selector))
 				payload, _ := ui.GetArg[string](e)
 				childFrame.Bind("event-payload", value.NewStrVal(payload))
-				childFrame.Bind("event-payload", value.NewStrVal(payload))
 				childFrame.Bind("event-window", value.WebUIWindowVal(value.NewWebUIWindow(window.ID)))
 
-				rt.mu.Unlock() // Release lock before executing handler
+				// Execute handler without holding any locks
 				eval.PushFrameContext(childFrame)
 				_, err := eval.DoBlock(entry.handlerBlock.Elements, entry.handlerBlock.Locations())
 				eval.PopFrameContext()
-				rt.mu.Lock() // Re-acquire lock
 
 				if err != nil {
 					// Log error but continue
