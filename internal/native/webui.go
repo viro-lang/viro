@@ -507,3 +507,21 @@ func WebUIStartServer(args []core.Value, refValues map[string]core.Value, eval c
 	}
 	return value.NewStrVal(result), nil
 }
+
+func WebUIGetURL(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-get-url", 1, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-get-url", "integer!", args[0])
+	}
+
+	window := ui.Window(uint(windowID))
+	result := window.GetUrl()
+	if result == "" {
+		return value.NewNoneVal(), nil
+	}
+	return value.NewStrVal(result), nil
+}
