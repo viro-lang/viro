@@ -508,6 +508,26 @@ func WebUIStartServer(args []core.Value, refValues map[string]core.Value, eval c
 	return value.NewStrVal(result), nil
 }
 
+func WebUINavigate(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("webui-navigate", 2, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-navigate", "integer!", args[0])
+	}
+
+	url, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-navigate", "string!", args[1])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.Navigate(url.String())
+	return value.NewLogicVal(true), nil
+}
+
 func WebUIGetURL(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
 		return value.NewNoneVal(), arityError("webui-get-url", 1, len(args))
