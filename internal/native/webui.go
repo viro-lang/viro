@@ -1,6 +1,7 @@
 package native
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
@@ -150,6 +151,7 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		webuiMutex.Unlock()
 
 		if err != nil {
+			fmt.Fprintf(eval.GetErrorWriter(), "Error in webui-bind callback for element '%s': %v\n", element.String(), err)
 			return nil
 		}
 		return nil
