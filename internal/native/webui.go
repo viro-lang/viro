@@ -3,14 +3,17 @@
 package native
 
 import (
+	"sync"
+
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
 	ui "github.com/webui-dev/go-webui/v2"
 )
 
-// Global map to store Viro block handlers for WebUI events
-var webuiHandlers = make(map[uint]map[string]core.Value) // windowID -> element -> handler block
+var webuiHandlers = make(map[uint]map[string]core.Value)
+
+var webuiMutex sync.Mutex
 
 func WebUINewWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
@@ -106,7 +109,6 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return value.NewNoneVal(), typeError("webui-bind", "block!", args[2])
 	}
 
-	// Store the handler for later use
 	wid := uint(uint(windowID))
 	if webuiHandlers[wid] == nil {
 		webuiHandlers[wid] = make(map[string]core.Value)
@@ -117,7 +119,6 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	frameIndex := eval.CurrentFrameIndex()
 
 	window.Bind(element.String(), func(e ui.Event) any {
-		// Get the stored handler
 		storedHandler, exists := webuiHandlers[wid][element.String()]
 		if !exists {
 			return nil
@@ -131,7 +132,6 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		childFrame := frame.NewFrameWithCapacity(frame.FrameClosure, frameIndex, 4)
 		childFrame.Bind("event-element", value.NewStrVal(element.String()))
 
-		// Try to get string argument from event
 		if strArg, err := ui.GetArg[string](e); err == nil {
 			childFrame.Bind("event-data", value.NewStrVal(strArg))
 		} else {
@@ -139,11 +139,13 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		}
 
 		childFrame.Bind("event-window-id", value.NewIntVal(int64(wid)))
-		childFrame.Bind("event-number", value.NewIntVal(0)) // TODO: Get actual event number
+		childFrame.Bind("event-number", value.NewIntVal(0))
 
+		webuiMutex.Lock()
 		eval.PushFrameContext(childFrame)
 		_, err := eval.DoBlock(handlerBlock.Elements, handlerBlock.Locations())
 		eval.PopFrameContext()
+		webuiMutex.Unlock()
 
 		if err != nil {
 			return nil
@@ -151,7 +153,7 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return nil
 	})
 
-	return value.NewIntVal(0), nil // WebUI doesn't return event IDs in the Go wrapper
+	return value.NewLogicVal(true), nil
 }
 
 func WebUIRun(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -199,7 +201,6 @@ func WebUIDestroy(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), typeError("webui-destroy", "integer!", args[0])
 	}
 
-	// Clean up handlers
 	delete(webuiHandlers, uint(uint(windowID)))
 
 	window := ui.Window(uint(windowID))
@@ -444,10 +445,9 @@ func WebUIGetSize(args []core.Value, refValues map[string]core.Value, eval core.
 		return value.NewNoneVal(), typeError("webui-get-size", "integer!", args[0])
 	}
 
-	// TODO: GetSize not available in go-webui wrapper
 	elements := []core.Value{
-		value.NewIntVal(800), // default width
-		value.NewIntVal(600), // default height
+		value.NewIntVal(800),
+		value.NewIntVal(600),
 	}
 	return value.NewBlockVal(elements), nil
 }
@@ -462,10 +462,9 @@ func WebUIGetPosition(args []core.Value, refValues map[string]core.Value, eval c
 		return value.NewNoneVal(), typeError("webui-get-position", "integer!", args[0])
 	}
 
-	// TODO: GetPosition not available in go-webui wrapper
 	elements := []core.Value{
-		value.NewIntVal(100), // default x
-		value.NewIntVal(100), // default y
+		value.NewIntVal(100),
+		value.NewIntVal(100),
 	}
 	return value.NewBlockVal(elements), nil
 }

@@ -8,7 +8,6 @@ import (
 )
 
 func RegisterWebUINatives(rootFrame core.Frame) {
-	// Window management
 	rootFrame.Bind("webui-new-window", value.NewFuncVal(value.NewNativeFunction(
 		"webui-new-window",
 		[]value.ParamSpec{},
@@ -49,7 +48,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Window display
 	rootFrame.Bind("webui-show", value.NewFuncVal(value.NewNativeFunction(
 		"webui-show",
 		[]value.ParamSpec{
@@ -100,7 +98,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Event binding
 	rootFrame.Bind("webui-bind", value.NewFuncVal(value.NewNativeFunction(
 		"webui-bind",
 		[]value.ParamSpec{
@@ -121,13 +118,12 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 				{Name: "element", Type: "string!", Description: "Element name/ID", Optional: false},
 				{Name: "handler", Type: "block!", Description: "Handler block", Optional: false},
 			},
-			Returns:  "[integer!] Event ID",
+			Returns:  "[logic!] Success status",
 			Examples: []string{"webui-bind window-id \"myButton\" [print \"clicked\"]"},
 			Tags:     []string{"webui", "event", "bind"},
 		},
 	)))
 
-	// Script execution
 	rootFrame.Bind("webui-run", value.NewFuncVal(value.NewNativeFunction(
 		"webui-run",
 		[]value.ParamSpec{
@@ -152,7 +148,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Window lifecycle
 	rootFrame.Bind("webui-close", value.NewFuncVal(value.NewNativeFunction(
 		"webui-close",
 		[]value.ParamSpec{
@@ -197,7 +192,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Window state queries
 	rootFrame.Bind("webui-is-shown", value.NewFuncVal(value.NewNativeFunction(
 		"webui-is-shown",
 		[]value.ParamSpec{
@@ -220,7 +214,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Configuration and settings
 	rootFrame.Bind("webui-set-timeout", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-timeout",
 		[]value.ParamSpec{
@@ -303,7 +296,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Process and system info
 	rootFrame.Bind("webui-get-parent-process-id", value.NewFuncVal(value.NewNativeFunction(
 		"webui-get-parent-process-id",
 		[]value.ParamSpec{
@@ -326,7 +318,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// File system
 	rootFrame.Bind("webui-set-root-folder", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-root-folder",
 		[]value.ParamSpec{
@@ -373,7 +364,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// URL and navigation
 	rootFrame.Bind("webui-open-url", value.NewFuncVal(value.NewNativeFunction(
 		"webui-open-url",
 		[]value.ParamSpec{
@@ -396,7 +386,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	// Window properties
 	rootFrame.Bind("webui-set-hide", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-hide",
 		[]value.ParamSpec{
@@ -511,7 +500,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		&NativeDoc{
 			Category:    "WebUI",
 			Summary:     "Get window size",
-			Description: `Returns the current size of the specified window.`,
+			Description: `Returns the default size of the specified window (800x600).`,
 			Parameters: []ParamDoc{
 				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
 			},
@@ -533,7 +522,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		&NativeDoc{
 			Category:    "WebUI",
 			Summary:     "Get window position",
-			Description: `Returns the current position of the specified window.`,
+			Description: `Returns the default position of the specified window (100x100).`,
 			Parameters: []ParamDoc{
 				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
 			},
