@@ -79,7 +79,7 @@ Binds a Viro block as an event handler for an element.
 - `element`: `string!` Element name/ID
 - `handler`: `block!` Handler block
 
-**Returns:** `integer!` Event ID
+**Returns:** `logic!` Success status
 
 **Notes:** Binds a Viro block as an event handler. The handler block receives `event-element`, `event-data`, `event-window-id`, and `event-number` bindings.
 
@@ -159,7 +159,7 @@ Sets the global timeout for WebUI operations.
 
 #### webui-wait
 
-Waits for all windows to close.
+Waits for all windows to close (blocking call).
 
 **Signature:** `webui-wait`
 
@@ -167,7 +167,7 @@ Waits for all windows to close.
 
 **Returns:** `none!` None
 
-**Notes:** Blocks until all WebUI windows are closed.
+**Notes:** Blocks until all WebUI windows are closed. This is the main event loop for WebUI applications.
 
 #### webui-exit
 
@@ -326,7 +326,7 @@ Gets the size of a window.
 
 **Returns:** `block!` [width height]
 
-**Notes:** Returns the current size of the specified window as a block.
+**Notes:** Returns the default size of the specified window (800x600) as a block.
 
 #### webui-get-position
 
@@ -339,7 +339,7 @@ Gets the position of a window.
 
 **Returns:** `block!` [x y]
 
-**Notes:** Returns the current position of the specified window as a block.
+**Notes:** Returns the default position of the specified window (100x100) as a block.
 
 #### webui-set-icon
 
@@ -400,5 +400,6 @@ Events are processed via WebUI C API callbacks. Handlers execute with auto-bound
 - Direct wrappers around WebUI C API functions
 - Window IDs are integers (size_t from C API)
 - Event handlers stored in global map for callback execution
-- Synchronous event handling via WebUI callbacks
+- Synchronous event handling via WebUI callbacks with mutex protection
+- webui-wait provides the main blocking event loop
 - Lifecycle: Windows managed by WebUI C library

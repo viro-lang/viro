@@ -747,28 +747,27 @@ Viro includes WebUI integration for creating GUI applications. WebUI scripts can
 ./viro examples/10_webui.viro
 
 # Or run directly in REPL
->> window: webui.window webui.render window "<h1>Hello</h1>"
+>> window-id: webui-new-window webui-show window-id "<h1>Hello</h1>"
 ```
 
 ### WebUI API
 
-- `webui.window` - Create a window
-- `webui.render window markup` - Load HTML content
-- `webui.inject window script` - Execute JavaScript
-- `webui.send window message payload` - Send data to JavaScript
-- `webui.on window event selector handler` - Register event handler
-- `webui.poll window` - Process events
-- `webui.close window` - Close window
-- `webui.ready? window` - Check if window is ready
+- `webui-new-window` - Create a window
+- `webui-show window-id content` - Show window with HTML content
+- `webui-run window-id script` - Execute JavaScript
+- `webui-bind window-id element handler` - Register event handler
+- `webui-wait` - Wait for all windows to close
+- `webui-close window-id` - Close window
+- `webui-is-shown window-id` - Check if window is shown
 
 ### Event Loop Pattern
 
 ```viro
-window: webui.window
-webui.render window "<html><body><button id='btn'>Click</button></body></html>"
-webui.on window "click" "#btn" [print "Button clicked!"]
+window-id: webui-new-window
+webui-show window-id "<html><body><button onclick='webui.btn()'>Click</button></body></html>"
+webui-bind window-id "btn" [print "Button clicked!"]
 
-webui.poll none  ; blocks until all windows close
+webui-wait  ; blocks until all windows close
 ```
 
 ### Dependencies

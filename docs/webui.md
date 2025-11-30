@@ -1,6 +1,6 @@
 # WebUI Integration
 
-Viro provides WebUI integration through the `webui` object, allowing scripts to create and control native HTML/CSS/JS windows while running in the same CLI process.
+Viro provides direct WebUI integration through kebab-case native functions, allowing scripts to create and control native HTML/CSS/JS windows while running in the same CLI process.
 
 ## Dependencies
 
@@ -41,56 +41,56 @@ WebUI functionality is only available when built with the `webui` build tag:
 go build -tags webui ./cmd/viro
 ```
 
-Without this tag, `webui.*` natives are not available and will result in undefined word errors.
+Without this tag, `webui-*` natives are not available and will result in undefined word errors.
 
 ## API Overview
 
-All WebUI functionality is accessed via dot-notation on the `webui` object:
+All WebUI functionality is accessed via direct kebab-case native functions:
 
-- `webui.window spec-block` - Create a window
-- `webui.render window markup options?` - Render HTML content
-- `webui.inject window html` - Inject HTML snippet
-- `webui.send window message payload` - Send data to JavaScript
-- `webui.on window event selector handler-block` - Register event handler
-- `webui.poll window` - Process pending events
-- `webui.close window` - Close window
-- `webui.ready? window` - Check if window is ready
+- `webui-new-window` - Create a new window
+- `webui-show window-id content` - Show window with HTML content
+- `webui-run window-id script` - Execute JavaScript in window
+- `webui-bind window-id element handler` - Bind event handler to element
+- `webui-wait` - Wait for all windows to close
+- `webui-close window-id` - Close a window
+- `webui-is-shown window-id` - Check if window is shown
 
 ## Lifecycle Behavior
 
-1. **Window Creation:** `webui.window` creates a native window and returns a handle
-2. **Rendering:** `webui.render` loads HTML content and shows the window
-3. **Event Handling:** Scripts register handlers with `webui.on` which execute immediately when events occur
-4. **Communication:** Use `webui.send` to push data to JavaScript via injected scripts
-5. **Event Processing:** `webui.poll none` blocks until all windows close; `webui.poll window` is a no-op
-6. **Cleanup:** Windows close with `webui.close` or when the interpreter exits
+1. **Window Creation:** `webui-new-window` creates a native window and returns a window ID
+2. **Rendering:** `webui-show` loads HTML content and shows the window
+3. **Event Handling:** Scripts register handlers with `webui-bind` which execute immediately when events occur
+4. **Communication:** Use `webui-run` to execute JavaScript in the window
+5. **Event Processing:** `webui-wait` blocks until all windows close
+6. **Cleanup:** Windows close with `webui-close` or when the interpreter exits
 
 ## Event Loop Pattern
 
 WebUI uses synchronous event handling - events are processed immediately when they occur:
 
 ```viro
-window: webui.window
+window-id: webui-new-window
 
-webui.on window "click" "#button" [
-    print ["Button clicked:" event-payload]
+webui-bind window-id "button" [
+    print ["Button clicked:" event-data]
     ; Send data back to JavaScript
-    webui.send window "update" [message: "Button was clicked!"]
+    webui-run window-id "updateOutput('Button was clicked!')"
 ]
 
-webui.render window "<html><body><button id='button'>Click me</button></body></html>"
+webui-show window-id "<html><body><button onclick='webui.button()'>Click me</button><div id='output'></div></body></html>"
 
 ; Block until all windows close
-webui.poll none
+webui-wait
 print "All windows closed"
 ```
 
 ## Hot Reload
 
-For development, use `webui.render` with file sources:
+For development, load HTML content from files:
 
 ```viro
-webui.render window %index.html [source: %index.html]
+html-content: read %index.html
+webui-show window-id html-content
 ```
 
 Manual reload with file watchers (using external tools like `entr`):
@@ -110,7 +110,7 @@ window.dispatchEvent(new CustomEvent('viro-event', {
 }));
 ```
 
-Viro receives this as an event that can be handled with `webui.on`.
+Viro receives this as an event that can be handled with `webui-bind`.
 
 ## Error Handling
 
@@ -140,4 +140,4 @@ The interpreter will remain running until all windows are closed or the script e
 - No built-in file watching (use external tools for hot reload)
 - **Title setting**: Window titles are set via DOM script injection, not native window title bars
 - **Debug mode**: The `debug?` spec key is not supported by the underlying go-webui library
-- **Event handling**: Uses a JavaScript bridge to attach DOM event listeners; requires `webui.js` to be included in HTML
+- **Event handling**: Uses direct WebUI C API callbacks; JavaScript calls bound functions directly
