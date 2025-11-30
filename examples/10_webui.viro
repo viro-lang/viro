@@ -26,22 +26,32 @@ html-content: "
     <button id='count-btn'>Increment Counter</button>
     <button id='close-btn'>Close Window</button>
     <div id='output'>Click buttons to see events...</div>
-    <script>
-        let counter = 0;
-        function updateOutput(msg) {
-            document.getElementById('output').textContent = msg;
-        }
-        function incrementCounter() {
-            counter++;
-            updateOutput('Counter: ' + counter);
-        }
-    </script>
+     <script>
+         let counter = 0;
+         function updateOutput(msg) {
+             document.getElementById('output').textContent = msg;
+         }
+         function incrementCounter() {
+             counter++;
+             updateOutput('Counter: ' + counter);
+         }
+
+         // Handlers for webui.send messages
+         window.webui = {
+             'update': function(data) {
+                 updateOutput(data.message + ' at ' + data.timestamp);
+             },
+             'increment': function(data) {
+                 incrementCounter();
+             }
+         };
+     </script>
 </body>
 </html>
 "
 
 ; Render the HTML
-webui.render window html-content
+webui.render window html-content []
 
 ; Set up event handlers
 webui.on window "click" "#hello-btn" [
