@@ -20,53 +20,43 @@ Initializes the WebUI subsystem (idempotent).
 
 ### webui.window
 
-Creates or reuses a window.
+Creates a new window.
 
-**Signature:** `webui.window spec-block`
+**Signature:** `webui.window`
 
-**Parameters:**
-- `spec-block`: Block accepting keys:
-  - `title text!`: Window title (not supported by go-webui library)
-  - `width integer!`: Window width (not supported by go-webui library)
-  - `height integer!`: Window height (not supported by go-webui library)
-  - `resizable? logic!`: Allow resizing (not supported by go-webui library)
-  - `icon file!`: Window icon (not supported by go-webui library)
-  - `source file!|url!`: Initial content source (not supported)
-  - `html string!|binary!`: Initial HTML content
+**Parameters:** None
 
 **Returns:** `webui-window!` handle
 
-**Notes:** Most spec keys are not supported by the underlying go-webui library and are ignored. Only `html` is currently supported for initial content.
+**Notes:** Creates a new WebUI window. Window properties like title, size, etc. are not supported by the underlying go-webui library.
 
 ### webui.render
 
 Replaces current DOM with provided markup.
 
-**Signature:** `webui.render window markup options?`
+**Signature:** `webui.render window markup`
 
 **Parameters:**
 - `window`: `webui-window!` handle
-- `markup`: `string!`, `binary!`, or `file!`
-- `options?`: Optional block with keys:
-  - `content-type word!|string!`: One of `text/html`, `text/plain`, `application/xhtml+xml`, `application/json`, `text/javascript`
+- `markup`: `string!` or `binary!`
 
 **Returns:** `logic!` success
 
-**Notes:** Resets page and replays handlers. Binary markup requires `content-type`. Default content-type is `text/html` for strings. Invalid content-type raises spec error. Other options are not currently supported.
+**Notes:** Replaces the current page content with the provided HTML markup.
 
 ### webui.inject
 
-Evaluates markup snippets in existing page context.
+Executes JavaScript in the window context.
 
-**Signature:** `webui.inject window html`
+**Signature:** `webui.inject window script`
 
 **Parameters:**
 - `window`: `webui-window!` handle
-- `html`: `string!` or `binary!`
+- `script`: `string!` or `binary!`
 
 **Returns:** `logic!` success
 
-**Notes:** Does not reset handlers. For incremental updates.
+**Notes:** Executes JavaScript code in the browser context.
 
 ### webui.send
 
@@ -92,7 +82,7 @@ Registers event callback.
 **Parameters:**
 - `window`: `webui-window!` handle
 - `event`: `text!` event name
-- `selector`: `text!` or `block!` of strings (CSS selector)
+- `selector`: `text!` CSS selector
 - `handler-block`: `block!` to execute
 
 **Returns:** `logic!` success
@@ -155,12 +145,9 @@ Events are processed synchronously via go-webui callbacks. Handlers execute imme
 
 ## Error Handling
 
-- Invalid spec blocks: `verror.NewScriptError` with category "webui" and ID "invalid-spec"
-- Binary without content-type: "content-type-required"
-- Invalid content-type: "invalid-content-type"
-- Serialization failures: "serialization-error"
-- Window not found: "window-not-found"
-- Handler execution errors: Propagate to `webui.poll` caller
+- Type mismatches: `verror.NewScriptError` with category "webui" and appropriate ID
+- Serialization failures: "send-failed"
+- Handler execution errors: Propagate to event callback
 
 ## CGO Requirements
 
@@ -173,10 +160,11 @@ Events are processed synchronously via go-webui callbacks. Handlers execute imme
 
 ## Implementation Notes
 
-- Direct go-webui integration without manager abstraction
+- Thin wrappers around go-webui functions
+- No runtime bookkeeping or registries
+- Window handles store ui.Window directly
 - Synchronous event handling via go-webui callbacks
 - `webui.poll none` blocks until all windows close (equivalent to `ui.Wait()`)
 - `webui.poll window` is a no-op (per-window wait not available)
-- Window handles are numeric IDs
 - Event handlers execute immediately when events occur
 - Lifecycle: Windows closed on interpreter exit
