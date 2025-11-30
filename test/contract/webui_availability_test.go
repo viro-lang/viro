@@ -37,6 +37,7 @@ func TestWebUIAvailability(t *testing.T) {
 		{"webui-set-icon", "webui-set-icon"},
 		{"webui-send-raw", "webui-send-raw"},
 		{"webui-start-server", "webui-start-server"},
+		{"webui-get-url", "webui-get-url"},
 	}
 
 	for _, tt := range tests {
