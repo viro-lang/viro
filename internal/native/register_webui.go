@@ -54,7 +54,7 @@ Returns a webui-window! value that can be used with other webui functions.`,
 		"webui.render",
 		[]value.ParamSpec{
 			value.NewParamSpec("window", true),
-			value.NewParamSpec("markup", false),
+			value.NewParamSpec("markup", true),
 			{Name: "options", Type: value.TypeBlock, Optional: true, Refinement: false, TakesValue: false, Eval: true},
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -179,6 +179,29 @@ Payload is JSON-encoded automatically.`,
 		},
 	)))
 
+	webuiObj.Frame.Bind("poll", value.NewFuncVal(value.NewNativeFunction(
+		"webui.poll",
+		[]value.ParamSpec{
+			value.NewParamSpec("window", true),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return WebUIPoll(args, refValues, eval)
+		},
+		false,
+		&NativeDoc{
+			Category: "WebUI",
+			Summary:  "Process pending events",
+			Description: `Drains pending events and runs handlers.
+When called with none, blocks until all windows close. When called with a specific window, no-op.`,
+			Parameters: []ParamDoc{
+				{Name: "window", Type: "webui-window!|none!", Description: "Window to poll or none for all windows", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui.poll none  ; blocks until all windows close"},
+			Tags:     []string{"webui", "event", "poll"},
+		},
+	)))
+
 	webuiObj.Frame.Bind("ready?", value.NewFuncVal(value.NewNativeFunction(
 		"webui.ready?",
 		[]value.ParamSpec{
@@ -189,19 +212,15 @@ Payload is JSON-encoded automatically.`,
 		},
 		false,
 		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Register event handler",
-			Description: `Registers a callback for browser events.
-Handler block receives event-name, event-selector, event-payload, and event-window bindings.`,
+			Category:    "WebUI",
+			Summary:     "Check if window is ready",
+			Description: `Returns logic indicating whether the window is currently shown.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to listen on", Optional: false},
-				{Name: "event", Type: "string!", Description: "Event name", Optional: false},
-				{Name: "selector", Type: "string! block!", Description: "CSS selector", Optional: false},
-				{Name: "handler", Type: "block!", Description: "Handler code", Optional: false},
+				{Name: "window", Type: "webui-window!", Description: "Window to check", Optional: false},
 			},
-			Returns:  "[logic!] Success status",
-			Examples: []string{"webui.on window \"click\" \"#btn\" [print event-name]"},
-			Tags:     []string{"webui", "event", "handler"},
+			Returns:  "[logic!] Whether window is shown",
+			Examples: []string{"webui.ready? window"},
+			Tags:     []string{"webui", "window", "ready"},
 		},
 	)))
 

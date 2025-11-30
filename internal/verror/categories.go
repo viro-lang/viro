@@ -127,8 +127,9 @@ const (
 	ErrIDUnknownScheme         = "unknown-port-scheme"     // unsupported port scheme
 
 	// WebUI errors (500) - Feature 043: WebUI integration
-	ErrIDWindowNotFound = "window-not-found" // window ID not found
-	ErrIDManagerClosed  = "manager-closed"   // WebUI manager is closed
+	ErrIDWindowNotFound   = "window-not-found"  // window ID not found
+	ErrIDManagerClosed    = "manager-closed"    // WebUI manager is closed
+	ErrIDWebUIUnavailable = "webui-unavailable" // WebUI support not compiled in
 
 	// Bootstrap errors (600)
 	ErrIDBootstrapFailure = "bootstrap-failure"
