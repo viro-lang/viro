@@ -772,7 +772,7 @@ webui-wait  ; blocks until all windows close
 
 ### Dependencies
 
-WebUI requires CGO and platform-specific libraries. Build with `-tags webui` to enable WebUI functionality.
+WebUI requires CGO and platform-specific libraries. WebUI functionality is always available in standard builds.
 
 See `docs/webui.md` for complete documentation.
 

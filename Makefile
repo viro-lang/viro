@@ -20,7 +20,7 @@ submodules:
 	git submodule update --init --recursive $(SUBMODULES)
 
 build: submodules
-	CGO_CFLAGS="-w" CGO_ENABLED=1 $(GOBUILD) -tags webui -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
+	CGO_CFLAGS="-w" CGO_ENABLED=1 $(GOBUILD) -o $(BUILD_DIR)/$(BINARY_NAME) $(CMD_DIR)
 
 test: submodules
 	@$(GOTEST) ./...

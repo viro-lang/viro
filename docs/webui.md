@@ -33,15 +33,9 @@ sudo pacman -S webkit2gtk
 **macOS:**
 - WebKit framework (built-in)
 
-### Build Tag
+### Build Requirements
 
-WebUI functionality is only available when built with the `webui` build tag:
-
-```bash
-go build -tags webui ./cmd/viro
-```
-
-Without this tag, `webui-*` natives are not available and will result in undefined word errors.
+WebUI functionality is always available in standard Viro builds. The following CGO requirements must be met:
 
 ## API Overview
 

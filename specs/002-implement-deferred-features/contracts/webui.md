@@ -384,7 +384,7 @@ Events are processed via WebUI C API callbacks. Handlers execute with auto-bound
 ## Error Handling
 
 - Type mismatches: `verror.NewScriptError` with category "webui" and appropriate ID
-- WebUI unavailable: "webui-unavailable" when built without webui tag
+- WebUI is always available in standard builds (CGO required)
 
 ## CGO Requirements
 

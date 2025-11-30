@@ -1,5 +1,3 @@
-//go:build webui
-
 package native
 
 import (

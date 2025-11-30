@@ -127,8 +127,7 @@ const (
 	ErrIDUnknownScheme         = "unknown-port-scheme"     // unsupported port scheme
 
 	// WebUI errors (500) - Feature 043: WebUI integration
-	ErrIDManagerClosed    = "manager-closed"    // WebUI manager is closed
-	ErrIDWebUIUnavailable = "webui-unavailable" // WebUI support not compiled in
+	ErrIDManagerClosed = "manager-closed" // WebUI manager is closed
 
 	// Bootstrap errors (600)
 	ErrIDBootstrapFailure = "bootstrap-failure"

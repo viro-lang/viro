@@ -12,10 +12,6 @@ print ["webui-show returned:" result]
 print "Script continues executing..."
 print "Window should still be visible"
 
-; Wait a bit to demonstrate the window stays open
-print "Waiting 2 seconds..."
-wait 2
-
 print "Calling webui-wait to block until window closes..."
 webui-wait
 

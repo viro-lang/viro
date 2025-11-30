@@ -1,5 +1,3 @@
-//go:build webui
-
 package value
 
 import (

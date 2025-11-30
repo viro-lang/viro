@@ -120,8 +120,8 @@ func NewEvaluatorWithNatives(stdout, stderr io.Writer, stdin io.Reader, quiet bo
 	native.RegisterHelpNatives(rootFrame)
 	native.RegisterBitwiseNatives(rootFrame)
 
-	// Register WebUI natives only if WebUI is available
-	registerWebUINativesIfAvailable(rootFrame)
+	// Register WebUI natives
+	native.RegisterWebUINatives(rootFrame)
 
 	if err := LoadAndExecuteBootstrapScripts(evaluator); err != nil {
 		return nil, err

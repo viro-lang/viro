@@ -1,6 +1,25 @@
-win: webui.window
+win: webui-new-window
 
-webui.render win "<html>Render</html>"
+webui-show win "
+<html>
+<head><script src='webui.js'></script></head>
+<body>
+  <h1>Test!</h1>
+  <button id='test'>Klinij!</button>
+</body>
+</html>
+"
 
-webui.poll none
+
+probe webui-bind win "test" [
+  print "Hello World!"
+  print event-element
+  print event-data
+  print event-window-id
+  print event-number
+]
+
+
+webui-wait
+
 
