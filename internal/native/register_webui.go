@@ -29,7 +29,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-new-window-id", value.NewFuncVal(value.NewNativeFunction(
 		"webui-new-window-id",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUINewWindowId(args, refValues, eval)
@@ -51,8 +51,8 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-show", value.NewFuncVal(value.NewNativeFunction(
 		"webui-show",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("content", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("content", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIShow(args, refValues, eval)
@@ -75,9 +75,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-show-browser", value.NewFuncVal(value.NewNativeFunction(
 		"webui-show-browser",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("content", false),
-			value.NewParamSpec("browser", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("content", true),
+			value.NewParamSpec("browser", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIShowBrowser(args, refValues, eval)
@@ -101,9 +101,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-bind", value.NewFuncVal(value.NewNativeFunction(
 		"webui-bind",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("element", false),
-			value.NewParamSpec("handler", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("element", true),
+			value.NewParamSpec("handler", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIBind(args, refValues, eval)
@@ -127,8 +127,8 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-run", value.NewFuncVal(value.NewNativeFunction(
 		"webui-run",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("script", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("script", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIRun(args, refValues, eval)
@@ -151,7 +151,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-close", value.NewFuncVal(value.NewNativeFunction(
 		"webui-close",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUICloseDirect(args, refValues, eval)
@@ -173,7 +173,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-destroy", value.NewFuncVal(value.NewNativeFunction(
 		"webui-destroy",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIDestroy(args, refValues, eval)
@@ -195,7 +195,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-is-shown", value.NewFuncVal(value.NewNativeFunction(
 		"webui-is-shown",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIIsShown(args, refValues, eval)
@@ -217,7 +217,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-timeout", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-timeout",
 		[]value.ParamSpec{
-			value.NewParamSpec("timeout", false),
+			value.NewParamSpec("timeout", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetTimeout(args, refValues, eval)
@@ -275,8 +275,8 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-config", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-config",
 		[]value.ParamSpec{
-			value.NewParamSpec("option", false),
-			value.NewParamSpec("value", false),
+			value.NewParamSpec("option", true),
+			value.NewParamSpec("value", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetConfig(args, refValues, eval)
@@ -299,7 +299,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-get-parent-process-id", value.NewFuncVal(value.NewNativeFunction(
 		"webui-get-parent-process-id",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIGetParentProcessId(args, refValues, eval)
@@ -321,8 +321,8 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-root-folder", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-root-folder",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("path", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("path", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetRootFolder(args, refValues, eval)
@@ -345,7 +345,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-default-root-folder", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-default-root-folder",
 		[]value.ParamSpec{
-			value.NewParamSpec("path", false),
+			value.NewParamSpec("path", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetDefaultRootFolder(args, refValues, eval)
@@ -367,7 +367,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-open-url", value.NewFuncVal(value.NewNativeFunction(
 		"webui-open-url",
 		[]value.ParamSpec{
-			value.NewParamSpec("url", false),
+			value.NewParamSpec("url", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIOpenUrl(args, refValues, eval)
@@ -389,8 +389,8 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-hide", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-hide",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("hidden", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("hidden", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetHide(args, refValues, eval)
@@ -413,9 +413,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-size", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-size",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("width", false),
-			value.NewParamSpec("height", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("width", true),
+			value.NewParamSpec("height", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetSize(args, refValues, eval)
@@ -439,9 +439,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-position", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-position",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("x", false),
-			value.NewParamSpec("y", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("x", true),
+			value.NewParamSpec("y", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetPosition(args, refValues, eval)
@@ -465,9 +465,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-profile", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-profile",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("name", false),
-			value.NewParamSpec("path", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("name", true),
+			value.NewParamSpec("path", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetProfile(args, refValues, eval)
@@ -491,7 +491,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-get-size", value.NewFuncVal(value.NewNativeFunction(
 		"webui-get-size",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIGetSize(args, refValues, eval)
@@ -513,7 +513,7 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-get-position", value.NewFuncVal(value.NewNativeFunction(
 		"webui-get-position",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("window-id", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUIGetPosition(args, refValues, eval)
@@ -535,9 +535,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-set-icon", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-icon",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("icon", false),
-			value.NewParamSpec("icon-type", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("icon", true),
+			value.NewParamSpec("icon-type", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISetIcon(args, refValues, eval)
@@ -561,9 +561,9 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 	rootFrame.Bind("webui-send-raw", value.NewFuncVal(value.NewNativeFunction(
 		"webui-send-raw",
 		[]value.ParamSpec{
-			value.NewParamSpec("window-id", false),
-			value.NewParamSpec("function", false),
-			value.NewParamSpec("raw-data", false),
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("function", true),
+			value.NewParamSpec("raw-data", true),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUISendRaw(args, refValues, eval)
