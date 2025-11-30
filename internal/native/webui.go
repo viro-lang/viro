@@ -5,6 +5,7 @@ package native
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -22,7 +23,7 @@ var (
 
 type webuiRuntime struct {
 	mu         sync.RWMutex
-	callbackMu sync.Mutex // Protects interpreter re-entry during callbacks
+	callbackMu sync.Mutex
 	windows    map[uint32]*webuiWindow
 	nextID     uint32
 }
@@ -156,9 +157,6 @@ func WebUIWindow(args []core.Value, refValues map[string]core.Value, eval core.E
 
 	rt.windows[id] = webuiWin
 
-	// Note: go-webui doesn't support title, size, resizable, or icon settings directly
-	// These would need to be set via JavaScript after showing the window
-
 	if html, ok := spec["html"].(string); ok {
 		window.Show(html)
 	} else if source, ok := spec["source"].(string); ok {
@@ -270,13 +268,11 @@ func WebUISend(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	payload := args[2]
 
-	// Convert payload to JSON
 	payloadJSON, err := value.ToJSON(payload)
 	if err != nil {
 		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"send-failed", "cannot convert payload to JSON: " + err.Error(), ""})
 	}
 
-	// Send via JavaScript
 	js := fmt.Sprintf("if (window.webui && window.webui['%s']) { window.webui['%s'](%s); }", message.String(), message.String(), payloadJSON)
 	webuiWin.window.Run(js)
 
@@ -307,7 +303,7 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return value.NewNoneVal(), typeError("webui.on", "string", args[1])
 	}
 
-	selector := args[2] // Can be string or block
+	selector := args[2]
 	if selector.GetType() != value.TypeString && selector.GetType() != value.TypeBlock {
 		rt.mu.Unlock()
 		return value.NewNoneVal(), typeError("webui.on", "string!|block", selector)
@@ -353,13 +349,10 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		}
 		webuiWin.handlers[eventKey] = append(webuiWin.handlers[eventKey], entry)
 
-		// Bind the event to go-webui
 		webuiWin.window.Bind(sel, func(e ui.Event) any {
-			// Prevent concurrent interpreter re-entry
 			rt.callbackMu.Lock()
 			defer rt.callbackMu.Unlock()
 
-			// Get handler entries (read-only access to handlers map)
 			rt.mu.RLock()
 			entries, exists := webuiWin.handlers[eventKey]
 			rt.mu.RUnlock()
@@ -376,13 +369,11 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 				childFrame.Bind("event-payload", value.NewStrVal(payload))
 				childFrame.Bind("event-window", value.WebUIWindowVal(value.NewWebUIWindow(window.ID)))
 
-				// Execute handler without holding any locks
 				eval.PushFrameContext(childFrame)
 				_, err := eval.DoBlock(entry.handlerBlock.Elements, entry.handlerBlock.Locations())
 				eval.PopFrameContext()
 
 				if err != nil {
-					// Log error but continue
 					continue
 				}
 			}
@@ -400,16 +391,13 @@ func WebUIPoll(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	if args[0].GetType() == value.TypeNone {
-		// When called with none, wait for all windows to close
 		ui.Wait()
 		return value.NewNoneVal(), nil
 	} else {
-		// When called with a specific window, no-op (per-window wait not available in go-webui)
 		window, ok := value.AsWebUIWindow(args[0])
 		if !ok {
 			return value.NewNoneVal(), typeError("webui.poll", "webui-window", args[0])
 		}
-		// Check if window exists
 		rt := getWebUIRuntime()
 		rt.mu.RLock()
 		_, exists := rt.windows[window.ID]
@@ -417,7 +405,6 @@ func WebUIPoll(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		if !exists {
 			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWindowNotFound, "", ""})
 		}
-		// No-op for specific window
 		return value.NewNoneVal(), nil
 	}
 }
@@ -500,7 +487,6 @@ func WebUIInject(args []core.Value, refValues map[string]core.Value, eval core.E
 		return value.NewNoneVal(), typeError("webui.inject", "string!|binary", html)
 	}
 
-	// Inject HTML by running JavaScript
 	htmlJSON, _ := json.Marshal(htmlStr)
 	js := fmt.Sprintf("document.body.insertAdjacentHTML('beforeend', %s);", string(htmlJSON))
 	webuiWin.window.Run(js)

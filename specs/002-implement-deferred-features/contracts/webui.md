@@ -26,18 +26,17 @@ Creates or reuses a window.
 
 **Parameters:**
 - `spec-block`: Block accepting keys:
-  - `title text!`: Window title (implemented via DOM script, not native title bar)
-  - `width integer!`: Window width
-  - `height integer!`: Window height
-  - `debug? logic!`: Enable debug mode (currently unsupported)
-  - `resizable? logic!`: Allow resizing
-  - `icon file!`: Window icon
-  - `source file!|url!`: Initial content source
+  - `title text!`: Window title (not supported by go-webui library)
+  - `width integer!`: Window width (not supported by go-webui library)
+  - `height integer!`: Window height (not supported by go-webui library)
+  - `resizable? logic!`: Allow resizing (not supported by go-webui library)
+  - `icon file!`: Window icon (not supported by go-webui library)
+  - `source file!|url!`: Initial content source (not supported)
   - `html string!|binary!`: Initial HTML content
 
 **Returns:** `webui-window!` handle
 
-**Notes:** Missing keys use manager defaults. `source` is resolved like `webui.render` source option. `html` acts like immediate `webui.render` call. Some spec keys may be ignored if not supported by the underlying go-webui library.
+**Notes:** Most spec keys are not supported by the underlying go-webui library and are ignored. Only `html` is currently supported for initial content.
 
 ### webui.render
 
@@ -49,14 +48,11 @@ Replaces current DOM with provided markup.
 - `window`: `webui-window!` handle
 - `markup`: `string!`, `binary!`, or `file!`
 - `options?`: Optional block with keys:
-  - `base-path file!`: Resolve relative URLs
-  - `source file!`: Path for hot reload tracking
-  - `data map!/object!/block!`: JSON data for `window.viroscope`
-  - `content-type word!`: One of `text/html`, `text/plain`, `application/xhtml+xml`, `application/json`, `text/javascript`
+  - `content-type word!|string!`: One of `text/html`, `text/plain`, `application/xhtml+xml`, `application/json`, `text/javascript`
 
 **Returns:** `logic!` success
 
-**Notes:** Resets page and replays handlers. Binary markup requires `content-type`. Default content-type is `text/html` for strings. Invalid content-type raises spec error.
+**Notes:** Resets page and replays handlers. Binary markup requires `content-type`. Default content-type is `text/html` for strings. Invalid content-type raises spec error. Other options are not currently supported.
 
 ### webui.inject
 
@@ -112,9 +108,9 @@ Drains pending events and runs handlers.
 **Parameters:**
 - `window`: `webui-window!` or `none` (all windows)
 
-**Returns:** `none` when done, or error if handler fails
+**Returns:** `none`
 
-**Notes:** When called with `none`, blocks until all windows close (equivalent to `ui.Wait()`). When called with a specific window, no-op (per-window wait not available in go-webui).
+**Notes:** When called with `none`, blocks until all windows close (equivalent to `ui.Wait()`). When called with a specific window, no-op (per-window wait not available in go-webui). Handler errors are swallowed and do not propagate.
 
 ### webui.close
 

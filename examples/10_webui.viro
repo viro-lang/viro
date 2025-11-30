@@ -8,8 +8,8 @@ window: webui.window [
     height: 600
 ]
 
-; Define some HTML content
-html-content: "
+; Render the HTML
+webui.render window "
 <html>
 <head>
     <title>Viro WebUI Demo</title>
@@ -48,10 +48,7 @@ html-content: "
      </script>
 </body>
 </html>
-"
-
-; Render the HTML
-webui.render window html-content []
+" []
 
 ; Set up event handlers
 webui.on window "click" "#hello-btn" [
