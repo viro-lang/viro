@@ -482,50 +482,6 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
-	rootFrame.Bind("webui-get-size", value.NewFuncVal(value.NewNativeFunction(
-		"webui-get-size",
-		[]value.ParamSpec{
-			value.NewParamSpec("window-id", true),
-		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return WebUIGetSize(args, refValues, eval)
-		},
-		false,
-		&NativeDoc{
-			Category:    "WebUI",
-			Summary:     "Get window size",
-			Description: `Returns the default size of the specified window (800x600).`,
-			Parameters: []ParamDoc{
-				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
-			},
-			Returns:  "[block!] [width height]",
-			Examples: []string{"size: webui-get-size window-id"},
-			Tags:     []string{"webui", "window", "size"},
-		},
-	)))
-
-	rootFrame.Bind("webui-get-position", value.NewFuncVal(value.NewNativeFunction(
-		"webui-get-position",
-		[]value.ParamSpec{
-			value.NewParamSpec("window-id", true),
-		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return WebUIGetPosition(args, refValues, eval)
-		},
-		false,
-		&NativeDoc{
-			Category:    "WebUI",
-			Summary:     "Get window position",
-			Description: `Returns the default position of the specified window (100x100).`,
-			Parameters: []ParamDoc{
-				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
-			},
-			Returns:  "[block!] [x y]",
-			Examples: []string{"pos: webui-get-position window-id"},
-			Tags:     []string{"webui", "window", "position"},
-		},
-	)))
-
 	rootFrame.Bind("webui-set-icon", value.NewFuncVal(value.NewNativeFunction(
 		"webui-set-icon",
 		[]value.ParamSpec{

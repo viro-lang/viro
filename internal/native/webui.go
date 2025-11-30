@@ -9,8 +9,6 @@ import (
 	ui "github.com/webui-dev/go-webui/v2"
 )
 
-var webuiHandlers = make(map[uint]map[string]core.Value)
-
 var webuiMutex sync.Mutex
 
 func WebUINewWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -82,6 +80,32 @@ func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval c
 	return value.NewLogicVal(true), nil
 }
 
+func buildEventObject(e ui.Event, payload core.Value) core.Value {
+	eventFrame := frame.NewObjectFrame(-1, nil, nil)
+	eventFrame.Bind("window", value.NewIntVal(int64(e.Window)))
+	eventFrame.Bind("event-type", value.NewIntVal(int64(e.EventType)))
+
+	if e.Element != "" {
+		eventFrame.Bind("element", value.NewStrVal(e.Element))
+	} else {
+		eventFrame.Bind("element", value.NewNoneVal())
+	}
+
+	eventFrame.Bind("event-number", value.NewIntVal(int64(e.EventNumber)))
+	eventFrame.Bind("bind-id", value.NewIntVal(int64(e.BindID)))
+	eventFrame.Bind("client-id", value.NewIntVal(int64(e.ClientID)))
+	eventFrame.Bind("connection-id", value.NewIntVal(int64(e.ConnectionID)))
+	if e.Cookies != "" {
+		eventFrame.Bind("cookies", value.NewStrVal(e.Cookies))
+	} else {
+		eventFrame.Bind("cookies", value.NewNoneVal())
+	}
+	eventFrame.Bind("data", payload)
+
+	obj := value.NewObject(eventFrame)
+	return value.ObjectVal(obj)
+}
+
 func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 3 {
 		return value.NewNoneVal(), arityError("webui-bind", 3, len(args))
@@ -102,41 +126,26 @@ func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Eva
 		return value.NewNoneVal(), typeError("webui-bind", "block!", args[2])
 	}
 
-	wid := uint(uint(windowID))
-	if webuiHandlers[wid] == nil {
-		webuiHandlers[wid] = make(map[string]core.Value)
-	}
-	webuiHandlers[wid][element.String()] = handler
-
 	window := ui.Window(uint(windowID))
 	frameIndex := eval.CurrentFrameIndex()
 
 	window.Bind(element.String(), func(e ui.Event) any {
-		storedHandler, exists := webuiHandlers[wid][element.String()]
-		if !exists {
-			return nil
-		}
+		childFrame := frame.NewFrameWithCapacity(frame.FrameClosure, frameIndex, 1)
 
-		handlerBlock, ok := value.AsBlockValue(storedHandler)
-		if !ok {
-			return nil
-		}
-
-		childFrame := frame.NewFrameWithCapacity(frame.FrameClosure, frameIndex, 4)
-		childFrame.Bind("event-element", value.NewStrVal(element.String()))
-
-		if strArg, err := ui.GetArg[string](e); err == nil {
-			childFrame.Bind("event-data", value.NewStrVal(strArg))
+		strArg, err := ui.GetArg[string](e)
+		var eventData core.Value
+		if err == nil {
+			eventData = value.NewStrVal(strArg)
 		} else {
-			childFrame.Bind("event-data", value.NewNoneVal())
+			eventData = value.NewNoneVal()
 		}
 
-		childFrame.Bind("event-window-id", value.NewIntVal(int64(wid)))
-		childFrame.Bind("event-number", value.NewIntVal(0))
+		eventObj := buildEventObject(e, eventData)
+		childFrame.Bind("event", eventObj)
 
 		webuiMutex.Lock()
 		eval.PushFrameContext(childFrame)
-		_, err := eval.DoBlock(handlerBlock.Elements, handlerBlock.Locations())
+		_, err = eval.DoBlock(handler.Elements, handler.Locations())
 		eval.PopFrameContext()
 		webuiMutex.Unlock()
 
@@ -193,8 +202,6 @@ func WebUIDestroy(args []core.Value, refValues map[string]core.Value, eval core.
 	if !ok {
 		return value.NewNoneVal(), typeError("webui-destroy", "integer!", args[0])
 	}
-
-	delete(webuiHandlers, uint(uint(windowID)))
 
 	window := ui.Window(uint(windowID))
 	window.Destroy()
@@ -426,40 +433,6 @@ func WebUISetProfile(args []core.Value, refValues map[string]core.Value, eval co
 	window := ui.Window(uint(windowID))
 	window.SetProfile(name.String(), path.String())
 	return value.NewNoneVal(), nil
-}
-
-func WebUIGetSize(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui-get-size", 1, len(args))
-	}
-
-	_, ok := value.AsIntValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), typeError("webui-get-size", "integer!", args[0])
-	}
-
-	elements := []core.Value{
-		value.NewIntVal(800),
-		value.NewIntVal(600),
-	}
-	return value.NewBlockVal(elements), nil
-}
-
-func WebUIGetPosition(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui-get-position", 1, len(args))
-	}
-
-	_, ok := value.AsIntValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), typeError("webui-get-position", "integer!", args[0])
-	}
-
-	elements := []core.Value{
-		value.NewIntVal(100),
-		value.NewIntVal(100),
-	}
-	return value.NewBlockVal(elements), nil
 }
 
 func WebUISetIcon(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
