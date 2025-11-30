@@ -40,14 +40,12 @@ This is called automatically by other webui.* functions.`,
 		&NativeDoc{
 			Category: "WebUI",
 			Summary:  "Create a new WebUI window",
-			Description: `Creates a new WebUI window with the specified configuration.
+			Description: `Creates a new WebUI window.
 Returns a webui-window! value that can be used with other webui functions.`,
-			Parameters: []ParamDoc{
-				{Name: "spec", Type: "block!", Description: "Window specification block", Optional: false},
-			},
-			Returns:  "[webui-window!] Window handle",
-			Examples: []string{"webui.window [title: \"My App\" width: 800 height: 600]"},
-			Tags:     []string{"webui", "window", "gui"},
+			Parameters: []ParamDoc{},
+			Returns:    "[webui-window!] Window handle",
+			Examples:   []string{"window: webui.window"},
+			Tags:       []string{"webui", "window", "gui"},
 		},
 	)))
 

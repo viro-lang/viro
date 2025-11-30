@@ -747,14 +747,14 @@ Viro includes WebUI integration for creating GUI applications. WebUI scripts can
 ./viro examples/10_webui.viro
 
 # Or run directly in REPL
->> webui.window [title: "Test"] webui.render window "<h1>Hello</h1>"
+>> window: webui.window webui.render window "<h1>Hello</h1>"
 ```
 
 ### WebUI API
 
-- `webui.window spec` - Create a window
-- `webui.render window markup options?` - Load HTML content
-- `webui.inject window html` - Inject HTML snippet
+- `webui.window` - Create a window
+- `webui.render window markup` - Load HTML content
+- `webui.inject window script` - Execute JavaScript
 - `webui.send window message payload` - Send data to JavaScript
 - `webui.on window event selector handler` - Register event handler
 - `webui.poll window` - Process events
@@ -764,14 +764,11 @@ Viro includes WebUI integration for creating GUI applications. WebUI scripts can
 ### Event Loop Pattern
 
 ```viro
-window: webui.window [title: "My App"]
+window: webui.window
 webui.render window "<html><body><button id='btn'>Click</button></body></html>"
 webui.on window "click" "#btn" [print "Button clicked!"]
 
-forever [
-    webui.poll window
-    wait 0.1
-]
+webui.poll none  ; blocks until all windows close
 ```
 
 ### Dependencies

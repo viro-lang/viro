@@ -70,7 +70,7 @@ All WebUI functionality is accessed via dot-notation on the `webui` object:
 WebUI uses synchronous event handling - events are processed immediately when they occur:
 
 ```viro
-window: webui.window [title: "My App" width: 800 height: 600]
+window: webui.window
 
 webui.on window "click" "#button" [
     print ["Button clicked:" event-payload]
