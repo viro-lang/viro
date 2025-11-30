@@ -2,14 +2,15 @@ package value
 
 import (
 	"github.com/marcin-radoszewski/viro/internal/core"
+	ui "github.com/webui-dev/go-webui/v2"
 )
 
 type WebUIWindow struct {
-	ID uint32
+	Window ui.Window
 }
 
-func NewWebUIWindow(id uint32) *WebUIWindow {
-	return &WebUIWindow{ID: id}
+func NewWebUIWindow(window ui.Window) *WebUIWindow {
+	return &WebUIWindow{Window: window}
 }
 
 func (w *WebUIWindow) GetType() core.ValueType {
@@ -40,7 +41,7 @@ func (w *WebUIWindow) Equals(other core.Value) bool {
 	if !ok {
 		return false
 	}
-	return w.ID == otherWindow.ID
+	return w == otherWindow
 }
 
 func WebUIWindowVal(window *WebUIWindow) core.Value {
