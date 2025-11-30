@@ -54,11 +54,11 @@ func WebUIShow(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	window := ui.Window(uint(windowID))
-	err := window.Show(content.String())
+	success, err := ShowWindow(window, content.String())
 	if err != nil {
 		return value.NewLogicVal(false), nil
 	}
-	return value.NewLogicVal(true), nil
+	return value.NewLogicVal(success), nil
 }
 
 func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -76,17 +76,17 @@ func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval c
 		return value.NewNoneVal(), typeError("webui-show-browser", "string!", args[1])
 	}
 
-	browser, ok := value.AsIntValue(args[2])
+	browserVal, ok := value.AsIntValue(args[2])
 	if !ok {
 		return value.NewNoneVal(), typeError("webui-show-browser", "integer!", args[2])
 	}
 
 	window := ui.Window(uint(windowID))
-	err := window.ShowBrowser(content.String(), ui.Browser(uint(browser)))
+	success, err := ShowBrowserWindow(window, content.String(), ui.Browser(uint(browserVal)))
 	if err != nil {
 		return value.NewLogicVal(false), nil
 	}
-	return value.NewLogicVal(true), nil
+	return value.NewLogicVal(success), nil
 }
 
 func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
