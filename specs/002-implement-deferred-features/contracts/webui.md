@@ -114,7 +114,7 @@ Drains pending events and runs handlers.
 
 **Returns:** `none` when done, or error if handler fails
 
-**Notes:** Executes handlers in child frames. Returns `none` when `Manager.Done()` closed and queue empty.
+**Notes:** When called with `none`, blocks until all windows close (equivalent to `ui.Wait()`). When called with a specific window, no-op (per-window wait not available in go-webui).
 
 ### webui.close
 
@@ -144,14 +144,11 @@ Checks if window is ready for rendering.
 
 ## Event Semantics
 
-Events are queued as `EventMessage` with normalized payload map:
-- `name text!`: Event name
-- `selector text!`: CSS selector
-- `data any-value!`: Decoded JSON payload (fallback to raw string on decode failure)
-- `window webui-window!`: Window handle
-- `raw string!`: Original JSON string
-
-Handlers execute with auto-bound locals: `event-name`, `event-selector`, `event-payload`, `event-window`.
+Events are processed synchronously via go-webui callbacks. Handlers execute immediately when events occur with auto-bound locals:
+- `event-name`: Event name (string!)
+- `event-selector`: CSS selector (string!)
+- `event-payload`: Event payload (string!)
+- `event-window`: Window handle (webui-window!)
 
 ## Hot Reload Behavior
 
@@ -182,7 +179,8 @@ Handlers execute with auto-bound locals: `event-name`, `event-selector`, `event-
 
 - Direct go-webui integration without manager abstraction
 - Synchronous event handling via go-webui callbacks
-- `webui.poll none` blocks until all windows close
+- `webui.poll none` blocks until all windows close (equivalent to `ui.Wait()`)
+- `webui.poll window` is a no-op (per-window wait not available)
 - Window handles are numeric IDs
-- Event queue drained by `webui.poll`
+- Event handlers execute immediately when events occur
 - Lifecycle: Windows closed on interpreter exit

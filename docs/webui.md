@@ -60,7 +60,7 @@ All WebUI functionality is accessed via dot-notation on the `webui` object:
 
 1. **Window Creation:** `webui.window` creates a native window and returns a handle
 2. **Rendering:** `webui.render` loads HTML content and shows the window
-3. **Event Handling:** Scripts register handlers with `webui.on` which bind directly to go-webui events
+3. **Event Handling:** Scripts register handlers with `webui.on` which execute immediately when events occur
 4. **Communication:** Use `webui.send` to push data to JavaScript via injected scripts
 5. **Event Processing:** `webui.poll none` blocks until all windows close; `webui.poll window` is a no-op
 6. **Cleanup:** Windows close with `webui.close` or when the interpreter exits
