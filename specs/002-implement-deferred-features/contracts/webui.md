@@ -14,9 +14,9 @@ Initializes the WebUI subsystem (idempotent).
 
 **Signature:** `webui.start`
 
-**Returns:** Context map with defaults (window size, title).
+**Returns:** `none!`
 
-**Notes:** Usually auto-called by other `webui.*` natives.
+**Notes:** Idempotent initializer that other webui functions auto-call.
 
 ### webui.window
 
@@ -26,10 +26,10 @@ Creates or reuses a window.
 
 **Parameters:**
 - `spec-block`: Block accepting keys:
-  - `title text!`: Window title
+  - `title text!`: Window title (implemented via DOM script, not native title bar)
   - `width integer!`: Window width
   - `height integer!`: Window height
-  - `debug? logic!`: Enable debug mode
+  - `debug? logic!`: Enable debug mode (currently unsupported)
   - `resizable? logic!`: Allow resizing
   - `icon file!`: Window icon
   - `source file!|url!`: Initial content source
@@ -37,7 +37,7 @@ Creates or reuses a window.
 
 **Returns:** `webui-window!` handle
 
-**Notes:** Missing keys use manager defaults. `source` is resolved like `webui.render` source option. `html` acts like immediate `webui.render` call.
+**Notes:** Missing keys use manager defaults. `source` is resolved like `webui.render` source option. `html` acts like immediate `webui.render` call. Some spec keys may be ignored if not supported by the underlying go-webui library.
 
 ### webui.render
 

@@ -8,9 +8,7 @@ The WebUI integration requires the `github.com/webui-dev/go-webui` package and C
 
 ### Installation
 
-```bash
-go get github.com/webui-dev/go-webui
-```
+The WebUI integration uses `github.com/webui-dev/go-webui/v2` which is included as a git submodule in `dependencies/go-webui/v2`.
 
 ### Build Requirements
 
@@ -140,3 +138,6 @@ The interpreter will remain running until all windows are closed or the script e
 - CGO dependency may complicate cross-compilation
 - Event handlers execute synchronously (may block UI)
 - No built-in file watching (use external tools for hot reload)
+- **Title setting**: Window titles are set via DOM script injection, not native window title bars
+- **Debug mode**: The `debug?` spec key is not supported by the underlying go-webui library
+- **Event handling**: Uses a JavaScript bridge to attach DOM event listeners; requires `webui.js` to be included in HTML
