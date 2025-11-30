@@ -557,4 +557,26 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 			Tags:     []string{"webui", "server", "serve"},
 		},
 	)))
+
+	rootFrame.Bind("webui-get-url", value.NewFuncVal(value.NewNativeFunction(
+		"webui-get-url",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", true),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return WebUIGetURL(args, refValues, eval)
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Get current window URL",
+			Description: `Returns the currently served URL for the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+			},
+			Returns:  "[string!/none!] Current URL or none when unavailable",
+			Examples: []string{"url: webui-get-url window-id"},
+			Tags:     []string{"webui", "window", "url"},
+		},
+	)))
 }
