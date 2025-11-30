@@ -484,3 +484,26 @@ func WebUISendRaw(args []core.Value, refValues map[string]core.Value, eval core.
 	window.SendRaw(function.String(), rawData.Bytes())
 	return value.NewNoneVal(), nil
 }
+
+func WebUIStartServer(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("webui-start-server", 2, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-start-server", "integer!", args[0])
+	}
+
+	rootPath, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-start-server", "string!", args[1])
+	}
+
+	window := ui.Window(uint(windowID))
+	result := window.StartServer(rootPath.String())
+	if result == "" {
+		return value.NewNoneVal(), nil
+	}
+	return value.NewStrVal(result), nil
+}

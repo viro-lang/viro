@@ -533,4 +533,28 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 			Tags:     []string{"webui", "send", "raw", "binary"},
 		},
 	)))
+
+	rootFrame.Bind("webui-start-server", value.NewFuncVal(value.NewNativeFunction(
+		"webui-start-server",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("root-path", true),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return WebUIStartServer(args, refValues, eval)
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Start web server for window",
+			Description: `Starts a web server for the specified window and returns the server URL.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "root-path", Type: "string!", Description: "Root folder path to serve", Optional: false},
+			},
+			Returns:  "[string!/none!] Server URL or none on failure",
+			Examples: []string{"url: webui-start-server window-id \"/var/www\""},
+			Tags:     []string{"webui", "server", "serve"},
+		},
+	)))
 }
