@@ -28,23 +28,19 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 
 	rootFrame.Bind("webui-new-window-id", value.NewFuncVal(value.NewNativeFunction(
 		"webui-new-window-id",
-		[]value.ParamSpec{
-			value.NewParamSpec("window-id", true),
-		},
+		[]value.ParamSpec{},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 			return WebUINewWindowId(args, refValues, eval)
 		},
 		false,
 		&NativeDoc{
 			Category:    "WebUI",
-			Summary:     "Create a new WebUI window with specific ID",
-			Description: `Creates a new WebUI window with the specified window ID.`,
-			Parameters: []ParamDoc{
-				{Name: "window-id", Type: "integer!", Description: "Window ID to use", Optional: false},
-			},
-			Returns:  "[integer!] Window ID (same as input)",
-			Examples: []string{"webui-new-window-id 5"},
-			Tags:     []string{"webui", "window", "create"},
+			Summary:     "Get a new WebUI window ID",
+			Description: `Returns a new unique window ID that can be used to create a WebUI window.`,
+			Parameters:  []ParamDoc{},
+			Returns:     "[integer!] New window ID",
+			Examples:    []string{"webui-new-window-id"},
+			Tags:        []string{"webui", "window", "create"},
 		},
 	)))
 

@@ -25,13 +25,8 @@ func WebUINewWindow(args []core.Value, refValues map[string]core.Value, eval cor
 }
 
 func WebUINewWindowId(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui-new-window-id", 1, len(args))
-	}
-
-	_, ok := value.AsIntValue(args[0])
-	if !ok {
-		return value.NewNoneVal(), typeError("webui-new-window-id", "integer!", args[0])
+	if len(args) != 0 {
+		return value.NewNoneVal(), arityError("webui-new-window-id", 0, len(args))
 	}
 
 	result := ui.NewWindowId()
@@ -54,11 +49,11 @@ func WebUIShow(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	window := ui.Window(uint(windowID))
-	success, err := ShowWindow(window, content.String())
+	err := window.Show(content.String())
 	if err != nil {
 		return value.NewLogicVal(false), nil
 	}
-	return value.NewLogicVal(success), nil
+	return value.NewLogicVal(true), nil
 }
 
 func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
@@ -82,11 +77,11 @@ func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval c
 	}
 
 	window := ui.Window(uint(windowID))
-	success, err := ShowBrowserWindow(window, content.String(), ui.Browser(uint(browserVal)))
+	err := window.ShowBrowser(content.String(), ui.Browser(uint(browserVal)))
 	if err != nil {
 		return value.NewLogicVal(false), nil
 	}
-	return value.NewLogicVal(success), nil
+	return value.NewLogicVal(true), nil
 }
 
 func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {

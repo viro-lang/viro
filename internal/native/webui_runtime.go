@@ -17,7 +17,7 @@ var webuiInitOnce sync.Once
 
 func ensureWebUIInitialized() {
 	webuiInitOnce.Do(func() {
-		ui.SetConfig(ui.ShowWaitConnection, false)
+		// ui.SetConfig(ui.ShowWaitConnection, false)
 	})
 }
 
