@@ -55,11 +55,19 @@ type Manager interface {
 }
 
 type windowState struct {
-	id       uint32
-	window   interface{} // abstracted window handle (ui.Window for real, nil for stub)
-	ready    bool
-	closed   bool
-	handlers map[string][]HandlerEntry
+	id              uint32
+	window          interface{} // ui.Window in real build, interface{} in stub
+	ready           bool
+	closed          bool
+	handlers        map[string][]HandlerEntry
+	handlerBindings map[string]handlerBinding // real build only
+	bridgeLoaded    bool                      // real build only
+}
+
+type handlerBinding struct {
+	event    string
+	selector string
+	fnName   string
 }
 
 type manager struct {

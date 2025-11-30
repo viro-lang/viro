@@ -3,11 +3,12 @@
 package webui
 
 import (
+	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/marcin-radoszewski/viro/internal/core"
+	"github.com/marcin-radoszewski/viro/internal/value"
 	ui "github.com/webui-dev/go-webui/v2"
 )
 
@@ -35,27 +36,32 @@ func (m *manager) CreateWindow(spec *WindowSpec) (uint32, error) {
 	id := m.nextID
 	window := ui.NewWindow()
 	state := &windowState{
-		id:       id,
-		window:   window,
-		ready:    false,
-		closed:   false,
-		handlers: make(map[string][]HandlerEntry),
+		id:              id,
+		window:          window,
+		ready:           false,
+		closed:          false,
+		handlers:        make(map[string][]HandlerEntry),
+		handlerBindings: make(map[string]handlerBinding),
+		bridgeLoaded:    false,
 	}
 	m.windows[id] = state
 
-	// Apply window spec
 	if spec != nil {
-		if spec.Title != "" {
-			window.SetTitle(spec.Title)
-		}
 		if spec.Width > 0 && spec.Height > 0 {
-			window.SetSize(spec.Width, spec.Height)
+			window.SetSize(uint(spec.Width), uint(spec.Height))
 		}
-		// TODO: Apply other spec values (debug, resizable, icon, etc.)
+		if spec.Resizable {
+			window.SetResizable(true)
+		}
+		if spec.Icon != "" {
+			window.SetIcon(spec.Icon, ui.GetMimeType(spec.Icon))
+		}
+		// Note: title is set via DOM script in Render, not supported directly
+		// Note: debug? is not supported by go-webui
 	}
 
-	// Bind ready event
-	ui.Bind(window, "__ready", func(e ui.Event) any {
+	// Bind a special handler for ready signal
+	ui.Bind(window, "__viro_ready", func(e ui.Event) any {
 		m.mu.Lock()
 		state.ready = true
 		m.mu.Unlock()
@@ -77,19 +83,36 @@ func (m *manager) Render(windowID uint32, markup core.Value, options map[string]
 		return ErrWindowClosed
 	}
 
-	// Reset ready state
 	state.ready = false
 	m.mu.Unlock()
 
 	content := ""
-	if str, ok := markup.(core.StringValue); ok {
+	if str, ok := markup.(*value.StringValue); ok {
 		content = str.String()
-	} else if bin, ok := markup.(core.BinaryValue); ok {
+	} else if bin, ok := markup.(*value.BinaryValue); ok {
 		content = string(bin.Bytes())
 	}
 
-	// Show the window
-	state.window.Show(content)
+	window := state.window.(ui.Window)
+
+	// Inject title if specified in options
+	if options != nil {
+		if titleVal, hasTitle := options["title"]; hasTitle {
+			if titleStr, ok := titleVal.(*value.StringValue); ok {
+				titleScript := "document.title = " + jsQuote(titleStr.String()) + ";"
+				content = strings.Replace(content, "<head>", "<head><script>"+titleScript+"</script>", 1)
+			}
+		}
+	}
+
+	// Show the content
+	err := window.Show(content)
+	if err != nil {
+		return err
+	}
+
+	// Inject the JS bridge and re-bind handlers
+	m.injectBridgeAndRebind(windowID)
 
 	return nil
 }
@@ -107,15 +130,15 @@ func (m *manager) Inject(windowID uint32, html core.Value) error {
 	}
 
 	content := ""
-	if str, ok := html.(core.StringValue); ok {
+	if str, ok := html.(*value.StringValue); ok {
 		content = str.String()
-	} else if bin, ok := html.(core.BinaryValue); ok {
+	} else if bin, ok := html.(*value.BinaryValue); ok {
 		content = string(bin.Bytes())
 	}
 
-	// Inject HTML - this might need a JS call
+	window := state.window.(ui.Window)
 	js := jsQuote(content)
-	state.window.Run("document.body.innerHTML += " + js)
+	window.Run("document.body.innerHTML += " + js)
 
 	return nil
 }
@@ -132,15 +155,14 @@ func (m *manager) Send(windowID uint32, message string, payload core.Value) erro
 		return ErrWindowClosed
 	}
 
-	// Serialize payload to JSON
 	jsonPayload, err := value.ToJSON(payload)
 	if err != nil {
 		return err
 	}
 
-	// Send data to JS - this might need a JS call or custom event
+	window := state.window.(ui.Window)
 	js := "window.dispatchEvent(new CustomEvent(" + jsQuote(message) + ", {detail: " + jsonPayload + "}));"
-	state.window.Run(js)
+	window.Run(js)
 
 	return nil
 }
@@ -148,27 +170,35 @@ func (m *manager) Send(windowID uint32, message string, payload core.Value) erro
 func (m *manager) RegisterEvent(entry HandlerEntry) error {
 	m.mu.Lock()
 	state, exists := m.windows[entry.WindowID]
-	m.mu.Unlock()
-
 	if !exists {
+		m.mu.Unlock()
 		return ErrWindowNotFound
 	}
 	if state.closed {
+		m.mu.Unlock()
 		return ErrWindowClosed
 	}
 
-	// Allow multiple handlers per event/selector combination
+	// Generate unique binding name
+	bindingName := fmt.Sprintf("viro_evt_%d_%d", entry.WindowID, len(state.handlerBindings))
+	binding := handlerBinding{
+		event:    entry.Event,
+		selector: entry.Selector,
+		fnName:   bindingName,
+	}
+	state.handlerBindings[bindingName] = binding
 	state.handlers[entry.Event] = append(state.handlers[entry.Event], entry)
+	m.mu.Unlock()
 
-	// Bind the event handler
-	ui.Bind(state.window, entry.Event, func(e ui.Event) any {
-		// Extract payload from event arguments
+	window := state.window.(ui.Window)
+
+	// Bind the Go callback
+	ui.Bind(window, bindingName, func(e ui.Event) any {
 		var payload core.Value = value.NewNoneVal()
 		var raw string
 		if e.GetCount() > 0 {
 			if arg, err := ui.GetArg[string](e); err == nil {
 				raw = arg
-				// Try to parse as JSON
 				if parsed, err := value.FromJSON(arg); err == nil {
 					payload = parsed
 				} else {
@@ -186,10 +216,18 @@ func (m *manager) RegisterEvent(entry HandlerEntry) error {
 		select {
 		case m.events <- eventMsg:
 		default:
-			// Queue full, drop event (TODO: consider overflow handling)
 		}
 		return nil
 	})
+
+	// If bridge is loaded, immediately bind the DOM listener
+	if state.bridgeLoaded {
+		bindScript := fmt.Sprintf("if (window._viroBind) { window._viroBind(%s, %s, %s); }",
+			jsQuote(entry.Event),
+			jsQuote(entry.Selector),
+			jsQuote(bindingName))
+		window.Run(bindScript)
+	}
 
 	return nil
 }
@@ -202,7 +240,6 @@ func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
 	}
 
 	var events []EventMessage
-	// Drain all queued events
 	for {
 		select {
 		case event := <-m.events:
@@ -210,7 +247,6 @@ func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
 				events = append(events, event)
 			}
 		default:
-			// No more events in queue
 			return events, nil
 		}
 	}
@@ -226,9 +262,9 @@ func (m *manager) Close(windowID uint32) bool {
 	}
 
 	state.closed = true
-	state.window.Close()
+	window := state.window.(ui.Window)
+	window.Close()
 
-	// Check if all windows closed
 	allClosed := true
 	for _, w := range m.windows {
 		if !w.closed {
@@ -251,7 +287,8 @@ func (m *manager) CloseAll() {
 
 	for _, state := range m.windows {
 		if !state.closed {
-			state.window.Close()
+			window := state.window.(ui.Window)
+			window.Close()
 			state.closed = true
 		}
 	}
@@ -274,9 +311,57 @@ func (m *manager) Ready(windowID uint32) bool {
 	return exists && state.ready && !state.closed
 }
 
-// jsQuote escapes a string for safe inclusion in JavaScript code
+// injectBridgeAndRebind injects the JavaScript bridge and re-registers all event handlers
+func (m *manager) injectBridgeAndRebind(windowID uint32) {
+	m.mu.Lock()
+	state, exists := m.windows[windowID]
+	if !exists || state.closed {
+		m.mu.Unlock()
+		return
+	}
+	m.mu.Unlock()
+
+	window := state.window.(ui.Window)
+
+	// Inject the bridge script
+	bridgeScript := `
+if (!window._viroBridgeLoaded) {
+	window._viroBridgeLoaded = true;
+
+	window._viroBind = function(event, selector, fnName) {
+		var elements = document.querySelectorAll(selector);
+		elements.forEach(function(el) {
+			el.addEventListener(event, function(e) {
+				var detail = {
+					selector: selector,
+					event: event,
+					target: e.target ? e.target.outerHTML : null,
+					data: e.detail || null
+				};
+				window.webui[fnName](JSON.stringify(detail));
+			});
+		});
+	};
+
+	// Signal ready
+	window.webui['__viro_ready']();
+}
+`
+	window.Run(bridgeScript)
+
+	// Re-bind all existing handlers
+	m.mu.Lock()
+	for _, binding := range state.handlerBindings {
+		bindScript := fmt.Sprintf("window._viroBind(%s, %s, %s);",
+			jsQuote(binding.event),
+			jsQuote(binding.selector),
+			jsQuote(binding.fnName))
+		window.Run(bindScript)
+	}
+	m.mu.Unlock()
+}
+
 func jsQuote(s string) string {
-	// Simple implementation - replace backslash and quote
 	s = strings.ReplaceAll(s, "\\", "\\\\")
 	s = strings.ReplaceAll(s, "\"", "\\\"")
 	s = strings.ReplaceAll(s, "'", "\\'")

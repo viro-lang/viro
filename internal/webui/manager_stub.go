@@ -29,10 +29,12 @@ func (m *manager) CreateWindow(spec *WindowSpec) (uint32, error) {
 	m.nextID++
 	id := m.nextID
 	m.windows[id] = &windowState{
-		id:       id,
-		ready:    false,
-		closed:   false,
-		handlers: make(map[string][]HandlerEntry),
+		id:              id,
+		ready:           false,
+		closed:          false,
+		handlers:        make(map[string][]HandlerEntry),
+		handlerBindings: make(map[string]handlerBinding),
+		bridgeLoaded:    false,
 	}
 
 	return id, nil
@@ -50,11 +52,9 @@ func (m *manager) Render(windowID uint32, markup core.Value, options map[string]
 		return ErrWindowClosed
 	}
 
-	// Reset ready state on render start
 	window.ready = false
 	m.mu.Unlock()
 
-	// Simulate ready event (stubbed)
 	m.mu.Lock()
 	window.ready = true
 	m.mu.Unlock()
@@ -104,7 +104,6 @@ func (m *manager) RegisterEvent(entry HandlerEntry) error {
 		return ErrWindowClosed
 	}
 
-	// Allow multiple handlers per event/selector combination
 	window.handlers[entry.Event] = append(window.handlers[entry.Event], entry)
 
 	return nil
@@ -118,7 +117,6 @@ func (m *manager) Poll(windowID *uint32) ([]EventMessage, error) {
 	}
 
 	var events []EventMessage
-	// Drain all queued events until empty
 	for {
 		select {
 		case event := <-m.events:
