@@ -2,10 +2,10 @@
 ; Demonstrates basic WebUI window creation, rendering, and event handling
 
 ; Create a window
-window: webui.window
+window-id: webui-new-window
 
-; Render the HTML
-webui.render window "
+; HTML content
+html-content: "
 <html>
 <head>
     <title>Viro WebUI Demo</title>
@@ -18,54 +18,57 @@ webui.render window "
 <body>
     <h1>Viro WebUI Demo</h1>
     <p>This window is controlled by Viro!</p>
-    <button id='hello-btn'>Say Hello</button>
-    <button id='count-btn'>Increment Counter</button>
-    <button id='close-btn'>Close Window</button>
+     <button onclick='webui.hello()'>Say Hello</button>
+     <button onclick='webui.count()'>Increment Counter</button>
+     <button onclick='webui.close()'>Close Window</button>
     <div id='output'>Click buttons to see events...</div>
      <script>
-         let counter = 0;
-         function updateOutput(msg) {
-             document.getElementById('output').textContent = msg;
-         }
-         function incrementCounter() {
-             counter++;
-             updateOutput('Counter: ' + counter);
-         }
+          let counter = 0;
+          function updateOutput(msg) {
+              document.getElementById('output').textContent = msg;
+          }
+          function incrementCounter() {
+              counter++;
+              updateOutput('Counter: ' + counter);
+          }
 
-         // Handlers for webui.send messages
-         window.webui = {
-             'update': function(data) {
-                 updateOutput(data.message + ' at ' + data.timestamp);
-             },
-             'increment': function(data) {
-                 incrementCounter();
-             }
-         };
-     </script>
+          // Handlers for webui-send-raw messages
+          window.webui = {
+              'update': function(data) {
+                  updateOutput(data.message + ' at ' + data.timestamp);
+              },
+              'increment': function(data) {
+                  incrementCounter();
+              }
+          };
+      </script>
 </body>
 </html>
-" []
+"
+
+; Show the window with HTML content
+webui-show window-id html-content
 
 ; Set up event handlers
-webui.on window "click" "#hello-btn" [
+webui-bind window-id "hello" [
     print "Hello button clicked!"
-    ; Send data back to JavaScript
-    webui.send window "update" [message: "Hello from Viro!" timestamp: now]
+    ; Send data back to JavaScript using webui-run
+    webui-run window-id "updateOutput('Hello from Viro at ' + new Date().toISOString())"
 ]
 
-webui.on window "click" "#count-btn" [
+webui-bind window-id "count" [
     print "Count button clicked!"
-    webui.send window "increment" []
+    webui-run window-id "incrementCounter()"
 ]
 
-webui.on window "click" "#close-btn" [
+webui-bind window-id "close" [
     print "Close button clicked - closing window"
-    webui.close window
+    webui-close window-id
 ]
 
 ; Main event loop - blocks until all windows close
 print "WebUI window opened. Click buttons or close window to exit."
 
-webui.poll none
+webui-wait
 
 print "All windows closed, script finished"

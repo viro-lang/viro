@@ -9,219 +9,590 @@ import (
 )
 
 func RegisterWebUINatives(rootFrame core.Frame) {
-	webuiObj := value.NewObject(rootFrame)
-	webuiObj.Frame.Bind("start", value.NewFuncVal(value.NewNativeFunction(
-		"webui.start",
+	// Window management
+	rootFrame.Bind("webui-new-window", value.NewFuncVal(value.NewNativeFunction(
+		"webui-new-window",
 		[]value.ParamSpec{},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
-		},
-		false,
-		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Initialize the WebUI subsystem",
-			Description: `Initializes the WebUI subsystem.
-This is called automatically by other webui.* functions.`,
-			Returns:  "[none!] None",
-			Examples: []string{"webui.start  ; initializes WebUI subsystem"},
-			Tags:     []string{"webui", "initialization"},
-		},
-	)))
-
-	webuiObj.Frame.Bind("window", value.NewFuncVal(value.NewNativeFunction(
-		"webui.window",
-		[]value.ParamSpec{
-			value.NewParamSpec("spec", false),
-		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
-		},
-		false,
-		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Create a new WebUI window",
-			Description: `Creates a new WebUI window.
-Returns a webui-window! value that can be used with other webui functions.`,
-			Parameters: []ParamDoc{},
-			Returns:    "[webui-window!] Window handle",
-			Examples:   []string{"window: webui.window"},
-			Tags:       []string{"webui", "window", "gui"},
-		},
-	)))
-
-	webuiObj.Frame.Bind("render", value.NewFuncVal(value.NewNativeFunction(
-		"webui.render",
-		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
-			value.NewParamSpec("markup", false),
-			{Name: "options", Type: value.TypeBlock, Optional: true, Refinement: false, TakesValue: false, Eval: true},
-		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
-		},
-		false,
-		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Render HTML content in a window",
-			Description: `Replaces the current DOM with the provided markup.
-Supports string!, binary!, and file! markup with optional content-type validation.`,
-			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to render in", Optional: false},
-				{Name: "markup", Type: "string! binary! file!", Description: "HTML content to render", Optional: false},
-				{Name: "options", Type: "block!", Description: "Render options", Optional: true},
-			},
-			Returns:  "[logic!] Success status",
-			Examples: []string{"webui.render window \"<h1>Hello</h1>\""},
-			Tags:     []string{"webui", "render", "html"},
-		},
-	)))
-
-	webuiObj.Frame.Bind("inject", value.NewFuncVal(value.NewNativeFunction(
-		"webui.inject",
-		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
-			value.NewParamSpec("html", false),
-		},
-		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
 			Category:    "WebUI",
-			Summary:     "Inject HTML snippet into window",
-			Description: `Evaluates HTML snippet in the existing page context without resetting handlers.`,
-			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to inject into", Optional: false},
-				{Name: "html", Type: "string! binary!", Description: "HTML snippet", Optional: false},
-			},
-			Returns:  "[logic!] Success status",
-			Examples: []string{"webui.inject window \"<div>New content</div>\""},
-			Tags:     []string{"webui", "inject", "html"},
+			Summary:     "Create a new WebUI window",
+			Description: `Creates a new WebUI window and returns its window ID as an integer.`,
+			Parameters:  []ParamDoc{},
+			Returns:     "[integer!] Window ID",
+			Examples:    []string{"window-id: webui-new-window"},
+			Tags:        []string{"webui", "window", "create"},
 		},
 	)))
 
-	webuiObj.Frame.Bind("send", value.NewFuncVal(value.NewNativeFunction(
-		"webui.send",
+	rootFrame.Bind("webui-new-window-id", value.NewFuncVal(value.NewNativeFunction(
+		"webui-new-window-id",
 		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
-			value.NewParamSpec("message", false),
-			value.NewParamSpec("payload", false),
+			value.NewParamSpec("window-id", false),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Send data to JavaScript",
-			Description: `Pushes data to the JavaScript side of the WebUI window.
-Payload is JSON-encoded automatically.`,
+			Category:    "WebUI",
+			Summary:     "Create a new WebUI window with specific ID",
+			Description: `Creates a new WebUI window with the specified window ID.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Target window", Optional: false},
-				{Name: "message", Type: "string!", Description: "Message channel name", Optional: false},
-				{Name: "payload", Type: "any-type!", Description: "Data to send", Optional: false},
+				{Name: "window-id", Type: "integer!", Description: "Window ID to use", Optional: false},
 			},
-			Returns:  "[logic!] Success status",
-			Examples: []string{"webui.send window \"update\" [data: \"value\"]"},
-			Tags:     []string{"webui", "send", "javascript"},
+			Returns:  "[integer!] Window ID (same as input)",
+			Examples: []string{"webui-new-window-id 5"},
+			Tags:     []string{"webui", "window", "create"},
 		},
 	)))
 
-	webuiObj.Frame.Bind("on", value.NewFuncVal(value.NewNativeFunction(
-		"webui.on",
+	// Window display
+	rootFrame.Bind("webui-show", value.NewFuncVal(value.NewNativeFunction(
+		"webui-show",
 		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
-			value.NewParamSpec("event", false),
-			value.NewParamSpec("selector", false),
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("content", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Show window with HTML content",
+			Description: `Shows the WebUI window with the specified HTML content.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "content", Type: "string!", Description: "HTML content", Optional: false},
+			},
+			Returns:  "[logic!] Success status",
+			Examples: []string{"webui-show window-id \"<h1>Hello</h1>\""},
+			Tags:     []string{"webui", "window", "show"},
+		},
+	)))
+
+	rootFrame.Bind("webui-show-browser", value.NewFuncVal(value.NewNativeFunction(
+		"webui-show-browser",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("content", false),
+			value.NewParamSpec("browser", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Show window in specific browser",
+			Description: `Shows the WebUI window in a specific browser with HTML content.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "content", Type: "string!", Description: "HTML content", Optional: false},
+				{Name: "browser", Type: "integer!", Description: "Browser ID", Optional: false},
+			},
+			Returns:  "[logic!] Success status",
+			Examples: []string{"webui-show-browser window-id \"<h1>Hello</h1>\" 1"},
+			Tags:     []string{"webui", "window", "show", "browser"},
+		},
+	)))
+
+	// Event binding
+	rootFrame.Bind("webui-bind", value.NewFuncVal(value.NewNativeFunction(
+		"webui-bind",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("element", false),
 			value.NewParamSpec("handler", false),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Register event handler",
-			Description: `Registers a callback for browser events.
-Handler block receives event-name, event-selector, event-payload, and event-window bindings.`,
+			Category:    "WebUI",
+			Summary:     "Bind event handler to element",
+			Description: `Binds a Viro block as an event handler for the specified element.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to listen on", Optional: false},
-				{Name: "event", Type: "string!", Description: "Event name", Optional: false},
-				{Name: "selector", Type: "string! block!", Description: "CSS selector", Optional: false},
-				{Name: "handler", Type: "block!", Description: "Handler code", Optional: false},
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "element", Type: "string!", Description: "Element name/ID", Optional: false},
+				{Name: "handler", Type: "block!", Description: "Handler block", Optional: false},
 			},
-			Returns:  "[logic!] Success status",
-			Examples: []string{"webui.on window \"click\" \"#btn\" [print event-name]"},
-			Tags:     []string{"webui", "event", "handler"},
+			Returns:  "[integer!] Event ID",
+			Examples: []string{"webui-bind window-id \"myButton\" [print \"clicked\"]"},
+			Tags:     []string{"webui", "event", "bind"},
 		},
 	)))
 
-	webuiObj.Frame.Bind("poll", value.NewFuncVal(value.NewNativeFunction(
-		"webui.poll",
+	// Script execution
+	rootFrame.Bind("webui-run", value.NewFuncVal(value.NewNativeFunction(
+		"webui-run",
 		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("script", false),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
-			Category: "WebUI",
-			Summary:  "Process pending events",
-			Description: `Drains pending events and runs handlers.
-When called with none, blocks until all windows close. When called with a specific window, no-op.`,
+			Category:    "WebUI",
+			Summary:     "Execute JavaScript in window",
+			Description: `Executes JavaScript code in the specified window.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!|none!", Description: "Window to poll or none for all windows", Optional: false},
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "script", Type: "string!", Description: "JavaScript code", Optional: false},
 			},
 			Returns:  "[none!] None",
-			Examples: []string{"webui.poll none  ; blocks until all windows close"},
-			Tags:     []string{"webui", "event", "poll"},
+			Examples: []string{"webui-run window-id \"console.log('Hello')\""},
+			Tags:     []string{"webui", "script", "javascript"},
 		},
 	)))
 
-	webuiObj.Frame.Bind("close", value.NewFuncVal(value.NewNativeFunction(
-		"webui.close",
+	// Window lifecycle
+	rootFrame.Bind("webui-close", value.NewFuncVal(value.NewNativeFunction(
+		"webui-close",
 		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
+			value.NewParamSpec("window-id", false),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
 			Category:    "WebUI",
 			Summary:     "Close a window",
-			Description: `Closes the window and removes event registrations.`,
+			Description: `Closes the specified WebUI window.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to close", Optional: false},
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
 			},
-			Returns:  "[logic!] Whether window was closed",
-			Examples: []string{"webui.close window"},
-			Tags:     []string{"webui", "close", "window"},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-close window-id"},
+			Tags:     []string{"webui", "window", "close"},
 		},
 	)))
 
-	webuiObj.Frame.Bind("ready?", value.NewFuncVal(value.NewNativeFunction(
-		"webui.ready?",
+	rootFrame.Bind("webui-destroy", value.NewFuncVal(value.NewNativeFunction(
+		"webui-destroy",
 		[]value.ParamSpec{
-			value.NewParamSpec("window", true),
+			value.NewParamSpec("window-id", false),
 		},
 		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"webui-unavailable", "WebUI support not compiled in", ""})
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 		},
 		false,
 		&NativeDoc{
 			Category:    "WebUI",
-			Summary:     "Check if window is ready",
-			Description: `Returns logic indicating whether the window is currently shown.`,
+			Summary:     "Destroy a window",
+			Description: `Destroys the specified WebUI window and frees its resources.`,
 			Parameters: []ParamDoc{
-				{Name: "window", Type: "webui-window!", Description: "Window to check", Optional: false},
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
 			},
-			Returns:  "[logic!] Whether window is shown",
-			Examples: []string{"webui.ready? window"},
-			Tags:     []string{"webui", "window", "ready"},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-destroy window-id"},
+			Tags:     []string{"webui", "window", "destroy"},
 		},
 	)))
 
-	rootFrame.Bind("webui", webuiObj)
+	// Window state queries
+	rootFrame.Bind("webui-is-shown", value.NewFuncVal(value.NewNativeFunction(
+		"webui-is-shown",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Check if window is shown",
+			Description: `Returns whether the specified window is currently shown.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+			},
+			Returns:  "[logic!] Whether window is shown",
+			Examples: []string{"shown?: webui-is-shown window-id"},
+			Tags:     []string{"webui", "window", "state"},
+		},
+	)))
+
+	// Configuration and settings
+	rootFrame.Bind("webui-set-timeout", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-timeout",
+		[]value.ParamSpec{
+			value.NewParamSpec("timeout", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set global timeout",
+			Description: `Sets the global timeout for WebUI operations in seconds.`,
+			Parameters: []ParamDoc{
+				{Name: "timeout", Type: "integer!", Description: "Timeout in seconds", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-timeout 30"},
+			Tags:     []string{"webui", "config", "timeout"},
+		},
+	)))
+
+	rootFrame.Bind("webui-wait", value.NewFuncVal(value.NewNativeFunction(
+		"webui-wait",
+		[]value.ParamSpec{},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Wait for all windows to close",
+			Description: `Blocks until all WebUI windows are closed.`,
+			Parameters:  []ParamDoc{},
+			Returns:     "[none!] None",
+			Examples:    []string{"webui-wait"},
+			Tags:        []string{"webui", "wait", "block"},
+		},
+	)))
+
+	rootFrame.Bind("webui-exit", value.NewFuncVal(value.NewNativeFunction(
+		"webui-exit",
+		[]value.ParamSpec{},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Exit WebUI",
+			Description: `Exits the WebUI subsystem.`,
+			Parameters:  []ParamDoc{},
+			Returns:     "[none!] None",
+			Examples:    []string{"webui-exit"},
+			Tags:        []string{"webui", "exit"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-config", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-config",
+		[]value.ParamSpec{
+			value.NewParamSpec("option", false),
+			value.NewParamSpec("value", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set WebUI configuration option",
+			Description: `Sets a WebUI configuration option.`,
+			Parameters: []ParamDoc{
+				{Name: "option", Type: "integer!", Description: "Config option ID", Optional: false},
+				{Name: "value", Type: "logic!", Description: "Option value", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-config 0 true"},
+			Tags:     []string{"webui", "config"},
+		},
+	)))
+
+	// Process and system info
+	rootFrame.Bind("webui-get-parent-process-id", value.NewFuncVal(value.NewNativeFunction(
+		"webui-get-parent-process-id",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Get parent process ID",
+			Description: `Returns the parent process ID for the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+			},
+			Returns:  "[integer!] Parent process ID",
+			Examples: []string{"pid: webui-get-parent-process-id window-id"},
+			Tags:     []string{"webui", "process", "system"},
+		},
+	)))
+
+	// File system
+	rootFrame.Bind("webui-set-root-folder", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-root-folder",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("path", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set root folder for window",
+			Description: `Sets the root folder for serving files in the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "path", Type: "string!", Description: "Root folder path", Optional: false},
+			},
+			Returns:  "[logic!] Success status",
+			Examples: []string{"webui-set-root-folder window-id \"/var/www\""},
+			Tags:     []string{"webui", "filesystem", "serve"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-default-root-folder", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-default-root-folder",
+		[]value.ParamSpec{
+			value.NewParamSpec("path", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set default root folder",
+			Description: `Sets the default root folder for serving files.`,
+			Parameters: []ParamDoc{
+				{Name: "path", Type: "string!", Description: "Default root folder path", Optional: false},
+			},
+			Returns:  "[logic!] Success status",
+			Examples: []string{"webui-set-default-root-folder \"/var/www\""},
+			Tags:     []string{"webui", "filesystem", "serve"},
+		},
+	)))
+
+	// URL and navigation
+	rootFrame.Bind("webui-open-url", value.NewFuncVal(value.NewNativeFunction(
+		"webui-open-url",
+		[]value.ParamSpec{
+			value.NewParamSpec("url", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Open URL in default browser",
+			Description: `Opens the specified URL in the default web browser.`,
+			Parameters: []ParamDoc{
+				{Name: "url", Type: "string!", Description: "URL to open", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-open-url \"https://webui.me\""},
+			Tags:     []string{"webui", "url", "browser"},
+		},
+	)))
+
+	// Window properties
+	rootFrame.Bind("webui-set-hide", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-hide",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("hidden", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Hide or show window",
+			Description: `Hides or shows the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "hidden", Type: "logic!", Description: "Whether to hide window", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-hide window-id true"},
+			Tags:     []string{"webui", "window", "visibility"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-size", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-size",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("width", false),
+			value.NewParamSpec("height", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set window size",
+			Description: `Sets the size of the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "width", Type: "integer!", Description: "Window width", Optional: false},
+				{Name: "height", Type: "integer!", Description: "Window height", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-size window-id 800 600"},
+			Tags:     []string{"webui", "window", "size"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-position", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-position",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("x", false),
+			value.NewParamSpec("y", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set window position",
+			Description: `Sets the position of the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "x", Type: "integer!", Description: "X coordinate", Optional: false},
+				{Name: "y", Type: "integer!", Description: "Y coordinate", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-position window-id 100 100"},
+			Tags:     []string{"webui", "window", "position"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-profile", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-profile",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("name", false),
+			value.NewParamSpec("path", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set browser profile",
+			Description: `Sets the browser profile for the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "name", Type: "string!", Description: "Profile name", Optional: false},
+				{Name: "path", Type: "string!", Description: "Profile path", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-profile window-id \"myprofile\" \"/path/to/profile\""},
+			Tags:     []string{"webui", "browser", "profile"},
+		},
+	)))
+
+	rootFrame.Bind("webui-get-size", value.NewFuncVal(value.NewNativeFunction(
+		"webui-get-size",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Get window size",
+			Description: `Returns the current size of the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+			},
+			Returns:  "[block!] [width height]",
+			Examples: []string{"size: webui-get-size window-id"},
+			Tags:     []string{"webui", "window", "size"},
+		},
+	)))
+
+	rootFrame.Bind("webui-get-position", value.NewFuncVal(value.NewNativeFunction(
+		"webui-get-position",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Get window position",
+			Description: `Returns the current position of the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+			},
+			Returns:  "[block!] [x y]",
+			Examples: []string{"pos: webui-get-position window-id"},
+			Tags:     []string{"webui", "window", "position"},
+		},
+	)))
+
+	rootFrame.Bind("webui-set-icon", value.NewFuncVal(value.NewNativeFunction(
+		"webui-set-icon",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("icon", false),
+			value.NewParamSpec("icon-type", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Set window icon",
+			Description: `Sets the icon for the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "icon", Type: "string!", Description: "Icon data or path", Optional: false},
+				{Name: "icon-type", Type: "string!", Description: "Icon type", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-set-icon window-id \"icon.png\" \"image/png\""},
+			Tags:     []string{"webui", "window", "icon"},
+		},
+	)))
+
+	rootFrame.Bind("webui-send-raw", value.NewFuncVal(value.NewNativeFunction(
+		"webui-send-raw",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", false),
+			value.NewParamSpec("function", false),
+			value.NewParamSpec("raw-data", false),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Send raw data to JavaScript",
+			Description: `Sends raw binary data to JavaScript in the specified window.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "function", Type: "string!", Description: "JavaScript function name", Optional: false},
+				{Name: "raw-data", Type: "binary!", Description: "Raw data to send", Optional: false},
+			},
+			Returns:  "[none!] None",
+			Examples: []string{"webui-send-raw window-id \"myFunc\" #{010203}"},
+			Tags:     []string{"webui", "send", "raw", "binary"},
+		},
+	)))
 }

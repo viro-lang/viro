@@ -6,107 +6,143 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/core"
 	"github.com/marcin-radoszewski/viro/internal/frame"
 	"github.com/marcin-radoszewski/viro/internal/value"
-	"github.com/marcin-radoszewski/viro/internal/verror"
 	ui "github.com/webui-dev/go-webui/v2"
 )
 
-func WebUIWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+// Global map to store Viro block handlers for WebUI events
+var webuiHandlers = make(map[uint]map[string]core.Value) // windowID -> element -> handler block
+
+func WebUINewWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 0 {
-		return value.NewNoneVal(), arityError("webui.window", 0, len(args))
+		return value.NewNoneVal(), arityError("webui-new-window", 0, len(args))
 	}
 
 	window := ui.NewWindow()
-	return value.WebUIWindowVal(value.NewWebUIWindow(window)), nil
+	return value.NewIntVal(int64(window)), nil
 }
 
-func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUINewWindowId(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-new-window-id", 1, len(args))
+	}
+
+	_, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-new-window-id", "integer!", args[0])
+	}
+
+	result := ui.NewWindowId()
+	return value.NewIntVal(int64(result)), nil
+}
+
+func WebUIShow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NewNoneVal(), arityError("webui.render", 2, len(args))
+		return value.NewNoneVal(), arityError("webui-show", 2, len(args))
 	}
 
-	window, ok := value.AsWebUIWindow(args[0])
+	windowID, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.render", "webui-window", args[0])
+		return value.NewNoneVal(), typeError("webui-show", "integer!", args[0])
 	}
 
-	markup := args[1]
-	var content string
-
-	if str, ok := value.AsStringValue(markup); ok {
-		content = str.String()
-	} else if bin, ok := value.AsBinaryValue(markup); ok {
-		content = string(bin.Bytes())
-	} else {
-		return value.NewNoneVal(), typeError("webui.render", "string!|binary!", markup)
-	}
-
-	window.Window.Show(content)
-	return value.NewLogicVal(true), nil
-}
-
-func WebUISend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 3 {
-		return value.NewNoneVal(), arityError("webui.send", 3, len(args))
-	}
-
-	window, ok := value.AsWebUIWindow(args[0])
+	content, ok := value.AsStringValue(args[1])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.send", "webui-window", args[0])
+		return value.NewNoneVal(), typeError("webui-show", "string!", args[1])
 	}
 
-	message, ok := value.AsStringValue(args[1])
-	if !ok {
-		return value.NewNoneVal(), typeError("webui.send", "string", args[1])
-	}
-
-	payload := args[2]
-
-	payloadJSON, err := value.ToJSON(payload)
+	window := ui.Window(uint(windowID))
+	err := window.Show(content.String())
 	if err != nil {
-		return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{"send-failed", "cannot convert payload to JSON: " + err.Error(), ""})
+		return value.NewLogicVal(false), nil
 	}
-
-	window.Window.SendRaw(message.String(), []byte(payloadJSON))
 	return value.NewLogicVal(true), nil
 }
 
-func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 4 {
-		return value.NewNoneVal(), arityError("webui.on", 4, len(args))
+func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-show-browser", 3, len(args))
 	}
 
-	window, ok := value.AsWebUIWindow(args[0])
+	windowID, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.on", "webui-window", args[0])
+		return value.NewNoneVal(), typeError("webui-show-browser", "integer!", args[0])
 	}
 
-	event, ok := value.AsStringValue(args[1])
+	content, ok := value.AsStringValue(args[1])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.on", "string", args[1])
+		return value.NewNoneVal(), typeError("webui-show-browser", "string!", args[1])
 	}
 
-	selector, ok := value.AsStringValue(args[2])
+	browser, ok := value.AsIntValue(args[2])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.on", "string", args[2])
+		return value.NewNoneVal(), typeError("webui-show-browser", "integer!", args[2])
 	}
 
-	handler, ok := value.AsBlockValue(args[3])
+	window := ui.Window(uint(windowID))
+	err := window.ShowBrowser(content.String(), ui.Browser(uint(browser)))
+	if err != nil {
+		return value.NewLogicVal(false), nil
+	}
+	return value.NewLogicVal(true), nil
+}
+
+func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-bind", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.on", "block", args[3])
+		return value.NewNoneVal(), typeError("webui-bind", "integer!", args[0])
 	}
 
+	element, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-bind", "string!", args[1])
+	}
+
+	handler, ok := value.AsBlockValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-bind", "block!", args[2])
+	}
+
+	// Store the handler for later use
+	wid := uint(uint(windowID))
+	if webuiHandlers[wid] == nil {
+		webuiHandlers[wid] = make(map[string]core.Value)
+	}
+	webuiHandlers[wid][element.String()] = handler
+
+	window := ui.Window(uint(windowID))
 	frameIndex := eval.CurrentFrameIndex()
 
-	window.Window.Bind(selector.String(), func(e ui.Event) any {
+	window.Bind(element.String(), func(e ui.Event) any {
+		// Get the stored handler
+		storedHandler, exists := webuiHandlers[wid][element.String()]
+		if !exists {
+			return nil
+		}
+
+		handlerBlock, ok := value.AsBlockValue(storedHandler)
+		if !ok {
+			return nil
+		}
+
 		childFrame := frame.NewFrameWithCapacity(frame.FrameClosure, frameIndex, 4)
-		childFrame.Bind("event-name", value.NewStrVal(event.String()))
-		childFrame.Bind("event-selector", value.NewStrVal(selector.String()))
-		payload, _ := ui.GetArg[string](e)
-		childFrame.Bind("event-payload", value.NewStrVal(payload))
-		childFrame.Bind("event-window", value.WebUIWindowVal(window))
+		childFrame.Bind("event-element", value.NewStrVal(element.String()))
+
+		// Try to get string argument from event
+		if strArg, err := ui.GetArg[string](e); err == nil {
+			childFrame.Bind("event-data", value.NewStrVal(strArg))
+		} else {
+			childFrame.Bind("event-data", value.NewNoneVal())
+		}
+
+		childFrame.Bind("event-window-id", value.NewIntVal(int64(wid)))
+		childFrame.Bind("event-number", value.NewIntVal(0)) // TODO: Get actual event number
 
 		eval.PushFrameContext(childFrame)
-		_, err := eval.DoBlock(handler.Elements, handler.Locations())
+		_, err := eval.DoBlock(handlerBlock.Elements, handlerBlock.Locations())
 		eval.PopFrameContext()
 
 		if err != nil {
@@ -115,79 +151,371 @@ func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evalu
 		return nil
 	})
 
+	return value.NewIntVal(0), nil // WebUI doesn't return event IDs in the Go wrapper
+}
+
+func WebUIRun(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("webui-run", 2, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-run", "integer!", args[0])
+	}
+
+	script, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-run", "string!", args[1])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.Run(script.String())
+	return value.NewNoneVal(), nil
+}
+
+func WebUICloseDirect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-close", 1, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-close", "integer!", args[0])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.Close()
+	return value.NewNoneVal(), nil
+}
+
+func WebUIDestroy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-destroy", 1, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-destroy", "integer!", args[0])
+	}
+
+	// Clean up handlers
+	delete(webuiHandlers, uint(uint(windowID)))
+
+	window := ui.Window(uint(windowID))
+	window.Destroy()
+	return value.NewNoneVal(), nil
+}
+
+func WebUIIsShown(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-is-shown", 1, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-is-shown", "integer!", args[0])
+	}
+
+	window := ui.Window(uint(windowID))
+	result := window.IsShown()
+	return value.NewLogicVal(result), nil
+}
+
+func WebUISetTimeout(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-set-timeout", 1, len(args))
+	}
+
+	timeout, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-timeout", "integer!", args[0])
+	}
+
+	ui.SetTimeout(uint(timeout))
+	return value.NewNoneVal(), nil
+}
+
+func WebUIWait(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 0 {
+		return value.NewNoneVal(), arityError("webui-wait", 0, len(args))
+	}
+
+	ui.Wait()
+	return value.NewNoneVal(), nil
+}
+
+func WebUIExit(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 0 {
+		return value.NewNoneVal(), arityError("webui-exit", 0, len(args))
+	}
+
+	ui.Exit()
+	return value.NewNoneVal(), nil
+}
+
+func WebUISetConfig(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("webui-set-config", 2, len(args))
+	}
+
+	option, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-config", "integer!", args[0])
+	}
+
+	valueArg, ok := value.AsLogicValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-config", "logic!", args[1])
+	}
+
+	ui.SetConfig(ui.Config(uint(option)), valueArg)
+	return value.NewNoneVal(), nil
+}
+
+func WebUIGetParentProcessId(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-get-parent-process-id", 1, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-get-parent-process-id", "integer!", args[0])
+	}
+
+	window := ui.Window(uint(windowID))
+	result := window.GetParentProcessID()
+	return value.NewIntVal(int64(result)), nil
+}
+
+func WebUISetRootFolder(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 2 {
+		return value.NewNoneVal(), arityError("webui-set-root-folder", 2, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-root-folder", "integer!", args[0])
+	}
+
+	path, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-root-folder", "string!", args[1])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SetRootFolder(path.String())
 	return value.NewLogicVal(true), nil
 }
 
-func WebUIPoll(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUISetDefaultRootFolder(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui.poll", 1, len(args))
+		return value.NewNoneVal(), arityError("webui-set-default-root-folder", 1, len(args))
 	}
 
-	if args[0].GetType() == value.TypeNone {
-		ui.Wait()
-		return value.NewNoneVal(), nil
-	} else {
-		// For specific window, no-op as per go-webui semantics
-		_, ok := value.AsWebUIWindow(args[0])
-		if !ok {
-			return value.NewNoneVal(), typeError("webui.poll", "webui-window", args[0])
-		}
-		return value.NewNoneVal(), nil
-	}
-}
-
-func WebUIClose(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
-	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui.close", 1, len(args))
+	path, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-default-root-folder", "string!", args[0])
 	}
 
-	if args[0].GetType() == value.TypeNone {
+	err := ui.SetDefaultRootFolder(path.String())
+	if err != nil {
 		return value.NewLogicVal(false), nil
 	}
-
-	window, ok := value.AsWebUIWindow(args[0])
-	if !ok {
-		return value.NewNoneVal(), typeError("webui.close", "webui-window", args[0])
-	}
-
-	window.Window.Close()
 	return value.NewLogicVal(true), nil
 }
 
-func WebUIReady(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIOpenUrl(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 1 {
-		return value.NewNoneVal(), arityError("webui.ready?", 1, len(args))
+		return value.NewNoneVal(), arityError("webui-open-url", 1, len(args))
 	}
 
-	window, ok := value.AsWebUIWindow(args[0])
+	url, ok := value.AsStringValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.ready?", "webui-window", args[0])
+		return value.NewNoneVal(), typeError("webui-open-url", "string!", args[0])
 	}
 
-	ready := window.Window.IsShown()
-	return value.NewLogicVal(ready), nil
+	ui.OpenURL(url.String())
+	return value.NewNoneVal(), nil
 }
 
-func WebUIInject(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUISetHide(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) != 2 {
-		return value.NewNoneVal(), arityError("webui.inject", 2, len(args))
+		return value.NewNoneVal(), arityError("webui-set-hide", 2, len(args))
 	}
 
-	window, ok := value.AsWebUIWindow(args[0])
+	windowID, ok := value.AsIntValue(args[0])
 	if !ok {
-		return value.NewNoneVal(), typeError("webui.inject", "webui-window", args[0])
+		return value.NewNoneVal(), typeError("webui-set-hide", "integer!", args[0])
 	}
 
-	html := args[1]
-	var script string
-	if str, ok := value.AsStringValue(html); ok {
-		script = str.String()
-	} else if bin, ok := value.AsBinaryValue(html); ok {
-		script = string(bin.Bytes())
-	} else {
-		return value.NewNoneVal(), typeError("webui.inject", "string!|binary", html)
+	hidden, ok := value.AsLogicValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-hide", "logic!", args[1])
 	}
 
-	window.Window.Run(script)
-	return value.NewLogicVal(true), nil
+	window := ui.Window(uint(windowID))
+	window.SetHide(hidden)
+	return value.NewNoneVal(), nil
+}
+
+func WebUISetSize(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-set-size", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-size", "integer!", args[0])
+	}
+
+	width, ok := value.AsIntValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-size", "integer!", args[1])
+	}
+
+	height, ok := value.AsIntValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-size", "integer!", args[2])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SetSize(uint(width), uint(height))
+	return value.NewNoneVal(), nil
+}
+
+func WebUISetPosition(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-set-position", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-position", "integer!", args[0])
+	}
+
+	x, ok := value.AsIntValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-position", "integer!", args[1])
+	}
+
+	y, ok := value.AsIntValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-position", "integer!", args[2])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SetPosition(uint(x), uint(y))
+	return value.NewNoneVal(), nil
+}
+
+func WebUISetProfile(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-set-profile", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-profile", "integer!", args[0])
+	}
+
+	name, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-profile", "string!", args[1])
+	}
+
+	path, ok := value.AsStringValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-profile", "string!", args[2])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SetProfile(name.String(), path.String())
+	return value.NewNoneVal(), nil
+}
+
+func WebUIGetSize(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-get-size", 1, len(args))
+	}
+
+	_, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-get-size", "integer!", args[0])
+	}
+
+	// TODO: GetSize not available in go-webui wrapper
+	elements := []core.Value{
+		value.NewIntVal(800), // default width
+		value.NewIntVal(600), // default height
+	}
+	return value.NewBlockVal(elements), nil
+}
+
+func WebUIGetPosition(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("webui-get-position", 1, len(args))
+	}
+
+	_, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-get-position", "integer!", args[0])
+	}
+
+	// TODO: GetPosition not available in go-webui wrapper
+	elements := []core.Value{
+		value.NewIntVal(100), // default x
+		value.NewIntVal(100), // default y
+	}
+	return value.NewBlockVal(elements), nil
+}
+
+func WebUISetIcon(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-set-icon", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-icon", "integer!", args[0])
+	}
+
+	icon, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-icon", "string!", args[1])
+	}
+
+	iconType, ok := value.AsStringValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-set-icon", "string!", args[2])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SetIcon(icon.String(), iconType.String())
+	return value.NewNoneVal(), nil
+}
+
+func WebUISendRaw(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("webui-send-raw", 3, len(args))
+	}
+
+	windowID, ok := value.AsIntValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-send-raw", "integer!", args[0])
+	}
+
+	function, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-send-raw", "string!", args[1])
+	}
+
+	rawData, ok := value.AsBinaryValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), typeError("webui-send-raw", "binary!", args[2])
+	}
+
+	window := ui.Window(uint(windowID))
+	window.SendRaw(function.String(), rawData.Bytes())
+	return value.NewNoneVal(), nil
 }

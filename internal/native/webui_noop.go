@@ -8,38 +8,102 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/verror"
 )
 
-func WebUIStart(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUINewWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIWindow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUINewWindowId(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIRender(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIShow(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUISend(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIShowBrowser(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIOn(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIBind(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIPoll(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIRun(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIClose(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUICloseDirect(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIReady(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIDestroy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }
 
-func WebUIInject(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+func WebUIIsShown(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetTimeout(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIWait(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIExit(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetConfig(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIGetParentProcessId(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetRootFolder(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetDefaultRootFolder(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIOpenUrl(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetHide(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetSize(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetPosition(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetProfile(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIGetSize(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUIGetPosition(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISetIcon(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
+}
+
+func WebUISendRaw(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	return value.NewNoneVal(), verror.NewScriptError("webui", [3]string{verror.ErrIDWebUIUnavailable, "WebUI support not compiled in", ""})
 }

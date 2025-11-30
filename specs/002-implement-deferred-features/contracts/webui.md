@@ -2,152 +2,389 @@
 
 ## Overview
 
-The WebUI integration provides Viro scripts with the ability to create and control native WebUI windows (HTML/CSS/JS surfaces) while maintaining the interpreter's CLI process. This enables GUI applications written in Viro without requiring external processes or new CLI modes.
+The WebUI integration provides Viro scripts with direct access to the WebUI C API functions for creating and controlling native WebUI windows (HTML/CSS/JS surfaces) while maintaining the interpreter's CLI process. This enables GUI applications written in Viro without requiring external processes or new CLI modes.
 
 ## API Surface
 
-All WebUI functionality is exposed through dot-notation methods on the shared `webui` object.
+All WebUI functionality is exposed as direct native functions with kebab-case naming, corresponding directly to the WebUI C API.
 
-### webui.start
+### Window Management
 
-Initializes the WebUI subsystem (idempotent).
+#### webui-new-window
 
-**Signature:** `webui.start`
+Creates a new WebUI window.
 
-**Returns:** `none!`
-
-**Notes:** Idempotent initializer that other webui functions auto-call.
-
-### webui.window
-
-Creates a new window.
-
-**Signature:** `webui.window`
+**Signature:** `webui-new-window`
 
 **Parameters:** None
 
-**Returns:** `webui-window!` handle
+**Returns:** `integer!` Window ID
 
-**Notes:** Creates a new WebUI window. Window properties like title, size, etc. are not supported by the underlying go-webui library.
+**Notes:** Creates a new WebUI window and returns its window ID as an integer.
 
-### webui.render
+#### webui-new-window-id
 
-Replaces current DOM with provided markup.
+Creates a new WebUI window with a specific ID.
 
-**Signature:** `webui.render window markup`
-
-**Parameters:**
-- `window`: `webui-window!` handle
-- `markup`: `string!` or `binary!`
-
-**Returns:** `logic!` success
-
-**Notes:** Replaces the current page content with the provided HTML markup.
-
-### webui.inject
-
-Executes JavaScript in the window context.
-
-**Signature:** `webui.inject window script`
+**Signature:** `webui-new-window-id window-id`
 
 **Parameters:**
-- `window`: `webui-window!` handle
-- `script`: `string!` or `binary!`
+- `window-id`: `integer!` Window ID to use
 
-**Returns:** `logic!` success
+**Returns:** `integer!` Window ID (same as input)
 
-**Notes:** Executes JavaScript code in the browser context.
+**Notes:** Creates a new WebUI window with the specified window ID.
 
-### webui.send
+### Window Display
 
-Pushes data to JS side.
+#### webui-show
 
-**Signature:** `webui.send window message payload`
+Shows a window with HTML content.
 
-**Parameters:**
-- `window`: `webui-window!` handle
-- `message`: `text!` channel name
-- `payload`: `none`, `logic!`, `integer!`, `decimal!`, `string!`, `binary!`, `map!`, `block!`, `object!`
-
-**Returns:** `logic!` success
-
-**Notes:** Non-string types serialized to JSON. Binary as base64.
-
-### webui.on
-
-Registers event callback.
-
-**Signature:** `webui.on window event selector handler-block`
+**Signature:** `webui-show window-id content`
 
 **Parameters:**
-- `window`: `webui-window!` handle
-- `event`: `text!` event name
-- `selector`: `text!` CSS selector
-- `handler-block`: `block!` to execute
+- `window-id`: `integer!` Window ID
+- `content`: `string!` HTML content
 
-**Returns:** `logic!` success
+**Returns:** `logic!` Success status
 
-**Notes:** Captures current frame for lexical bindings. Handler receives `event-name`, `event-selector`, `event-payload`, `event-window`.
+**Notes:** Shows the WebUI window with the specified HTML content.
 
-### webui.poll
+#### webui-show-browser
 
-Drains pending events and runs handlers.
+Shows a window in a specific browser with HTML content.
 
-**Signature:** `webui.poll window`
+**Signature:** `webui-show-browser window-id content browser`
 
 **Parameters:**
-- `window`: `webui-window!` or `none` (all windows)
+- `window-id`: `integer!` Window ID
+- `content`: `string!` HTML content
+- `browser`: `integer!` Browser ID
 
-**Returns:** `none`
+**Returns:** `logic!` Success status
 
-**Notes:** When called with `none`, blocks until all windows close (equivalent to `ui.Wait()`). When called with a specific window, no-op (per-window wait not available in go-webui). Handler errors are swallowed and do not propagate.
+**Notes:** Shows the WebUI window in a specific browser with HTML content.
 
-### webui.close
+### Event Handling
 
-Closes window and removes registrations.
+#### webui-bind
 
-**Signature:** `webui.close window`
+Binds a Viro block as an event handler for an element.
 
-**Parameters:**
-- `window`: `webui-window!` handle
-
-**Returns:** `logic!` whether window was closed
-
-**Notes:** When last window closes, signals `Done()`.
-
-### webui.ready?
-
-Checks if window is ready for rendering.
-
-**Signature:** `webui.ready? window`
+**Signature:** `webui-bind window-id element handler`
 
 **Parameters:**
-- `window`: `webui-window!` handle
+- `window-id`: `integer!` Window ID
+- `element`: `string!` Element name/ID
+- `handler`: `block!` Handler block
 
-**Returns:** `logic!`
+**Returns:** `integer!` Event ID
 
-**Notes:** True after first `Ready` callback. Resets to false on new `webui.render` or close.
+**Notes:** Binds a Viro block as an event handler. The handler block receives `event-element`, `event-data`, `event-window-id`, and `event-number` bindings.
+
+### Script Execution
+
+#### webui-run
+
+Executes JavaScript in a window.
+
+**Signature:** `webui-run window-id script`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `script`: `string!` JavaScript code
+
+**Returns:** `none!` None
+
+**Notes:** Executes JavaScript code in the specified window.
+
+### Window Lifecycle
+
+#### webui-close
+
+Closes a window.
+
+**Signature:** `webui-close window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `none!` None
+
+**Notes:** Closes the specified WebUI window.
+
+#### webui-destroy
+
+Destroys a window and frees resources.
+
+**Signature:** `webui-destroy window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `none!` None
+
+**Notes:** Destroys the specified WebUI window and frees its resources.
+
+### Window State
+
+#### webui-is-shown
+
+Checks if a window is shown.
+
+**Signature:** `webui-is-shown window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `logic!` Whether window is shown
+
+**Notes:** Returns whether the specified window is currently shown.
+
+### Configuration
+
+#### webui-set-timeout
+
+Sets the global timeout for WebUI operations.
+
+**Signature:** `webui-set-timeout timeout`
+
+**Parameters:**
+- `timeout`: `integer!` Timeout in seconds
+
+**Returns:** `none!` None
+
+**Notes:** Sets the global timeout for WebUI operations in seconds.
+
+#### webui-wait
+
+Waits for all windows to close.
+
+**Signature:** `webui-wait`
+
+**Parameters:** None
+
+**Returns:** `none!` None
+
+**Notes:** Blocks until all WebUI windows are closed.
+
+#### webui-exit
+
+Exits the WebUI subsystem.
+
+**Signature:** `webui-exit`
+
+**Parameters:** None
+
+**Returns:** `none!` None
+
+**Notes:** Exits the WebUI subsystem.
+
+#### webui-set-config
+
+Sets a WebUI configuration option.
+
+**Signature:** `webui-set-config option value`
+
+**Parameters:**
+- `option`: `integer!` Config option ID
+- `value`: `logic!` Option value
+
+**Returns:** `none!` None
+
+**Notes:** Sets a WebUI configuration option.
+
+### System Information
+
+#### webui-get-parent-process-id
+
+Gets the parent process ID for a window.
+
+**Signature:** `webui-get-parent-process-id window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `integer!` Parent process ID
+
+**Notes:** Returns the parent process ID for the specified window.
+
+### File System
+
+#### webui-set-root-folder
+
+Sets the root folder for serving files in a window.
+
+**Signature:** `webui-set-root-folder window-id path`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `path`: `string!` Root folder path
+
+**Returns:** `logic!` Success status
+
+**Notes:** Sets the root folder for serving files in the specified window.
+
+#### webui-set-default-root-folder
+
+Sets the default root folder for serving files.
+
+**Signature:** `webui-set-default-root-folder path`
+
+**Parameters:**
+- `path`: `string!` Default root folder path
+
+**Returns:** `logic!` Success status
+
+**Notes:** Sets the default root folder for serving files.
+
+### URL and Navigation
+
+#### webui-open-url
+
+Opens a URL in the default browser.
+
+**Signature:** `webui-open-url url`
+
+**Parameters:**
+- `url`: `string!` URL to open
+
+**Returns:** `none!` None
+
+**Notes:** Opens the specified URL in the default web browser.
+
+### Window Properties
+
+#### webui-set-hide
+
+Hides or shows a window.
+
+**Signature:** `webui-set-hide window-id hidden`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `hidden`: `logic!` Whether to hide window
+
+**Returns:** `none!` None
+
+**Notes:** Hides or shows the specified window.
+
+#### webui-set-size
+
+Sets the size of a window.
+
+**Signature:** `webui-set-size window-id width height`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `width`: `integer!` Window width
+- `height`: `integer!` Window height
+
+**Returns:** `none!` None
+
+**Notes:** Sets the size of the specified window.
+
+#### webui-set-position
+
+Sets the position of a window.
+
+**Signature:** `webui-set-position window-id x y`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `x`: `integer!` X coordinate
+- `y`: `integer!` Y coordinate
+
+**Returns:** `none!` None
+
+**Notes:** Sets the position of the specified window.
+
+#### webui-set-profile
+
+Sets the browser profile for a window.
+
+**Signature:** `webui-set-profile window-id name path`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `name`: `string!` Profile name
+- `path`: `string!` Profile path
+
+**Returns:** `none!` None
+
+**Notes:** Sets the browser profile for the specified window.
+
+#### webui-get-size
+
+Gets the size of a window.
+
+**Signature:** `webui-get-size window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `block!` [width height]
+
+**Notes:** Returns the current size of the specified window as a block.
+
+#### webui-get-position
+
+Gets the position of a window.
+
+**Signature:** `webui-get-position window-id`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+
+**Returns:** `block!` [x y]
+
+**Notes:** Returns the current position of the specified window as a block.
+
+#### webui-set-icon
+
+Sets the icon for a window.
+
+**Signature:** `webui-set-icon window-id icon icon-type`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `icon`: `string!` Icon data or path
+- `icon-type`: `string!` Icon type
+
+**Returns:** `none!` None
+
+**Notes:** Sets the icon for the specified window.
+
+### Data Transfer
+
+#### webui-send-raw
+
+Sends raw binary data to JavaScript.
+
+**Signature:** `webui-send-raw window-id function raw-data`
+
+**Parameters:**
+- `window-id`: `integer!` Window ID
+- `function`: `string!` JavaScript function name
+- `raw-data`: `binary!` Raw data to send
+
+**Returns:** `none!` None
+
+**Notes:** Sends raw binary data to JavaScript in the specified window.
 
 ## Event Semantics
 
-Events are processed synchronously via go-webui callbacks. Handlers execute immediately when events occur with auto-bound locals:
-- `event-name`: Event name (string!)
-- `event-selector`: CSS selector (string!)
-- `event-payload`: Event payload (string!)
-- `event-window`: Window handle (webui-window!)
-
-## Hot Reload Behavior
-
-- Use `webui.render` with `source` option for full page reloads
-- Use `webui.inject` for incremental updates
-- Manual watchers can re-invoke render on file changes
-- Future: `webui.refresh` for hook registration
+Events are processed via WebUI C API callbacks. Handlers execute with auto-bound locals:
+- `event-element`: Element name/ID (string!)
+- `event-data`: Event data (string! or none!)
+- `event-window-id`: Window ID (integer!)
+- `event-number`: Event number (integer!)
 
 ## Error Handling
 
 - Type mismatches: `verror.NewScriptError` with category "webui" and appropriate ID
-- Serialization failures: "send-failed"
-- Handler execution errors: Propagate to event callback
+- WebUI unavailable: "webui-unavailable" when built without webui tag
 
 ## CGO Requirements
 
@@ -160,11 +397,8 @@ Events are processed synchronously via go-webui callbacks. Handlers execute imme
 
 ## Implementation Notes
 
-- Thin wrappers around go-webui functions
-- No runtime bookkeeping or registries
-- Window handles store ui.Window directly
-- Synchronous event handling via go-webui callbacks
-- `webui.poll none` blocks until all windows close (equivalent to `ui.Wait()`)
-- `webui.poll window` is a no-op (per-window wait not available)
-- Event handlers execute immediately when events occur
-- Lifecycle: Windows closed on interpreter exit
+- Direct wrappers around WebUI C API functions
+- Window IDs are integers (size_t from C API)
+- Event handlers stored in global map for callback execution
+- Synchronous event handling via WebUI callbacks
+- Lifecycle: Windows managed by WebUI C library
