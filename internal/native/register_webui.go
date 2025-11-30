@@ -558,6 +558,30 @@ func RegisterWebUINatives(rootFrame core.Frame) {
 		},
 	)))
 
+	rootFrame.Bind("webui-navigate", value.NewFuncVal(value.NewNativeFunction(
+		"webui-navigate",
+		[]value.ParamSpec{
+			value.NewParamSpec("window-id", true),
+			value.NewParamSpec("url", true),
+		},
+		func(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+			return WebUINavigate(args, refValues, eval)
+		},
+		false,
+		&NativeDoc{
+			Category:    "WebUI",
+			Summary:     "Navigate window to URL",
+			Description: `Navigates the specified WebUI window to the given URL.`,
+			Parameters: []ParamDoc{
+				{Name: "window-id", Type: "integer!", Description: "Window ID", Optional: false},
+				{Name: "url", Type: "string!", Description: "URL to navigate to", Optional: false},
+			},
+			Returns:  "[logic!] Success status",
+			Examples: []string{"webui-navigate window-id \"https://example.com\""},
+			Tags:     []string{"webui", "window", "navigation", "url"},
+		},
+	)))
+
 	rootFrame.Bind("webui-get-url", value.NewFuncVal(value.NewNativeFunction(
 		"webui-get-url",
 		[]value.ParamSpec{
