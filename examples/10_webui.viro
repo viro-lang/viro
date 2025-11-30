@@ -2,11 +2,7 @@
 ; Demonstrates basic WebUI window creation, rendering, and event handling
 
 ; Create a window
-window: webui.window [
-    title: "Viro WebUI Example"
-    width: 800
-    height: 600
-]
+window: webui.window
 
 ; Render the HTML
 webui.render window "
