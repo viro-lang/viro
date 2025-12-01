@@ -144,7 +144,7 @@ This ensures consistent behavior across different sign combinations and is prefe
 				{Name: "divisor", Type: "integer! decimal!", Description: "The number to divide by (must not be zero)", Optional: false},
 			},
 			Returns:  "[integer! decimal!] The Euclidean modulo result",
-			Examples: []string{"10 mod 3  ; => 1", "-10 mod 3  ; => 2", "10 mod -3  ; => -1", "-10 mod -3  ; => -1"},
+			Examples: []string{"10 mod 3  ; => 1", "-10 mod 3  ; => 2", "10 mod -3  ; => -2", "-10 mod -3  ; => -1"},
 			SeeAlso:  []string{"rem", "/", "*", "-"},
 			Tags:     []string{"arithmetic", "math", "modulo", "euclidean"},
 		},
