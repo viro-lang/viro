@@ -266,7 +266,7 @@ func TestArithmeticOverflow(t *testing.T) {
 	}
 }
 
-func TestNativeMod(t *testing.T) {
+func TestNativeRem(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     []core.Value
@@ -274,7 +274,7 @@ func TestNativeMod(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:     "basic modulo",
+			name:     "basic remainder",
 			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3)},
 			expected: value.NewIntVal(1),
 			wantErr:  false,
@@ -298,7 +298,7 @@ func TestNativeMod(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "modulo by 1",
+			name:     "remainder by 1",
 			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(1)},
 			expected: value.NewIntVal(0),
 			wantErr:  false,
@@ -310,13 +310,106 @@ func TestNativeMod(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "overflow MinInt64 mod -1",
+			name:     "overflow MinInt64 rem -1",
 			args:     []core.Value{value.NewIntVal(math.MinInt64), value.NewIntVal(-1)},
 			expected: value.NewNoneVal(),
 			wantErr:  true,
 		},
 		{
 			name:     "division by zero error",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(0)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "type error non-integer first arg",
+			args:     []core.Value{value.NewStrVal("hello"), value.NewIntVal(3)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "type error non-integer second arg",
+			args:     []core.Value{value.NewIntVal(10), value.NewStrVal("hello")},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "arity error too few args",
+			args:     []core.Value{value.NewIntVal(10)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "arity error too many args",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3), value.NewIntVal(5)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := NewTestEvaluator()
+
+			result, err := native.Rem(tt.args, map[string]core.Value{}, e)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Rem(%v) error = %v, wantErr %v", tt.args, err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && !result.Equals(tt.expected) {
+				t.Errorf("Rem(%v) = %v, want %v", tt.args, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestNativeMod(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []core.Value
+		expected core.Value
+		wantErr  bool
+	}{
+		{
+			name:     "positive operands",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(3)},
+			expected: value.NewIntVal(1),
+			wantErr:  false,
+		},
+		{
+			name:     "negative dividend positive divisor",
+			args:     []core.Value{value.NewIntVal(-10), value.NewIntVal(3)},
+			expected: value.NewIntVal(2),
+			wantErr:  false,
+		},
+		{
+			name:     "positive dividend negative divisor",
+			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(-3)},
+			expected: value.NewIntVal(-2),
+			wantErr:  false,
+		},
+		{
+			name:     "negative dividend negative divisor",
+			args:     []core.Value{value.NewIntVal(-10), value.NewIntVal(-3)},
+			expected: value.NewIntVal(-1),
+			wantErr:  false,
+		},
+		{
+			name:     "zero remainder",
+			args:     []core.Value{value.NewIntVal(9), value.NewIntVal(3)},
+			expected: value.NewIntVal(0),
+			wantErr:  false,
+		},
+		{
+			name:     "min-int overflow",
+			args:     []core.Value{value.NewIntVal(math.MinInt64), value.NewIntVal(-1)},
+			expected: value.NewNoneVal(),
+			wantErr:  true,
+		},
+		{
+			name:     "zero divisor",
 			args:     []core.Value{value.NewIntVal(10), value.NewIntVal(0)},
 			expected: value.NewNoneVal(),
 			wantErr:  true,
@@ -365,7 +458,7 @@ func TestNativeMod(t *testing.T) {
 	}
 }
 
-func TestModDecimal(t *testing.T) {
+func TestRemDecimal(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
@@ -373,32 +466,32 @@ func TestModDecimal(t *testing.T) {
 	}{
 		{
 			name:    "decimal dividend",
-			input:   "mod 10.5 3",
+			input:   "rem 10.5 3",
 			wantErr: false,
 		},
 		{
 			name:    "decimal divisor",
-			input:   "mod 10 3.5",
+			input:   "rem 10 3.5",
 			wantErr: false,
 		},
 		{
 			name:    "both decimal",
-			input:   "mod 10.5 3.5",
+			input:   "rem 10.5 3.5",
 			wantErr: false,
 		},
 		{
 			name:    "decimal zero divisor error",
-			input:   "mod 10.5 0",
+			input:   "rem 10.5 0",
 			wantErr: true,
 		},
 		{
 			name:    "negative decimal dividend",
-			input:   "mod -10.5 3",
+			input:   "rem -10.5 3",
 			wantErr: false,
 		},
 		{
 			name:    "negative decimal divisor",
-			input:   "mod 10 -3.5",
+			input:   "rem 10 -3.5",
 			wantErr: false,
 		},
 	}
@@ -426,6 +519,129 @@ func TestModDecimal(t *testing.T) {
 	}
 }
 
+func TestRemInfixParsing(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected core.Value
+	}{
+		{
+			name:     "rem infix basic",
+			input:    "10 rem 3",
+			expected: value.NewIntVal(1),
+		},
+		{
+			name:     "rem infix with negative",
+			input:    "-10 rem 3",
+			expected: value.NewIntVal(-1),
+		},
+		{
+			name:     "rem infix zero remainder",
+			input:    "15 rem 5",
+			expected: value.NewIntVal(0),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if !result.Equals(tt.expected) {
+				t.Errorf("Expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestModDecimal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected float64
+		wantErr  bool
+	}{
+		{
+			name:     "positive operands",
+			input:    "mod 10.5 3",
+			expected: 1.5,
+			wantErr:  false,
+		},
+		{
+			name:     "negative dividend positive divisor",
+			input:    "mod -10.5 3",
+			expected: 1.5,
+			wantErr:  false,
+		},
+		{
+			name:     "positive dividend negative divisor",
+			input:    "mod 10.5 -3",
+			expected: -1.5,
+			wantErr:  false,
+		},
+		{
+			name:     "negative dividend negative divisor",
+			input:    "mod -10.5 -3",
+			expected: -1.5,
+			wantErr:  false,
+		},
+		{
+			name:     "zero remainder",
+			input:    "mod 9.0 3",
+			expected: 0.0,
+			wantErr:  false,
+		},
+		{
+			name:     "divide by zero error",
+			input:    "mod 10.5 0",
+			expected: 0.0,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := Evaluate(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if result.GetType() != value.TypeDecimal {
+				t.Errorf("Expected decimal result, got %v", result.GetType())
+				return
+			}
+
+			decVal, ok := value.AsDecimal(result)
+			if !ok {
+				t.Errorf("Failed to convert to decimal value")
+				return
+			}
+
+			actual, ok := decVal.Magnitude.Float64()
+			if !ok {
+				t.Errorf("Failed to convert decimal to float64")
+				return
+			}
+
+			if math.Abs(actual-tt.expected) > 1e-10 {
+				t.Errorf("Expected %v, got %v", tt.expected, actual)
+			}
+		})
+	}
+}
+
 func TestModInfixParsing(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -433,18 +649,23 @@ func TestModInfixParsing(t *testing.T) {
 		expected core.Value
 	}{
 		{
-			name:     "mod infix basic",
+			name:     "mod infix positive operands",
 			input:    "10 mod 3",
 			expected: value.NewIntVal(1),
 		},
 		{
-			name:     "mod infix with negative",
+			name:     "mod infix negative dividend positive divisor",
 			input:    "-10 mod 3",
-			expected: value.NewIntVal(-1),
+			expected: value.NewIntVal(2),
+		},
+		{
+			name:     "mod infix positive dividend negative divisor",
+			input:    "10 mod -3",
+			expected: value.NewIntVal(-2),
 		},
 		{
 			name:     "mod infix zero remainder",
-			input:    "15 mod 5",
+			input:    "9 mod 3",
 			expected: value.NewIntVal(0),
 		},
 	}
