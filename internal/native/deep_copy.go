@@ -8,9 +8,25 @@ import (
 
 const maxDepth = 1000
 
+func deepCopyBlock(block *value.BlockValue, visited map[core.Value]core.Value, depth int) (core.Value, error) {
+	newElements := make([]core.Value, block.Length())
+	newBlock := value.NewBlockVal(newElements).(value.Series)
+	visited[block] = newBlock
+
+	for i := 0; i < block.Length(); i++ {
+		elem := block.ElementAt(i)
+		copiedElem, err := deepCopyValue(elem, visited, depth+1)
+		if err != nil {
+			return nil, err
+		}
+		newElements[i] = copiedElem
+	}
+	return newBlock, nil
+}
+
 func isImmutableType(t core.ValueType) bool {
 	switch t {
-	case value.TypeInteger, value.TypeString, value.TypeBinary, value.TypeLogic, value.TypeNone, value.TypeFunction:
+	case value.TypeInteger, value.TypeLogic, value.TypeNone, value.TypeFunction:
 		return true
 	default:
 		return false
@@ -19,7 +35,7 @@ func isImmutableType(t core.ValueType) bool {
 
 func deepCopySeries(series value.Series, visited map[core.Value]core.Value, depth int) (value.Series, error) {
 	if depth > maxDepth {
-		return nil, verror.NewScriptError("invalid-operation", [3]string{"deep copy recursion limit exceeded", "", ""})
+		return nil, verror.NewInternalError(verror.ErrIDStackOverflow, [3]string{"deep copy", "", ""})
 	}
 
 	if existing, ok := visited[series.(core.Value)]; ok {
@@ -30,29 +46,21 @@ func deepCopySeries(series value.Series, visited map[core.Value]core.Value, dept
 	switch series.GetType() {
 	case value.TypeBlock, value.TypeParen:
 		block := series.(*value.BlockValue)
-		newElements := make([]core.Value, block.Length())
-		newBlock := value.NewBlockValue(newElements)
-		visited[series.(core.Value)] = newBlock
-
-		for i := 0; i < block.Length(); i++ {
-			elem := block.ElementAt(i)
-			copiedElem, err := deepCopyValue(elem, visited, depth+1)
-			if err != nil {
-				return nil, err
-			}
-			newElements[i] = copiedElem
+		newBlock, err := deepCopyBlock(block, visited, depth)
+		if err != nil {
+			return nil, err
 		}
-		result = newBlock
+		result = newBlock.(value.Series)
 	case value.TypeString:
 		str := series.(*value.StringValue)
-		newStr := value.NewStringValue(str.String())
+		newStr := value.NewStrVal(str.String()).(value.Series)
 		visited[series.(core.Value)] = newStr
 		result = newStr
 	case value.TypeBinary:
 		bin := series.(*value.BinaryValue)
 		newData := make([]byte, bin.Length())
 		copy(newData, bin.Bytes())
-		newBin := value.NewBinaryValue(newData)
+		newBin := value.NewBinaryVal(newData).(value.Series)
 		visited[series.(core.Value)] = newBin
 		result = newBin
 	default:
@@ -64,7 +72,7 @@ func deepCopySeries(series value.Series, visited map[core.Value]core.Value, dept
 
 func deepCopyValue(val core.Value, visited map[core.Value]core.Value, depth int) (core.Value, error) {
 	if depth > maxDepth {
-		return value.NewNoneVal(), verror.NewScriptError("invalid-operation", [3]string{"deep copy recursion limit exceeded", "", ""})
+		return nil, verror.NewInternalError(verror.ErrIDStackOverflow, [3]string{"deep copy", "", ""})
 	}
 
 	if existing, ok := visited[val]; ok {
@@ -78,32 +86,45 @@ func deepCopyValue(val core.Value, visited map[core.Value]core.Value, depth int)
 	switch val.GetType() {
 	case value.TypeBlock, value.TypeParen:
 		block := val.(*value.BlockValue)
-		newElements := make([]core.Value, block.Length())
-		newBlock := value.NewBlockValue(newElements)
-		visited[val] = newBlock
-
-		for i := 0; i < block.Length(); i++ {
-			elem := block.ElementAt(i)
-			copiedElem, err := deepCopyValue(elem, visited, depth+1)
-			if err != nil {
-				return value.NewNoneVal(), err
-			}
-			newElements[i] = copiedElem
-		}
-		return newBlock, nil
+		return deepCopyBlock(block, visited, depth)
+	case value.TypeString:
+		str := val.(*value.StringValue)
+		newStr := value.NewStrVal(str.String()).(value.Series)
+		visited[val] = newStr
+		return newStr, nil
+	case value.TypeBinary:
+		bin := val.(*value.BinaryValue)
+		newData := make([]byte, bin.Length())
+		copy(newData, bin.Bytes())
+		newBin := value.NewBinaryVal(newData).(value.Series)
+		visited[val] = newBin
+		return newBin, nil
 	case value.TypeObject:
 		obj, ok := value.AsObject(val)
 		if !ok {
-			return value.NewNoneVal(), verror.NewScriptError("type-mismatch", [3]string{"object", value.TypeToString(val.GetType()), ""})
+			return nil, verror.NewScriptError("type-mismatch", [3]string{"object", value.TypeToString(val.GetType()), ""})
 		}
 		newFrame := obj.Frame.Clone()
-		newObj := value.ObjectVal(value.NewObject(newFrame))
+		newObjInstance := value.NewObject(newFrame)
+		newObj := value.ObjectVal(newObjInstance)
 		visited[val] = newObj
+
+		// Deep copy the prototype chain
+		if obj.ParentProto != nil {
+			protoVal := value.ObjectVal(obj.ParentProto)
+			copiedProto, err := deepCopyValue(protoVal, visited, depth+1)
+			if err != nil {
+				return nil, err
+			}
+			if copiedProtoObj, ok := value.AsObject(copiedProto); ok {
+				newObjInstance.ParentProto = copiedProtoObj
+			}
+		}
 
 		for _, binding := range newFrame.GetAll() {
 			copiedVal, err := deepCopyValue(binding.Value, visited, depth+1)
 			if err != nil {
-				return value.NewNoneVal(), err
+				return nil, err
 			}
 			newFrame.Bind(binding.Symbol, copiedVal)
 		}

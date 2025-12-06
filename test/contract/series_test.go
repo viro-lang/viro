@@ -698,14 +698,60 @@ func TestSeries_Copy(t *testing.T) {
 			}),
 		},
 		{
-			name:  "copy --deep string (shallow copy since immutable)",
+			name:  "copy --deep string (creates new series instance)",
 			input: `copy --deep "hello"`,
 			want:  value.NewStrVal("hello"),
 		},
 		{
-			name:  "copy --deep binary (shallow copy since immutable)",
+			name:  "copy --deep binary (creates new series instance)",
 			input: "copy --deep #{DEADBEEF}",
 			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+		},
+		{
+			name: "copy --deep cycle detection",
+			input: `a: []
+append a a
+copy --deep a
+length? a`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "copy --deep depth limit exceeded",
+			input: `deep: [1] loop 1001 [deep: reduce [deep]]
+copy --deep deep`,
+			wantErr: true,
+			errID:   verror.ErrIDStackOverflow,
+		},
+		{
+			name: "copy --deep nested string independence",
+			input: `outer: [[["hello"]]]
+copied: copy --deep outer
+outer.1.1.1: "world"
+pick pick pick copied 1 1 1`,
+			want: value.NewStrVal("hello"),
+		},
+		{
+			name: "copy --deep nested binary independence",
+			input: `outer: [[#{AABB}]]
+copied: copy --deep outer
+outer.1.1: #{CCDD}
+pick pick copied 1 1`,
+			want: value.NewBinaryVal([]byte{0xAA, 0xBB}),
+		},
+		{
+			name: "copy --deep cycle detection",
+			input: `a: []
+append a a
+copy --deep a
+length? a`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "copy --deep depth limit exceeded",
+			input: `deep: [1] loop 1001 [deep: reduce [deep]]
+copy --deep deep`,
+			wantErr: true,
+			errID:   verror.ErrIDStackOverflow,
 		},
 	}
 

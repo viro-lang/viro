@@ -789,7 +789,7 @@ Note: --auto and --lines refinements are only supported for strings.`,
 
 Without --part: copies all remaining elements from the current index position to the end (implicit remainder).
 With --part: copies exactly N elements from the current position. Negative counts raise an OutOfBounds error. Zero count returns an empty series. Counts greater than remaining elements raise an OutOfBounds error (no clamping).
-With --deep: performs recursive deep copying of nested mutable containers (blocks, objects) while sharing immutable values (strings, binaries, integers, etc.).
+With --deep: performs recursive deep copying of nested mutable containers (blocks, objects) and series (strings, binaries) to ensure index independence, while sharing truly immutable values (integers, logic, none, functions).
 
 Result index of the copied series is always reset to head. To copy the entire series regardless of current position, use: copy head series.
 
@@ -801,7 +801,7 @@ Error example:
 		Parameters: []ParamDoc{
 			{Name: "series", Type: "block! string! binary!", Description: "The series to copy"},
 			{Name: "--part", Type: "integer!", Description: "Copy exactly N remaining elements (0 <= N <= remaining)", Optional: true},
-			{Name: "--deep", Type: "flag", Description: "Perform recursive deep copying of nested mutable containers", Optional: true},
+			{Name: "--deep", Type: "flag", Description: "Perform recursive deep copying of nested containers (blocks, parens, objects, strings, binaries)", Optional: true},
 		},
 		Returns: "block! string! binary! A copy of the series",
 		Examples: []string{
@@ -813,6 +813,8 @@ Error example:
 			"a: next next [1 2 3 4] copy a  ; => [3 4]",
 			"copy --deep [[1 2] [3 4]]  ; => [[1 2] [3 4]] (separate copies)",
 			"copy --deep --part 1 [[1 2] [3 4]]  ; => [[1 2]] (deep copy of first element)",
+			`copy --deep "hello"  ; => "hello" (new series instance)`,
+			"copy --deep #{DEADBEEF}  ; => #{DEADBEEF} (new series instance)",
 		},
 		SeeAlso: []string{"append", "insert", "take"},
 		Tags:    []string{"series"},
