@@ -199,6 +199,7 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
+		value.NewRefinementSpec("deep", false),
 	}, seriesCopy, false, nil))
 	RegisterActionImpl(value.TypeString, "find", value.NewNativeFunction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
@@ -340,6 +341,7 @@ func registerBinarySeriesActions() {
 	RegisterActionImpl(value.TypeBinary, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 		value.NewRefinementSpec("part", true),
+		value.NewRefinementSpec("deep", false),
 	}, seriesCopy, false, nil))
 	RegisterActionImpl(value.TypeBinary, "find", value.NewNativeFunction("find", []value.ParamSpec{
 		value.NewParamSpec("series", true),
