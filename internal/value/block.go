@@ -327,7 +327,6 @@ func (b *BlockValue) ClearSeries() {
 	b.locations = []core.SourceLocation{}
 }
 
-// compareBlockValuesLex performs lexicographic comparison of two block values
 func compareBlockValuesLex(a, b *BlockValue) int {
 	minLen := len(a.Elements)
 	if len(b.Elements) < minLen {
@@ -341,7 +340,6 @@ func compareBlockValuesLex(a, b *BlockValue) int {
 		}
 	}
 
-	// All compared elements are equal, shorter block comes first
 	if len(a.Elements) < len(b.Elements) {
 		return -1
 	} else if len(a.Elements) > len(b.Elements) {
@@ -350,8 +348,6 @@ func compareBlockValuesLex(a, b *BlockValue) int {
 	return 0
 }
 
-// getTypePrecedence returns a precedence value for sorting different types
-// Lower values sort before higher values
 func getTypePrecedence(t core.ValueType) int {
 	switch t {
 	case TypeInteger:
@@ -377,18 +373,14 @@ func getTypePrecedence(t core.ValueType) int {
 	case TypeParen:
 		return 11
 	default:
-		return 99 // unsupported types should be caught by schema validation
+		return 99
 	}
 }
 
-// compareValuesForSort compares two values for sorting purposes
-// Returns -1 if a < b, 0 if a == b, 1 if a > b
-// For different types, uses a defined type ordering
 func compareValuesForSort(a, b core.Value) int {
 	aType := a.GetType()
 	bType := b.GetType()
 
-	// If types differ, compare by type precedence
 	if aType != bType {
 		aPrecedence := getTypePrecedence(aType)
 		bPrecedence := getTypePrecedence(bType)
@@ -397,7 +389,7 @@ func compareValuesForSort(a, b core.Value) int {
 		} else if aPrecedence > bPrecedence {
 			return 1
 		}
-		return 0 // same precedence (shouldn't happen for different types)
+		return 0
 	}
 
 	switch aType {
@@ -459,7 +451,7 @@ func compareValuesForSort(a, b core.Value) int {
 	case TypeLogic:
 		aVal, _ := AsLogicValue(a)
 		bVal, _ := AsLogicValue(b)
-		// false < true
+
 		if !aVal && bVal {
 			return -1
 		} else if aVal && !bVal {
@@ -487,22 +479,20 @@ func compareValuesForSort(a, b core.Value) int {
 		}
 		return 0
 	case TypeNone:
-		return 0 // all none values are equal
+		return 0
 	case TypeBlock, TypeParen:
 		aVal, _ := AsBlockValue(a)
 		bVal, _ := AsBlockValue(b)
 		return compareBlockValuesLex(aVal, bVal)
 	default:
-		// Unsupported type - should not reach here if schema validation worked
+
 		return 0
 	}
 }
 
-// comparePathsForSort compares two path values lexicographically
 func comparePathsForSort(a, b core.Value) int {
 	var aSegments, bSegments []PathSegment
 
-	// Extract segments based on path type
 	switch a.GetType() {
 	case TypePath:
 		if path, ok := AsPath(a); ok {
@@ -542,14 +532,12 @@ func comparePathsForSort(a, b core.Value) int {
 		aSeg := aSegments[i]
 		bSeg := bSegments[i]
 
-		// Compare segment types first
 		if aSeg.Type < bSeg.Type {
 			return -1
 		} else if aSeg.Type > bSeg.Type {
 			return 1
 		}
 
-		// Same type, compare values
 		switch aSeg.Type {
 		case PathSegmentWord:
 			aWord, _ := aSeg.Value.(string)
@@ -568,7 +556,7 @@ func comparePathsForSort(a, b core.Value) int {
 				return 1
 			}
 		case PathSegmentEval:
-			// For eval segments, compare the string representation
+
 			aStr := fmt.Sprintf("%v", aSeg.Value)
 			bStr := fmt.Sprintf("%v", bSeg.Value)
 			if aStr < bStr {
@@ -579,7 +567,6 @@ func comparePathsForSort(a, b core.Value) int {
 		}
 	}
 
-	// All compared segments equal, shorter path comes first
 	if len(aSegments) < len(bSegments) {
 		return -1
 	} else if len(aSegments) > len(bSegments) {
@@ -590,23 +577,6 @@ func comparePathsForSort(a, b core.Value) int {
 
 func SortBlock(b *BlockValue) {
 	sort.SliceStable(b.Elements, func(i, j int) bool {
-		elemI := b.Elements[i]
-		elemJ := b.Elements[j]
-		switch elemI.GetType() {
-		case TypeInteger:
-			iVal, _ := AsIntValue(elemI)
-			jVal, _ := AsIntValue(elemJ)
-			return iVal < jVal
-		case TypeString:
-			iVal, _ := AsStringValue(elemI)
-			jVal, _ := AsStringValue(elemJ)
-			return iVal.Form() < jVal.Form()
-		case TypeBlock, TypeParen:
-			iVal, _ := AsBlockValue(elemI)
-			jVal, _ := AsBlockValue(elemJ)
-			return compareBlockValuesLex(iVal, jVal) < 0
-		default:
-			return false
-		}
+		return compareValuesForSort(b.Elements[i], b.Elements[j]) < 0
 	})
 }

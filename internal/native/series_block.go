@@ -50,17 +50,6 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
-// blockComparisonSchema represents the expected type structure for nested block comparison
-type blockComparisonSchema struct {
-	positions map[int]*schemaNode
-}
-
-type schemaNode struct {
-	valueType core.ValueType
-	nested    *blockComparisonSchema // for block/paren types
-}
-
-// buildBlockSchema analyzes a slice of blocks to ensure they contain only supported types for sorting
 func buildBlockSchema(blocks []*value.BlockValue) error {
 	for _, block := range blocks {
 		if err := validateBlockForSupportedTypes(block, 0); err != nil {
@@ -71,17 +60,14 @@ func buildBlockSchema(blocks []*value.BlockValue) error {
 	return nil
 }
 
-// validateBlockForSupportedTypes checks if a block contains only supported types for comparison
 func validateBlockForSupportedTypes(block *value.BlockValue, depth int) error {
 	for _, elem := range block.Elements {
 		elemType := elem.GetType()
 
-		// Check if this is a supported type for comparison
 		if !isSupportedForComparison(elemType) {
 			return verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "unsupported type", value.TypeToString(elemType)})
 		}
 
-		// If it's a nested block/paren, recurse
 		if elemType == value.TypeBlock || elemType == value.TypeParen {
 			nestedBlock, _ := value.AsBlockValue(elem)
 			if err := validateBlockForSupportedTypes(nestedBlock, depth+1); err != nil {
@@ -93,7 +79,6 @@ func validateBlockForSupportedTypes(block *value.BlockValue, depth int) error {
 	return nil
 }
 
-// isSupportedForComparison checks if a type can be used in block sorting comparisons
 func isSupportedForComparison(t core.ValueType) bool {
 	switch t {
 	case value.TypeInteger, value.TypeDecimal, value.TypeString, value.TypeBinary,
@@ -120,20 +105,18 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 	firstType := block.Elements[0].GetType()
 
-	// Check if all elements are the same type
 	for _, v := range block.Elements {
 		if v.GetType() != firstType {
 			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 		}
 	}
 
-	// Handle different types
 	switch firstType {
 	case value.TypeInteger, value.TypeString:
-		// Original behavior for simple types
+
 		value.SortBlock(block)
 	case value.TypeBlock, value.TypeParen:
-		// Nested block sorting - validate supported types first
+
 		blockValues := make([]*value.BlockValue, len(block.Elements))
 		for i, elem := range block.Elements {
 			blockValues[i], _ = value.AsBlockValue(elem)
@@ -145,7 +128,7 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 
 		value.SortBlock(block)
 	default:
-		// Unsupported type combination
+
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 	}
 
