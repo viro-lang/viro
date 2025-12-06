@@ -2200,6 +2200,60 @@ str`,
 			want: value.NewStrVal("olleh"),
 		},
 		{
+			name: "sort block of blocks lexicographic",
+			input: `data: [[2] [1 5] [1 2 3]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(5)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(2)}),
+			}),
+		},
+		{
+			name: "sort block of heterogeneous inner values",
+			input: `data: [[1 "a"] [1 "b"] [2 [3]]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("a")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("b")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewBlockVal([]core.Value{value.NewIntVal(3)})}),
+			}),
+		},
+		{
+			name: "sort nested blocks deeper levels",
+			input: `data: [[1 [2 3]] [1 [2 4]] [1 [1]]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(1)})}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(3)})}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(4)})}),
+			}),
+		},
+		{
+			name: "sort nested blocks mismatched element types",
+			input: `data: [["a"] [1]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1)}),
+				value.NewBlockVal([]core.Value{value.NewStrVal("a")}),
+			}),
+		},
+
+		{
+			name: "sort nested blocks mismatched nested type",
+			input: `data: [[1 [2]] [1 "a"]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("a")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2)})}),
+			}),
+		},
+		{
 			name:    "sort non-series error",
 			input:   "sort 42",
 			wantErr: true,
