@@ -64,7 +64,7 @@ func deepCopySeries(series value.Series, visited map[core.Value]core.Value, dept
 		visited[series.(core.Value)] = newBin
 		result = newBin
 	default:
-		return nil, verror.NewScriptError("type-mismatch", [3]string{"series type for deep copy", value.TypeToString(series.GetType()), ""})
+		return nil, verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"series type for deep copy", value.TypeToString(series.GetType()), ""})
 	}
 
 	return result, nil
@@ -102,7 +102,7 @@ func deepCopyValue(val core.Value, visited map[core.Value]core.Value, depth int)
 	case value.TypeObject:
 		obj, ok := value.AsObject(val)
 		if !ok {
-			return nil, verror.NewScriptError("type-mismatch", [3]string{"object", value.TypeToString(val.GetType()), ""})
+			return nil, verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"object", value.TypeToString(val.GetType()), ""})
 		}
 		newFrame := obj.Frame.Clone()
 		newObjInstance := value.NewObject(newFrame)
