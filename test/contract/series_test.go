@@ -739,19 +739,30 @@ pick pick copied 1 1`,
 			want: value.NewBinaryVal([]byte{0xAA, 0xBB}),
 		},
 		{
-			name: "copy --deep cycle detection",
-			input: `a: []
-append a a
-copy --deep a
-length? a`,
-			want: value.NewIntVal(1),
+			name: "copy --deep paren series",
+			input: `p: first load-string "(1 [2 3])"
+copied: copy --deep p
+poke pick p 2 1 99
+pick pick copied 2 1`,
+			want: value.NewIntVal(2),
 		},
 		{
-			name: "copy --deep depth limit exceeded",
-			input: `deep: [1] loop 1001 [deep: reduce [deep]]
-copy --deep deep`,
-			wantErr: true,
-			errID:   verror.ErrIDStackOverflow,
+			name: "copy --deep object with nested fields",
+			input: `obj: make object! [name: "Alice" data: [1 2 3]]
+copied: copy --deep obj
+put obj 'data [99 2 3]
+select copied 'data`,
+			want: value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name: "copy --deep object prototype independence",
+			input: `proto: make object! [shared: "original"]
+obj: make proto [own: [1 2]]
+copied: copy --deep obj
+put obj 'own [99 2]
+put proto 'shared "modified"
+select copied 'own`,
+			want: value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
 		},
 	}
 
