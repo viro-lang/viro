@@ -681,6 +681,32 @@ func TestSeries_Copy(t *testing.T) {
 			`,
 			want: value.NewIntVal(3),
 		},
+		{
+			name:  "copy --deep block with nested blocks",
+			input: "copy --deep [[1 2] [3 4]]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(3), value.NewIntVal(4)}),
+			}),
+		},
+
+		{
+			name:  "copy --deep --part creates deep copy of part",
+			input: "copy --deep --part 1 [[1 2] [3 4]]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+			}),
+		},
+		{
+			name:  "copy --deep string (shallow copy since immutable)",
+			input: `copy --deep "hello"`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name:  "copy --deep binary (shallow copy since immutable)",
+			input: "copy --deep #{DEADBEEF}",
+			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+		},
 	}
 
 	for _, tt := range tests {
