@@ -238,3 +238,58 @@ func StringSplit(args []core.Value, refValues map[string]core.Value, eval core.E
 
 	return value.NewBlockVal(elements), nil
 }
+
+func StringReplace(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("replace", 3, len(args))
+	}
+
+	str, ok := value.AsStringValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	pattern, ok := value.AsStringValue(args[1])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[1].GetType()), ""})
+	}
+
+	replacement, ok := value.AsStringValue(args[2])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[2].GetType()), ""})
+	}
+
+	hasRefinement := func(refName string) bool {
+		val, ok := refValues[refName]
+		return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
+	}
+
+	copyMode := hasRefinement("copy")
+	replaceAll := hasRefinement("all")
+
+	patternStr := pattern.String()
+	if patternStr == "" {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDInvalidOperation, [3]string{"empty pattern not allowed in replace", "", ""})
+	}
+
+	var target *value.StringValue
+	if copyMode {
+		target = value.NewStringValue(str.String())
+	} else {
+		target = str
+	}
+
+	haystack := target.String()
+	needle := patternStr
+	replacementStr := replacement.String()
+
+	n := 1
+	if replaceAll {
+		n = -1
+	}
+
+	result := strings.Replace(haystack, needle, replacementStr, n)
+	target.SetString(result)
+
+	return target, nil
+}
