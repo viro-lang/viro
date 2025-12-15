@@ -289,7 +289,7 @@ func StringReplace(args []core.Value, refValues map[string]core.Value, eval core
 	}
 
 	result := strings.Replace(haystack, needle, replacementStr, n)
-	target.SetString(result)
+	target.SetRunes([]rune(result))
 
 	return target, nil
 }

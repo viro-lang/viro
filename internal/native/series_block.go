@@ -356,7 +356,7 @@ func BlockReplace(args []core.Value, refValues map[string]core.Value, eval core.
 	if copyMode {
 		elements := make([]core.Value, len(block.Elements))
 		copy(elements, block.Elements)
-		target = value.NewBlockVal(elements)
+		target = value.NewBlockValue(elements)
 	} else {
 		target = block
 	}

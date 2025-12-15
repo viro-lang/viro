@@ -66,12 +66,12 @@ func TestSeries_Replace(t *testing.T) {
 		{
 			name:  "string replace single char to multiple",
 			input: `replace "hello" "e" "xyz"`,
-			want:  value.NewStrVal("hxylzlo"),
+			want:  value.NewStrVal("hxyzllo"),
 		},
 		{
 			name:  "string replace multiple char pattern",
 			input: `replace "hello world" "lo" "ya"`,
-			want:  value.NewStrVal("heya world"),
+			want:  value.NewStrVal("helya world"),
 		},
 		{
 			name:  "string replace pattern longer than series",
@@ -82,27 +82,27 @@ func TestSeries_Replace(t *testing.T) {
 		// String replacement - all occurrences
 		{
 			name:  "string replace all basic",
-			input: `replace/all "abc abc abc" "abc" "x"`,
+			input: `replace --all "abc abc abc" "abc" "x"`,
 			want:  value.NewStrVal("x x x"),
 		},
 		{
 			name:  "string replace all overlapping",
-			input: `replace/all "aaa" "aa" "b"`,
+			input: `replace --all "aaa" "aa" "b"`,
 			want:  value.NewStrVal("ba"),
 		},
 		{
 			name:  "string replace all not found",
-			input: `replace/all "hello" "xyz" "abc"`,
+			input: `replace --all "hello" "xyz" "abc"`,
 			want:  value.NewStrVal("hello"),
 		},
 		{
 			name:  "string replace all at edges",
-			input: `replace/all "aaa aaa aaa" "aaa" "b"`,
+			input: `replace --all "aaa aaa aaa" "aaa" "b"`,
 			want:  value.NewStrVal("b b b"),
 		},
 		{
 			name:  "string replace all single char",
-			input: `replace/all "hello" "l" "x"`,
+			input: `replace --all "hello" "l" "x"`,
 			want:  value.NewStrVal("hexxo"),
 		},
 
@@ -120,7 +120,7 @@ func TestSeries_Replace(t *testing.T) {
 		{
 			name:  "block replace multiple occurrences first only",
 			input: `replace [a a a] 'a 'b`,
-			want:  value.NewBlockVal([]core.Value{value.NewLitWordVal("b"), value.NewLitWordVal("a"), value.NewLitWordVal("a")}),
+			want:  value.NewBlockVal([]core.Value{value.NewWordVal("b"), value.NewWordVal("a"), value.NewWordVal("a")}),
 		},
 		{
 			name:  "block replace at start",
@@ -151,56 +151,56 @@ func TestSeries_Replace(t *testing.T) {
 		// Block replacement - all occurrences
 		{
 			name:  "block replace all basic",
-			input: `replace/all [1 2 3 2 1] 2 99`,
+			input: `replace --all [1 2 3 2 1] 2 99`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(99), value.NewIntVal(3), value.NewIntVal(99), value.NewIntVal(1)}),
 		},
 		{
 			name:  "block replace all not found",
-			input: `replace/all [1 2 3] 4 99`,
+			input: `replace --all [1 2 3] 4 99`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
 		},
 		{
 			name:  "block replace all multiple",
-			input: `replace/all [1 1 1] 1 2`,
+			input: `replace --all [1 1 1] 1 2`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(2), value.NewIntVal(2)}),
 		},
 		{
 			name:  "block replace all at edges",
-			input: `replace/all [2 1 2 1 2] 2 99`,
+			input: `replace --all [2 1 2 1 2] 2 99`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(99), value.NewIntVal(1), value.NewIntVal(99), value.NewIntVal(1), value.NewIntVal(99)}),
 		},
 
 		// Copy mode - strings
 		{
 			name:  "string replace copy mode",
-			input: `s: "test" replace/copy s "t" "x"`,
+			input: `s: "test" replace --copy s "t" "x"`,
 			want:  value.NewStrVal("xest"),
 		},
 		{
 			name:  "string replace copy mode original unchanged",
-			input: `s: "test" replace/copy s "t" "x" s`,
+			input: `s: "test" replace --copy s "t" "x" s`,
 			want:  value.NewStrVal("test"),
 		},
 		{
 			name:  "string replace copy all mode",
-			input: `s: "test" replace/copy/all s "t" "x"`,
-			want:  value.NewStrVal("xexx"),
+			input: `s: "test" replace --copy --all s "t" "x"`,
+			want:  value.NewStrVal("xesx"),
 		},
 
 		// Copy mode - blocks
 		{
 			name:  "block replace copy mode",
-			input: `b: [1 2 3] replace/copy b 2 99`,
+			input: `b: [1 2 3] replace --copy b 2 99`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(99), value.NewIntVal(3)}),
 		},
 		{
 			name:  "block replace copy mode original unchanged",
-			input: `b: [1 2 3] replace/copy b 2 99 b`,
+			input: `b: [1 2 3] replace --copy b 2 99 b`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
 		},
 		{
 			name:  "block replace copy all mode",
-			input: `b: [1 2 3 2 1] replace/copy/all b 2 99`,
+			input: `b: [1 2 3 2 1] replace --copy --all b 2 99`,
 			want:  value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(99), value.NewIntVal(3), value.NewIntVal(99), value.NewIntVal(1)}),
 		},
 
@@ -218,7 +218,7 @@ func TestSeries_Replace(t *testing.T) {
 		{
 			name:  "block replace word to word",
 			input: `replace [a b c] 'a 'x`,
-			want:  value.NewBlockVal([]core.Value{value.NewLitWordVal("x"), value.NewLitWordVal("b"), value.NewLitWordVal("c")}),
+			want:  value.NewBlockVal([]core.Value{value.NewWordVal("x"), value.NewWordVal("b"), value.NewWordVal("c")}),
 		},
 
 		// Edge cases
