@@ -259,13 +259,8 @@ func StringReplace(args []core.Value, refValues map[string]core.Value, eval core
 		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"string", value.TypeToString(args[2].GetType()), ""})
 	}
 
-	hasRefinement := func(refName string) bool {
-		val, ok := refValues[refName]
-		return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
-	}
-
-	copyMode := hasRefinement("copy")
-	replaceAll := hasRefinement("all")
+	copyMode := hasRefinement(refValues, "copy")
+	replaceAll := hasRefinement(refValues, "all")
 
 	patternStr := pattern.String()
 	if patternStr == "" {

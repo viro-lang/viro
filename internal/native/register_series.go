@@ -7,6 +7,16 @@ import (
 	"github.com/marcin-radoszewski/viro/internal/value"
 )
 
+func replaceParamSpecs() []value.ParamSpec {
+	return []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("pattern", true),
+		value.NewParamSpec("replacement", true),
+		value.NewRefinementSpec("copy", false),
+		value.NewRefinementSpec("all", false),
+	}
+}
+
 func registerBlockSeriesActions() {
 	// Register for both block! and paren! types
 	blockTypes := []core.ValueType{value.TypeBlock, value.TypeParen}
@@ -150,13 +160,7 @@ func registerBlockSeriesActions() {
 			value.NewParamSpec("s1", true),
 			value.NewParamSpec("s2", true),
 		}, BlockUnion, false, nil))
-		RegisterActionImpl(typ, "replace", value.NewNativeFunction("replace", []value.ParamSpec{
-			value.NewParamSpec("series", true),
-			value.NewParamSpec("pattern", true),
-			value.NewParamSpec("replacement", true),
-			value.NewRefinementSpec("copy", false),
-			value.NewRefinementSpec("all", false),
-		}, BlockReplace, false, nil))
+		RegisterActionImpl(typ, "replace", value.NewNativeFunction("replace", replaceParamSpecs(), BlockReplace, false, nil))
 	}
 }
 
@@ -280,13 +284,7 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringSort, false, nil))
-	RegisterActionImpl(value.TypeString, "replace", value.NewNativeFunction("replace", []value.ParamSpec{
-		value.NewParamSpec("series", true),
-		value.NewParamSpec("pattern", true),
-		value.NewParamSpec("replacement", true),
-		value.NewRefinementSpec("copy", false),
-		value.NewRefinementSpec("all", false),
-	}, StringReplace, false, nil))
+	RegisterActionImpl(value.TypeString, "replace", value.NewNativeFunction("replace", replaceParamSpecs(), StringReplace, false, nil))
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse, false, nil))
@@ -1146,13 +1144,7 @@ Duplicates are removed from the result.`,
 		Tags:    []string{"series", "set"},
 	}))
 
-	registerAndBind("replace", CreateAction("replace", []value.ParamSpec{
-		value.NewParamSpec("series", true),
-		value.NewParamSpec("pattern", true),
-		value.NewParamSpec("replacement", true),
-		value.NewRefinementSpec("copy", false),
-		value.NewRefinementSpec("all", false),
-	}, &NativeDoc{
+	registerAndBind("replace", CreateAction("replace", replaceParamSpecs(), &NativeDoc{
 		Category: "Series",
 		Summary:  "Replaces pattern occurrences in a series with a replacement value",
 		Description: `Replaces occurrences of a pattern in a series (string or block).

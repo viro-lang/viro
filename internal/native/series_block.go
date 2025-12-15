@@ -344,13 +344,8 @@ func BlockReplace(args []core.Value, refValues map[string]core.Value, eval core.
 	pattern := args[1]
 	replacement := args[2]
 
-	hasRefinement := func(refName string) bool {
-		val, ok := refValues[refName]
-		return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
-	}
-
-	copyMode := hasRefinement("copy")
-	replaceAll := hasRefinement("all")
+	copyMode := hasRefinement(refValues, "copy")
+	replaceAll := hasRefinement(refValues, "all")
 
 	var target *value.BlockValue
 	if copyMode {
