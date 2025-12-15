@@ -330,3 +330,46 @@ func BlockSelect(args []core.Value, refValues map[string]core.Value, eval core.E
 	}
 	return value.NewNoneVal(), nil
 }
+
+func BlockReplace(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 3 {
+		return value.NewNoneVal(), arityError("replace", 3, len(args))
+	}
+
+	block, ok := value.AsBlockValue(args[0])
+	if !ok {
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDTypeMismatch, [3]string{"block", value.TypeToString(args[0].GetType()), ""})
+	}
+
+	pattern := args[1]
+	replacement := args[2]
+
+	hasRefinement := func(refName string) bool {
+		val, ok := refValues[refName]
+		return ok && val.GetType() == value.TypeLogic && val.Equals(value.NewLogicVal(true))
+	}
+
+	copyMode := hasRefinement("copy")
+	replaceAll := hasRefinement("all")
+
+	var target *value.BlockValue
+	if copyMode {
+		elements := make([]core.Value, len(block.Elements))
+		copy(elements, block.Elements)
+		target = value.NewBlockVal(elements)
+	} else {
+		target = block
+	}
+
+	elements := target.Elements
+	for i, elem := range elements {
+		if elem.Equals(pattern) {
+			elements[i] = replacement
+			if !replaceAll {
+				break
+			}
+		}
+	}
+
+	return target, nil
+}
