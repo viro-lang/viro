@@ -150,6 +150,13 @@ func registerBlockSeriesActions() {
 			value.NewParamSpec("s1", true),
 			value.NewParamSpec("s2", true),
 		}, BlockUnion, false, nil))
+		RegisterActionImpl(typ, "replace", value.NewNativeFunction("replace", []value.ParamSpec{
+			value.NewParamSpec("series", true),
+			value.NewParamSpec("pattern", true),
+			value.NewParamSpec("replacement", true),
+			value.NewRefinementSpec("copy", false),
+			value.NewRefinementSpec("all", false),
+		}, BlockReplace, false, nil))
 	}
 }
 
@@ -273,6 +280,13 @@ func registerStringSeriesActions() {
 	RegisterActionImpl(value.TypeString, "sort", value.NewNativeFunction("sort", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringSort, false, nil))
+	RegisterActionImpl(value.TypeString, "replace", value.NewNativeFunction("replace", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("pattern", true),
+		value.NewParamSpec("replacement", true),
+		value.NewRefinementSpec("copy", false),
+		value.NewRefinementSpec("all", false),
+	}, StringReplace, false, nil))
 	RegisterActionImpl(value.TypeString, "reverse", value.NewNativeFunction("reverse", []value.ParamSpec{
 		value.NewParamSpec("series", true),
 	}, StringReverse, false, nil))
@@ -1130,5 +1144,42 @@ Duplicates are removed from the result.`,
 		},
 		SeeAlso: []string{"intersect", "difference"},
 		Tags:    []string{"series", "set"},
+	}))
+
+	registerAndBind("replace", CreateAction("replace", []value.ParamSpec{
+		value.NewParamSpec("series", true),
+		value.NewParamSpec("pattern", true),
+		value.NewParamSpec("replacement", true),
+		value.NewRefinementSpec("copy", false),
+		value.NewRefinementSpec("all", false),
+	}, &NativeDoc{
+		Category: "Series",
+		Summary:  "Replaces pattern occurrences in a series with a replacement value",
+		Description: `Replaces occurrences of a pattern in a series (string or block).
+
+By default: replaces only the first occurrence and modifies in-place.
+With /copy: works on a copy, leaving original unchanged.
+With /all: replaces all occurrences instead of just the first.
+Refinements can be combined: /copy/all creates a copy and replaces all.
+
+For strings: uses substring matching.
+For blocks: uses value equality (any type can match any type).`,
+		Parameters: []ParamDoc{
+			{Name: "series", Type: "string! block!", Description: "Series to search and modify"},
+			{Name: "pattern", Type: "any!", Description: "Value/substring to find (must be string for string series)"},
+			{Name: "replacement", Type: "any!", Description: "Value/substring to replace with (must be string for string series)"},
+			{Name: "--copy", Type: "flag", Description: "Work on copy, don't modify original", Optional: true},
+			{Name: "--all", Type: "flag", Description: "Replace all occurrences (default: first only)", Optional: true},
+		},
+		Returns: "string! block! The modified series (or copy if /copy used)",
+		Examples: []string{
+			`replace "hello world" "world" "Viro"  ; => "hello Viro"`,
+			"replace [1 2 3 2 1] 2 99  ; => [1 99 3 2 1]",
+			`replace/all "abc abc" "abc" "x"  ; => "x x"`,
+			"replace/all [1 2 1 2] 2 99  ; => [1 99 1 99]",
+			`s: "test" replace/copy s "t" "x"  ; s unchanged, returns "xest"`,
+		},
+		SeeAlso: []string{"find", "change", "trim", "remove"},
+		Tags:    []string{"series", "modification", "search"},
 	}))
 }
