@@ -305,6 +305,11 @@ new or overriding field definitions. The new object shares the parent's fields b
 		false,
 		nil)) // No doc needed since it's type-specific
 
+	RegisterActionImpl(value.TypeObject, "copy", value.NewNativeFunction("copy", []value.ParamSpec{
+		value.NewParamSpec("object", true),
+		value.NewRefinementSpec("deep", false),
+	}, ObjectCopy, false, nil))
+
 	registerAndBind("put", value.NewNativeFunction(
 		"put",
 		[]value.ParamSpec{

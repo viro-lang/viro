@@ -481,6 +481,41 @@ func Select(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 	return value.NewNoneVal(), typeError("select target", "object or block", targetVal)
 }
 
+// ObjectCopy implements the `copy` action for objects.
+//
+// Contract: copy object [--deep]
+// - object: object! to copy
+// - --deep: perform deep copy of nested structures
+// - Returns a new object with copied frame and prototype chain
+func ObjectCopy(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) != 1 {
+		return value.NewNoneVal(), arityError("copy", 1, len(args))
+	}
+
+	objVal := args[0]
+	obj, ok := value.AsObject(objVal)
+	if !ok {
+		return value.NewNoneVal(), typeError("copy target", "object", objVal)
+	}
+
+	if hasRefinement(refValues, "deep") {
+		// Perform deep copy
+		copied, err := deepCopyValue(objVal, make(map[core.Value]core.Value), 0)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+		return copied, nil
+	} else {
+		// Shallow copy - clone the frame
+		newFrame := obj.Frame.Clone()
+		newObjInstance := value.NewObject(newFrame)
+		newObj := value.ObjectVal(newObjInstance)
+		// Copy prototype reference (shallow)
+		newObjInstance.ParentProto = obj.ParentProto
+		return newObj, nil
+	}
+}
+
 // Put implements the `put` native for object field mutation.
 //
 // Contract (Feature 002, FR-014): put object field value

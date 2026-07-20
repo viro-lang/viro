@@ -50,6 +50,49 @@ func BlockReverse(args []core.Value, refValues map[string]core.Value, eval core.
 	return args[0], nil
 }
 
+func buildBlockSchema(blocks []*value.BlockValue) error {
+	for _, block := range blocks {
+		if err := validateBlockForSupportedTypes(block, 0); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateBlockForSupportedTypes(block *value.BlockValue, depth int) error {
+	for _, elem := range block.Elements {
+		elemType := elem.GetType()
+
+		if !isSupportedForComparison(elemType) {
+			return verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "unsupported type", value.TypeToString(elemType)})
+		}
+
+		if elemType == value.TypeBlock || elemType == value.TypeParen {
+			nestedBlock, _ := value.AsBlockValue(elem)
+			if err := validateBlockForSupportedTypes(nestedBlock, depth+1); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func isSupportedForComparison(t core.ValueType) bool {
+	switch t {
+	case value.TypeInteger, value.TypeDecimal, value.TypeString, value.TypeBinary,
+		value.TypeLogic, value.TypeWord, value.TypeSetWord, value.TypeGetWord,
+		value.TypeLitWord, value.TypePath, value.TypeGetPath, value.TypeSetPath,
+		value.TypeDatatype, value.TypeNone, value.TypeBlock, value.TypeParen:
+		return true
+	case value.TypeObject:
+		return false
+	default:
+		return false
+	}
+}
+
 func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	block, ok := value.AsBlockValue(args[0])
 	if !ok {
@@ -61,13 +104,34 @@ func BlockSort(args []core.Value, refValues map[string]core.Value, eval core.Eva
 	}
 
 	firstType := block.Elements[0].GetType()
+
 	for _, v := range block.Elements {
-		if v.GetType() != firstType || (v.GetType() != value.TypeInteger && v.GetType() != value.TypeString) {
+		if v.GetType() != firstType {
 			return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
 		}
 	}
 
-	value.SortBlock(block)
+	switch firstType {
+	case value.TypeInteger, value.TypeString:
+
+		value.SortBlock(block)
+	case value.TypeBlock, value.TypeParen:
+
+		blockValues := make([]*value.BlockValue, len(block.Elements))
+		for i, elem := range block.Elements {
+			blockValues[i], _ = value.AsBlockValue(elem)
+		}
+
+		if err := buildBlockSchema(blockValues); err != nil {
+			return value.NewNoneVal(), err
+		}
+
+		value.SortBlock(block)
+	default:
+
+		return value.NewNoneVal(), verror.NewScriptError(verror.ErrIDNotComparable, [3]string{"sort", "mixed types", ""})
+	}
+
 	return args[0], nil
 }
 

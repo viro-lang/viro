@@ -327,21 +327,256 @@ func (b *BlockValue) ClearSeries() {
 	b.locations = []core.SourceLocation{}
 }
 
+func compareBlockValuesLex(a, b *BlockValue) int {
+	minLen := len(a.Elements)
+	if len(b.Elements) < minLen {
+		minLen = len(b.Elements)
+	}
+
+	for i := 0; i < minLen; i++ {
+		cmp := compareValuesForSort(a.Elements[i], b.Elements[i])
+		if cmp != 0 {
+			return cmp
+		}
+	}
+
+	if len(a.Elements) < len(b.Elements) {
+		return -1
+	} else if len(a.Elements) > len(b.Elements) {
+		return 1
+	}
+	return 0
+}
+
+func getTypePrecedence(t core.ValueType) int {
+	switch t {
+	case TypeInteger:
+		return 1
+	case TypeDecimal:
+		return 2
+	case TypeString:
+		return 3
+	case TypeBinary:
+		return 4
+	case TypeLogic:
+		return 5
+	case TypeWord, TypeSetWord, TypeGetWord, TypeLitWord:
+		return 6
+	case TypePath, TypeGetPath, TypeSetPath:
+		return 7
+	case TypeDatatype:
+		return 8
+	case TypeNone:
+		return 9
+	case TypeBlock:
+		return 10
+	case TypeParen:
+		return 11
+	default:
+		return 99
+	}
+}
+
+func compareValuesForSort(a, b core.Value) int {
+	aType := a.GetType()
+	bType := b.GetType()
+
+	if aType != bType {
+		aPrecedence := getTypePrecedence(aType)
+		bPrecedence := getTypePrecedence(bType)
+		if aPrecedence < bPrecedence {
+			return -1
+		} else if aPrecedence > bPrecedence {
+			return 1
+		}
+		return 0
+	}
+
+	switch aType {
+	case TypeInteger:
+		aVal, _ := AsIntValue(a)
+		bVal, _ := AsIntValue(b)
+		if aVal < bVal {
+			return -1
+		} else if aVal > bVal {
+			return 1
+		}
+		return 0
+	case TypeDecimal:
+		aVal, _ := AsDecimal(a)
+		bVal, _ := AsDecimal(b)
+		if aVal.Magnitude == nil && bVal.Magnitude == nil {
+			return 0
+		}
+		if aVal.Magnitude == nil {
+			return -1
+		}
+		if bVal.Magnitude == nil {
+			return 1
+		}
+		return aVal.Magnitude.Cmp(bVal.Magnitude)
+	case TypeString:
+		aVal, _ := AsStringValue(a)
+		bVal, _ := AsStringValue(b)
+		aStr := aVal.Form()
+		bStr := bVal.Form()
+		if aStr < bStr {
+			return -1
+		} else if aStr > bStr {
+			return 1
+		}
+		return 0
+	case TypeBinary:
+		aVal, _ := AsBinaryValue(a)
+		bVal, _ := AsBinaryValue(b)
+		aData := aVal.Bytes()
+		bData := bVal.Bytes()
+		minLen := len(aData)
+		if len(bData) < minLen {
+			minLen = len(bData)
+		}
+		for i := 0; i < minLen; i++ {
+			if aData[i] < bData[i] {
+				return -1
+			} else if aData[i] > bData[i] {
+				return 1
+			}
+		}
+		if len(aData) < len(bData) {
+			return -1
+		} else if len(aData) > len(bData) {
+			return 1
+		}
+		return 0
+	case TypeLogic:
+		aVal, _ := AsLogicValue(a)
+		bVal, _ := AsLogicValue(b)
+
+		if !aVal && bVal {
+			return -1
+		} else if aVal && !bVal {
+			return 1
+		}
+		return 0
+	case TypeWord, TypeSetWord, TypeGetWord, TypeLitWord:
+		aVal, _ := AsWordValue(a)
+		bVal, _ := AsWordValue(b)
+		if aVal < bVal {
+			return -1
+		} else if aVal > bVal {
+			return 1
+		}
+		return 0
+	case TypePath, TypeGetPath, TypeSetPath:
+		return comparePathsForSort(a, b)
+	case TypeDatatype:
+		aVal, _ := AsDatatypeValue(a)
+		bVal, _ := AsDatatypeValue(b)
+		if aVal < bVal {
+			return -1
+		} else if aVal > bVal {
+			return 1
+		}
+		return 0
+	case TypeNone:
+		return 0
+	case TypeBlock, TypeParen:
+		aVal, _ := AsBlockValue(a)
+		bVal, _ := AsBlockValue(b)
+		return compareBlockValuesLex(aVal, bVal)
+	default:
+
+		return 0
+	}
+}
+
+func comparePathsForSort(a, b core.Value) int {
+	var aSegments, bSegments []PathSegment
+
+	switch a.GetType() {
+	case TypePath:
+		if path, ok := AsPath(a); ok {
+			aSegments = path.Segments
+		}
+	case TypeGetPath:
+		if path, ok := AsGetPath(a); ok {
+			aSegments = path.Segments
+		}
+	case TypeSetPath:
+		if path, ok := AsSetPath(a); ok {
+			aSegments = path.Segments
+		}
+	}
+
+	switch b.GetType() {
+	case TypePath:
+		if path, ok := AsPath(b); ok {
+			bSegments = path.Segments
+		}
+	case TypeGetPath:
+		if path, ok := AsGetPath(b); ok {
+			bSegments = path.Segments
+		}
+	case TypeSetPath:
+		if path, ok := AsSetPath(b); ok {
+			bSegments = path.Segments
+		}
+	}
+
+	minLen := len(aSegments)
+	if len(bSegments) < minLen {
+		minLen = len(bSegments)
+	}
+
+	for i := 0; i < minLen; i++ {
+		aSeg := aSegments[i]
+		bSeg := bSegments[i]
+
+		if aSeg.Type < bSeg.Type {
+			return -1
+		} else if aSeg.Type > bSeg.Type {
+			return 1
+		}
+
+		switch aSeg.Type {
+		case PathSegmentWord:
+			aWord, _ := aSeg.Value.(string)
+			bWord, _ := bSeg.Value.(string)
+			if aWord < bWord {
+				return -1
+			} else if aWord > bWord {
+				return 1
+			}
+		case PathSegmentIndex:
+			aIdx, _ := aSeg.Value.(int64)
+			bIdx, _ := bSeg.Value.(int64)
+			if aIdx < bIdx {
+				return -1
+			} else if aIdx > bIdx {
+				return 1
+			}
+		case PathSegmentEval:
+
+			aStr := fmt.Sprintf("%v", aSeg.Value)
+			bStr := fmt.Sprintf("%v", bSeg.Value)
+			if aStr < bStr {
+				return -1
+			} else if aStr > bStr {
+				return 1
+			}
+		}
+	}
+
+	if len(aSegments) < len(bSegments) {
+		return -1
+	} else if len(aSegments) > len(bSegments) {
+		return 1
+	}
+	return 0
+}
+
 func SortBlock(b *BlockValue) {
 	sort.SliceStable(b.Elements, func(i, j int) bool {
-		elemI := b.Elements[i]
-		elemJ := b.Elements[j]
-		switch elemI.GetType() {
-		case TypeInteger:
-			iVal, _ := AsIntValue(elemI)
-			jVal, _ := AsIntValue(elemJ)
-			return iVal < jVal
-		case TypeString:
-			iVal, _ := AsStringValue(elemI)
-			jVal, _ := AsStringValue(elemJ)
-			return iVal.Form() < jVal.Form()
-		default:
-			return false
-		}
+		return compareValuesForSort(b.Elements[i], b.Elements[j]) < 0
 	})
 }

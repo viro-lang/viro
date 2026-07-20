@@ -1,39 +1,30 @@
-// Package value implements the core value types for the Viro interpreter.
-// All data in Viro is represented as tagged union values with type discrimination.
 package value
 
 import "github.com/marcin-radoszewski/viro/internal/core"
 
-// ValueType identifies the runtime type of a Value.
-// Uses uint8 for compact representation (11 types fit in 8 bits).
-
-// Value type constants define all supported data types in Viro.
-// These define the Viro type system with Viro-specific additions (Paren).
 const (
-	TypeNone     core.ValueType = iota // Represents absence of value (nil/null)
-	TypeLogic                          // Boolean true/false
-	TypeInteger                        // 64-bit signed integer
-	TypeString                         // UTF-8 character sequence
-	TypeWord                           // Symbol identifier (evaluates to bound value)
-	TypeSetWord                        // Assignment symbol (x: value)
-	TypeGetWord                        // Fetch symbol (evaluates without evaluation)
-	TypeLitWord                        // Quoted symbol (returns word itself)
-	TypeBlock                          // Series of values (deferred evaluation)
-	TypeParen                          // Series of values (immediate evaluation)
-	TypeFunction                       // Executable function (native or user-defined)
-
-	// Feature 002: Deferred Language Capabilities
-	TypeDecimal  // IEEE 754 decimal128 high-precision decimal
-	TypeObject   // Object instance with frame-based fields
-	TypePort     // I/O port abstraction (file, TCP, HTTP)
-	TypePath     // Path expression (transient evaluation type)
-	TypeGetPath  // Get-path expression (transient evaluation type)
-	TypeSetPath  // Set-path expression (transient evaluation type)
-	TypeDatatype // Datatype literal (e.g., object!, integer!)
-	TypeBinary   // Raw byte sequence
+	TypeNone core.ValueType = iota
+	TypeLogic
+	TypeInteger
+	TypeString
+	TypeWord
+	TypeSetWord
+	TypeGetWord
+	TypeLitWord
+	TypeBlock
+	TypeParen
+	TypeFunction
+	TypeDecimal
+	TypeObject
+	TypePort
+	TypePath
+	TypeGetPath
+	TypeSetPath
+	TypeDatatype
+	TypeBinary
+	TypeWebUIWindow
 )
 
-// TypeToString returns the type name for debugging and error messages.
 func TypeToString(t core.ValueType) string {
 	switch t {
 	case TypeNone:
@@ -74,6 +65,8 @@ func TypeToString(t core.ValueType) string {
 		return "datatype!"
 	case TypeBinary:
 		return "binary!"
+	case TypeWebUIWindow:
+		return "webui-window!"
 	default:
 		return "unknown!"
 	}
@@ -83,7 +76,6 @@ func IsWord(t core.ValueType) bool {
 	return t == TypeWord || t == TypeSetWord || t == TypeGetWord || t == TypeLitWord
 }
 
-// IsSeries returns true if the type supports series operations.
 func IsSeries(t core.ValueType) bool {
 	return t == TypeBlock || t == TypeParen || t == TypeString || t == TypeBinary
 }

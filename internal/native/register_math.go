@@ -136,18 +136,41 @@ Raises an error if dividing by zero.`,
 		true,
 		&NativeDoc{
 			Category: "Math",
-			Summary:  "Calculates the remainder after division",
-			Description: `Performs modulo operation (remainder after integer division).
-Returns the remainder when dividend is divided by divisor.
-The sign of the result follows the dividend. Supports infix notation.`,
+			Summary:  "Calculates the Euclidean modulo (remainder with divisor sign)",
+			Description: `Performs Euclidean modulo operation where the result always has the same sign as the divisor.
+This ensures consistent behavior across different sign combinations and is preferred for many mathematical applications.`,
 			Parameters: []ParamDoc{
 				{Name: "dividend", Type: "integer! decimal!", Description: "The number to be divided", Optional: false},
 				{Name: "divisor", Type: "integer! decimal!", Description: "The number to divide by (must not be zero)", Optional: false},
 			},
-			Returns:  "[integer! decimal!] The remainder after division",
-			Examples: []string{"10 mod 3  ; => 1", "17 mod 5  ; => 2", "100 mod 7  ; => 2", "mod 10 3  ; => 1"},
-			SeeAlso:  []string{"/", "*", "-"},
-			Tags:     []string{"arithmetic", "math", "modulo", "remainder"},
+			Returns:  "[integer! decimal!] The Euclidean modulo result",
+			Examples: []string{"10 mod 3  ; => 1", "-10 mod 3  ; => 2", "10 mod -3  ; => -2", "-10 mod -3  ; => -1"},
+			SeeAlso:  []string{"rem", "/", "*", "-"},
+			Tags:     []string{"arithmetic", "math", "modulo", "euclidean"},
+		},
+	))
+
+	registerAndBind("rem", value.NewNativeFunction(
+		"rem",
+		[]value.ParamSpec{
+			value.NewParamSpec("dividend", true),
+			value.NewParamSpec("divisor", true),
+		},
+		Rem,
+		true,
+		&NativeDoc{
+			Category: "Math",
+			Summary:  "Calculates the truncated remainder after division",
+			Description: `Performs remainder operation (truncated modulo) where the result has the same sign as the dividend.
+This matches the behavior of most programming languages' modulo operator.`,
+			Parameters: []ParamDoc{
+				{Name: "dividend", Type: "integer! decimal!", Description: "The number to be divided", Optional: false},
+				{Name: "divisor", Type: "integer! decimal!", Description: "The number to divide by (must not be zero)", Optional: false},
+			},
+			Returns:  "[integer! decimal!] The truncated remainder result",
+			Examples: []string{"10 rem 3  ; => 1", "-10 rem 3  ; => -1", "10 rem -3  ; => 1", "-10 rem -3  ; => -1"},
+			SeeAlso:  []string{"mod", "/", "*", "-"},
+			Tags:     []string{"arithmetic", "math", "remainder", "truncated"},
 		},
 	))
 

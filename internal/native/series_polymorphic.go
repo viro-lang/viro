@@ -155,6 +155,14 @@ func seriesCopy(args []core.Value, refValues map[string]core.Value, eval core.Ev
 	if err != nil {
 		return value.NewNoneVal(), err
 	}
+
+	if hasRefinement(refValues, "deep") {
+		copied, err = deepCopySeries(copied.(value.Series), make(map[core.Value]core.Value), 0)
+		if err != nil {
+			return value.NewNoneVal(), err
+		}
+	}
+
 	return copied.(core.Value), nil
 }
 

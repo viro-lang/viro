@@ -681,6 +681,89 @@ func TestSeries_Copy(t *testing.T) {
 			`,
 			want: value.NewIntVal(3),
 		},
+		{
+			name:  "copy --deep block with nested blocks",
+			input: "copy --deep [[1 2] [3 4]]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(3), value.NewIntVal(4)}),
+			}),
+		},
+
+		{
+			name:  "copy --deep --part creates deep copy of part",
+			input: "copy --deep --part 1 [[1 2] [3 4]]",
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+			}),
+		},
+		{
+			name:  "copy --deep string (creates new series instance)",
+			input: `copy --deep "hello"`,
+			want:  value.NewStrVal("hello"),
+		},
+		{
+			name:  "copy --deep binary (creates new series instance)",
+			input: "copy --deep #{DEADBEEF}",
+			want:  value.NewBinaryVal([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+		},
+		{
+			name: "copy --deep cycle detection",
+			input: `a: []
+append a a
+copy --deep a
+length? a`,
+			want: value.NewIntVal(1),
+		},
+		{
+			name: "copy --deep depth limit exceeded",
+			input: `deep: [1] loop 1001 [deep: reduce [deep]]
+copy --deep deep`,
+			wantErr: true,
+			errID:   verror.ErrIDStackOverflow,
+		},
+		{
+			name: "copy --deep nested string independence",
+			input: `outer: [[["hello"]]]
+copied: copy --deep outer
+outer.1.1.1: "world"
+pick pick pick copied 1 1 1`,
+			want: value.NewStrVal("hello"),
+		},
+		{
+			name: "copy --deep nested binary independence",
+			input: `outer: [[#{AABB}]]
+copied: copy --deep outer
+outer.1.1: #{CCDD}
+pick pick copied 1 1`,
+			want: value.NewBinaryVal([]byte{0xAA, 0xBB}),
+		},
+		{
+			name: "copy --deep paren series",
+			input: `p: first load-string "(1 [2 3])"
+copied: copy --deep p
+poke pick p 2 1 99
+pick pick copied 2 1`,
+			want: value.NewIntVal(2),
+		},
+		{
+			name: "copy --deep object with nested fields",
+			input: `obj: make object! [name: "Alice" data: [1 2 3]]
+copied: copy --deep obj
+put obj 'data [99 2 3]
+select copied 'data`,
+			want: value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+		},
+		{
+			name: "copy --deep object prototype independence",
+			input: `proto: make object! [shared: "original"]
+obj: make proto [own: [1 2]]
+copied: copy --deep obj
+put obj 'own [99 2]
+put proto 'shared "modified"
+select copied 'own`,
+			want: value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2)}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -2198,6 +2281,60 @@ data`,
 reverse str
 str`,
 			want: value.NewStrVal("olleh"),
+		},
+		{
+			name: "sort block of blocks lexicographic",
+			input: `data: [[2] [1 5] [1 2 3]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(2), value.NewIntVal(3)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewIntVal(5)}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(2)}),
+			}),
+		},
+		{
+			name: "sort block of heterogeneous inner values",
+			input: `data: [[1 "a"] [1 "b"] [2 [3]]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("a")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("b")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewBlockVal([]core.Value{value.NewIntVal(3)})}),
+			}),
+		},
+		{
+			name: "sort nested blocks deeper levels",
+			input: `data: [[1 [2 3]] [1 [2 4]] [1 [1]]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(1)})}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(3)})}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2), value.NewIntVal(4)})}),
+			}),
+		},
+		{
+			name: "sort nested blocks mismatched element types",
+			input: `data: [["a"] [1]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1)}),
+				value.NewBlockVal([]core.Value{value.NewStrVal("a")}),
+			}),
+		},
+
+		{
+			name: "sort nested blocks mismatched nested type",
+			input: `data: [[1 [2]] [1 "a"]]
+sort data
+data`,
+			want: value.NewBlockVal([]core.Value{
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewStrVal("a")}),
+				value.NewBlockVal([]core.Value{value.NewIntVal(1), value.NewBlockVal([]core.Value{value.NewIntVal(2)})}),
+			}),
 		},
 		{
 			name:    "sort non-series error",
