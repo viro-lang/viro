@@ -31,6 +31,9 @@ const (
 	TypeSetPath  // Set-path expression (transient evaluation type)
 	TypeDatatype // Datatype literal (e.g., object!, integer!)
 	TypeBinary   // Raw byte sequence
+	
+	// Feature 030: Parse Dialect
+	TypeBitset // Character set for parse dialect (charset)
 )
 
 // TypeToString returns the type name for debugging and error messages.
@@ -74,6 +77,8 @@ func TypeToString(t core.ValueType) string {
 		return "datatype!"
 	case TypeBinary:
 		return "binary!"
+	case TypeBitset:
+		return "bitset!"
 	default:
 		return "unknown!"
 	}
