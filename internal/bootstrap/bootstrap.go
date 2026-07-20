@@ -89,7 +89,7 @@ func InitTraceWithOutput(profile bool, output string) error {
 	if profile {
 		return trace.InitTraceSilent()
 	}
-	return trace.InitTrace(output, 50) // default 50MB max size
+	return trace.InitTrace(output, 50)
 }
 
 func InitDebugger() {
@@ -119,6 +119,9 @@ func NewEvaluatorWithNatives(stdout, stderr io.Writer, stdin io.Reader, quiet bo
 	native.RegisterControlNatives(rootFrame)
 	native.RegisterHelpNatives(rootFrame)
 	native.RegisterBitwiseNatives(rootFrame)
+
+	// Register WebUI natives
+	native.RegisterWebUINatives(rootFrame)
 
 	if err := LoadAndExecuteBootstrapScripts(evaluator); err != nil {
 		return nil, err

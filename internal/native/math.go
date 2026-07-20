@@ -68,7 +68,7 @@ func decimalMathOp(name string, a, b core.Value, decFn decimalOp) (core.Value, e
 		return value.NewNoneVal(), verror.NewMathError(name+"-type-error", [3]string{value.TypeToString(a.GetType()), value.TypeToString(b.GetType()), ""})
 	}
 
-	if (name == "/" || name == "mod") && bVal.Sign() == 0 {
+	if (name == "/" || name == "mod" || name == "rem") && bVal.Sign() == 0 {
 		return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
 	}
 
@@ -229,6 +229,32 @@ func Divide(args []core.Value, refValues map[string]core.Value, eval core.Evalua
 		})
 }
 
+// Rem implements the rem native function (remainder operation).
+//
+// Contract: rem dividend divisor → remainder
+// - Arguments can be integers or decimals
+// - Returns the remainder after truncated division (sign follows dividend)
+// - Division by zero is an error
+func Rem(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
+	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
+		if b, ok := value.AsIntValue(args[1]); ok && b == 0 {
+			return value.NewNoneVal(), verror.NewMathError(verror.ErrIDDivByZero, [3]string{"", "", ""})
+		}
+	}
+
+	return mathOp("rem", args,
+		func(a, b int64) (int64, bool) {
+			// Check for overflow: MinInt64 % -1 panics
+			if a == math.MinInt64 && b == -1 {
+				return 0, true
+			}
+			return a % b, false
+		},
+		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
+			return ctx.Rem(result, a, b)
+		})
+}
+
 func Mod(args []core.Value, refValues map[string]core.Value, eval core.Evaluator) (core.Value, error) {
 	if len(args) == 2 && args[0].GetType() != value.TypeDecimal && args[1].GetType() != value.TypeDecimal {
 		if b, ok := value.AsIntValue(args[1]); ok && b == 0 {
@@ -242,10 +268,21 @@ func Mod(args []core.Value, refValues map[string]core.Value, eval core.Evaluator
 			if a == math.MinInt64 && b == -1 {
 				return 0, true
 			}
-			return a % b, false
+			// Euclidean modulo: adjust remainder to have same sign as divisor
+			remainder := a % b
+			if remainder != 0 && ((remainder < 0 && b > 0) || (remainder > 0 && b < 0)) {
+				remainder += b
+			}
+			return remainder, false
 		},
 		func(ctx decimal.Context, result, a, b *decimal.Big) *decimal.Big {
-			return ctx.Rem(result, a, b)
+			// Compute truncated remainder first
+			ctx.Rem(result, a, b)
+			// If remainder and divisor have different signs, adjust by adding divisor
+			if result.Sign() != 0 && result.Sign() != b.Sign() {
+				ctx.Add(result, result, b)
+			}
+			return result
 		})
 }
 

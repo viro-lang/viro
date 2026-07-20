@@ -1,0 +1,74 @@
+; WebUI Example Script
+; Demonstrates basic WebUI window creation, rendering, and event handling
+
+; Create a window
+window-id: webui-new-window
+
+; HTML content
+html-content: "
+<html>
+<head>
+    <title>Viro WebUI Demo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 5px; }
+        #output { margin-top: 20px; padding: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Viro WebUI Demo</h1>
+    <p>This window is controlled by Viro!</p>
+     <button onclick='webui.hello()'>Say Hello</button>
+     <button onclick='webui.count()'>Increment Counter</button>
+     <button onclick='webui.close()'>Close Window</button>
+    <div id='output'>Click buttons to see events...</div>
+     <script>
+          let counter = 0;
+          function updateOutput(msg) {
+              document.getElementById('output').textContent = msg;
+          }
+          function incrementCounter() {
+              counter++;
+              updateOutput('Counter: ' + counter);
+          }
+
+          // Handlers for webui-send-raw messages
+          window.webui = {
+              'update': function(data) {
+                  updateOutput(data.message + ' at ' + data.timestamp);
+              },
+              'increment': function(data) {
+                  incrementCounter();
+              }
+          };
+      </script>
+</body>
+</html>
+"
+
+; Show the window with HTML content
+webui-show window-id html-content
+
+; Set up event handlers
+webui-bind window-id "hello" [
+    print "Hello button clicked!"
+    ; Send data back to JavaScript using webui-run
+    webui-run window-id "updateOutput('Hello from Viro at ' + new Date().toISOString())"
+]
+
+webui-bind window-id "count" [
+    print "Count button clicked!"
+    webui-run window-id "incrementCounter()"
+]
+
+webui-bind window-id "close" [
+    print "Close button clicked - closing window"
+    webui-close window-id
+]
+
+; Main event loop - blocks until all windows close
+print "WebUI window opened. Click buttons or close window to exit."
+
+webui-wait
+
+print "All windows closed, script finished"

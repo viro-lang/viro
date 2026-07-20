@@ -27,6 +27,14 @@ See [specs/002-implement-deferred-features/](specs/002-implement-deferred-featur
 
 See [specs/001-implement-the-core/quickstart.md](specs/001-implement-the-core/quickstart.md) for detailed build, run, and test instructions.
 
+### Initialize Dependencies
+
+```bash
+git submodule update --init --recursive
+```
+
+(Or run `make build`, which automatically updates submodules.)
+
 ### Build
 
 ```bash
